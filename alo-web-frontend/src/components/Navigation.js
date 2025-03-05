@@ -13,7 +13,7 @@ export const Navigation = () => {
     return (
         <div className="w-20 bg-blue-600 text-white flex flex-col items-center py-4 px-4">
             <div>
-                <img src="https://scontent.fsgn5-10.fna.fbcdn.net/v/t39.30808-6/361366862_1607093663105601_7835049158388472986_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHz7ozXp0uEkg8_8aP3F_G0dGypT0NHxzF0bKlPQ0fHMU8Z-vVpgHrcTKUwML8riSvvHuPzsyKki6cPi7L4FKV2&_nc_ohc=atTS0e2_I_YQ7kNvgG-4UfP&_nc_oc=AdhQ45n-gUooR83lgzOQlfYVeFXvJchQQuVF3l7FoDVFUmUHdXTq6DfSAoAq_39ul60&_nc_zt=23&_nc_ht=scontent.fsgn5-10.fna&_nc_gid=A4JRAqgmDrJLaNf7T4acNZ1&oh=00_AYDFFpYBS60tBz6d8TXU_BglA-foT_3uT1CkJb3_XZGmIw&oe=67C700A3" className="rounded-full" />
+                <img src="https://scontent.fsgn5-10.fna.fbcdn.net/v/t39.30808-1/361366862_1607093663105601_7835049158388472986_n.jpg?stp=dst-jpg_s160x160_tt6&_nc_cat=106&ccb=1-7&_nc_sid=e99d92&_nc_eui2=AeHz7ozXp0uEkg8_8aP3F_G0dGypT0NHxzF0bKlPQ0fHMU8Z-vVpgHrcTKUwML8riSvvHuPzsyKki6cPi7L4FKV2&_nc_ohc=VeI4nkG8sXcQ7kNvgHgsNnf&_nc_oc=AdgbHsX7u6gYq4sbSztA0CiuZ7htEx0O-hhUI8M5jN3ewGHiiUx7Lk0KvevokyBDVXs&_nc_zt=24&_nc_ht=scontent.fsgn5-10.fna&_nc_gid=ApT3CJTUYq9IC-hDfoWSYx3&oh=00_AYDuWQH3m7mgvS3gssY8iTReE2br0TnzRKW-2bNAriu4Qg&oe=67CDC3A1" className="rounded-full" />
             </div>
             <div className="flex flex-col mt-20">
 
