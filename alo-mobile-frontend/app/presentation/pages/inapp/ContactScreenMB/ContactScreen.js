@@ -118,14 +118,6 @@ const ContactScreen = ({ navigation }) => {
           const name = item.name.toLowerCase();
           return isExactMatch ? name === query.toLowerCase() : name.includes(query);
         }),
-        ...groupData.filter(item => {
-          const name = item.name.toLowerCase();
-          return isExactMatch ? name === query.toLowerCase() : name.includes(query);
-        }),
-        ...oaData.filter(item => {
-          const name = item.name.toLowerCase();
-          return isExactMatch ? name === query.toLowerCase() : name.includes(query);
-        }),
       ];
     } else if (context === "createGroup") {
       return data.filter(item => {
@@ -461,6 +453,8 @@ const ContactScreen = ({ navigation }) => {
             placeholder="Nhập số điện thoại"
             placeholderTextColor="#aaa"
             style={ContactStyles.phoneInput}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           />
           <TouchableOpacity style={ContactStyles.arrowButton}>
             <Icon name="arrow-forward" size={20} color="#fff" />
@@ -606,6 +600,8 @@ const ContactScreen = ({ navigation }) => {
             placeholder="Đặt tên nhóm"
             placeholderTextColor="#aaa"
             style={ContactStyles.groupNameInput}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           />
         </TouchableOpacity>
         <View style={ContactStyles.searchContainer}>
@@ -616,6 +612,8 @@ const ContactScreen = ({ navigation }) => {
             style={ContactStyles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           />
         </View>
         <FlatList
@@ -633,15 +631,20 @@ const ContactScreen = ({ navigation }) => {
 
   // Hiển thị danh sách tìm kiếm trên trang chính
   const renderSearchResults = () => {
+    // Thêm trường type để phân biệt nguồn dữ liệu
+    const friendsWithType = getFilteredData("Đã kết bạn").map(item => ({ ...item, type: "friend" }));
+    const groupsWithType = groupData.filter(group => group.isActive).map(item => ({ ...item, type: "group" }));
+    const oaWithType = oaData.map(item => ({ ...item, type: "oa" }));
+
     const allData = [
-      ...getFilteredData("Đã kết bạn"),
-      ...groupData.filter(group => group.isActive),
-      ...oaData,
+      ...friendsWithType,
+      ...groupsWithType,
+      ...oaWithType,
     ];
     const filteredData = filterDataBySearch(allData);
 
     const renderItem = ({ item }) => {
-      if (item.phone) {
+      if (item.type === "friend") {
         return (
           <TouchableOpacity
             style={ContactStyles.contactItem}
@@ -657,7 +660,7 @@ const ContactScreen = ({ navigation }) => {
             <Text style={ContactStyles.contactName}>{item.name}</Text>
           </TouchableOpacity>
         );
-      } else if (item.message) {
+      } else if (item.type === "group") {
         return (
           <View style={ContactStyles.groupItem}>
             <Image
@@ -667,7 +670,7 @@ const ContactScreen = ({ navigation }) => {
             <Text style={ContactStyles.contactName}>{item.name}</Text>
           </View>
         );
-      } else if (item.description) {
+      } else if (item.type === "oa") {
         return (
           <View style={ContactStyles.oaItem}>
             <Image
@@ -691,11 +694,13 @@ const ContactScreen = ({ navigation }) => {
             style={ContactStyles.searchInput}
             value={searchQuery}
             onChangeText={setSearchQuery}
+            numberOfLines={1}
+            ellipsizeMode="tail"
           />
         </View>
         <FlatList
           data={filteredData}
-          keyExtractor={(item) => item.id || item.name}
+          keyExtractor={(item) => `${item.type}-${item.id}`} // Tạo key duy nhất bằng cách kết hợp type và id
           renderItem={renderItem}
           ListEmptyComponent={<Text style={ContactStyles.noDataText}>Không tìm thấy kết quả</Text>}
         />
@@ -720,6 +725,8 @@ const ContactScreen = ({ navigation }) => {
                 style={ContactStyles.searchInput}
                 value={searchQuery}
                 onChangeText={setSearchQuery}
+                numberOfLines={1}
+                ellipsizeMode="tail"
               />
               <TouchableOpacity onPress={() => setSubScreen("addFriend")}>
                 <Icon name="person-add" size={20} color="#fff" style={ContactStyles.searchIconRight} />
