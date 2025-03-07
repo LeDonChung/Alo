@@ -10,6 +10,7 @@ import ContactPage from './pages/ContractPage';
 import { Navigation } from './components/Navigation';
 import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
+import ChatPage from './pages/ChatPage';
 function App() {
   return (
     <BrowserRouter>
@@ -27,6 +28,7 @@ function App() {
         <Route element={<MainLayout />}>
           <Route path="/me" element={<HomePage />} />
           <Route path="/contact" element={<ContactPage />} />
+          <Route path="/Chat" element={<ChatPage />} />
         </Route>
 
         {/* 404 Not Found */}
