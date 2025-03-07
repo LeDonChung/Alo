@@ -20,27 +20,53 @@ export const SettingContactStyles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
   },
-  menuContainer: {
-    paddingHorizontal: 10,
-    paddingVertical: 10,
+  content: {
+    padding: 15,
   },
-  menuItem: {
+  toggleContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
+  },
+  toggleLabel: {
+    color: "#fff",
+    fontSize: 16,
+  },
+  phoneNumber: {
+    color: "#aaa",
+    fontSize: 14,
+    marginTop: 5,
+    marginBottom: 15,
+  },
+  sectionTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginVertical: 10,
+  },
+  optionItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
-    backgroundColor: "#1f1f1f",
-    borderRadius: 10,
-    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
   },
-  menuIcon: {
-    backgroundColor: "#007AFF",
-    borderRadius: 15,
-    padding: 5,
-    marginRight: 10,
-    marginLeft: 10,
-  },
-  menuText: {
+  optionText: {
     color: "#fff",
     fontSize: 16,
+    flex: 1,
+    marginLeft: 10,
+  },
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderWidth: 1,
+    borderColor: "#fff",
+    borderRadius: 4,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
