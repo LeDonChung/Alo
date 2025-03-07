@@ -1,3 +1,4 @@
+// ContactStyle.js
 import { StyleSheet } from "react-native";
 
 export const ContactStyles = StyleSheet.create({
@@ -52,6 +53,9 @@ export const ContactStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
+    backgroundColor: "#1f1f1f",
+    borderRadius: 10,
+    marginBottom: 10,
   },
   menuIcon: {
     backgroundColor: "#007AFF",
@@ -70,32 +74,50 @@ export const ContactStyles = StyleSheet.create({
   },
   tabSwitchContainer: {
     flexDirection: "row",
-    justifyContent: "space-between",
-    paddingHorizontal: 10,
+    justifyContent: "start",
     paddingVertical: 10,
+    backgroundColor: "#1f1f1f",
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
+  },
+  tabSwitchContainerGroup: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    paddingVertical: 10,
+    backgroundColor: "#1f1f1f",
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
   },
   tabItem: {
-    paddingHorizontal: 10,
+    paddingHorizontal: 15,
   },
   tabText: {
     color: "#aaa",
     fontSize: 16,
+    marginLeft: 10,
   },
   contactListContainer: {
     flex: 1,
-    flexDirection: "row",
+  },
+  contactList: {
+    flex: 1,
+    padding: 10,
   },
   contactItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
     paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
   },
   oaItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
     paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
   },
   groupHeader: {
     flexDirection: "row",
@@ -103,6 +125,8 @@ export const ContactStyles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 10,
     backgroundColor: "#1f1f1f",
+    borderRadius: 10,
+    marginBottom: 10,
   },
   groupHeaderText: {
     color: "#fff",
@@ -113,6 +137,8 @@ export const ContactStyles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     paddingHorizontal: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#333",
   },
   groupMessage: {
     color: "#aaa",
@@ -121,6 +147,10 @@ export const ContactStyles = StyleSheet.create({
   groupTime: {
     color: "#aaa",
     fontSize: 12,
+  },
+  filterButton: {
+    marginEnd: 10,
+    padding: 5,
   },
   avatar: {
     width: 40,
@@ -139,8 +169,16 @@ export const ContactStyles = StyleSheet.create({
   actionIcons: {
     flexDirection: "row",
   },
-  actionIcon: {
-    marginLeft: 10,
+  actionButton: {
+    backgroundColor: "#555",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
+    marginLeft: 5,
+  },
+  actionButtonText: {
+    color: "#fff",
+    fontSize: 12,
   },
   alphabetList: {
     position: "absolute",
@@ -149,6 +187,8 @@ export const ContactStyles = StyleSheet.create({
     bottom: 0,
     justifyContent: "center",
     alignItems: "center",
+    backgroundColor: "#1f1f1f",
+    width: 20,
   },
   alphabetText: {
     color: "#007AFF",
