@@ -2,37 +2,37 @@ import React from "react";
 import { View, Text, TouchableOpacity } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { SettingsStyles } from "../../../styles/SettingsStyle";
+import { SettingContactStyles } from "../../../styles/SettingContactStyle";
 
 const SettingContact = ({ navigation }) => {
   return (
-    <SafeAreaView style={SettingsStyles.container}>
-      <View style={SettingsStyles.header}>
+    <SafeAreaView style={SettingContactStyles.container}>
+      <View style={SettingContactStyles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={20} color="#fff" />
         </TouchableOpacity>
-        <Text style={SettingsStyles.headerTitle}>Cài đặt</Text>
+        <Text style={SettingContactStyles.headerTitle}>Cài đặt</Text>
       </View>
-      <View style={SettingsStyles.menuContainer}>
-        <TouchableOpacity style={SettingsStyles.menuItem}>
-          <Icon name="person" size={20} color="#fff" style={SettingsStyles.menuIcon} />
-          <Text style={SettingsStyles.menuText}>Tài khoản và bảo mật</Text>
+      <View style={SettingContactStyles.menuContainer}>
+        <TouchableOpacity style={SettingContactStyles.menuItem}>
+          <Icon name="person" size={20} color="#fff" style={SettingContactStyles.menuIcon} />
+          <Text style={SettingContactStyles.menuText}>Tài khoản và bảo mật</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={SettingsStyles.menuItem}>
-          <Icon name="lock" size={20} color="#fff" style={SettingsStyles.menuIcon} />
-          <Text style={SettingsStyles.menuText}>Quyền riêng tư</Text>
+        <TouchableOpacity style={SettingContactStyles.menuItem}>
+          <Icon name="lock" size={20} color="#fff" style={SettingContactStyles.menuIcon} />
+          <Text style={SettingContactStyles.menuText}>Quyền riêng tư</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={SettingsStyles.menuItem}>
-          <Icon name="notifications" size={20} color="#fff" style={SettingsStyles.menuIcon} />
-          <Text style={SettingsStyles.menuText}>Thông báo và âm thanh</Text>
+        <TouchableOpacity style={SettingContactStyles.menuItem}>
+          <Icon name="notifications" size={20} color="#fff" style={SettingContactStyles.menuIcon} />
+          <Text style={SettingContactStyles.menuText}>Thông báo và âm thanh</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={SettingsStyles.menuItem}>
-          <Icon name="chat" size={20} color="#fff" style={SettingsStyles.menuIcon} />
-          <Text style={SettingsStyles.menuText}>Tin nhắn</Text>
+        <TouchableOpacity style={SettingContactStyles.menuItem}>
+          <Icon name="chat" size={20} color="#fff" style={SettingContactStyles.menuIcon} />
+          <Text style={SettingContactStyles.menuText}>Tin nhắn</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={SettingsStyles.menuItem}>
-          <Icon name="data-usage" size={20} color="#fff" style={SettingsStyles.menuIcon} />
-          <Text style={SettingsStyles.menuText}>Dung lượng và dữ liệu</Text>
+        <TouchableOpacity style={SettingContactStyles.menuItem}>
+          <Icon name="data-usage" size={20} color="#fff" style={SettingContactStyles.menuIcon} />
+          <Text style={SettingContactStyles.menuText}>Dung lượng và dữ liệu</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>

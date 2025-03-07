@@ -1,6 +1,6 @@
 import { StyleSheet } from "react-native";
 
-export const SettingsStyles = StyleSheet.create({
+export const SettingContactStyles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#121212",

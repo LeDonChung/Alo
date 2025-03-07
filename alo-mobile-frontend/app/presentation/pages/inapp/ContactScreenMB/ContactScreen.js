@@ -3,12 +3,12 @@ import { View, Text, FlatList, Image, TextInput, TouchableOpacity } from "react-
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { ContactStyles } from "../../../styles/ContactStyle";
-import { ChatBoxStyles } from "../../../styles/ChatBoxStyle";
 import { FriendRequestStyles } from "../../../styles/FriendRequestStyle";
+import { ChatBoxStyles } from "../../../styles/ChatBoxStyle";
+import { SettingContactStyles } from "../../../styles/SettingContactStyle";
 
 // Dữ liệu mẫu đã gộp với trường statusType
 const data_sample = [
-  // Danh sách bạn bè (Đã kết bạn)
   { id: "1", name: "A Luyện", phone: "123456789", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn" },
   { id: "2", name: "A Tuấn", phone: "987654321", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn" },
   { id: "3", name: "A4", phone: "456789123", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn" },
@@ -16,20 +16,17 @@ const data_sample = [
   { id: "5", name: "Hải Anh", phone: "789123456", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn" },
   { id: "6", name: "Minh Kha", phone: "112233445", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn" },
   { id: "7", name: "Hoàng Anh", phone: "556677889", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn" },
-  // Lời mời kết bạn đã nhận (Muốn kết bạn)
   { id: "8", name: "Sunny Hiền", status: "Từ của số trò chuyện", date: "13/02", statusType: "Muốn kết bạn" },
-  { id: "9", name: "Kiều Nương", status: "Muốn kết bạn", statusType: "Muốn kết bạn" },
-  { id: "10", name: "Nguyễn Phước Bình", status: "Muốn kết bạn", statusType: "Muốn kết bạn" },
-  { id: "11", name: "Đỗ Chí Tường", status: "Muốn kết bạn", statusType: "Muốn kết bạn" },
-  { id: "12", name: "Hiền", status: "Muốn kết bạn", statusType: "Muốn kết bạn" },
-  { id: "13", name: "Khắc Anh", status: "Muốn kết bạn", statusType: "Muốn kết bạn" },
-  { id: "14", name: "Trần Hoang", status: "Muốn kết bạn", statusType: "Muốn kết bạn" },
-  { id: "15", name: "User 9", status: "Muốn kết bạn", statusType: "Muốn kết bạn" },
-  { id: "16", name: "User 10", status: "Muốn kết bạn", statusType: "Muốn kết bạn" },
-  { id: "17", name: "User 11", status: "Muốn kết bạn", statusType: "Muốn kết bạn" },
-  // Lời mời kết bạn đã gửi (Đã gửi)
+  { id: "9", name: "Kiều Nương", status: "Muốn kết bạn", date: "12/02", statusType: "Muốn kết bạn" },
+  { id: "10", name: "Nguyễn Phước Bình", status: "Muốn kết bạn", date: "11/02", statusType: "Muốn kết bạn" },
+  { id: "11", name: "Đỗ Chí Tường", status: "Muốn kết bạn", date: "10/02", statusType: "Muốn kết bạn" },
+  { id: "12", name: "Hiền", status: "Muốn kết bạn", date: "09/02", statusType: "Muốn kết bạn" },
+  { id: "13", name: "Khắc Anh", status: "Muốn kết bạn", date: "08/02", statusType: "Muốn kết bạn" },
+  { id: "14", name: "Trần Hoang", status: "Muốn kết bạn", date: "07/02", statusType: "Muốn kết bạn" },
+  { id: "15", name: "User 9", status: "Muốn kết bạn", date: "06/02", statusType: "Muốn kết bạn" },
+  { id: "16", name: "User 10", status: "Muốn kết bạn", date: "05/02", statusType: "Muốn kết bạn" },
+  { id: "17", name: "User 11", status: "Muốn kết bạn", date: "04/02", statusType: "Muốn kết bạn" },
   { id: "18", name: "Ngô Thị Xong", status: "Từ gợi ý kết bạn", date: "02/02", statusType: "Đã gửi" },
-  // Gợi ý kết bạn (Gợi ý)
   { id: "19", name: "Suggested 1", status: "Gợi ý", statusType: "Gợi ý" },
   { id: "20", name: "Suggested 2", status: "Gợi ý", statusType: "Gợi ý" },
 ];
@@ -51,10 +48,14 @@ const groupData = [
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
-export const ContactScreen = ({ navigation }) => {
+const ContactScreen = ({ navigation }) => {
   const [activeTab, setActiveTab] = useState("Bạn bè");
   const [selectedTab, setSelectedTab] = useState("all");
+  const [subScreen, setSubScreen] = useState(null);
+  const [chatUser, setChatUser] = useState(null);
   const [friendRequestTab, setFriendRequestTab] = useState("received");
+  const [showMoreReceived, setShowMoreReceived] = useState(false); // Quản lý trạng thái "Xem thêm" cho "Đã nhận"
+  const [showMoreSent, setShowMoreSent] = useState(false); // Quản lý trạng thái "Xem thêm" cho "Đã gửi"
 
   // Lọc dữ liệu theo trạng thái
   const getFilteredData = (statusType) => {
@@ -74,7 +75,10 @@ export const ContactScreen = ({ navigation }) => {
   const renderContactItem = ({ item }) => (
     <TouchableOpacity
       style={ContactStyles.contactItem}
-      onPress={() => navigation.navigate("ChatBox", { userId: item.id, userName: item.name })}
+      onPress={() => {
+        setSubScreen("chatbox");
+        setChatUser({ userId: item.id, userName: item.name });
+      }}
     >
       <Image
         source={{ uri: item.avatar || "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg" }}
@@ -83,31 +87,7 @@ export const ContactScreen = ({ navigation }) => {
       <View style={{ flex: 1 }}>
         <Text style={ContactStyles.contactName}>{item.name}</Text>
         {item.phone && <Text style={ContactStyles.contactPhone}>{item.phone}</Text>}
-        {item.status && <Text style={ContactStyles.contactPhone}>{item.status}</Text>}
-        {item.date && <Text style={ContactStyles.contactPhone}>{item.date}</Text>}
       </View>
-      {item.statusType === "Muốn kết bạn" && (
-        <View style={ContactStyles.actionIcons}>
-          <TouchableOpacity style={ContactStyles.actionButton}>
-            <Text style={ContactStyles.actionButtonText}>Từ chối</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={[ContactStyles.actionButton, { backgroundColor: "#007AFF" }]}>
-            <Text style={ContactStyles.actionButtonText}>Đồng ý</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      {item.statusType === "Đã gửi" && (
-        <View style={ContactStyles.actionIcons}>
-          <TouchableOpacity style={ContactStyles.actionButton}>
-            <Text style={ContactStyles.actionButtonText}>Thu hồi</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-      {item.statusType === "Gợi ý" && (
-        <TouchableOpacity style={[ContactStyles.actionButton, { backgroundColor: "#007AFF" }]}>
-          <Text style={ContactStyles.actionButtonText}>Thêm bạn</Text>
-        </TouchableOpacity>
-      )}
     </TouchableOpacity>
   );
 
@@ -126,37 +106,221 @@ export const ContactScreen = ({ navigation }) => {
     </View>
   );
 
-  // Hiển thị giao diện ChatBox
-  const renderChatBox = ({ route }) => (
-    <SafeAreaView style={ChatBoxStyles.container}>
-      <View style={ChatBoxStyles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={20} color="#fff" />
-        </TouchableOpacity>
-        <Text style={ChatBoxStyles.headerTitle}>{route.params.userName}</Text>
-        <TouchableOpacity>
-          <Icon name="more-vert" size={20} color="#fff" />
-        </TouchableOpacity>
-      </View>
-      <FlatList
-        data={[{ id: "1", message: "Xin chào!", time: "10:00" }, { id: "2", message: "Chào bạn!", time: "10:01" }]}
-        keyExtractor={(item) => item.id}
-        renderItem={({ item }) => (
-          <View style={ChatBoxStyles.messageContainer}>
-            <Text style={ChatBoxStyles.messageText}>{item.message}</Text>
-            <Text style={ChatBoxStyles.messageTime}>{item.time}</Text>
+  // Hiển thị giao diện FriendRequests
+  const renderFriendRequests = () => {
+    const renderFriendRequestItem = ({ item }) => (
+      <View style={FriendRequestStyles.contactItem}>
+        <Image
+          source={{ uri: item.avatar || "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg" }}
+          style={FriendRequestStyles.avatar}
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={FriendRequestStyles.contactName}>{item.name}</Text>
+          <Text style={FriendRequestStyles.contactStatus}>{item.status}</Text>
+          {item.date && <Text style={FriendRequestStyles.contactDate}>{item.date}</Text>}
+        </View>
+        {item.statusType === "Muốn kết bạn" && (
+          <View style={FriendRequestStyles.actionIcons}>
+            <TouchableOpacity style={FriendRequestStyles.actionButton}>
+              <Text style={FriendRequestStyles.actionButtonText}>Từ chối</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={[FriendRequestStyles.actionButton, { backgroundColor: "#007AFF" }]}>
+              <Text style={FriendRequestStyles.actionButtonText}>Đồng ý</Text>
+            </TouchableOpacity>
           </View>
         )}
-        style={ChatBoxStyles.chatList}
-      />
-      <View style={ChatBoxStyles.inputContainer}>
-        <TextInput
-          style={ChatBoxStyles.input}
-          placeholder="Nhập tin nhắn..."
-          placeholderTextColor="#aaa"
+        {item.statusType === "Đã gửi" && (
+          <View style={FriendRequestStyles.actionIcons}>
+            <TouchableOpacity style={FriendRequestStyles.actionButton}>
+              <Text style={FriendRequestStyles.actionButtonText}>Thu hồi</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+        {item.statusType === "Gợi ý" && (
+          <TouchableOpacity style={[FriendRequestStyles.actionButton, { backgroundColor: "#007AFF" }]}>
+            <Text style={FriendRequestStyles.actionButtonText}>Thêm bạn</Text>
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+
+    // Dữ liệu hiển thị (giới hạn 3 người nếu chưa nhấn "Xem thêm")
+    const receivedRequests = getFilteredData("Muốn kết bạn");
+    const sentRequests = getFilteredData("Đã gửi");
+    const suggestedRequests = getFilteredData("Gợi ý");
+
+    const displayedReceived = showMoreReceived ? receivedRequests : receivedRequests.slice(0, 3);
+    const displayedSent = showMoreSent ? sentRequests : sentRequests.slice(0, 3);
+
+    return (
+      <SafeAreaView style={FriendRequestStyles.container}>
+        <View style={FriendRequestStyles.header}>
+          <TouchableOpacity onPress={() => setSubScreen(null)}>
+            <Icon name="arrow-back" size={20} color="#fff" />
+          </TouchableOpacity>
+          <Text style={FriendRequestStyles.headerTitle}>Lời mời kết bạn</Text>
+          <TouchableOpacity onPress={() => setSubScreen("settings")}>
+            <Icon name="settings" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+
+        <FlatList
+          data={[...displayedReceived, ...displayedSent, ...suggestedRequests]}
+          keyExtractor={(item) => item.id}
+          renderItem={({ item, index }) => {
+            // Hiển thị tiêu đề "Đã nhận" trước danh sách "Đã nhận"
+            if (index === 0 && displayedReceived.length > 0) {
+              return (
+                <>
+                  <Text style={FriendRequestStyles.sectionTitle}>
+                    Đã nhận ({friendRequestCount})
+                  </Text>
+                  {renderFriendRequestItem({ item })}
+                </>
+              );
+            }
+            // Hiển thị nút "Xem thêm" sau 3 người đầu tiên của "Đã nhận"
+            if (index === displayedReceived.length - 1 && !showMoreReceived && friendRequestCount > 3) {
+              return (
+                <>
+                  {renderFriendRequestItem({ item })}
+                  <TouchableOpacity
+                    style={FriendRequestStyles.viewMoreButton}
+                    onPress={() => setShowMoreReceived(true)}
+                  >
+                    <Text style={FriendRequestStyles.viewMoreText}>Xem thêm</Text>
+                  </TouchableOpacity>
+                </>
+              );
+            }
+            // Hiển thị tiêu đề "Đã gửi" trước danh sách "Đã gửi"
+            if (index === displayedReceived.length && displayedSent.length > 0) {
+              return (
+                <>
+                  <Text style={FriendRequestStyles.sectionTitle}>
+                    Đã gửi ({sentRequestCount})
+                  </Text>
+                  {renderFriendRequestItem({ item })}
+                </>
+              );
+            }
+            // Hiển thị nút "Xem thêm" sau 3 người đầu tiên của "Đã gửi"
+            if (
+              index === displayedReceived.length + displayedSent.length - 1 &&
+              !showMoreSent &&
+              sentRequestCount > 3
+            ) {
+              return (
+                <>
+                  {renderFriendRequestItem({ item })}
+                  <TouchableOpacity
+                    style={FriendRequestStyles.viewMoreButton}
+                    onPress={() => setShowMoreSent(true)}
+                  >
+                    <Text style={FriendRequestStyles.viewMoreText}>Xem thêm</Text>
+                  </TouchableOpacity>
+                </>
+              );
+            }
+            // Hiển thị tiêu đề "Gợi ý kết bạn" trước danh sách "Gợi ý"
+            if (index === displayedReceived.length + displayedSent.length && suggestedRequests.length > 0) {
+              return (
+                <>
+                  <Text style={FriendRequestStyles.sectionTitle}>
+                    Gợi ý ({suggestedCount})
+                  </Text>
+                  {renderFriendRequestItem({ item })}
+                </>
+              );
+            }
+            return renderFriendRequestItem({ item });
+          }}
+          style={FriendRequestStyles.list}
         />
-        <TouchableOpacity style={ChatBoxStyles.sendButton}>
-          <Icon name="send" size={20} color="#fff" />
+      </SafeAreaView>
+    );
+  };
+
+  // Hiển thị giao diện ChatBox
+  const renderChatBox = () => {
+    const messages = [
+      { id: "1", message: "Xin chào!", time: "10:00", sender: "me" },
+      { id: "2", message: "Chào bạn!", time: "10:01", sender: "other" },
+      { id: "3", message: "Bạn khỏe không?", time: "10:02", sender: "me" },
+    ];
+
+    const renderMessage = ({ item }) => (
+      <View
+        style={[
+          ChatBoxStyles.messageContainer,
+          item.sender === "me" ? ChatBoxStyles.messageSent : ChatBoxStyles.messageReceived,
+        ]}
+      >
+        <Text style={ChatBoxStyles.messageText}>{item.message}</Text>
+        <Text style={ChatBoxStyles.messageTime}>{item.time}</Text>
+      </View>
+    );
+
+    return (
+      <SafeAreaView style={ChatBoxStyles.container}>
+        <View style={ChatBoxStyles.header}>
+          <TouchableOpacity onPress={() => { setSubScreen(null); setChatUser(null); }}>
+            <Icon name="arrow-back" size={20} color="#fff" />
+          </TouchableOpacity>
+          <Text style={ChatBoxStyles.headerTitle}>{chatUser?.userName || "Chat"}</Text>
+          <TouchableOpacity>
+            <Icon name="more-vert" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+        <FlatList
+          data={messages}
+          keyExtractor={(item) => item.id}
+          renderItem={renderMessage}
+          style={ChatBoxStyles.chatList}
+        />
+        <View style={ChatBoxStyles.inputContainer}>
+          <TextInput
+            style={ChatBoxStyles.input}
+            placeholder="Nhập tin nhắn..."
+            placeholderTextColor="#aaa"
+          />
+          <TouchableOpacity style={ChatBoxStyles.sendButton}>
+            <Icon name="send" size={20} color="#fff" />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
+    );
+  };
+
+  // Hiển thị giao diện Settings
+  const renderSettings = () => (
+    <SafeAreaView style={SettingContactStyles.container}>
+      <View style={SettingContactStyles.header}>
+        <TouchableOpacity onPress={() => setSubScreen(null)}>
+          <Icon name="arrow-back" size={20} color="#fff" />
+        </TouchableOpacity>
+        <Text style={SettingContactStyles.headerTitle}>Cài đặt</Text>
+      </View>
+      <View style={SettingContactStyles.menuContainer}>
+        <TouchableOpacity style={SettingContactStyles.menuItem}>
+          <Icon name="person" size={20} color="#fff" style={SettingContactStyles.menuIcon} />
+          <Text style={SettingContactStyles.menuText}>Tài khoản và bảo mật</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={SettingContactStyles.menuItem}>
+          <Icon name="lock" size={20} color="#fff" style={SettingContactStyles.menuIcon} />
+          <Text style={SettingContactStyles.menuText}>Quyền riêng tư</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={SettingContactStyles.menuItem}>
+          <Icon name="notifications" size={20} color="#fff" style={SettingContactStyles.menuIcon} />
+          <Text style={SettingContactStyles.menuText}>Thông báo và âm thanh</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={SettingContactStyles.menuItem}>
+          <Icon name="chat" size={20} color="#fff" style={SettingContactStyles.menuIcon} />
+          <Text style={SettingContactStyles.menuText}>Tin nhắn</Text>
+        </TouchableOpacity>
+        <TouchableOpacity style={SettingContactStyles.menuItem}>
+          <Icon name="data-usage" size={20} color="#fff" style={SettingContactStyles.menuIcon} />
+          <Text style={SettingContactStyles.menuText}>Dung lượng và dữ liệu</Text>
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -164,41 +328,45 @@ export const ContactScreen = ({ navigation }) => {
 
   return (
     <SafeAreaView style={ContactStyles.container}>
-      {/* Thanh tìm kiếm với nút cài đặt */}
-      <View style={ContactStyles.searchContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={20} color="#fff" style={ContactStyles.searchIconLeft} />
-        </TouchableOpacity>
-        <TextInput
-          placeholder="Tìm kiếm"
-          placeholderTextColor="#aaa"
-          style={ContactStyles.searchInput}
-        />
-        <TouchableOpacity onPress={() => navigation.navigate("Settings")}>
-          <Icon name="settings" size={20} color="#fff" style={ContactStyles.searchIconRight} />
-        </TouchableOpacity>
-      </View>
-
-      {/* Các tab chính */}
-      <View style={ContactStyles.headerButtons}>
-        {["Bạn bè", "Nhóm", "OA"].map((label) => (
-          <TouchableOpacity key={label} onPress={() => setActiveTab(label)}>
-            <Text
-              style={[
-                ContactStyles.headerButtonText,
-                activeTab === label && ContactStyles.tabActive,
-              ]}
-            >
-              {label}
-            </Text>
+      {/* Thanh tìm kiếm với nút add (chỉ hiển thị khi ở màn hình chính) */}
+      {!subScreen && (
+        <View style={ContactStyles.searchContainer}>
+          <TouchableOpacity onPress={() => navigation.goBack()}>
+            <Icon name="arrow-back" size={20} color="#fff" style={ContactStyles.searchIconLeft} />
           </TouchableOpacity>
-        ))}
-      </View>
+          <TextInput
+            placeholder="Tìm kiếm"
+            placeholderTextColor="#aaa"
+            style={ContactStyles.searchInput}
+          />
+          <TouchableOpacity>
+            <Icon name="person-add" size={20} color="#fff" style={ContactStyles.searchIconRight} />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Các tab chính (chỉ hiển thị khi ở màn hình chính) */}
+      {!subScreen && (
+        <View style={ContactStyles.headerButtons}>
+          {["Bạn bè", "Nhóm", "OA"].map((label) => (
+            <TouchableOpacity key={label} onPress={() => setActiveTab(label)}>
+              <Text
+                style={[
+                  ContactStyles.headerButtonText,
+                  activeTab === label && ContactStyles.tabActive,
+                ]}
+              >
+                {label}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
 
       {/* Menu chính trong tab Bạn bè */}
-      {activeTab === "Bạn bè" && (
+      {activeTab === "Bạn bè" && !subScreen && (
         <View style={ContactStyles.menuContainer}>
-          <TouchableOpacity style={ContactStyles.menuItem} onPress={() => navigation.navigate("FriendRequests")}>
+          <TouchableOpacity style={ContactStyles.menuItem} onPress={() => setSubScreen("friendrequests")}>
             <Icon name="person-add" size={20} color="#fff" style={ContactStyles.menuIcon} />
             <Text style={ContactStyles.menuText}>Lời mời kết bạn ({friendRequestCount + suggestedCount})</Text>
           </TouchableOpacity>
@@ -214,43 +382,8 @@ export const ContactScreen = ({ navigation }) => {
         </View>
       )}
 
-      {/* Màn hình Lời mời kết bạn với Đã nhận, Đã gửi, Gợi ý */}
-      {activeTab === "Bạn bè" && navigation.currentRoute === "FriendRequests" && (
-        <SafeAreaView style={FriendRequestStyles.container}>
-          <View style={FriendRequestStyles.tabSwitchContainer}>
-            <TouchableOpacity onPress={() => setFriendRequestTab("received")} style={FriendRequestStyles.tabItem}>
-              <Text style={[FriendRequestStyles.tabText, friendRequestTab === "received" && FriendRequestStyles.tabActive]}>
-                Đã nhận ({friendRequestCount})
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setFriendRequestTab("sent")} style={FriendRequestStyles.tabItem}>
-              <Text style={[FriendRequestStyles.tabText, friendRequestTab === "sent" && FriendRequestStyles.tabActive]}>
-                Đã gửi ({sentRequestCount})
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => setFriendRequestTab("suggested")} style={FriendRequestStyles.tabItem}>
-              <Text style={[FriendRequestStyles.tabText, friendRequestTab === "suggested" && FriendRequestStyles.tabActive]}>
-                Gợi ý ({suggestedCount})
-              </Text>
-            </TouchableOpacity>
-          </View>
-          <FlatList
-            data={
-              friendRequestTab === "received"
-                ? getFilteredData("Muốn kết bạn")
-                : friendRequestTab === "sent"
-                ? getFilteredData("Đã gửi")
-                : getFilteredData("Gợi ý")
-            }
-            keyExtractor={(item) => item.id}
-            renderItem={renderContactItem}
-            style={FriendRequestStyles.list}
-          />
-        </SafeAreaView>
-      )}
-
       {/* Tab OA */}
-      {activeTab === "OA" && (
+      {activeTab === "OA" && !subScreen && (
         <FlatList
           data={[
             { id: "1", name: "Tìm thêm Official Account", description: "Official Account đang quan tâm" },
@@ -280,7 +413,7 @@ export const ContactScreen = ({ navigation }) => {
       )}
 
       {/* Tab Nhóm với đếm số lượng và nút lọc */}
-      {activeTab === "Nhóm" && (
+      {activeTab === "Nhóm" && !subScreen && (
         <View>
           <TouchableOpacity style={ContactStyles.groupHeader}>
             <Icon name="group-add" size={20} color="#fff" style={ContactStyles.menuIcon} />
@@ -303,7 +436,7 @@ export const ContactScreen = ({ navigation }) => {
       )}
 
       {/* Danh sách bạn bè với Tất cả và Mới truy cập trên cùng một dòng, danh sách bên dưới */}
-      {activeTab === "Bạn bè" && navigation.currentRoute !== "FriendRequests" && (
+      {activeTab === "Bạn bè" && !subScreen && (
         <View style={ContactStyles.contactListContainer}>
           <View style={ContactStyles.tabSwitchContainer}>
             <TouchableOpacity onPress={() => setSelectedTab("all")} style={ContactStyles.tabItem}>
@@ -332,6 +465,13 @@ export const ContactScreen = ({ navigation }) => {
           </View>
         </View>
       )}
+
+      {/* Hiển thị các màn hình con */}
+      {subScreen === "friendrequests" && renderFriendRequests()}
+      {subScreen === "chatbox" && chatUser && renderChatBox()}
+      {subScreen === "settings" && renderSettings()}
     </SafeAreaView>
   );
 };
+
+export default ContactScreen;

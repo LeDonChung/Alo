@@ -20,69 +20,68 @@ export const FriendRequestStyles = StyleSheet.create({
     flex: 1,
     textAlign: "center",
   },
-  tabSwitchContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 10,
-    backgroundColor: "#1f1f1f",
-    borderBottomWidth: 1,
-    borderBottomColor: "#333",
-  },
-  tabItem: {
-    paddingHorizontal: 15,
-  },
-  tabText: {
-    color: "#aaa",
-    fontSize: 16,
-  },
-  tabActive: {
-    color: "#007AFF",
-    fontWeight: "bold",
-    borderBottomWidth: 2,
-    borderBottomColor: "#007AFF",
-  },
   list: {
     flex: 1,
-    padding: 10,
   },
   contactItem: {
     flexDirection: "row",
     alignItems: "center",
     paddingVertical: 10,
-    paddingHorizontal: 10,
+    paddingHorizontal: 15,
     borderBottomWidth: 1,
     borderBottomColor: "#333",
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 10,
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    marginRight: 15,
   },
   contactName: {
     color: "#fff",
     fontSize: 16,
+    fontWeight: "bold",
   },
   contactStatus: {
     color: "#aaa",
-    fontSize: 12,
+    fontSize: 14,
   },
   contactDate: {
     color: "#aaa",
     fontSize: 12,
+    marginTop: 2,
   },
   actionIcons: {
     flexDirection: "row",
   },
   actionButton: {
-    backgroundColor: "#555",
+    backgroundColor: "#444",
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
-    marginLeft: 5,
+    marginLeft: 10,
   },
   actionButtonText: {
     color: "#fff",
-    fontSize: 12,
+    fontSize: 14,
+  },
+  // Thêm style cho tiêu đề phần
+  sectionTitle: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: "bold",
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    backgroundColor: "#1f1f1f",
+  },
+  // Thêm style cho nút "Xem thêm"
+  viewMoreButton: {
+    alignItems: "center",
+    paddingVertical: 10,
+  },
+  viewMoreText: {
+    color: "#007AFF",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
