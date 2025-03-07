@@ -7,7 +7,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 const Tab = createBottomTabNavigator();
 import React from "react";
 import { HomeNavigation } from "./HomeNavigation";
-import { ContactScreen } from "../pages/inapp/ContactScreen";
+import { ContactScreen } from "../pages/inapp/ContactScreenMB/ContactScreen";
 import { FilterScreen } from "../pages/inapp/FilterScreen";
 import { AccountNavigation } from "./AccountNavigation";
 export const InAppNavigation = () => {
