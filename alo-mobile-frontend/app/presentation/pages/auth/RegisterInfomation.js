@@ -1,51 +1,50 @@
-import { SafeAreaView } from "react-native-safe-area-context"
-import React, { useState } from "react";
+import React from "react";
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
+import IconF from "react-native-vector-icons/MaterialIcons";
+
 import { GlobalStyles } from "../../styles/GlobalStyles";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { showToast } from "../../../utils/AppUtils";
-export const RegisterScreen = ({ navigation }) => {
-    const [isChecked, setIsChecked] = useState(false);
+export const RegisterInformationScreen = ({ navigation }) => {
     return (
         <SafeAreaView style={[GlobalStyles.container, { flex: 1, alignItems: "center", justifyContent: 'center' }]}>
             <Text style={styles.title}>Alo</Text>
-            <Text style={styles.subtitle}>Đăng ký tài khoản Alo</Text>
+            <Text style={styles.subtitle}>Cập nhật thông tin đăng ký</Text>
 
-            <View style={styles.inputContainer}>
+            <View style={styles.inputContainer} onPress={() => {
+                showToast("error", "top", "Lỗi", "Bạn không thể thay đổi số điện thoại");
+            }}>
                 <Icon name="cellphone" size={20} color="gray" style={styles.icon} />
-                <TextInput placeholder="Số điện thoại" style={styles.input} keyboardType="phone-pad" />
+                <TextInput placeholder="Số điện thoại" style={styles.input} keyboardType="phone-pad" editable={false} />
             </View>
 
-            <TouchableOpacity style={styles.checkboxContainer} onPress={() => setIsChecked(!isChecked)}>
-                <Icon name={isChecked ? "checkbox-marked" : "checkbox-blank-outline"} size={20} color="blue" />
-                <Text style={styles.checkboxText}>Tôi đồng ý với điều khoản sử dụng</Text>
-            </TouchableOpacity>
+
+            <View style={styles.inputContainer}>
+                <IconF name="person" size={20} color="gray" style={styles.icon} />
+                <TextInput placeholder="Họ và tên" style={styles.input} />
+            </View>
+
+
+            <View style={styles.inputContainer}>
+                <Icon name="lock" size={20} color="gray" style={styles.icon} />
+                <TextInput placeholder="Mật khẩu" style={styles.input} secureTextEntry />
+            </View>
+
+            <View style={styles.inputContainer}>
+                <Icon name="lock" size={20} color="gray" style={styles.icon} />
+                <TextInput placeholder="Nhập lại mật khẩu" style={styles.input} secureTextEntry />
+            </View>
 
             <TouchableOpacity style={styles.button} onPress={() => {
-                if(!isChecked) {
-                    showToast("error", "top", "Lỗi", "Bạn chưa đồng ý với điều khoản sử dụng");
-                    return;
-                }
-
-                navigation.navigate("otp");
-
+                navigation.navigate("inapp")
             }}>
                 <Text style={styles.buttonText}>Đăng ký</Text>
             </TouchableOpacity>
 
-
-            <View style={styles.footer}>
-                <TouchableOpacity>
-                    <Text style={styles.link}>Đăng nhập</Text>
-                </TouchableOpacity>
-                <TouchableOpacity>
-                    <Text style={styles.link}>Quên mật khẩu</Text>
-                </TouchableOpacity>
-            </View>
         </SafeAreaView>
     );
-}
-
+};
 
 const styles = StyleSheet.create({
     title: {
@@ -73,16 +72,6 @@ const styles = StyleSheet.create({
     input: {
         flex: 1,
         height: 40,
-    },
-    checkboxContainer: {
-        width: "80%",
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 10,
-    },
-    checkboxText: {
-        marginLeft: 5,
-        color: "black",
     },
     button: {
         width: "80%",
