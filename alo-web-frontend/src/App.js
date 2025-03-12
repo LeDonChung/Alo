@@ -6,7 +6,7 @@ import { RegisterPage } from './pages/RegisterPage';
 import { OTPPage } from './pages/OTPPage';
 import { RegisterInformationPage } from './pages/RegisterInformationPage';
 import HomePage from './pages/HomePage';
-import ContactPage from './pages/ContractPage';
+import ContactPage from './pages/ContactPage';
 import { Navigation } from './components/Navigation';
 import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
