@@ -25,7 +25,7 @@ const ChatPage = () => {
       <ChatWindown selectedFriend={selectedFriend} />
 
       {/* Tab bên phải (Ảnh/Video, File, Link, Thiệp mừng) */}
-      <RightSlidebar />
+      <RightSlidebar selectedFriend={selectedFriend} />
     </div>
   );
 };

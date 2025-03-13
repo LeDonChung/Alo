@@ -1,6 +1,6 @@
 import React from 'react';
 
-const RightSlidebar = () => {
+const RightSlidebar = ({selectedFriend}) => {
   // Dữ liệu mẫu cho các tab
   const photos = [
     "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
@@ -42,7 +42,8 @@ const RightSlidebar = () => {
               alt="Avatar"
               className="w-20 h-20 rounded-full mb-2"
             />
-            <p className="font-semibold text-lg">Cô gái Lụa Lụa</p>
+            {/* <p className="font-semibold text-lg">Cô gái Lụa Lụa</p> */}
+            <p className="font-semibold">{selectedFriend.name}</p>
             <div className="flex space-x-4 mt-4">
               <button className="flex flex-col items-center text-gray-600 hover:text-blue-500">
                 <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
