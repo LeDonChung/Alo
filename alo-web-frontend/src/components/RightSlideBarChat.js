@@ -2,7 +2,18 @@ import React from 'react';
 
 const RightSlidebar = () => {
   // Dữ liệu mẫu cho các tab
-  const photos = Array(9).fill(null); // 9 ảnh placeholder
+  const photos = [
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+  ];
+
   const files = [
     { name: 'Nhóm-B.docx', size: '78.3 KB' },
     { name: 'Nhóm-B.docx', size: '78.3 KB' },
@@ -13,9 +24,9 @@ const RightSlidebar = () => {
     { name: 'Nhóm-B.docx', size: '78.3 KB' },
     { name: 'Nhóm-B.docx', size: '78.3 KB' },
   ];
-  const greetings = [
-    { name: 'Tin nhắn tốt lành' },
-    { name: 'Chúc mừng năm mới' },
+  const security = [
+    { name: 'Tin nhắn tự xóa' },
+    { name: 'Ẩn trò chuyện' },
   ];
 
   return (
@@ -27,7 +38,7 @@ const RightSlidebar = () => {
           <h3 className="font-semibold text-center mb-2">Thông tin hội thoại</h3>
           <div className="flex flex-col items-center">
             <img
-              src="https://via.placeholder.com/80" // Thay bằng avatar thật
+              src="https://stc-zlogin.zdn.vn/images/banner_icon.svg" // Thay bằng avatar thật
               alt="Avatar"
               className="w-20 h-20 rounded-full mb-2"
             />
@@ -58,11 +69,8 @@ const RightSlidebar = () => {
         <div className="border-b border-gray-200 pb-2">
           <h3 className="font-semibold">Ảnh/Video</h3>
           <div className="grid grid-cols-3 gap-2 mt-2 overflow-y-auto max-h-64">
-            {photos.map((_, index) => (
-              <div
-                key={index}
-                className="w-full h-20 bg-gray-300 rounded"
-              ></div>
+            {photos.map((src, index) => (
+              <img key={index} src={src} alt={`Ảnh ${index + 1}`} className="w-full h-20 object-cover rounded" />
             ))}
           </div>
         </div>
@@ -103,11 +111,11 @@ const RightSlidebar = () => {
           </div>
         </div>
 
-        {/* Tab Thiệp mừng */}
+        {/* Tab Bảo mật */}
         <div className="pb-2">
-          <h3 className="font-semibold">Thiệp mừng</h3>
+          <h3 className="font-semibold">Thiết lập bảo mật</h3>
           <div className="mt-2 overflow-y-auto max-h-32">
-            {greetings.map((greeting, index) => (
+            {security.map((security, index) => (
               <div
                 key={index}
                 className="flex items-center p-2 hover:bg-gray-100 rounded-lg"
@@ -115,7 +123,7 @@ const RightSlidebar = () => {
                 <svg className="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>
-                <span>{greeting.name}</span>
+                <span>{security.name}</span>
               </div>
             ))}
           </div>
