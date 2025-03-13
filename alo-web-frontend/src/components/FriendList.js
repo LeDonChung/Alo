@@ -2,7 +2,7 @@ import React from 'react';
 
 const FriendList = ({ friends, onSelectFriend }) => {
   return (
-    <div className="w-1/4 bg-white border-r border-gray-200 p-4">
+    <div className="w-1/4 bg-white border-r border-gray-200 p-4 overflow-y-auto max-h-[2000px] scrollable">
       <div className="flex items-center mb-4">
         <input
           type="text"

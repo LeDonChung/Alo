@@ -19,7 +19,8 @@ const RightSlidebar = () => {
   ];
 
   return (
-    <div className="w-1/4 bg-white border-l border-gray-200 p-4">
+    // <div className="w-64 bg-gray-200 p-4 overflow-y-auto max-h-[400px] scrollable">
+    <div className=" w-1/4 bg-white border-l border-gray-200 p-4 overflow-y-auto max-h-[2000px] scrollable">
       <div className="space-y-4">
         {/* Phần Thông tin hội thoại */}
         <div className="border-b border-gray-200 pb-4">
@@ -131,6 +132,7 @@ const RightSlidebar = () => {
         </div>
       </div>
     </div>
+    // </div>
   );
 };
 
