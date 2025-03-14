@@ -1,4 +1,3 @@
-import logo from './logo.svg';
 import './App.css';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { LoginPage } from './pages/LoginPage';
@@ -7,13 +6,17 @@ import { OTPPage } from './pages/OTPPage';
 import { RegisterInformationPage } from './pages/RegisterInformationPage';
 import HomePage from './pages/HomePage';
 import ContactPage from './pages/ContactPage';
-import { Navigation } from './components/Navigation';
 import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
 import ChatPage from './pages/ChatPage';
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true
+      }}
+    >
       <Routes>
         {/* Auth Routes - Không có Navigation */}
         <Route element={<AuthLayout />}>
