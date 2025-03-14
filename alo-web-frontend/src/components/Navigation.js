@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-
+import { useDispatch } from "react-redux";
+import { uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 export const Navigation = () => {
     const [menus, setMenus] = useState([
         { id: 1, icon: "./icon/ic_message.png", onPress: () => navigate("/me") },
@@ -32,7 +33,7 @@ export const Navigation = () => {
             {/* Sidebar Navigation */}
             <div className="w-20 bg-blue-600 text-white flex flex-col items-center py-4 px-4 relative">
                 <div className="cursor-pointer">
-                    <img src="https://scontent.fsgn5-10.fna.fbcdn.net/v/t39.30808-1/361366862_1607093663105601_7835049158388472986_n.jpg"
+                    <img src="https://scontent.fsgn5-10.fna.fbcdn.net/v/t39.30808-6/361366862_1607093663105601_7835049158388472986_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHz7ozXp0uEkg8_8aP3F_G0dGypT0NHxzF0bKlPQ0fHMU8Z-vVpgHrcTKUwML8riSvvHuPzsyKki6cPi7L4FKV2&_nc_ohc=B9RFy0KrfR0Q7kNvgFW5zNC&_nc_oc=AdgbJxNhoBBZOjW_cEGJ8Y4R4Ahd2RLZnKBOuEpRJnqY5nen57Gb_CuFCpkf19ddcvk&_nc_zt=23&_nc_ht=scontent.fsgn5-10.fna&_nc_gid=AEZj1hHNTCNOCeMVSzPC0DS&oh=00_AYEv8m0q3KLmRnqNY656Q_7I-IhES6uAs_fjaLnTKQOsUg&oe=67D9ADE3"
                         className="rounded-full" />
                 </div>
                 <div className="flex flex-col mt-20">
@@ -86,6 +87,50 @@ export const Navigation = () => {
 };
 
 const ProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
+    const dispatch = useDispatch();
+    const fileInputRef = useRef(null);
+    const fileBackgroundRef = useRef(null);
+
+    const handlerBackgroundClick = () => {
+        fileBackgroundRef.current.click();
+    }
+
+    const handleFileBackgroundChange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            await handleBackgroundUpload(file);
+        }
+    }
+
+    const handleBackgroundUpload = async (file) => {
+        dispatch(uploadBackground(file)).unwrap().then((response) => {
+            console.log(response);
+        }).then(() => {
+
+        });
+    }
+
+    // Hàm xử lý sự kiện khi chọn ảnh
+    const handleCameraClick = () => {
+        fileInputRef.current.click();
+    };
+
+    const handleFileChange = async (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            await handleImageUpload(file);
+        }
+    };
+
+    // Hàm xử lý upload ảnh
+    const handleImageUpload = async (file) => {
+        dispatch(uploadAvatar(file)).unwrap().then((response) => {
+            console.log(response);
+        }).then(() => {
+
+        });
+    };
+
     return <>
         {/* Overlay Làm Mờ */}
         <div className="fixed inset-0 bg-black opacity-50 z-40"></div>
@@ -95,16 +140,39 @@ const ProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
             <div className="bg-white rounded-lg shadow-lg w-[400px]">
                 {/* Header */}
                 <div className="relative">
-                    <img src="https://scontent.fsgn5-11.fna.fbcdn.net/v/t39.30808-6/481277216_985909300308093_4742343866089400123_n.jpg?_nc_cat=110&ccb=1-7&_nc_sid=cc71e4&_nc_eui2=AeEoEkh615fyiqp1PKg40J1s5JwefEZk1mnknB58RmTWaf5C0FTkujUiPR_TZCQ94u4MmOVePPOhRNh85NFvhxTI&_nc_ohc=JoeWX6x0iLsQ7kNvgGLVmWh&_nc_oc=Adg03KVym67JwLnpwFtcCvK5dCxoWiNP7XJpFxBavK1C451hhYfwlI53QzsMAkJkGwk&_nc_zt=23&_nc_ht=scontent.fsgn5-11.fna&_nc_gid=A1yrXDnfJ8CYq6OH6V1Sjkb&oh=00_AYHdyAA_BmyxbAYK3KQ3w8z5e_emxL9rH6dQK_TE5AqTUQ&oe=67D34D70" className="w-full h-32 object-cover rounded-t-lg" />
+                    <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        ref={fileBackgroundRef}
+                        onChange={handleFileBackgroundChange}
+                        id="fileBackground"
+                    />
+
+                    <img onClick={handlerBackgroundClick}
+                        src="https://scontent.fsgn5-10.fna.fbcdn.net/v/t39.30808-6/361366862_1607093663105601_7835049158388472986_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHz7ozXp0uEkg8_8aP3F_G0dGypT0NHxzF0bKlPQ0fHMU8Z-vVpgHrcTKUwML8riSvvHuPzsyKki6cPi7L4FKV2&_nc_ohc=B9RFy0KrfR0Q7kNvgFW5zNC&_nc_oc=AdgbJxNhoBBZOjW_cEGJ8Y4R4Ahd2RLZnKBOuEpRJnqY5nen57Gb_CuFCpkf19ddcvk&_nc_zt=23&_nc_ht=scontent.fsgn5-10.fna&_nc_gid=AEZj1hHNTCNOCeMVSzPC0DS&oh=00_AYEv8m0q3KLmRnqNY656Q_7I-IhES6uAs_fjaLnTKQOsUg&oe=67D9ADE3" className="w-full h-32 object-cover rounded-t-lg cursor-pointer" />
                     <button className="absolute top-3 right-3 text-gray-700" onClick={() => setShowProfileModal(false)}>✖</button>
                 </div>
                 {/* Avatar & Info */}
                 <div className="flex flex-col items-center -mt-10">
                     <div className="relative">
-                        <img src="https://scontent.fsgn5-10.fna.fbcdn.net/v/t39.30808-6/361366862_1607093663105601_7835049158388472986_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHz7ozXp0uEkg8_8aP3F_G0dGypT0NHxzF0bKlPQ0fHMU8Z-vVpgHrcTKUwML8riSvvHuPzsyKki6cPi7L4FKV2&_nc_ohc=sj-rv_0SUekQ7kNvgHjVpBh&_nc_oc=Adgboh_OmgECvDCda593qS-qfoaB2hq_a8tsEWp7o4k1oTfjeLeFDGQR3Iv6-xj3ozw&_nc_zt=23&_nc_ht=scontent.fsgn5-10.fna&_nc_gid=A5UqF3B-2Bh8FUxhtakPWEv&oh=00_AYHD3BZT6e2iJbwg-O5UJ8TkAhqj3dhW6FzOTczGM72ySA&oe=67D34EA3" className="w-20 h-20 rounded-full border-4 border-white" />
-                        <div className="absolute bottom-0 right-0 bg-gray-200 p-1 rounded-full cursor-pointer items-center justify-center my-auto">
-                            <span>📷</span>
+                        <img src="https://scontent.fsgn5-10.fna.fbcdn.net/v/t39.30808-6/361366862_1607093663105601_7835049158388472986_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHz7ozXp0uEkg8_8aP3F_G0dGypT0NHxzF0bKlPQ0fHMU8Z-vVpgHrcTKUwML8riSvvHuPzsyKki6cPi7L4FKV2&_nc_ohc=B9RFy0KrfR0Q7kNvgFW5zNC&_nc_oc=AdgbJxNhoBBZOjW_cEGJ8Y4R4Ahd2RLZnKBOuEpRJnqY5nen57Gb_CuFCpkf19ddcvk&_nc_zt=23&_nc_ht=scontent.fsgn5-10.fna&_nc_gid=AEZj1hHNTCNOCeMVSzPC0DS&oh=00_AYEv8m0q3KLmRnqNY656Q_7I-IhES6uAs_fjaLnTKQOsUg&oe=67D9ADE3" className="w-20 h-20 rounded-full border-4 border-white" />
+
+                        <div
+                            className="absolute bottom-0 right-0 bg-gray-200 p-1 rounded-full cursor-pointer flex items-center justify-center"
+                            onClick={handleCameraClick}
+                        >
+                            📷
                         </div>
+                        {/* Ẩn input và kích hoạt khi bấm vào icon */}
+                        <input
+                            type="file"
+                            accept="image/*"
+                            className="hidden"
+                            ref={fileInputRef}
+                            onChange={handleFileChange}
+                            id="fileInput"
+                        />
                     </div>
                     <h2 className="text-lg font-semibold mt-2 py-2">Lê Đôn Chùng</h2>
                 </div>
@@ -125,6 +193,7 @@ const ProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
             </div>
         </div>
     </>
+
 }
 
 const UpdateProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
