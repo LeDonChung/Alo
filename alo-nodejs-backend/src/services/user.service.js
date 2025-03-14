@@ -1,11 +1,11 @@
-const { QueryCommand, PutItemCommand, ScanCommand } = require("@aws-sdk/client-dynamodb");
-
+const { QueryCommand, PutItemCommand, ScanCommand, UpdateItemCommand } = require("@aws-sdk/client-dynamodb");
+const jwt = require('jsonwebtoken');
 const { client } = require("../config/DynamoDB")
 const { v4: uuidv4 } = require('uuid');
 const bcrypt = require('bcryptjs');
 const Account = require("../models/Account");
 
-
+const { S3 } = require('../config/S3');
 const existingUser = async (phoneNumber) => {
   const params = {
     TableName: 'Accounts',
@@ -105,19 +105,119 @@ const findByPhoneNumber = async (phoneNumber) => {
         account.phoneNumber.S,
         account.password.S,
         account.roles.SS,
-        dataUser.Items[0]
+        {
+          id: dataUser.Items[0].id.S,
+          fullName: dataUser.Items[0].fullName.S,
+          accountId: account.accountId.S,
+          createdAt: dataUser.Items[0].createdAt.S
+        }
       );
     } else {
       return null;
     }
   } catch (err) {
+    console.log(err)
     console.error("Error querying table. Error:", JSON.stringify(err, null, 2));
     return null;
   }
 }
 
+const getUserIdFromToken = (token) => {
+  const decoded = jwt.decode(token);
+  return decoded.userId;
+}
+
+const uploadImage = async (file) => {
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: Date.now().toString() + '-' + file.originalname,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+    ACL: 'public-read',
+  };
+
+  try {
+    const result = await S3.upload(params).promise();
+    return result.Location;
+  } catch (err) {
+    console.error("Error uploading image. Error:", err);
+    return null;
+  }
+}
+
+const uploadAvatar = async (userId, file) => {
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: Date.now().toString() + '-' + file.originalname,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+    ACL: 'public-read',
+  };
+
+  try {
+    const result = await S3.upload(params).promise();
+
+    const paramsUpdate = {
+      TableName: 'Users',
+      Key: {
+        id: { S: userId },
+      },
+      UpdateExpression: 'set avatarLink = :avatarLink',
+      ExpressionAttributeValues: {
+        ':avatarLink': { S: result.Location },
+      },
+      ReturnValues: 'UPDATED_NEW',
+    };
+    console.log(paramsUpdate)
+
+    await client.send(new UpdateItemCommand(paramsUpdate));
+
+    return result.Location;
+  } catch (err) {
+    console.error("Error uploading image. Error:", err);
+    return null;
+  }
+}
+
+const uploadBackground = async (userId, file) => {
+  const params = {
+    Bucket: process.env.AWS_BUCKET_NAME,
+    Key: Date.now().toString() + '-' + file.originalname,
+    Body: file.buffer,
+    ContentType: file.mimetype,
+    ACL: 'public-read',
+  };
+
+  try {
+    const result = await S3.upload(params).promise();
+
+    const paramsUpdate = {
+      TableName: 'Users',
+      Key: {
+        id: { S: userId },
+      },
+      UpdateExpression: 'set backgroundLink = :backgroundLink',
+      ExpressionAttributeValues: {
+        ':backgroundLink': { S: result.Location },
+      },
+      ReturnValues: 'UPDATED_NEW',
+    };
+    console.log(paramsUpdate)
+
+    await client.send(new UpdateItemCommand(paramsUpdate));
+
+    return result.Location;
+  } catch (err) {
+    console.error("Error uploading image. Error:", err);
+    return null;
+  }
+}
 module.exports = {
   existingUser,
   register,
-  findByPhoneNumber
+  findByPhoneNumber,
+  uploadImage,
+  getUserIdFromToken,
+  uploadAvatar,
+  uploadBackground
 }
