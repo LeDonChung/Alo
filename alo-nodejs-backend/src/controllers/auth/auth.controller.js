@@ -18,7 +18,6 @@ exports.login = async (req, res) => {
 
     const { phoneNumber, password } = req.body;
     const account = await userService.findByPhoneNumber(phoneNumber);
-    
     if (account && bcrypt.compareSync(password, account.password)) {
         const roles = account.roles.map(role => role);
         const payload = { sub: account.phoneNumber, userId: account.user.id, roles: roles };
@@ -66,7 +65,6 @@ exports.register = async (req, res) => {
     const userRegister = req.body;
 
     const existingUser = await userService.existingUser(userRegister.phoneNumber);
-    console.log("Existing user:", existingUser);
     if (existingUser) {
         return res.status(400).json({
             status: 400,
@@ -83,7 +81,6 @@ exports.register = async (req, res) => {
         });
     }
 
-
     const newUser = await userService.register(userRegister);
 
     return res.json({
@@ -92,3 +89,5 @@ exports.register = async (req, res) => {
         message: "Đăng ký thành công."
     })
 };
+
+

@@ -38,4 +38,14 @@ router.post(
     upload.single('file'),
     userController.uploadBackground
 )
+router.put(
+    '/update-profile',
+    middleware.authenticateToken,
+    userController.updateProfile
+)
+router.get(
+    '/profile',
+    middleware.authenticateToken,
+    userController.getProfile
+)
 module.exports = router;

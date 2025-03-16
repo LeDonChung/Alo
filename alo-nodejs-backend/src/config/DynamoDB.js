@@ -1,13 +1,14 @@
 // config.js
-const { DynamoDBClient, DescribeTableCommand, CreateTableCommand } = require('@aws-sdk/client-dynamodb');
+const AWS = require("aws-sdk");
 require('dotenv').config();
 
-const client = new DynamoDBClient({
+AWS.config.update({
   region: process.env.AWS_REGION,
+  apiVersion: 'latest',
   credentials: {
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
   }
-});
-
-module.exports = { client, DescribeTableCommand, CreateTableCommand };
+})
+const client = new AWS.DynamoDB.DocumentClient();
+module.exports = { client };
