@@ -1,8 +1,19 @@
 import React from 'react';
 
-const RightSlidebar = () => {
+const RightSlidebar = ({selectedFriend}) => {
   // Dữ liệu mẫu cho các tab
-  const photos = Array(9).fill(null); // 9 ảnh placeholder
+  const photos = [
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+    "https://stc-zlogin.zdn.vn/images/banner_icon.svg",
+  ];
+
   const files = [
     { name: 'Nhóm-B.docx', size: '78.3 KB' },
     { name: 'Nhóm-B.docx', size: '78.3 KB' },
@@ -13,24 +24,26 @@ const RightSlidebar = () => {
     { name: 'Nhóm-B.docx', size: '78.3 KB' },
     { name: 'Nhóm-B.docx', size: '78.3 KB' },
   ];
-  const greetings = [
-    { name: 'Tin nhắn tốt lành' },
-    { name: 'Chúc mừng năm mới' },
+  const security = [
+    { name: 'Tin nhắn tự xóa' },
+    { name: 'Ẩn trò chuyện' },
   ];
 
   return (
-    <div className="w-1/4 bg-white border-l border-gray-200 p-4">
+    // <div className="w-64 bg-gray-200 p-4 overflow-y-auto max-h-[400px] scrollable">
+    <div className=" w-1/4 bg-white border-l border-gray-200 p-4 overflow-y-auto max-h-[2000px] scrollable">
       <div className="space-y-4">
         {/* Phần Thông tin hội thoại */}
         <div className="border-b border-gray-200 pb-4">
           <h3 className="font-semibold text-center mb-2">Thông tin hội thoại</h3>
           <div className="flex flex-col items-center">
             <img
-              src="https://via.placeholder.com/80" // Thay bằng avatar thật
+              src="https://stc-zlogin.zdn.vn/images/banner_icon.svg" // Thay bằng avatar thật
               alt="Avatar"
               className="w-20 h-20 rounded-full mb-2"
             />
-            <p className="font-semibold text-lg">Cô gái Lụa Lụa</p>
+            {/* <p className="font-semibold text-lg">Cô gái Lụa Lụa</p> */}
+            <p className="font-semibold">{selectedFriend.name}</p>
             <div className="flex space-x-4 mt-4">
               <button className="flex flex-col items-center text-gray-600 hover:text-blue-500">
                 <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -57,11 +70,8 @@ const RightSlidebar = () => {
         <div className="border-b border-gray-200 pb-2">
           <h3 className="font-semibold">Ảnh/Video</h3>
           <div className="grid grid-cols-3 gap-2 mt-2 overflow-y-auto max-h-64">
-            {photos.map((_, index) => (
-              <div
-                key={index}
-                className="w-full h-20 bg-gray-300 rounded"
-              ></div>
+            {photos.map((src, index) => (
+              <img key={index} src={src} alt={`Ảnh ${index + 1}`} className="w-full h-20 object-cover rounded" />
             ))}
           </div>
         </div>
@@ -102,11 +112,11 @@ const RightSlidebar = () => {
           </div>
         </div>
 
-        {/* Tab Thiệp mừng */}
+        {/* Tab Bảo mật */}
         <div className="pb-2">
-          <h3 className="font-semibold">Thiệp mừng</h3>
+          <h3 className="font-semibold">Thiết lập bảo mật</h3>
           <div className="mt-2 overflow-y-auto max-h-32">
-            {greetings.map((greeting, index) => (
+            {security.map((security, index) => (
               <div
                 key={index}
                 className="flex items-center p-2 hover:bg-gray-100 rounded-lg"
@@ -114,7 +124,7 @@ const RightSlidebar = () => {
                 <svg className="w-5 h-5 mr-2 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
                 </svg>
-                <span>{greeting.name}</span>
+                <span>{security.name}</span>
               </div>
             ))}
           </div>
@@ -131,6 +141,7 @@ const RightSlidebar = () => {
         </div>
       </div>
     </div>
+    // </div>
   );
 };
 
