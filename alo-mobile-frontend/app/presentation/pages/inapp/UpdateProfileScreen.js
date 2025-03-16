@@ -1,27 +1,50 @@
 import { useState } from "react";
-import { Button, Image, Text, TextInput, TouchableOpacity, View, Platform, Alert } from "react-native";
+import { Button, Image, Text, TextInput, TouchableOpacity, View, Platform, Alert, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import IconMaterial from "react-native-vector-icons/MaterialIcons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import RadioGroup from "react-native-radio-buttons-group";
 import IconEI from "react-native-vector-icons/EvilIcons";
+import { useDispatch, useSelector } from "react-redux";
+import { updateProfile, uploadAvatar } from "../../redux/slices/UserSlice";
+import { showToast } from "../../../utils/AppUtils";
 
 export const UpdateProfileScreen = ({ navigation }) => {
-    const [date, setDate] = useState(new Date());
-    const [showDatePicker, setShowDatePicker] = useState(false);
-    const [selectedGender, setSelectedGender] = useState("male");
-    const [avatar, setAvatar] = useState("https://scontent.fsgn5-10.fna.fbcdn.net/v/t39.30808-6/361366862_1607093663105601_7835049158388472986_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHz7ozXp0uEkg8_8aP3F_G0dGypT0NHxzF0bKlPQ0fHMU8Z-vVpgHrcTKUwML8riSvvHuPzsyKki6cPi7L4FKV2&_nc_ohc=sj-rv_0SUekQ7kNvgHjVpBh&_nc_oc=Adgboh_OmgECvDCda593qS-qfoaB2hq_a8tsEWp7o4k1oTfjeLeFDGQR3Iv6-xj3ozw&_nc_zt=23&_nc_ht=scontent.fsgn5-10.fna&_nc_gid=A5UqF3B-2Bh8FUxhtakPWEv&oh=00_AYHD3BZT6e2iJbwg-O5UJ8TkAhqj3dhW6FzOTczGM72ySA&oe=67D34EA3"); // Ảnh mặc định
+    const [isLoading, setIsLoading] = useState(false);
+    const userLogin = useSelector(state => state.user.userLogin);
 
+    const [date, setDate] = useState(userLogin.birthDay != null ? new Date(userLogin.birthDay) : new Date());
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [selectedGender, setSelectedGender] = useState(userLogin.gender != null ? userLogin.gender : "Nam");
+    const [avatar, setAvatar] = useState(userLogin.avatarLink); // Ảnh mặc định
+    const [fullName, setFullName] = useState(userLogin.fullName);
     const genderOptions = [
-        { id: "male", label: "Nam", value: "male" },
-        { id: "female", label: "Nữ", value: "female" }
+        { id: "Nam", label: "Nam", value: "Nam" },
+        { id: "Nữ", label: "Nữ", value: "Nữ" }
     ];
+
+
 
     const handleDateChange = (event, selectedDate) => {
         if (Platform.OS === "android") setShowDatePicker(false);
         if (selectedDate) setDate(selectedDate);
     };
+
+    const getMimeType = (uri) => {
+        const extension = uri.split('.').pop().toLowerCase();
+        switch (extension) {
+            case 'jpg':
+            case 'jpeg':
+                return 'image/jpeg';
+            case 'png':
+                return 'image/png';
+            case 'gif':
+                return 'image/gif';
+            default:
+                return 'image/jpeg'; 
+        }
+    }; 
 
     // Mở thư viện ảnh để chọn ảnh đại diện
     const pickImage = async () => {
@@ -39,12 +62,37 @@ export const UpdateProfileScreen = ({ navigation }) => {
         });
 
         if (!result.canceled) {
+            setIsLoading(true);
+            const file = {
+                uri: result.assets[0].uri,
+                type: getMimeType(result.assets[0].uri),
+                name: result.assets[0].uri.split('/').pop(),
+            };
+
+            await dispatch(uploadAvatar(file));
+            showToast("success", "top", "Cập nhật ảnh đại diện", "Cập nhật ảnh đại diện thành công.");
+            setIsLoading(false);
             setAvatar(result.assets[0].uri);
         }
     };
 
+    const dispatch = useDispatch();
+    const handlerActionUpdateProfile = async () => {
+        setIsLoading(true);
+        const userUpdate = {
+            fullName: fullName,
+            birthDay: date.getFullYear() + "-" + (date.getMonth() + 1) + "-" + date.getDate(),
+            gender: selectedGender,
+        }
+        console.log(userUpdate)
+
+        await dispatch(updateProfile(userUpdate));
+        showToast("success", "top", "Cập nhật thông tin", "Cập nhật thông tin thành công.");
+        setIsLoading(false);
+    };
+
     return (
-        <SafeAreaView style={{ paddingHorizontal: 15 }}>
+        <SafeAreaView style={{ paddingHorizontal: 15, backgroundColor: '#fff' }}>
             <View style={{ flexDirection: "row", paddingVertical: 10, alignItems: "center" }}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <IconMaterial name="arrow-back" size={24} color={"#2261E2"} />
@@ -65,13 +113,15 @@ export const UpdateProfileScreen = ({ navigation }) => {
 
                 {/* Nhập họ tên */}
                 <View style={{ borderBottomWidth: 1, borderBottomColor: "gray", paddingVertical: 10, alignItems: "center", justifyContent: "space-between", flexDirection: "row" }}>
-                    <TextInput style={{ fontSize: 16, fontWeight: "bold" }} placeholder="Họ và tên" />
+                    <TextInput style={{ fontSize: 16, fontWeight: "bold", flex: 1 }} placeholder="Họ và tên"
+                        value={fullName} onChangeText={setFullName}
+                    />
                     <IconEI name="pencil" size={30} color={"#000"} />
                 </View>
 
                 {/* Chọn ngày sinh */}
                 <TouchableOpacity onPress={() => setShowDatePicker(true)} style={{ borderBottomWidth: 1, borderBottomColor: "gray", paddingVertical: 10, alignItems: "center", justifyContent: "space-between", flexDirection: "row" }}>
-                    <Text style={{ fontSize: 16, fontWeight: "bold" }}>{date.toLocaleDateString("vi-VN")}</Text>
+                    <Text style={{ fontSize: 16, fontWeight: "bold", flex: 1 }}>{date.toLocaleDateString("vi-VN")}</Text>
                     <IconEI name="pencil" size={30} color={"#000"} />
                 </TouchableOpacity>
 
@@ -96,16 +146,22 @@ export const UpdateProfileScreen = ({ navigation }) => {
 
                 {/* Nút cập nhật */}
                 <TouchableOpacity
+                    onPress={handlerActionUpdateProfile}
                     style={{
                         flexDirection: "row",
                         justifyContent: "center",
+                        alignItems: "center",  // Đảm bảo văn bản và spinner căn giữa
                         paddingVertical: 10,
                         backgroundColor: "#2261E2",
                         marginTop: 20,
                         borderRadius: 10
                     }}
                 >
-                    <Text style={{ fontSize: 16, fontWeight: "bold", color: "#fff" }}>Cập nhật</Text>
+                    {isLoading ? (
+                        <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                        <Text style={{ fontSize: 16, fontWeight: "bold", color: "#fff" }}>Cập nhật</Text>
+                    )}
                 </TouchableOpacity>
             </View>
         </SafeAreaView>
