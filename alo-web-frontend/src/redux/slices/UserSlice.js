@@ -3,6 +3,7 @@ import { axiosInstance } from "../../api/APIClient";
 
 const initialState = {
     avatar: null,
+    errorResponse: null
 };
 
 const uploadAvatar = createAsyncThunk('UserSlice/uploadAvatar', async (file, { rejectWithValue }) => {
@@ -35,11 +36,55 @@ const uploadBackground = createAsyncThunk('UserSlice/uploadBackground', async (f
     }
 })
 
+const register = createAsyncThunk('UserSlice/register', async (request, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/auth/register', request);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response.data);
+    }
+})
+
+const login = createAsyncThunk('UserSlice/login', async (request, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/auth/login', request);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
+
 const UserSlice = createSlice({
     name: 'UserSlice',
     initialState: initialState,
     reducers: {},
     extraReducers: (builder) => {
+
+        // Register
+        builder.addCase(register.pending, (state) => {
+            state.errorResponse = null;
+        });
+        builder.addCase(register.fulfilled, (state, action) => {
+            state.errorResponse = null;
+        });
+        builder.addCase(register.rejected, (state, action) => {
+            state.errorResponse = action.payload;
+        });
+
+        // Login
+        builder.addCase(login.pending, (state) => {
+            state.errorResponse = null;
+        });
+        builder.addCase(login.fulfilled, (state, action) => {
+            localStorage.setItem('accessToken', action.payload.data.accessToken);
+            localStorage.setItem('refreshToken', action.payload.data.refreshToken);
+            state.errorResponse = null;
+        });
+        builder.addCase(login.rejected, (state, action) => {
+            state.errorResponse = action.payload;
+        });
+
+
         builder.addCase(uploadAvatar.pending, (state) => {
             state.avatar = null;
         });
@@ -63,5 +108,5 @@ const UserSlice = createSlice({
 });
 
 export const { } = UserSlice.actions;
-export { uploadAvatar, uploadBackground };
+export { uploadAvatar, uploadBackground, register, login };
 export default UserSlice.reducer;
