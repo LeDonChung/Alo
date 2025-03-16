@@ -78,4 +78,46 @@ exports.uploadBackground = async (req, res) => {
     })
 }
 
+exports.updateProfile = async (req, res) => {
+    // Lấy Authorization từ header
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    // Lấy userId từ token
+    const userId = userService.getUserIdFromToken(token);
+
+    const user = req.body;
+
+    const updatedUser = await userService.updateProfile(userId, user);
+
+    if (!updatedUser) {
+        return res.status(500).json({ error: 'Update profile failed.' });
+    }
+
+    return res.json({
+        status: 200,
+        data: updatedUser,
+        message: "Update profile successfully"
+    })
+}
+
+exports.getProfile = async (req, res) => {
+    // Lấy Authorization từ header
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    // Lấy userId từ token
+    const userId = userService.getUserIdFromToken(token);
+
+    const user = await userService.getUserById(userId);
+
+    if (!user) {
+        return res.status(500).json({ error: 'Get profile failed.' });
+    }
+
+    return res.json({
+        status: 200,
+        data: user,
+        message: "Get profile successfully"
+    })
+}
+
 

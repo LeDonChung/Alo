@@ -1,5 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Navigation } from "../components/Navigation";
+import { useDispatch, useSelector } from "react-redux";
+import { getProfile } from "../redux/slices/UserSlice";
 
 const messages = [
     { id: 1, name: "Công túa lùi lùi", message: "aloooo", time: "38 phút", avatar: "https://via.placeholder.com/40" },
@@ -9,7 +11,14 @@ const messages = [
 
 export default function HomePage() {
     const [selectedChat, setSelectedChat] = useState(null);
-
+    
+    const dispatch = useDispatch();
+    const init = async () => {
+        await dispatch(getProfile());
+    }
+    useEffect(() => {
+        init();
+    }, []);
     return (
         <div className="flex h-screen">
 

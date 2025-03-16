@@ -1,4 +1,3 @@
-const { QueryCommand, PutItemCommand, ScanCommand, UpdateItemCommand } = require("@aws-sdk/client-dynamodb");
 const jwt = require('jsonwebtoken');
 const { client } = require("../config/DynamoDB")
 const { v4: uuidv4 } = require('uuid');
@@ -16,7 +15,7 @@ const existingUser = async (phoneNumber) => {
   }
 
   try {
-    const data = await client.send(new ScanCommand(params));
+    const data = await client.scan(params).promise();
     // Kiểm tra nếu có người dùng tồn tại
     if (data.Items && data.Items.length > 0) {
       return true;
@@ -35,28 +34,28 @@ const register = async (userRegister) => {
   const paramsAccount = {
     TableName: 'Accounts',
     Item: {
-      'accountId': { S: uuidv4() },
-      'phoneNumber': { S: userRegister.phoneNumber },
-      'password': { S: hashedPassword },
-      'roles': { SS: ['USER'] }
+      'accountId': uuidv4(),
+      'phoneNumber': userRegister.phoneNumber,
+      'password': hashedPassword,
+      'roles': ['USER']
     }
   };
 
 
   try {
-    await client.send(new PutItemCommand(paramsAccount));
+    await client.put(paramsAccount).promise();
 
     const paramsUser = {
       TableName: 'Users',
       Item: {
-        'id': { S: uuidv4() },
-        'fullName': { S: userRegister.fullName },
-        'accountId': { S: paramsAccount.Item.accountId.S },
-        'createdAt': { S: new Date().toISOString() }
+        'id': uuidv4(),
+        'fullName': userRegister.fullName,
+        'accountId': paramsAccount.Item.accountId,
+        'createdAt': new Date().toISOString()
       }
     };
 
-    const result = await client.send(new PutItemCommand(paramsUser));
+    const result = await client.put(paramsUser).promise();
 
     return new Account(
       paramsAccount.Item.accountId.S,
@@ -81,12 +80,12 @@ const findByPhoneNumber = async (phoneNumber) => {
     TableName: 'Accounts',
     FilterExpression: 'phoneNumber = :phoneNumber',
     ExpressionAttributeValues: {
-      ':phoneNumber': { S: phoneNumber }
+      ':phoneNumber': phoneNumber
     }
   }
 
   try {
-    const data = await client.send(new ScanCommand(paramsAccount));
+    const data = await client.scan(paramsAccount).promise();
     if (data.Items && data.Items.length > 0) {
       const account = data.Items[0];
 
@@ -94,22 +93,22 @@ const findByPhoneNumber = async (phoneNumber) => {
       const paramsUser = {
         TableName: 'Users',
         Key: {
-          'accountId': { S: account.accountId.S }
+          'accountId': account.accountId
         }
       }
 
-      const dataUser = await client.send(new ScanCommand(paramsUser));
+      const dataUser = await client.scan(paramsUser).promise();
 
       return new Account(
-        account.accountId.S,
-        account.phoneNumber.S,
-        account.password.S,
-        account.roles.SS,
+        account.accountId,
+        account.phoneNumber,
+        account.password,
+        account.roles.values,
         {
-          id: dataUser.Items[0].id.S,
-          fullName: dataUser.Items[0].fullName.S,
-          accountId: account.accountId.S,
-          createdAt: dataUser.Items[0].createdAt.S
+          id: dataUser.Items[0].id,
+          fullName: dataUser.Items[0].fullName,
+          accountId: account.accountId,
+          createdAt: dataUser.Items[0].createdAt
         }
       );
     } else {
@@ -160,17 +159,16 @@ const uploadAvatar = async (userId, file) => {
     const paramsUpdate = {
       TableName: 'Users',
       Key: {
-        id: { S: userId },
+        id: userId,
       },
       UpdateExpression: 'set avatarLink = :avatarLink',
       ExpressionAttributeValues: {
-        ':avatarLink': { S: result.Location },
+        ':avatarLink': result.Location,
       },
       ReturnValues: 'UPDATED_NEW',
     };
-    console.log(paramsUpdate)
 
-    await client.send(new UpdateItemCommand(paramsUpdate));
+    await client.update(paramsUpdate).promise();
 
     return result.Location;
   } catch (err) {
@@ -194,21 +192,81 @@ const uploadBackground = async (userId, file) => {
     const paramsUpdate = {
       TableName: 'Users',
       Key: {
-        id: { S: userId },
+        id: userId,
       },
       UpdateExpression: 'set backgroundLink = :backgroundLink',
       ExpressionAttributeValues: {
-        ':backgroundLink': { S: result.Location },
+        ':backgroundLink': result.Location,
       },
       ReturnValues: 'UPDATED_NEW',
     };
-    console.log(paramsUpdate)
+    console.log(paramsUpdate);
 
-    await client.send(new UpdateItemCommand(paramsUpdate));
+    await client.update(paramsUpdate).promise();
 
     return result.Location;
   } catch (err) {
     console.error("Error uploading image. Error:", err);
+    return null;
+  }
+}
+
+const getUserById = async (userId) => {
+  const params = {
+    TableName: "Users",
+    KeyConditionExpression: "id = :id",
+    ExpressionAttributeValues: {
+      ":id": userId
+    }
+  };
+
+
+  try {
+    const data = await client.query(params).promise();
+    const paramsAccount = {
+      TableName: 'Accounts',
+      Key: {
+        accountId: data.Items[0].accountId
+      }
+    };
+
+    const dataAccount = await client.get(paramsAccount).promise();
+
+    return {
+      ...data.Items[0],
+      phoneNumber: dataAccount.Item.phoneNumber,
+    }
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+
+}
+const updateProfile = async (userId, user) => {
+  const userExist = await getUserById(userId);
+  if (!userExist) {
+    return null;
+  }
+
+  const params = {
+    TableName: 'Users',
+    Key: {
+      id: userId
+    },
+    UpdateExpression: 'set fullName = :fullName , gender = :gender, birthDay = :birthDay', // Cập nhật thông tin
+    ExpressionAttributeValues: {
+      ':fullName': user.fullName,
+      ':gender': user.gender,
+      ':birthDay': user.birthDay
+    },
+    ReturnValues: 'UPDATED_NEW'
+  };
+
+  try {
+    const data = await client.update(params).promise();
+    return getUserById(userId);
+  } catch (err) {
+    console.log(err);
     return null;
   }
 }
@@ -219,5 +277,7 @@ module.exports = {
   uploadImage,
   getUserIdFromToken,
   uploadAvatar,
-  uploadBackground
+  uploadBackground,
+  updateProfile,
+  getUserById
 }
