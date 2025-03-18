@@ -98,12 +98,12 @@ const findByPhoneNumber = async (phoneNumber) => {
       }
 
       const dataUser = await client.scan(paramsUser).promise();
-
+      console.log(account)
       return new Account(
         account.accountId,
         account.phoneNumber,
         account.password,
-        account.roles.values,
+        account.roles,
         {
           id: dataUser.Items[0].id,
           fullName: dataUser.Items[0].fullName,
