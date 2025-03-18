@@ -4,13 +4,18 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-nativ
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { GlobalStyles } from "../../styles/GlobalStyles";
 import { showToast } from "../../../utils/AppUtils";
+import { useDispatch, useSelector } from "react-redux";
+import { setUserRegister } from "../../redux/slices/RegisterSlice";
+
 
 export const OTPScreen = ({ navigation }) => {
     const [isEdit, setIsEdit] = useState(false);
-    const [otp, setOtp] = useState("123456");
+    const [otp, setOtp] = useState("");
     const [timer, setTimer] = useState(59);
     const [isCounting, setIsCounting] = useState(true);
-
+    const userRegister = useSelector(state => state.register.userRegister)
+    const dispatch = useDispatch();
+    
     useEffect(() => {
         handleSendOTP();
     }, []);
@@ -33,7 +38,9 @@ export const OTPScreen = ({ navigation }) => {
             showToast("success", "top", "OTP Đã Gửi", "Vui lòng kiểm tra tin nhắn của bạn.");
         }
     };
-
+    const handleContinue = () => {
+        navigation.navigate("registerInformation"); 
+    };
     return (
         <SafeAreaView style={[GlobalStyles.container, { flex: 1, alignItems: "center", justifyContent: 'center' }]}>
             <Text style={styles.title}>Alo</Text>
@@ -41,7 +48,9 @@ export const OTPScreen = ({ navigation }) => {
 
             <View style={styles.inputContainer}>
                 <Icon name="cellphone" size={20} color="gray" style={styles.icon} />
-                <TextInput value="0867713557" placeholder="Số điện thoại" style={styles.input} keyboardType="phone-pad" editable={isEdit} />
+                <TextInput value={userRegister.phoneNumber}  placeholder="Số điện thoại" style={styles.input} keyboardType="phone-pad" editable={isEdit} onChangeText={(value) => {
+                        dispatch(setUserRegister({...userRegister, phoneNumber: value}))
+                    }}  />
                 <TouchableOpacity onPress={() => setIsEdit(true)}>
                     <Icon name="pencil" size={20} color="gray" style={styles.icon} />
                 </TouchableOpacity>
@@ -59,13 +68,7 @@ export const OTPScreen = ({ navigation }) => {
                 />
             </View>
 
-            <TouchableOpacity style={styles.button} onPress={() => {
-                if (otp.length < 6) {
-                    showToast("error", "top", "Lỗi", "Vui lòng nhập đủ 6 ký tự OTP");
-                    return;
-                }
-                navigation.navigate("registerInformation");
-            }}>
+            <TouchableOpacity style={styles.button} onPress={handleContinue}>
                 <Text style={styles.buttonText}>Tiếp tục</Text>
             </TouchableOpacity>
 
