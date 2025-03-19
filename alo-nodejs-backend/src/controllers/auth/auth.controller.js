@@ -18,7 +18,6 @@ exports.login = async (req, res) => {
 
     const { phoneNumber, password } = req.body;
     const account = await userService.findByPhoneNumber(phoneNumber);
-    console.log("Login: ", account)
     if (account && bcrypt.compareSync(password, account.password)) {
         const roles = account.roles.map(role => role);
         const payload = { sub: account.phoneNumber, userId: account.user.id, roles: roles };
@@ -61,35 +60,6 @@ exports.refreshToken = async(req, res) => {
     });
 };
 
-// exports.register = async (req, res) => {
-//     console.log(`Start register for username: ${req.body.phoneNumber}`);
-//     const userRegister = req.body;
-
-//     const existingUser = await userService.existingUser(userRegister.phoneNumber);
-//     if (existingUser) {
-//         return res.status(400).json({
-//             status: 400,
-//             message: "Số điện thoại đã được đăng ký.",
-//             data: null
-//         });
-//     }
-
-//     if(userRegister.password !== userRegister.rePassword) {
-//         return res.status(400).json({
-//             status: 400,
-//             message: "Mật khẩu không khớp.",
-//             data: null
-//         });
-//     }
-
-//     const newUser = await userService.register(userRegister);
-
-//     return res.json({
-//         status: 200,
-//         data: newUser ,
-//         message: "Đăng ký thành công."
-//     })
-// };
 exports.register = async (req, res) => {
     console.log(`Start register for username: ${req.body.phoneNumber}`);
     const userRegister = req.body;
@@ -102,31 +72,22 @@ exports.register = async (req, res) => {
             data: null
         });
     }
-  
-    // Kiểm tra user đã tồn tại chưa
-    const userExists = await userService.existingUser(phoneNumber);
-    if (userExists) {
-      return res.status(400).json({ message: 'Số điện thoại đã được đăng ký!' });
+
+    if(userRegister.password !== userRegister.rePassword) {
+        return res.status(400).json({
+            status: 400,
+            message: "Mật khẩu không khớp.",
+            data: null
+        });
     }
-  
-    // Đăng ký user mới
-    const userRegister = {
-      phoneNumber,
-      fullName,
-      password,
-    };
-  
+
     const newUser = await userService.register(userRegister);
-    if (newUser) {
-      console.log('User registered successfully:', newUser);
-      return res.status(201).json({
+
+    return res.json({
         status: 200,
-        data: newUser,
-        message: 'Đăng ký thành công!',
-      });
-    } else {
-      return res.status(500).json({ message: 'Đăng ký thất bại!' });
-    }
-  };
+        data: newUser ,
+        message: "Đăng ký thành công."
+    })
+};
 
 
