@@ -38,7 +38,7 @@ export const Navigation = () => {
             {/* Sidebar Navigation */}
             <div className="w-20 bg-blue-600 text-white flex flex-col items-center py-4 px-4 relative">
                 <div className="cursor-pointer">
-                    <img src={userLogin?.avatarLink || "https://scontent.fsgn5-10.fna.fbcdn.net/v/t39.30808-6/361366862_1607093663105601_7835049158388472986_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHz7ozXp0uEkg8_8aP3F_G0dGypT0NHxzF0bKlPQ0fHMU8Z-vVpgHrcTKUwML8riSvvHuPzsyKki6cPi7L4FKV2&_nc_ohc=B9RFy0KrfR0Q7kNvgFW5zNC&_nc_oc=AdgbJxNhoBBZOjW_cEGJ8Y4R4Ahd2RLZnKBOuEpRJnqY5nen57Gb_CuFCpkf19ddcvk&_nc_zt=23&_nc_ht=scontent.fsgn5-10.fna&_nc_gid=AEZj1hHNTCNOCeMVSzPC0DS&oh=00_AYEv8m0q3KLmRnqNY656Q_7I-IhES6uAs_fjaLnTKQOsUg&oe=67D9ADE3"}
+                    <img src={userLogin?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
                         className="rounded-full w-12 h-12 bg-cover" />
                 </div>
                 <div className="flex flex-col mt-20">

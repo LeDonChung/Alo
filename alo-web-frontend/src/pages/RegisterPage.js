@@ -1,17 +1,19 @@
 import React, { useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
+import { setUserRegister } from '../redux/slices/RegisterSlice';
 
 export const RegisterPage = () => {
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const userRegister = useSelector((state) => state.register.userRegister);
   const [agree, setAgree] = useState(false);
   const [error, setError] = useState('');
   const navigate = useNavigate();
 
+  const dispatch = useDispatch();
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log('Form submitted:', { phoneNumber, agree });
 
-    if (!phoneNumber) {
+    if (!userRegister.phoneNumber) {
       setError('Vui lòng nhập số điện thoại!');
       return;
     }
@@ -20,8 +22,7 @@ export const RegisterPage = () => {
       return;
     }
 
-    console.log('Navigating to /register-info with phone:', phoneNumber);
-    navigate('/register-info', { state: { phoneNumber } });
+    navigate('/register-info');
   };
 
   return (
@@ -47,8 +48,8 @@ export const RegisterPage = () => {
                 type="text"
                 id="phone"
                 placeholder="Số điện thoại"
-                value={phoneNumber}
-                onChange={(e) => setPhoneNumber(e.target.value)}
+                value={userRegister.phoneNumber}
+                onChange={(e) => dispatch(setUserRegister({...userRegister, phoneNumber: e.target.value}))}
                 required
               />
             </div>

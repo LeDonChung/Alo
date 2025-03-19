@@ -64,7 +64,7 @@ exports.register = async (req, res) => {
     console.log(`Start register for username: ${req.body.phoneNumber}`);
     const userRegister = req.body;
 
-    const existingUser = await userService.existingUser(userRegister.phoneNumber);
+    const existingUser = await userService.findByPhoneNumber(userRegister.phoneNumber);
     if (existingUser) {
         return res.status(400).json({
             status: 400,

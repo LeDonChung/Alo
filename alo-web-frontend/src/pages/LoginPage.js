@@ -5,8 +5,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import showToast from '../utils/AppUtils';
 export const LoginPage = () => {
     const [userLogin, setUserLogin] = useState({
-        phoneNumber: "0396172224",
-        password: "123456"
+        phoneNumber: "",
+        password: ""
     })
 
     const error = useSelector(state => state.user.errorResponse);
@@ -17,7 +17,7 @@ export const LoginPage = () => {
         e.preventDefault();
         console.log("userLogin", userLogin);
         await dispatch(login(userLogin)).unwrap().then(async (response) => {
-            showToast('success', 'Đăng nhập thành công');
+            showToast('Đăng nhập thành công', 'success');
             navigate('/me');
         }).catch((error) => {
             console.log("❌ Lỗi đăng nhập:", error);

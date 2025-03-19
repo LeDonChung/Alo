@@ -1,54 +1,37 @@
 import React, { useState } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { register, setUserRegister } from '../redux/slices/RegisterSlice';
+import showToast from '../utils/AppUtils';
 
 export const RegisterInformationPage = () => {
-  const [userInfo, setUserInfo] = useState({
-    fullName: '',
-    password: '',
-    rePassword: '',
-  });
+  const userRegister = useSelector((state) => state.register.userRegister);
+
   const [error, setError] = useState('');
-  const location = useLocation();
   const navigate = useNavigate();
-  const { phoneNumber } = location.state || {};
+  const dispatch = useDispatch();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (userInfo.password !== userInfo.rePassword) {
+    if (userRegister.password !== userRegister.rePassword) {
       setError('Mật khẩu không khớp!');
       return;
     }
 
-    const userRegister = {
-      phoneNumber,
-      fullName: userInfo.fullName,
-      password: userInfo.password,
-      rePassword: userInfo.rePassword,
+    const data = {
+      phoneNumber: userRegister.phoneNumber,
+      fullName: userRegister.fullName,
+      password: userRegister.password,
+      rePassword: userRegister.rePassword,
     };
-
-    console.log('Sending register request:', userRegister);
-
-    try {
-      const response = await fetch('http://localhost:5000/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userRegister),
-      });
-      const data = await response.json();
-      console.log('Response from server:', data);
-
-      if (response.ok) {
-        alert('Đăng ký thành công!');
-        navigate('/login');
-      } else {
-        setError(data.message || 'Đăng ký thất bại!');
-      }
-    } catch (err) {
-      setError('Có lỗi xảy ra, vui lòng thử lại!');
-      console.error('Fetch error:', err);
-    }
-  };
-
+    await dispatch(register(data)).unwrap().then((response) => {
+      showToast('Đăng ký thành công', 'success');
+      navigate('/login');
+    }).catch((error) => {
+      console.log("❌ Lỗi đăng ký:", error);
+      showToast(error.message, 'error');
+    });
+  }
   return (
     <div className="bg-blue-100 flex items-center justify-center min-h-screen">
       <div>
@@ -61,7 +44,7 @@ export const RegisterInformationPage = () => {
         <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
           <div className="border-b border-gray-300 mb-6">
             <h2 className="text-center font-medium pb-2">Hoàn tất đăng ký</h2>
-          </div>
+          </div> 
           <form onSubmit={handleSubmit}>
             <div className="mb-4 relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -71,7 +54,7 @@ export const RegisterInformationPage = () => {
                 className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded"
                 type="text"
                 id="phone"
-                value={phoneNumber || ''}
+                value={userRegister.phoneNumber || ''}
                 disabled
               />
             </div>
@@ -84,8 +67,8 @@ export const RegisterInformationPage = () => {
                 type="text"
                 id="fullName"
                 placeholder="Họ và tên"
-                value={userInfo.fullName}
-                onChange={(e) => setUserInfo({ ...userInfo, fullName: e.target.value })}
+                value={userRegister.fullName}
+                onChange={(e) => dispatch(setUserRegister({ ...userRegister, fullName: e.target.value }))}
                 required
               />
             </div>
@@ -98,8 +81,8 @@ export const RegisterInformationPage = () => {
                 type="password"
                 id="password"
                 placeholder="Mật khẩu"
-                value={userInfo.password}
-                onChange={(e) => setUserInfo({ ...userInfo, password: e.target.value })}
+                value={userRegister.password}
+                onChange={(e) => dispatch(setUserRegister({ ...userRegister, password: e.target.value }))}
                 required
               />
             </div>
@@ -112,8 +95,8 @@ export const RegisterInformationPage = () => {
                 type="password"
                 id="rePassword"
                 placeholder="Nhập lại mật khẩu"
-                value={userInfo.rePassword}
-                onChange={(e) => setUserInfo({ ...userInfo, rePassword: e.target.value })}
+                value={userRegister.rePassword}
+                onChange={(e) => dispatch(setUserRegister({ ...userRegister, rePassword: e.target.value }))}
                 required
               />
             </div>
