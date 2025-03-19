@@ -4,8 +4,30 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-nativ
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { GlobalStyles } from "../../styles/GlobalStyles";
 import { showToast } from "../../../utils/AppUtils";
+import { useDispatch, useSelector } from "react-redux";
+import { sendOtp } from "../../redux/slices/RegisterSlice";
+import { setUserRegister } from "../../redux/slices/RegisterSlice";
+ 
 export const RegisterScreen = ({ navigation }) => {
     const [isChecked, setIsChecked] = useState(false);
+    const dispatch = useDispatch();
+    const { isLoading, error } = useSelector((state) => state.register);
+    const userRegister = useSelector(state => state.register.userRegister)
+    const handleRegister = () => {
+        if (!isChecked) {
+            showToast("error", "top", "Lỗi", "Bạn chưa đồng ý với điều khoản sử dụng");
+            return;
+        }
+        if (!userRegister.phoneNumber) {
+            showToast("error", "top", "Lỗi", "Vui lòng nhập số điện thoại");
+            return;
+        }
+
+        // Gửi yêu cầu API để lấy OTP (mặc định thành công và chuyển màn hình)
+        // await dispatch(sendOtp(phoneNumber));
+        // showToast("success", "top", "Thành công", "OTP đã được gửi!"); // Thông báo mặc định
+        navigation.navigate("otp"); // Chuyển sang màn hình OTP ngay lập tức
+    };
     return (
         <SafeAreaView style={[GlobalStyles.container, { flex: 1, alignItems: "center", justifyContent: 'center' }]}>
             <Text style={styles.title}>Alo</Text>
@@ -13,7 +35,15 @@ export const RegisterScreen = ({ navigation }) => {
 
             <View style={styles.inputContainer}>
                 <Icon name="cellphone" size={20} color="gray" style={styles.icon} />
-                <TextInput placeholder="Số điện thoại" style={styles.input} keyboardType="phone-pad" />
+                <TextInput
+                    placeholder="Số điện thoại"
+                    style={styles.input}
+                    value={userRegister.phoneNumber} 
+                    onChangeText={(value) => {
+                        dispatch(setUserRegister({...userRegister, phoneNumber: value}))
+                    }} 
+                    keyboardType="phone-pad"
+                />
             </View>
 
             <TouchableOpacity style={styles.checkboxContainer} onPress={() => setIsChecked(!isChecked)}>
@@ -21,16 +51,8 @@ export const RegisterScreen = ({ navigation }) => {
                 <Text style={styles.checkboxText}>Tôi đồng ý với điều khoản sử dụng</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.button} onPress={() => {
-                if(!isChecked) {
-                    showToast("error", "top", "Lỗi", "Bạn chưa đồng ý với điều khoản sử dụng");
-                    return;
-                }
-
-                navigation.navigate("otp");
-
-            }}>
-                <Text style={styles.buttonText}>Đăng ký</Text>
+            <TouchableOpacity style={styles.button} onPress={() => handleRegister()} disabled={isLoading}>
+                <Text style={styles.buttonText}>{isLoading ? "Đang xử lý..." : "Đăng ký"}</Text>
             </TouchableOpacity>
 
 

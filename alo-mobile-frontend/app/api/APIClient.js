@@ -16,8 +16,7 @@ const axiosInstance = axios.create({
 // Add an interceptor to include the authorization token
 axiosInstance.interceptors.request.use(
     (config) => {
-        // const token = SecureStore.getItem('accessToken'); 
-        const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwODY3NzEzNTU3IiwidXNlcklkIjoiMjU4Yzg0OGItZTkwNi00ODU5LWEwMTktMDQ4MTE1MzU5MjczIiwicm9sZXMiOlsiVVNFUiJdLCJpYXQiOjE3NDIxMzM5NzYsImV4cCI6MTc0MjczODc3Nn0.Hx1FYAgpyb52qoT9ssBeeBONi8OyaxXb3odqfME8M-4"
+        const token = SecureStore.getItem('accessToken'); 
         console.log("Send request with token: ", token);
         if (token) {
             config.headers['Authorization'] = `Bearer ${token}`;
