@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import IconF from "react-native-vector-icons/MaterialIcons";
 import { GlobalStyles } from "../../styles/GlobalStyles";
@@ -7,33 +7,33 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { showToast } from "../../../utils/AppUtils";
 import { useDispatch, useSelector } from "react-redux";
 import { useRoute } from "@react-navigation/native";
-import { registerUser } from "../../redux/slices/RegisterSlice"; 
+import { registerUser } from "../../redux/slices/RegisterSlice";
 import { setUserRegister } from "../../redux/slices/RegisterSlice";
 
 export const RegisterInformationScreen = ({ navigation }) => {
     const dispatch = useDispatch();
-    const { isLoading, error } = useSelector((state) => state.register); 
+    const { isLoading, error } = useSelector((state) => state.register);
     const userRegister = useSelector(state => state.register.userRegister)
     const handleRegister = async () => {
         if (!userRegister.fullName || !userRegister.password || !userRegister.rePassword) {
             showToast("error", "top", "Lỗi", "Vui lòng nhập đầy đủ thông tin");
             return;
         }
-    
+
         if (userRegister.password !== userRegister.rePassword) {
             showToast("error", "top", "Lỗi", "Mật khẩu không khớp");
             return;
         }
-    
+
         try {
             const actionResult = await dispatch(registerUser(userRegister)).unwrap().then(() => {
                 showToast("success", "top", "Đăng ký", "Đăng ký tài khoản thành công.");
+                navigation.navigate("login");
             }).catch((e) => {
-                console.log(e)
-                // showToast("success", "top", "Lỗi", ); ?
+                showToast("error", "top", "Đăng ký", e.message);
             })
-            
-            
+
+
         } catch (error) {
             console.error("Unexpected error:", error);
             showToast("error", "top", "Lỗi", "Có lỗi xảy ra, vui lòng thử lại.");
@@ -66,7 +66,7 @@ export const RegisterInformationScreen = ({ navigation }) => {
                     style={styles.input}
                     value={userRegister.fullName}
                     onChangeText={(value) => {
-                        dispatch(setUserRegister({...userRegister, fullName: value}))
+                        dispatch(setUserRegister({ ...userRegister, fullName: value }))
                     }}
                 />
             </View>
@@ -79,7 +79,7 @@ export const RegisterInformationScreen = ({ navigation }) => {
                     secureTextEntry
                     value={userRegister.password}
                     onChangeText={(value) => {
-                        dispatch(setUserRegister({...userRegister, password: value}))
+                        dispatch(setUserRegister({ ...userRegister, password: value }))
                     }}
                 />
             </View>
@@ -92,13 +92,17 @@ export const RegisterInformationScreen = ({ navigation }) => {
                     secureTextEntry
                     value={userRegister.rePassword}
                     onChangeText={(value) => {
-                        dispatch(setUserRegister({...userRegister, rePassword: value}))
+                        dispatch(setUserRegister({ ...userRegister, rePassword: value }))
                     }}
                 />
             </View>
 
             <TouchableOpacity style={styles.button} onPress={handleRegister} disabled={isLoading}>
-                <Text style={styles.buttonText}>{isLoading ? "Đang xử lý..." : "Đăng ký"}</Text>
+                {isLoading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                    <Text style={{ fontSize: 16, fontWeight: "bold", color: "#fff" }}>Đăng ký</Text>
+                )}
             </TouchableOpacity>
 
             {/* Thêm footer với liên kết đăng nhập và quên mật khẩu */}

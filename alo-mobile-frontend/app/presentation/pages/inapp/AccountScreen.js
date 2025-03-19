@@ -2,6 +2,8 @@ import { Button, Text, TouchableOpacity, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { GlobalStyles } from "../../styles/GlobalStyles"
 import IconMaterial from 'react-native-vector-icons/MaterialIcons'
+import * as SecureStore from 'expo-secure-store';
+
 export const AccountScreen = ({ navigation }) => {
     return (
         <SafeAreaView style={GlobalStyles.container}>
@@ -19,6 +21,10 @@ export const AccountScreen = ({ navigation }) => {
                     <IconMaterial name="keyboard-arrow-right" size={24} color={"#000"} />
                 </TouchableOpacity>
                 <TouchableOpacity style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 }} onPress={() => {
+                    // remove 
+                    SecureStore.deleteItemAsync('accessToken');
+                    SecureStore.deleteItemAsync('refreshToken');
+                    SecureStore.deleteItemAsync('userLogin');
                     navigation.navigate('login')
                 }}>
                     <IconMaterial name="logout" size={24} color={"#2261E2"} />

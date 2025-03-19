@@ -5,6 +5,7 @@ import {
   TextInput,
   TouchableOpacity,
   StyleSheet,
+  ActivityIndicator,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { GlobalStyles } from "../../styles/GlobalStyles";
@@ -70,7 +71,7 @@ export const LoginScreen = ({ navigation }) => {
           onChangeText={setPhoneNumber}
         />
       </View>
-      
+
       <View style={styles.inputContainer}>
         <Icon name="lock" size={20} color="gray" style={styles.icon} />
         <TextInput
@@ -81,11 +82,17 @@ export const LoginScreen = ({ navigation }) => {
           onChangeText={setPassword}
         />
       </View>
-      
+
       {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
       <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-        <Text style={styles.buttonText}>{loading ? "Đang đăng nhập..." : "Đăng nhập với mật khẩu"}</Text>
+        {isLoading ? (
+          <ActivityIndicator size="small" color="#fff" />
+        ) : (
+          <Text style={{ fontSize: 16, fontWeight: "bold", color: "#fff" }}>Đăng nhập với mật khẩu</Text>
+        )}
+
+
       </TouchableOpacity>
 
       <View style={styles.footer}>

@@ -59,7 +59,7 @@ export const ProfileScreen = ({ navigation }) => {
                             <View style={{ marginLeft: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1, borderBottomWidth: 1, borderBottomColor: 'gray', paddingVertical: 15 }}>
                                 <Text style={{ fontSize: 16 }}>Ngày sinh</Text>
                                 <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{
-                                    new Date(userLogin.birthDay).toLocaleDateString("vi-VN")
+                                    userLogin.birthday ? new Date(userLogin.birthday).toLocaleDateString() : 'Chưa cập nhật'
                                 }</Text>
                             </View>
                         </TouchableOpacity>
@@ -68,7 +68,9 @@ export const ProfileScreen = ({ navigation }) => {
                             <IconF6 name="genderless" size={24} color={"#2261E2"} />
                             <View style={{ marginLeft: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1, borderBottomWidth: 1, borderBottomColor: 'gray', paddingVertical: 15 }}>
                                 <Text style={{ fontSize: 16 }}>Giới tính</Text>
-                                <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{userLogin.gender}</Text>
+                                <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{
+                                    userLogin.gender ? userLogin.gender : 'Chưa cập nhật'
+                                    }</Text>
                             </View>
                         </TouchableOpacity>
 

@@ -17,7 +17,7 @@ export const UpdateProfileScreen = ({ navigation }) => {
     const [date, setDate] = useState(userLogin.birthDay != null ? new Date(userLogin.birthDay) : new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [selectedGender, setSelectedGender] = useState(userLogin.gender != null ? userLogin.gender : "Nam");
-    const [avatar, setAvatar] = useState(userLogin.avatarLink); // Ảnh mặc định
+    const [avatar, setAvatar] = useState(userLogin.avatarLink !== undefined ? userLogin.avatarLink : "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"); // Ảnh mặc định
     const [fullName, setFullName] = useState(userLogin.fullName);
     const genderOptions = [
         { id: "Nam", label: "Nam", value: "Nam" },
