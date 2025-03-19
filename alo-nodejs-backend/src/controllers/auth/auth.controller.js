@@ -18,6 +18,7 @@ exports.login = async (req, res) => {
 
     const { phoneNumber, password } = req.body;
     const account = await userService.findByPhoneNumber(phoneNumber);
+    console.log("Login: ", account)
     if (account && bcrypt.compareSync(password, account.password)) {
         const roles = account.roles.map(role => role);
         const payload = { sub: account.phoneNumber, userId: account.user.id, roles: roles };
@@ -64,7 +65,7 @@ exports.register = async (req, res) => {
     console.log(`Start register for username: ${req.body.phoneNumber}`);
     const userRegister = req.body;
 
-    const existingUser = await userService.existingUser(userRegister.phoneNumber);
+    const existingUser = await userService.findByPhoneNumber(userRegister.phoneNumber);
     if (existingUser) {
         return res.status(400).json({
             status: 400,

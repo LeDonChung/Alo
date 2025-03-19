@@ -3,7 +3,7 @@ import { axiosInstance } from "../../api/APIClient";
 
 const initialState = {
     avatar: null,
-    errorResponse: null
+    errorResponse: null,
     userLogin: null
 };
 
@@ -115,6 +115,7 @@ const UserSlice = createSlice({
             }));
             state.userLogin = JSON.parse(localStorage.getItem('userLogin'));
         });
+
         builder.addCase(uploadAvatar.rejected, (state, action) => {
             state.avatar = null;
         });

@@ -16,6 +16,7 @@ const existingUser = async (phoneNumber) => {
 
   try {
     const data = await client.scan(params).promise();
+    console.log("Data", data)
     // Kiểm tra nếu có người dùng tồn tại
     if (data.Items && data.Items.length > 0) {
       return true;
@@ -86,19 +87,23 @@ const findByPhoneNumber = async (phoneNumber) => {
 
   try {
     const data = await client.scan(paramsAccount).promise();
+    console.log("DAA", data)
     if (data.Items && data.Items.length > 0) {
       const account = data.Items[0];
 
       // Trả về thông tin User
       const paramsUser = {
         TableName: 'Users',
-        Key: {
-          'accountId': account.accountId
+        FilterExpression: 'accountId = :accountId',
+        ExpressionAttributeValues: {
+          ':accountId': account.accountId
         }
       }
+      console.log("PARAMSUSER", paramsUser)
 
       const dataUser = await client.scan(paramsUser).promise();
-      console.log(account)
+      console.log("DATAUSER", dataUser)
+      console.log("ACCOUNT", account)
       return new Account(
         account.accountId,
         account.phoneNumber,
@@ -107,7 +112,7 @@ const findByPhoneNumber = async (phoneNumber) => {
         {
           id: dataUser.Items[0].id,
           fullName: dataUser.Items[0].fullName,
-          accountId: account.accountId,
+          accountId: dataUser.Items[0].accountId,
           createdAt: dataUser.Items[0].createdAt
         }
       );

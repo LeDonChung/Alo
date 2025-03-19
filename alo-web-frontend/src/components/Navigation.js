@@ -69,7 +69,16 @@ export const Navigation = () => {
                                 <i className="fas fa-user"></i>
                                 <p className="p-2"> Thông tin cá nhân </p>
                             </div>
-                            <div className="flex flex-row items-center cursor-pointer hover:bg-gray-200 px-2">
+                            <div className="flex flex-row items-center cursor-pointer hover:bg-gray-200 px-2" onClick={() => {
+                                // remove 
+                                localStorage.removeItem('accessToken');
+                                localStorage.removeItem('refreshToken');
+                                localStorage.removeItem('userLogin');
+                                setShowProfileModal(false);
+                                setShowSettings(false);
+                                showToast("Đăng xuất thành công", "success");
+                                navigate("/login");
+                            }}>
                                 <i className="fas fa-sign-out-alt"></i>
                                 <p className="p-2 text-red-600"> Đăng xuất </p>
                             </div>
@@ -156,7 +165,7 @@ const ProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
 
                     <img onClick={handlerBackgroundClick}
                         src={
-                            userLogin?.backgroundLink || "https://scontent.fsgn5-10.fna.fbcdn.net/v/t39.30808-6/361366862_1607093663105601_7835049158388472986_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHz7ozXp0uEkg8_8aP3F_G0dGypT0NHxzF0bKlPQ0fHMU8Z-vVpgHrcTKUwML8riSvvHuPzsyKki6cPi7L4FKV2&_nc_ohc=B9RFy0KrfR0Q7kNvgFW5zNC&_nc_oc=AdgbJxNhoBBZOjW_cEGJ8Y4R4Ahd2RLZnKBOuEpRJnqY5nen57Gb_CuFCpkf19ddcvk&_nc_zt=23&_nc_ht=scontent.fsgn5-10.fna&_nc_gid=AEZj1hHNTCNOCeMVSzPC0DS&oh=00_AYEv8m0q3KLmRnqNY656Q_7I-IhES6uAs_fjaLnTKQOsUg&oe=67D9ADE3"
+                            userLogin?.backgroundLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"
                         } className="w-full h-32 object-cover rounded-t-lg cursor-pointer" />
                     <button className="absolute top-3 right-3 text-gray-700" onClick={() => setShowProfileModal(false)}>✖</button>
                 </div>
@@ -164,7 +173,7 @@ const ProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
                 <div className="flex flex-col items-center -mt-10">
                     <div className="relative">
                         <img src={
-                            userLogin?.avatarLink || "https://scontent.fsgn5-10.fna.fbcdn.net/v/t39.30808-6/361366862_1607093663105601_7835049158388472986_n.jpg?_nc_cat=106&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHz7ozXp0uEkg8_8aP3F_G0dGypT0NHxzF0bKlPQ0fHMU8Z-vVpgHrcTKUwML8riSvvHuPzsyKki6cPi7L4FKV2&_nc_ohc=B9RFy0KrfR0Q7kNvgFW5zNC&_nc_oc=AdgbJxNhoBBZOjW_cEGJ8Y4R4Ahd2RLZnKBOuEpRJnqY5nen57Gb_CuFCpkf19ddcvk&_nc_zt=23&_nc_ht=scontent.fsgn5-10.fna&_nc_gid=AEZj1hHNTCNOCeMVSzPC0DS&oh=00_AYEv8m0q3KLmRnqNY656Q_7I-IhES6uAs_fjaLnTKQOsUg&oe=67D9ADE3"
+                            userLogin?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"
                         } className="w-20 h-20 rounded-full border-4 border-white" />
 
                         <div
@@ -183,14 +192,14 @@ const ProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
                             id="fileInput"
                         />
                     </div>
-                    <h2 className="text-lg font-semibold mt-2 py-2">Lê Đôn Chùng</h2>
+                    <h2 className="text-lg font-semibold mt-2 py-2">{userLogin.fullName}</h2>
                 </div>
                 {/* Thông tin cá nhân */}
                 <div className="p-4 border-t-4">
                     <div className="text-gray-700 space-y-2">
-                        <p><strong className="mr-6">Giới tính:</strong> {userLogin.gender}</p>
-                        <p><strong className="mr-4">Ngày sinh:</strong> {
-                            new Date(userLogin.birthDay).toLocaleDateString("vi-VN")
+                        <p><strong className="mr-6">Giới tính:</strong> {userLogin.gender !== undefined ? userLogin.gender : "Chưa cập nhật"}</p>
+                        <p><strong className="mr-4">Ngày sinh: </strong> {
+                            userLogin.birthDay !== undefined ? new Date(userLogin.birthDay).toLocaleDateString("vi-VN") : "Chưa cập nhật"
                         }</p>
                         <p><strong className="mr-2">Điện thoại:</strong> {
                             userLogin.phoneNumber
