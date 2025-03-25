@@ -1,5 +1,5 @@
 class User {
-    constructor(id, fullName, gender, email, birthDay, status, avatarLink, backgroundLink, accountId, createdAt) {
+    constructor(id, fullName, gender, email, birthDay, status, avatarLink, backgroundLink, accountId, createdAt, lastLogin) {
         this.id = id;
         this.fullName = fullName;
         this.gender = gender;
@@ -10,6 +10,7 @@ class User {
         this.backgroundLink = backgroundLink;
         this.accountId = accountId;
         this.createdAt = createdAt;
+        this.lastLogin = lastLogin;
     }
 }
 

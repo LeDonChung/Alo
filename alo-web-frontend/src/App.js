@@ -8,8 +8,18 @@ import HomePage from './pages/HomePage';
 import ContactPage from './pages/ContactPage';
 import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
-import ChatPage from './pages/ChatPage';
+import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { getFriends } from './redux/slices/FriendSlice';
+
 function App() {
+  const dispatch = useDispatch();
+  const init = async () => {
+    await dispatch(getFriends())
+  }
+  useEffect(() => {
+    init(); 
+  }, []);
   return (
     <BrowserRouter
       future={{
@@ -31,7 +41,6 @@ function App() {
         <Route element={<MainLayout />}>
           <Route path="/me" element={<HomePage />} />
           <Route path="/contact" element={<ContactPage />} />
-          <Route path="/Chat" element={<ChatPage />} />
         </Route>
 
         {/* 404 Not Found */}

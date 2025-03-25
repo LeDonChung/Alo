@@ -3,7 +3,7 @@ class Message {
         this.id = id;
         this.senderId = senderId;
         this.conversationId = conversationId;
-        this.messageType = messageType;
+        this.messageType = messageType; // 0: text, 1: image, 2: file, 4: video, 5: audio
         this.content = content;
         this.timestamp = timestamp;
         this.deleteBy = deleteBy;

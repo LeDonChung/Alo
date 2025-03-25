@@ -48,4 +48,10 @@ router.get(
     middleware.authenticateToken,
     userController.getProfile
 )
+
+router.get(
+    '/get-profile/:id',
+    middleware.authenticateToken,
+    userController.getProfileById
+)
 module.exports = router;

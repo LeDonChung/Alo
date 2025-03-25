@@ -275,6 +275,55 @@ const updateProfile = async (userId, user) => {
     return null;
   }
 }
+
+const getUsersByIds = async (userIds) => {
+  try {
+    const params = {
+      RequestItems: {
+        'Users': {
+          Keys: userIds.map(userId => ({ id: userId }))
+        }
+      }
+    };
+    console.log(params)
+    const result = await client.batchGet(params).promise();
+    return result.Responses.Users;
+  } catch (err) {
+    console.error(err);
+    throw new Error(err);
+  }
+}
+
+const updateLastLogout = async (userId) => {
+  const userExist = await getUserById(userId);
+  if (!userExist) {
+    return null;
+  }
+
+  const params = {
+    TableName: 'Users',
+    Key: {
+      id: userId
+    },
+    UpdateExpression: 'set lastLogout = :lastLogout',
+    ExpressionAttributeValues: {
+      ':lastLogout': new Date().getTime()
+    },
+    ReturnValues: 'UPDATED_NEW'
+  };
+  console.log(params)
+
+  try {
+    const data = await client.update(params).promise();
+    // Trả về thông tin user sau khi cập nhật
+    console.log(data)
+    return getUserById(userId);
+  } catch (err) {
+    console.log(err);
+    return null;
+  }
+
+}
 module.exports = {
   existingUser,
   register,
@@ -284,5 +333,7 @@ module.exports = {
   uploadAvatar,
   uploadBackground,
   updateProfile,
-  getUserById
+  getUserById,
+  getUsersByIds,
+  updateLastLogout
 }

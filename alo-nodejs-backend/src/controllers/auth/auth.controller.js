@@ -25,6 +25,7 @@ exports.login = async (req, res) => {
         const accessToken = generateAccessToken(payload);
         const refreshToken = await generateRefreshToken(payload);
 
+        
         console.log(`End login for: ${req.body.phoneNumber}`);
 
         return res.json({
@@ -38,7 +39,26 @@ exports.login = async (req, res) => {
         return res.status(401).json({ message: 'Yêu cầu không hợp lệ.' });
     }
 };
+exports.logout = async(req, res) => {
+    // Lấy Authorization từ header
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+    // Lấy userId từ token
+    const userId = userService.getUserIdFromToken(token);
 
+    // Xóa refresh token trong Redis
+    await redis.del(token);
+
+    // cập nhật lastLogout cho user
+    await userService.updateLastLogout(userId);
+
+    return res.json({
+        status: 200,
+        data: null,
+        message: "Đăng xuất thành công."
+    })
+
+};
 exports.refreshToken = async(req, res) => {
     const { token } = req.body;
     if (!token) return res.sendStatus(401);

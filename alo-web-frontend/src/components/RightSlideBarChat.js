@@ -43,7 +43,7 @@ const RightSlidebar = ({selectedFriend}) => {
               className="w-20 h-20 rounded-full mb-2"
             />
             {/* <p className="font-semibold text-lg">Cô gái Lụa Lụa</p> */}
-            <p className="font-semibold">{selectedFriend.name}</p>
+            <p className="font-semibold"></p>
             <div className="flex space-x-4 mt-4">
               <button className="flex flex-col items-center text-gray-600 hover:text-blue-500">
                 <svg className="w-6 h-6 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">

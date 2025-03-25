@@ -2,11 +2,30 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getProfile, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
+import { getProfile, logout, setUserLogin, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
+import socket from "../utils/socket";
+import { getAllConversation } from "../redux/slices/ConversationSlice";
 export const Navigation = () => {
     const dispatch = useDispatch();
     const userLogin = useSelector((state) => state.user.userLogin);
+
+    const init = async () => {
+        if (!userLogin) {
+            const user = JSON.parse(localStorage.getItem('userLogin'));
+            const accessToken = localStorage.getItem('accessToken');
+            if (user && accessToken) {
+                dispatch(setUserLogin(user));
+            } else {
+                window.location.href = '/login';
+            }
+            socket.emit('login', userLogin?.id);
+        }
+        await dispatch(getAllConversation());
+    }
+    useEffect(() => {
+        init();
+    }, []);
 
     const [menus, setMenus] = useState([
         { id: 1, icon: "./icon/ic_message.png", onPress: () => navigate("/me") },
@@ -69,7 +88,9 @@ export const Navigation = () => {
                                 <i className="fas fa-user"></i>
                                 <p className="p-2"> Thông tin cá nhân </p>
                             </div>
-                            <div className="flex flex-row items-center cursor-pointer hover:bg-gray-200 px-2" onClick={() => {
+                            <div className="flex flex-row items-center cursor-pointer hover:bg-gray-200 px-2" onClick={async () => {
+                                await dispatch(logout());
+
                                 // remove 
                                 localStorage.removeItem('accessToken');
                                 localStorage.removeItem('refreshToken');
@@ -77,6 +98,7 @@ export const Navigation = () => {
                                 setShowProfileModal(false);
                                 setShowSettings(false);
                                 showToast("Đăng xuất thành công", "success");
+                                socket.emit("logout", userLogin?.id);
                                 navigate("/login");
                             }}>
                                 <i className="fas fa-sign-out-alt"></i>

@@ -1,14 +1,10 @@
 require('dotenv').config();
-const express = require('express');
-
-const app = require('./src/app');
-
-const PORT = 5000;
-
+const app = require('./src/app');  // Express app (API)
 const http = require('http');
+
 
 const server = http.createServer(app);
 
-server.listen(PORT, () => {
-    console.log(`Server running at http://localhost:${PORT}`);
+server.listen(process.env.SERVER_PORT, () => {
+    console.log(`Server running at http://localhost:${process.env.SERVER_PORT}`);
 });

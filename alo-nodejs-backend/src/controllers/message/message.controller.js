@@ -1,0 +1,65 @@
+const friendService = require('../../services/friend.service');
+const userService = require('../../services/user.service');
+const messageService = require('../../services/message.service');
+const conversationService = require('../../services/conversation.service');
+exports.createMessage = async (req, res) => {
+    try {
+        // Kiểm tra conversationId có tồn tại không
+        const conversation = await conversationService.getConversationById(req.body.conversationId);
+        if (!conversation) {
+            return res.status(400).json({
+                status: 400,
+                message: "Cuộc trò chuyện không tồn tại.",
+                data: null
+            });
+        }
+
+        if (req.body.messageType === 'text') {
+            const request = {
+                senderId: req.body.senderId,
+                conversationId: req.body.conversationId,
+                content: req.body.content,
+                messageType: req.body.messageType,
+                timestamp: Date.now(),
+                seen: []
+            }
+
+            // Tạo tin nhắn
+            const message = await messageService.createMessageText(request);
+
+            if (!message) {
+                return res.status(400).json({
+                    status: 400,
+                    message: "Tạo tin nhắn không thành công.",
+                    data: null
+                });
+            }
+
+            // Lưu tin nhắn cuối cùng vào conversation
+            await conversationService.updateLastMessage(conversation.id, message);
+
+            return res.json({
+                status: 200,
+                data: message,
+                message: "Tạo tin nhắn thành công."
+            });
+        } else {
+            return res.json({
+                status: 200,
+                data: null,
+                message: "Tạo tin nhắn thành công."
+            });
+        }
+
+
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+};
+

@@ -4,12 +4,21 @@ import { axiosInstance } from "../../api/APIClient";
 const initialState = {
     avatar: null,
     errorResponse: null,
-    userLogin: null
+    userLogin: null,
+    userOnlines: []
 };
 
-const getProfile = createAsyncThunk('UserSlice/getProfile', async (token, { rejectWithValue }) => {
+const getProfile = createAsyncThunk('UserSlice/getProfile', async (_, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.get('/api/user/profile');
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response.data);
+    }
+});
+const logout = createAsyncThunk('UserSlice/logout', async (_, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/auth/logout');
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response.data);
@@ -75,7 +84,14 @@ const login = createAsyncThunk('UserSlice/login', async (request, { rejectWithVa
 const UserSlice = createSlice({
     name: 'UserSlice',
     initialState: initialState,
-    reducers: {},
+    reducers: {
+        setUserOnlines: (state, action) => {
+            state.userOnlines = action.payload;
+        },
+        setUserLogin: (state, action) => {
+            state.userLogin = action.payload;
+        }
+    },
     extraReducers: (builder) => {
 
         // Register
@@ -157,9 +173,16 @@ const UserSlice = createSlice({
         builder.addCase(updateProfile.rejected, (state, action) => {
             state.userLogin = null;
         });
+
+        builder.addCase(logout.pending, (state) => {
+        });
+        builder.addCase(logout.fulfilled, (state, action) => {
+        });
+        builder.addCase(logout.rejected, (state, action) => {
+        });
     }
 });
 
-export const { } = UserSlice.actions;
-export { uploadAvatar, uploadBackground, getProfile, updateProfile, register, login };
+export const { setUserOnlines, setUserLogin } = UserSlice.actions;
+export { uploadAvatar, uploadBackground, getProfile, updateProfile, register, login, logout };
 export default UserSlice.reducer;

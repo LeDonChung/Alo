@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { login } from '../redux/slices/UserSlice';
+import { getProfile, login } from '../redux/slices/UserSlice';
 import { useDispatch, useSelector } from 'react-redux';
 import showToast from '../utils/AppUtils';
+import socket from '../utils/socket.js';
 export const LoginPage = () => {
     const [userLogin, setUserLogin] = useState({
         phoneNumber: "",
@@ -15,9 +16,13 @@ export const LoginPage = () => {
 
     const handleSubmitLogin = async (e) => {
         e.preventDefault();
-        console.log("userLogin", userLogin);
         await dispatch(login(userLogin)).unwrap().then(async (response) => {
             showToast('Đăng nhập thành công', 'success');
+            await dispatch(getProfile()).unwrap().then((response) => {
+
+            }).catch((error) => {
+                console.log("❌ Lỗi lấy thông tin người dùng:", error);
+            });
             navigate('/me');
         }).catch((error) => {
             console.log("❌ Lỗi đăng nhập:", error);
