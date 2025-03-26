@@ -7,7 +7,6 @@ import { FriendRequestStyles } from "../../../styles/FriendRequestStyle";
 import { ChatBoxStyles } from "../../../styles/ChatBoxStyle";
 import { SettingContactStyles } from "../../../styles/SettingContactStyle";
 
-// Dữ liệu mẫu đã thêm trường birthday và isActive
 const data_sample = [
   { id: "1", name: "A Luyện", phone: "123456789", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn", birthday: "2025-03-07", isActive: true },
   { id: "2", name: "A Tuấn", phone: "987654321", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn", birthday: "2025-03-08", isActive: false },
@@ -31,7 +30,7 @@ const data_sample = [
   { id: "20", name: "Suggested 2", status: "Gợi ý", statusType: "Gợi ý", isActive: true },
 ];
 
-// Dữ liệu nhóm
+
 const groupData = [
   { id: "2", name: "Fc Anh Tú", time: "10 phút", message: "A Tuấn GK: @Văn Hào Sport thêm bn đỏ 😍...", isActive: true },
   { id: "3", name: "Bóng đá IUH 2024-2025", time: "4 giờ", message: "Hà Tạ Hồng: [Hình ảnh] Tình hình", isActive: true },
@@ -46,7 +45,7 @@ const groupData = [
   { id: "12", name: "Group 12", time: "4 ngày", message: "Inactive group", isActive: false },
 ];
 
-// Dữ liệu OA
+
 const oaData = [
   { id: "1", name: "Tìm thêm Official Account", description: "Official Account đang quan tâm" },
   { id: "2", name: "Công an huyện Sơn Tịnh", description: "" },
@@ -77,12 +76,10 @@ const ContactScreen = ({ navigation }) => {
     suggestions: true,
   });
   const [selectedFriends, setSelectedFriends] = useState([]);
-  const [searchQuery, setSearchQuery] = useState(""); // Quản lý từ khóa tìm kiếm
+  const [searchQuery, setSearchQuery] = useState(""); 
 
-  // Giả lập thông tin người dùng đăng nhập (sẽ thay bằng API sau)
   const loggedInUser = { name: "Công Hiếu" };
 
-  // Lọc dữ liệu theo trạng thái và hoạt động
   const getFilteredData = (statusType, activeFilter = null) => {
     let filteredData = data_sample.filter(item => item.statusType === statusType || !item.statusType);
     if (activeFilter === "active") {
@@ -91,21 +88,21 @@ const ContactScreen = ({ navigation }) => {
     return filteredData;
   };
 
-  // Lọc danh sách bạn bè sắp tới sinh nhật
+
   const getUpcomingBirthdays = () => {
-    const today = new Date("2025-03-07"); // Ngày hiện tại (theo yêu cầu là 07/03/2025)
+    const today = new Date("2025-03-07"); 
     const friends = getFilteredData("Đã kết bạn");
     return friends
       .filter((friend) => {
         const birthday = new Date(friend.birthday);
         const diffTime = birthday - today;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        return diffDays >= 0 && diffDays <= 30; // Lọc sinh nhật trong vòng 30 ngày tới
+        return diffDays >= 0 && diffDays <= 30;
       })
       .sort((a, b) => new Date(a.birthday) - new Date(b.birthday));
   };
 
-  // Lọc dữ liệu theo từ khóa tìm kiếm (hỗ trợ tìm kiếm same và tìm kiếm đầy đủ)
+  
   const filterDataBySearch = (data, context = "all") => {
     if (!searchQuery) return data;
 
@@ -128,17 +125,17 @@ const ContactScreen = ({ navigation }) => {
     return data;
   };
 
-  // Đếm số lượng lời mời, đã gửi, bạn bè, bạn bè đang hoạt động và gợi ý
+  
   const friendRequestCount = getFilteredData("Muốn kết bạn").length;
   const sentRequestCount = getFilteredData("Đã gửi").length;
   const friendCount = getFilteredData("Đã kết bạn").length;
   const activeFriendCount = getFilteredData("Đã kết bạn", "active").length; // Số bạn bè đang hoạt động
   const suggestedCount = getFilteredData("Gợi ý").length;
 
-  // Đếm số nhóm đang hoạt động
+  
   const activeGroupCount = groupData.filter(group => group.isActive).length;
 
-  // Hiển thị mục liên hệ với khả năng chuyển hướng đến ChatBox
+  
   const renderContactItem = ({ item }) => (
     <TouchableOpacity
       style={ContactStyles.contactItem}
@@ -158,7 +155,6 @@ const ContactScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  // Hiển thị mục nhóm
   const renderGroupItem = ({ item }) => (
     <View style={ContactStyles.groupItem}>
       <Image
@@ -173,7 +169,6 @@ const ContactScreen = ({ navigation }) => {
     </View>
   );
 
-  // Hiển thị giao diện FriendRequests
   const renderFriendRequests = () => {
     const renderFriendRequestItem = ({ item }) => (
       <View style={FriendRequestStyles.contactItem}>
@@ -222,11 +217,11 @@ const ContactScreen = ({ navigation }) => {
       <SafeAreaView style={FriendRequestStyles.container}>
         <View style={FriendRequestStyles.header}>
           <TouchableOpacity onPress={() => setSubScreen(null)}>
-            <Icon name="arrow-back" size={20} color="#fff" />
+            <Icon name="arrow-back" size={20} color="#121212" />
           </TouchableOpacity>
           <Text style={FriendRequestStyles.headerTitle}>Lời mời kết bạn</Text>
           <TouchableOpacity onPress={() => setSubScreen("settings")}>
-            <Icon name="settings" size={20} color="#fff" />
+            <Icon name="settings" size={20} color="#121212" />
           </TouchableOpacity>
         </View>
 
@@ -302,7 +297,6 @@ const ContactScreen = ({ navigation }) => {
     );
   };
 
-  // Hiển thị giao diện ChatBox
   const renderChatBox = () => {
     const messages = [
       { id: "1", message: "Xin chào!", time: "10:00", sender: "me" },
@@ -326,11 +320,11 @@ const ContactScreen = ({ navigation }) => {
       <SafeAreaView style={ChatBoxStyles.container}>
         <View style={ChatBoxStyles.header}>
           <TouchableOpacity onPress={() => { setSubScreen(null); setChatUser(null); }}>
-            <Icon name="arrow-back" size={20} color="#fff" />
+            <Icon name="arrow-back" size={20} color="#121212" />
           </TouchableOpacity>
           <Text style={ChatBoxStyles.headerTitle}>{chatUser?.userName || "Chat"}</Text>
           <TouchableOpacity>
-            <Icon name="more-vert" size={20} color="#fff" />
+            <Icon name="more-vert" size={20} color="#121212" />
           </TouchableOpacity>
         </View>
         <FlatList
@@ -346,14 +340,13 @@ const ContactScreen = ({ navigation }) => {
             placeholderTextColor="#aaa"
           />
           <TouchableOpacity style={ChatBoxStyles.sendButton}>
-            <Icon name="send" size={20} color="#fff" />
+            <Icon name="send" size={20} color="#121212" />
           </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
   };
 
-  // Hiển thị giao diện Settings
   const renderSettings = () => {
     const toggleDiscoverable = () => setIsDiscoverable((prev) => !prev);
 
@@ -368,7 +361,7 @@ const ContactScreen = ({ navigation }) => {
       <SafeAreaView style={SettingContactStyles.container}>
         <View style={SettingContactStyles.header}>
           <TouchableOpacity onPress={() => setSubScreen(null)}>
-            <Icon name="arrow-back" size={20} color="#fff" />
+            <Icon name="arrow-back" size={20} color="#121212" />
           </TouchableOpacity>
           <Text style={SettingContactStyles.headerTitle}>Quản lý người tìm kiếm và kết bạn</Text>
         </View>
@@ -391,7 +384,7 @@ const ContactScreen = ({ navigation }) => {
             style={SettingContactStyles.optionItem}
             onPress={() => toggleSourceOption("qrCode")}
           >
-            <Icon name="qr-code" size={24} color="#fff" />
+            <Icon name="qr-code" size={24} color="#121212" />
             <Text style={SettingContactStyles.optionText}>Mã QR của tôi</Text>
             <View style={SettingContactStyles.checkbox}>
               {sourceOptions.qrCode && <Icon name="check" size={16} color="#007AFF" />}
@@ -401,7 +394,7 @@ const ContactScreen = ({ navigation }) => {
             style={SettingContactStyles.optionItem}
             onPress={() => toggleSourceOption("groups")}
           >
-            <Icon name="group" size={24} color="#fff" />
+            <Icon name="group" size={24} color="#121212" />
             <Text style={SettingContactStyles.optionText}>Nhóm chung</Text>
             <View style={SettingContactStyles.checkbox}>
               {sourceOptions.groups && <Icon name="check" size={16} color="#007AFF" />}
@@ -411,7 +404,7 @@ const ContactScreen = ({ navigation }) => {
             style={SettingContactStyles.optionItem}
             onPress={() => toggleSourceOption("contacts")}
           >
-            <Icon name="contacts" size={24} color="#fff" />
+            <Icon name="contacts" size={24} color="#121212" />
             <Text style={SettingContactStyles.optionText}>Danh thiếp Zalo</Text>
             <View style={SettingContactStyles.checkbox}>
               {sourceOptions.contacts && <Icon name="check" size={16} color="#007AFF" />}
@@ -421,7 +414,7 @@ const ContactScreen = ({ navigation }) => {
             style={SettingContactStyles.optionItem}
             onPress={() => toggleSourceOption("suggestions")}
           >
-            <Icon name="person-add" size={24} color="#fff" />
+            <Icon name="person-add" size={24} color="#121212" />
             <Text style={SettingContactStyles.optionText}>Gợi ý "Có thể bạn quen"</Text>
             <View style={SettingContactStyles.checkbox}>
               {sourceOptions.suggestions && <Icon name="check" size={16} color="#007AFF" />}
@@ -432,19 +425,18 @@ const ContactScreen = ({ navigation }) => {
     );
   };
 
-  // Giao diện "Thêm bạn" (khi nhấn icon person-add) - Di chuyển tên người dùng lên trên mã QR
   const renderAddFriend = () => (
     <SafeAreaView style={ContactStyles.container}>
       <View style={ContactStyles.header}>
         <TouchableOpacity onPress={() => setSubScreen(null)}>
-          <Icon name="arrow-back" size={20} color="#fff" />
+          <Icon name="arrow-back" size={20} color="#121212" />
         </TouchableOpacity>
         <Text style={ContactStyles.headerTitle}>Thêm bạn</Text>
       </View>
       <View style={ContactStyles.qrContainer}>
-        <Text style={ContactStyles.qrUserName}>{loggedInUser.name}</Text> {/* Hiển thị tên người dùng */}
+        <Text style={ContactStyles.qrUserName}>{loggedInUser.name}</Text>
         <View style={ContactStyles.qrCode}>
-          <Text style={ContactStyles.qrPlaceholder}>[QR Code Placeholder]</Text> {/* Placeholder cho QR */}
+          <Text style={ContactStyles.qrPlaceholder}>[QR Code Placeholder]</Text> 
         </View>
         <Text style={ContactStyles.qrDescription}>Quét mã để thêm bạn Zalo với tui</Text>
         <View style={ContactStyles.phoneInputContainer}>
@@ -457,7 +449,7 @@ const ContactScreen = ({ navigation }) => {
             ellipsizeMode="tail"
           />
           <TouchableOpacity style={ContactStyles.arrowButton}>
-            <Icon name="arrow-forward" size={20} color="#fff" />
+            <Icon name="arrow-forward" size={20} color="#121212" />
           </TouchableOpacity>
         </View>
       </View>
@@ -479,7 +471,6 @@ const ContactScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 
-  // Giao diện "Sinh nhật"
   const renderBirthdays = () => {
     const upcomingBirthdays = getUpcomingBirthdays();
 
@@ -508,11 +499,11 @@ const ContactScreen = ({ navigation }) => {
       <SafeAreaView style={ContactStyles.container}>
         <View style={ContactStyles.header}>
           <TouchableOpacity onPress={() => setSubScreen(null)}>
-            <Icon name="arrow-back" size={20} color="#fff" />
+            <Icon name="arrow-back" size={20} color="#121212" />
           </TouchableOpacity>
           <Text style={ContactStyles.headerTitle}>Sinh nhật</Text>
           <TouchableOpacity>
-            <Icon name="calendar-today" size={20} color="#fff" />
+            <Icon name="calendar-today" size={20} color="#121212" />
           </TouchableOpacity>
         </View>
         <Text style={ContactStyles.sectionTitle}>Sinh nhật sắp tới</Text>
@@ -529,7 +520,6 @@ const ContactScreen = ({ navigation }) => {
     );
   };
 
-  // Giao diện "Tạo nhóm"
   const renderCreateGroup = () => {
     const friends = getFilteredData("Đã kết bạn");
 
@@ -572,7 +562,7 @@ const ContactScreen = ({ navigation }) => {
               />
               <Text style={ContactStyles.selectedName}>{friend.name}</Text>
               <TouchableOpacity onPress={() => toggleFriendSelection(friend.id)}>
-                <Icon name="close" size={16} color="#fff" />
+                <Icon name="close" size={16} color="#121212" />
               </TouchableOpacity>
             </View>
           ))}
@@ -589,13 +579,13 @@ const ContactScreen = ({ navigation }) => {
       <SafeAreaView style={ContactStyles.container}>
         <View style={ContactStyles.header}>
           <TouchableOpacity onPress={() => setSubScreen(null)}>
-            <Icon name="close" size={20} color="#fff" />
+            <Icon name="close" size={20} color="#121212" />
           </TouchableOpacity>
           <Text style={ContactStyles.headerTitle}>Nhóm mới</Text>
           <Text style={ContactStyles.headerSubTitle}>Đã chọn: {selectedFriends.length}</Text>
         </View>
         <TouchableOpacity style={ContactStyles.groupNameContainer}>
-          <Icon name="camera-alt" size={24} color="#fff" />
+          <Icon name="camera-alt" size={24} color="#121212" />
           <TextInput
             placeholder="Đặt tên nhóm"
             placeholderTextColor="#aaa"
@@ -629,9 +619,7 @@ const ContactScreen = ({ navigation }) => {
     );
   };
 
-  // Hiển thị danh sách tìm kiếm trên trang chính
   const renderSearchResults = () => {
-    // Thêm trường type để phân biệt nguồn dữ liệu
     const friendsWithType = getFilteredData("Đã kết bạn").map(item => ({ ...item, type: "friend" }));
     const groupsWithType = groupData.filter(group => group.isActive).map(item => ({ ...item, type: "group" }));
     const oaWithType = oaData.map(item => ({ ...item, type: "oa" }));
@@ -687,7 +675,7 @@ const ContactScreen = ({ navigation }) => {
     return (
       <SafeAreaView style={ContactStyles.container}>
         <View style={ContactStyles.searchContainer}>
-          <Icon name="arrow-back" size={20} color="#fff" style={ContactStyles.searchIconLeft} onPress={() => setSearchQuery("")} />
+          <Icon name="arrow-back" size={20} color="#121212" style={ContactStyles.searchIconLeft} onPress={() => setSearchQuery("")} />
           <TextInput
             placeholder="Tìm kiếm"
             placeholderTextColor="#aaa"
@@ -700,7 +688,7 @@ const ContactScreen = ({ navigation }) => {
         </View>
         <FlatList
           data={filteredData}
-          keyExtractor={(item) => `${item.type}-${item.id}`} // Tạo key duy nhất bằng cách kết hợp type và id
+          keyExtractor={(item) => `${item.type}-${item.id}`} 
           renderItem={renderItem}
           ListEmptyComponent={<Text style={ContactStyles.noDataText}>Không tìm thấy kết quả</Text>}
         />
@@ -717,7 +705,7 @@ const ContactScreen = ({ navigation }) => {
           {!subScreen && (
             <View style={ContactStyles.searchContainer}>
               <TouchableOpacity onPress={() => navigation.goBack()}>
-                <Icon name="arrow-back" size={20} color="#fff" style={ContactStyles.searchIconLeft} />
+                <Icon name="arrow-back" size={20} color="#121212" style={ContactStyles.searchIconLeft} />
               </TouchableOpacity>
               <TextInput
                 placeholder="Tìm kiếm"
@@ -729,7 +717,7 @@ const ContactScreen = ({ navigation }) => {
                 ellipsizeMode="tail"
               />
               <TouchableOpacity onPress={() => setSubScreen("addFriend")}>
-                <Icon name="person-add" size={20} color="#fff" style={ContactStyles.searchIconRight} />
+                <Icon name="person-add" size={20} color="#121212" style={ContactStyles.searchIconRight} />
               </TouchableOpacity>
             </View>
           )}
@@ -754,16 +742,16 @@ const ContactScreen = ({ navigation }) => {
           {activeTab === "Bạn bè" && !subScreen && (
             <View style={ContactStyles.menuContainer}>
               <TouchableOpacity style={ContactStyles.menuItem} onPress={() => setSubScreen("friendrequests")}>
-                <Icon name="person-add" size={20} color="#fff" style={ContactStyles.menuIcon} />
+                <Icon name="person-add" size={20} color="#121212" style={ContactStyles.menuIcon} />
                 <Text style={ContactStyles.menuText}>Lời mời kết bạn ({friendRequestCount + suggestedCount})</Text>
               </TouchableOpacity>
               <TouchableOpacity style={ContactStyles.menuItem}>
-                <Icon name="contacts" size={20} color="#fff" style={ContactStyles.menuIcon} />
+                <Icon name="contacts" size={20} color="#121212" style={ContactStyles.menuIcon} />
                 <Text style={ContactStyles.menuText}>Danh bạ máy</Text>
                 <Text style={ContactStyles.menuSubText}>Liên hệ có dùng Zalo</Text>
               </TouchableOpacity>
               <TouchableOpacity style={ContactStyles.menuItem} onPress={() => setSubScreen("birthdays")}>
-                <Icon name="cake" size={20} color="#fff" style={ContactStyles.menuIcon} />
+                <Icon name="cake" size={20} color="#121212" style={ContactStyles.menuIcon} />
                 <Text style={ContactStyles.menuText}>Sinh nhật</Text>
               </TouchableOpacity>
             </View>
@@ -791,7 +779,7 @@ const ContactScreen = ({ navigation }) => {
           {activeTab === "Nhóm" && !subScreen && (
             <View>
               <TouchableOpacity style={ContactStyles.groupHeader} onPress={() => setSubScreen("createGroup")}>
-                <Icon name="group-add" size={20} color="#fff" style={ContactStyles.menuIcon} />
+                <Icon name="group-add" size={20} color="#121212" style={ContactStyles.menuIcon} />
                 <Text style={ContactStyles.groupHeaderText}>Tạo nhóm</Text>
               </TouchableOpacity>
               <View style={ContactStyles.tabSwitchContainerGroup}>
@@ -799,7 +787,7 @@ const ContactScreen = ({ navigation }) => {
                   Nhóm đang tham gia ({activeGroupCount})
                 </Text>
                 <TouchableOpacity style={ContactStyles.filterButton}>
-                  <Icon name="filter-list" size={20} color="#fff" />
+                  <Icon name="filter-list" size={20} color="#121212" />
                 </TouchableOpacity>
               </View>
               <FlatList

@@ -86,11 +86,13 @@ export const LoginScreen = ({ navigation }) => {
       {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
       <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-        {isLoading ? (
+        {/* {isLoading ?  */}
+        (
           <ActivityIndicator size="small" color="#fff" />
         ) : (
           <Text style={{ fontSize: 16, fontWeight: "bold", color: "#fff" }}>Đăng nhập với mật khẩu</Text>
-        )}
+        )
+        {/* } */}
 
 
       </TouchableOpacity>
