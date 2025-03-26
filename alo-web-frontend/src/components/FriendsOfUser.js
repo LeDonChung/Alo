@@ -1,6 +1,6 @@
 import { React, useState, useEffect, useRef, use } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faMagnifyingGlass, faChevronDown, faChevronRight, faTag } from "@fortawesome/free-solid-svg-icons";
+import { faMagnifyingGlass, faChevronDown, faChevronRight, faTag, faCircleXmark, faEllipsis } from "@fortawesome/free-solid-svg-icons";
 import { useDispatch, useSelector } from 'react-redux';
 import { getFriends } from '../redux/slices/FriendSlice';
 import { removeVietnameseTones } from '../utils/AppUtils';
@@ -19,6 +19,14 @@ const typeFilter = [
   { id: 2, name: "Tên (Z-A)" },
 ]
 
+const details = [
+  { id: 1, name: "Xem thông tin" },
+  { id: 2, name: "Phân loại" },
+  { id: 3, name: "Đặt tên gợi nhớ" },
+  { id: 4, name: "Chặn người này" },
+  { id: 5, name: "Xóa kết bạn" },
+]
+
 
 export default function FriendsOfUser() {
   const dispatch = useDispatch();
@@ -28,10 +36,16 @@ export default function FriendsOfUser() {
   const [textSearch, setTextSearch] = useState("");
   const [selectFilter, setSelectFilter] = useState(typeFilter[0]);
   const [selectCategory, setSelectCategory] = useState({ id: 0, name: "Tất cả" });
-  const [open, setOpen] = useState(false);
   const [groupFriendList, setGroupFriendList] = useState([]);
+  const [detailFriend, setDetailFriend] = useState(null);
 
+  //detail friend
+  const [openDetail, setOpenDetail] = useState(false);
+  const detailRef = useRef(null);
+
+  const [open, setOpen] = useState(false);
   const dropdownRef = useRef(null);
+
 
   useEffect(() => {
     const fetchFriends = async () => {
@@ -76,8 +90,7 @@ export default function FriendsOfUser() {
     return groupList;
   };
 
-
-
+  // Lọc danh sách bạn bè theo phân loại a-z hoặc z-a
   useEffect(() => {
     if (listFr?.length > 0) {
       setGroupFriendList(groupAndSortFriends(listFr, selectFilter.id === 1 ? 'asc' : 'desc'));
@@ -86,18 +99,31 @@ export default function FriendsOfUser() {
 
 
   useEffect(() => {
+    let isMounted = true; // Cờ để kiểm tra mount trạng thái
+
     const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setOpen(false); // Tự đóng khi click bên ngoài
+      if (!isMounted) return; // Dừng nếu component đã unmount
+      if (dropdownRef?.current && !dropdownRef.current.contains(event.target)) {
+        setOpen(false);
+      }
+      if (detailRef?.current && !detailRef.current.contains(event.target)) {
+        setOpenDetail(false);
       }
     };
 
+    console.log("Open: ", open);
+    console.log("Open detail: ", openDetail);
+
 
     document.addEventListener("mousedown", handleClickOutside);
+
     return () => {
+      isMounted = false;
       document.removeEventListener("mousedown", handleClickOutside);
     };
-  }, []);
+  }, [open, openDetail]);
+
+
 
   useEffect(() => {
     if (textSearch === "") {
@@ -106,18 +132,18 @@ export default function FriendsOfUser() {
       const groupDefault = groupAndSortFriends(listFr, selectFilter.id === 1 ? 'asc' : 'desc');
       console.log("Search: ", textSearch);
       const newGroup = groupDefault
-      .map((group) => {
-        const newList = group.list.filter((friend) => {
-          const friendName = removeVietnameseTones(friend.fullName.toLowerCase());
-          const searchText = removeVietnameseTones(textSearch.toLowerCase());
-          return friendName.includes(searchText);
-        });
-        return newList.length > 0 ? { ...group, list: newList } : null;
-      })
-      .filter((group) => group !== null); // Loại bỏ các nhóm rỗng
+        .map((group) => {
+          const newList = group.list.filter((friend) => {
+            const friendName = removeVietnameseTones(friend.fullName.toLowerCase());
+            const searchText = removeVietnameseTones(textSearch.toLowerCase());
+            return friendName.includes(searchText);
+          });
+          return newList.length > 0 ? { ...group, list: newList } : null;
+        })
+        .filter((group) => group !== null); // Loại bỏ các nhóm rỗng
 
-    setGroupFriendList(newGroup);
-  }
+      setGroupFriendList(newGroup);
+    }
   }, [textSearch, listFr, selectFilter]);
 
   return (
@@ -142,6 +168,10 @@ export default function FriendsOfUser() {
                   <input type="text" placeholder="Tìm bạn"
                     className="pl-2 bg-[#EBECF0] h-[30px] focus:outline-none focus:border-none focus:ring-0 w-[95%] hover:bg-gray-100 bg-white"
                     value={textSearch} onChange={(e) => setTextSearch(e.target.value)} />
+                  {textSearch && (
+                    <FontAwesomeIcon icon={faCircleXmark} className="text-gray-500" size="15" onClick={() => setTextSearch("")} />
+                  )}
+
                 </div>
 
 
@@ -233,7 +263,7 @@ export default function FriendsOfUser() {
                 </div>
               </div>
 
-              <div className="flex flex-col w-[98%] mx-auto mb-5">
+              <div className="flex flex-col w-full mx-auto mb-5 px-2">
                 {
                   groupFriendList && groupFriendList.map((group) => (
                     <div key={group.id} className="flex flex-col">
@@ -243,12 +273,12 @@ export default function FriendsOfUser() {
                       <div className="flex flex-col">
                         {
                           group.list && group.list.map((friend) => (
-                            <div key={friend.id} className="flex items-center justify-between p-2 hover:bg-gray-100 rounded-md">
+                            <div key={friend.id} className="flex items-center justify-between w-full hover:bg-gray-100 rounded-md p-2">
                               <div className="flex items-center">
                                 <img src="./avt_default.jpg" className="w-[40px] h-[40px] rounded-full" />
                                 <div className="flex flex-col ml-2">
                                   <span className="font-semibold">{friend.fullName}</span>
-                                  {/* {
+                                  {
                                     friend.category && (
                                       <div className="flex items-center">
                                         <FontAwesomeIcon icon={faTag} style={{ color: friend.category.color }} size="15" />
@@ -257,11 +287,65 @@ export default function FriendsOfUser() {
                                         </span>
                                       </div>
                                     )
-                                  } */}
+                                  }
                                 </div>
                               </div>
                               {/* Right - Icon 3 chấm */}
-                              <span className="cursor-pointer text-lg font-bold">⋮</span>
+                              <div ref={detailRef} className="relative">
+                                <button
+                                  className="cursor-pointer text-lg font-bold"
+                                  onClick={() => {
+                                    setDetailFriend(friend);
+                                    setOpenDetail(!openDetail);
+                                  }}
+                                >
+                                  <FontAwesomeIcon icon={faEllipsis} />
+                                </button>
+                                {openDetail && detailFriend.id === friend.id && (
+                                  <div className="absolute left-[-200px] mt-1 w-[200px] bg-white rounded-lg shadow-lg">
+                                    <div className="px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
+                                      <span className="">Xem thông tin</span>
+                                    </div>
+                                    <div className="px-4 relative group py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
+                                      <div className="flex items-center justify-between cursor-pointer hover:bg-gray-100">
+                                        <span>Phân loại</span>
+                                        <FontAwesomeIcon icon={faChevronRight} className="text-gray-500" size="15" />
+                                      </div>
+
+                                      {/* Submenu: Danh sách phân loại */}
+                                      <div className="absolute left-[-200px] top-0 ml-1 w-[180px] bg-white border rounded-lg shadow-lg opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200">
+                                        {listCategory.map((cat) => (
+                                          <div
+                                            key={cat.id}
+                                            onClick={() => {
+                                              setSelectCategory(cat);
+                                              setOpen(false);
+                                            }}
+                                            className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-100"
+                                          >
+                                            <span
+                                              className="inline-block w-3 h-3 rounded-full mr-2"
+                                              style={{ backgroundColor: cat.color }}
+                                            ></span>
+                                            <span>{cat.name}</span>
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                    <div className="px-4 py-2 cursor-pointer hover:bg-gray-100  hover:-mx-[2px] mx-2">
+                                      <span>Đặt tên gợi nhớ</span>
+                                    </div>
+                                    <div className="px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
+                                      <span>Chặn người này</span>
+                                    </div>
+                                    <div className="px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px]  mx-2">
+                                      <span>Xóa kết bạn</span>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+
+
                             </div>
                           ))
                         }

@@ -43,6 +43,56 @@ const acceptFriendRequest = async (data) => {
     }
 }
 
+const unfriendRequest = async (data) => {
+    try {
+        const params = {
+            TableName: 'Friends',
+            Key: {
+                userId: data.userId,
+                friendId: data.friendId
+            },
+            UpdateExpression: 'SET #status = :status',
+            ExpressionAttributeNames: {
+                '#status': 'status',
+            },
+            ExpressionAttributeValues: {
+                ':status': 4,
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+        const result = await client.update(params).promise();
+        return result.Attributes;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+};
+
+const blockFriendRequest = async (data) => {
+    try {
+        const params = {
+            TableName: 'Friends',
+            Key: {
+                userId: data.userId,
+                friendId: data.friendId
+            },
+            UpdateExpression: 'SET #status = :status',
+            ExpressionAttributeNames: {
+                '#status': 'status',
+            },
+            ExpressionAttributeValues: {
+                ':status': 3,
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+        const result = await client.update(params).promise();
+        return result.Attributes;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+};
+
 const rejectFriendRequest = async (data) => {
     try {
         const params = {
@@ -114,13 +164,14 @@ const getFriends = async (userId) => {
     try {
         const params = {
             TableName: 'Friends',
-            FilterExpression: '#status = :status and (userId = :userId or friendId = :userId)',
+            FilterExpression: '#status in (:status1, :status2) and (userId = :userId or friendId = :userId)',
             ExpressionAttributeNames: {
                 '#status': 'status'
             },
             ExpressionAttributeValues: {
                 ':userId': userId,
-                ':status': 1
+                ':status': 1,
+                ':status2': 3
             }
         };
         const result = await client.scan(params).promise();
@@ -138,5 +189,7 @@ module.exports = {
     rejectFriendRequest,
     getFriendRequests,
     getFriend,
-    getFriends
+    getFriends,
+    unfriendRequest,
+    blockFriendRequest
 };

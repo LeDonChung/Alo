@@ -38,9 +38,8 @@ export const formatPrice = (price) => {
 export const calculateSalePrice = (price, discount) => {
     return price - (price * discount / 100);
 }
-
-export // Hàm loại bỏ dấu
-const removeVietnameseTones = (str) => {
+// Hàm loại bỏ dấu
+export  const removeVietnameseTones = (str) => {
   return str
     .normalize("NFD") // Tách tổ hợp ký tự Unicode
     .replace(/[\u0300-\u036f]/g, "") // Loại bỏ các dấu

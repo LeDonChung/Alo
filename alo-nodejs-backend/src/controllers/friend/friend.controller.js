@@ -131,6 +131,64 @@ exports.rejectFriendRequest = async (req, res) => {
     }
 }
 
+exports.unfriendRequest = async (req, res) => {
+    try {
+        const request = {
+            userId: req.body.userId,
+            friendId: req.body.friendId,
+        }
+        const friendRequest = await friendService.unfriendRequest(request);
+        if (!friendRequest) {
+            return res.status(400).json({
+                status: 400,
+                message: "Yêu cầu hủy kết bạn không hợp lệ.",
+                data: null
+            });
+        }
+        return res.json({
+            status: 200,
+            data: friendRequest,
+            message: "Đã hủy kết bạn."
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
+
+exports.blockFriendRequest = async (req, res) => {
+    try {
+        const request = {
+            userId: req.body.userId,
+            friendId: req.body.friendId,
+        }
+        const friendRequest = await friendService.blockFriendRequest(request);
+        if (!friendRequest) {
+            return res.status(400).json({
+                status: 400,
+                message: "Yêu cầu chặn không hợp lệ.",
+                data: null
+            });
+        }
+        return res.json({
+            status: 200,
+            data: friendRequest,
+            message: "Đã chặn kết bạn."
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
+
 exports.getFriendRequests = async (req, res) => {
     try {
         const userId = req.query.userId;
