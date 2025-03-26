@@ -1,7 +1,9 @@
-import { React, useState, useEffect, useRef } from 'react';
+import { React, useState, useEffect, useRef, use } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass, faChevronDown, faChevronRight, faTag } from "@fortawesome/free-solid-svg-icons";
-import friendData from '../data/friendData';
+import { useDispatch, useSelector } from 'react-redux';
+import { getFriends } from '../redux/slices/FriendSlice';
+import { removeVietnameseTones } from '../utils/AppUtils';
 
 const categoryList = [
   { id: 1, name: "Bạn thân", color: "#ff6347" },
@@ -19,8 +21,8 @@ const typeFilter = [
 
 
 export default function FriendsOfUser() {
-  const friendList = friendData;
-  const [listFriend, setListFriend] = useState(friendList);
+  const dispatch = useDispatch();
+  const listFr = useSelector(state => state.friend.friends);
   const [listCategory, setListCategory] = useState(categoryList);
   const [listTypeFilter, setListTypeFilter] = useState(typeFilter);
   const [textSearch, setTextSearch] = useState("");
@@ -31,22 +33,25 @@ export default function FriendsOfUser() {
 
   const dropdownRef = useRef(null);
 
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        await dispatch(getFriends());
+        console.log("List friends: ", listFr);
+
+      } catch (error) {
+        console.log(error);
+      }
+    };
+    fetchFriends();
+  }, [dispatch]);
   // Lọc danh sách bạn bè theo tên A-Z hoặc Z-A
   const groupAndSortFriends = (friends, sortOrder) => {
-    // Hàm chuẩn hóa ký tự
-    const normalizeName = (name) => {
-      return name
-        .normalize('NFD') // Tách dấu
-        .replace(/[\u0300-\u036f]/g, '') // Xóa dấu
-        .replace(/Đ/g, 'D') // Chuyển Đ thành D
-        .replace(/đ/g, 'd') // Chuyển đ thành d
-        .toUpperCase(); // Viết hoa để so sánh
-    };
 
     // Sắp xếp
     const sortedList = [...friends].sort((a, b) => {
-      const nameA = normalizeName(a.name);
-      const nameB = normalizeName(b.name);
+      const nameA = removeVietnameseTones(a.fullName);
+      const nameB = removeVietnameseTones(b.fullName);
       if (nameA < nameB) return sortOrder === 'asc' ? -1 : 1;
       if (nameA > nameB) return sortOrder === 'asc' ? 1 : -1;
       return 0;
@@ -54,7 +59,7 @@ export default function FriendsOfUser() {
 
     // Gom nhóm
     const groupedObject = sortedList.reduce((acc, friend) => {
-      const firstChar = normalizeName(friend.name).charAt(0);
+      const firstChar = removeVietnameseTones(friend.fullName).charAt(0);
       if (!acc[firstChar]) acc[firstChar] = [];
       acc[firstChar].push(friend);
       return acc;
@@ -74,8 +79,10 @@ export default function FriendsOfUser() {
 
 
   useEffect(() => {
-    setGroupFriendList(groupAndSortFriends(listFriend, selectFilter.id === 1 ? 'asc' : 'desc'));
-  }, [selectFilter, selectCategory]);
+    if (listFr?.length > 0) {
+      setGroupFriendList(groupAndSortFriends(listFr, selectFilter.id === 1 ? 'asc' : 'desc'));
+    }
+  }, [selectFilter, selectCategory, listFr]);
 
 
   useEffect(() => {
@@ -85,11 +92,33 @@ export default function FriendsOfUser() {
       }
     };
 
+
     document.addEventListener("mousedown", handleClickOutside);
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  useEffect(() => {
+    if (textSearch === "") {
+      setGroupFriendList(groupAndSortFriends(listFr, selectFilter.id === 1 ? 'asc' : 'desc'));
+    } else {
+      const groupDefault = groupAndSortFriends(listFr, selectFilter.id === 1 ? 'asc' : 'desc');
+      console.log("Search: ", textSearch);
+      const newGroup = groupDefault
+      .map((group) => {
+        const newList = group.list.filter((friend) => {
+          const friendName = removeVietnameseTones(friend.fullName.toLowerCase());
+          const searchText = removeVietnameseTones(textSearch.toLowerCase());
+          return friendName.includes(searchText);
+        });
+        return newList.length > 0 ? { ...group, list: newList } : null;
+      })
+      .filter((group) => group !== null); // Loại bỏ các nhóm rỗng
+
+    setGroupFriendList(newGroup);
+  }
+  }, [textSearch, listFr, selectFilter]);
 
   return (
     <div className="flex-1 flex flex-col w-full h-full bg-[#EBECF0]">
@@ -100,9 +129,9 @@ export default function FriendsOfUser() {
 
 
       <div className="flex-1 overflow-y-auto p-3">
-        <p className="text-gray-600 font-semibold mt-5 mb-5 w-[98%] mx-auto" >Bạn bè ({listFriend.length})</p>
+        <p className="text-gray-600 font-semibold mt-5 mb-5 w-[98%] mx-auto" >Bạn bè ({listFr.length})</p>
         {
-          listFriend && (
+          listFr && (
             <div className="w-[98%] flex flex-1 flex-col mx-auto bg-white h-auto rounded-lg" >
               {/* search, filter friend */}
               <div className="flex items-center p-3 h-[75px]">
@@ -189,9 +218,6 @@ export default function FriendsOfUser() {
                         </div>
                       </div>
 
-                      {/* Divider */}
-                      <div className="border-t my-1"></div>
-
                       {/* Quản lý thẻ phân loại */}
                       <div
                         onClick={() => {
@@ -219,10 +245,10 @@ export default function FriendsOfUser() {
                           group.list && group.list.map((friend) => (
                             <div key={friend.id} className="flex items-center justify-between p-2 hover:bg-gray-100 rounded-md">
                               <div className="flex items-center">
-                                <img src={friend.avatar} className="w-[40px] h-[40px] rounded-full" />
+                                <img src="./avt_default.jpg" className="w-[40px] h-[40px] rounded-full" />
                                 <div className="flex flex-col ml-2">
-                                  <span className="font-semibold">{friend.name}</span>
-                                  {
+                                  <span className="font-semibold">{friend.fullName}</span>
+                                  {/* {
                                     friend.category && (
                                       <div className="flex items-center">
                                         <FontAwesomeIcon icon={faTag} style={{ color: friend.category.color }} size="15" />
@@ -231,7 +257,7 @@ export default function FriendsOfUser() {
                                         </span>
                                       </div>
                                     )
-                                  }
+                                  } */}
                                 </div>
                               </div>
                               {/* Right - Icon 3 chấm */}

@@ -38,4 +38,14 @@ export const formatPrice = (price) => {
 export const calculateSalePrice = (price, discount) => {
     return price - (price * discount / 100);
 }
+
+export // Hàm loại bỏ dấu
+const removeVietnameseTones = (str) => {
+  return str
+    .normalize("NFD") // Tách tổ hợp ký tự Unicode
+    .replace(/[\u0300-\u036f]/g, "") // Loại bỏ các dấu
+    .replace(/đ/g, "d")
+    .replace(/Đ/g, "D");
+};
+
 export default showToast;

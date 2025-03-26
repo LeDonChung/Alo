@@ -7,7 +7,6 @@ const initialState = {
 
 const getFriends = createAsyncThunk('FriendSlice/getFriends', async (_, { rejectWithValue }) => {
     const userLogin = JSON.parse(localStorage.getItem('userLogin'));
-    console.log(userLogin.id)
     const userId = userLogin.id.trim(); 
     try {
         const response = await axiosInstance.get('/api/friend/get-friends?userId=' + userId);
@@ -27,7 +26,7 @@ const FriendSlice = createSlice({
         builder.addCase(getFriends.pending, (state) => {
             state.friends = [];
         });
-        builder.addCase(getFriends.fulfilled, (state, action) => {
+        builder.addCase(getFriends.fulfilled, (state, action) => {            
             state.friends = action.payload.data;
         });
         builder.addCase(getFriends.rejected, (state, action) => {

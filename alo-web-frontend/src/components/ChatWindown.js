@@ -202,7 +202,7 @@ const ChatWindown = () => {
               value={inputMessage.content}
               onChange={(e) => setInputMessage({ ...inputMessage, content: e.target.value })}
               placeholder="Nhập tin nhắn..."
-              className="flex-1 p-2 border rounded-lg"
+              className="flex-1 p-2 focus:border-none focus:ring-0 focus:outline-none"
             />
             {
               isSending ? <div className="w-6 h-6 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div> : <button onClick={handlerSendMessage}
