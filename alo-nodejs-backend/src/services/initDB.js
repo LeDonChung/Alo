@@ -41,7 +41,7 @@ const createRolesTable = async () => {
   const createParams = {
     TableName: 'Roles',
     KeySchema: [
-      { AttributeName: 'id', KeyType: 'HASH' } 
+      { AttributeName: 'id', KeyType: 'HASH' }
     ],
     AttributeDefinitions: [
       { AttributeName: 'id', AttributeType: 'S' },
@@ -158,10 +158,12 @@ const createMessagesTable = async () => {
   const createParams = {
     TableName: 'Messages',
     KeySchema: [
-      { AttributeName: 'id', KeyType: 'HASH' }
+      { AttributeName: 'id', KeyType: 'HASH' },
+      { AttributeName: "timestamp", KeyType: "RANGE" }
     ],
     AttributeDefinitions: [
       { AttributeName: 'id', AttributeType: 'S' },
+      { AttributeName: "timestamp", AttributeType: "N" },
     ],
     ProvisionedThroughput: {
       ReadCapacityUnits: 5,
