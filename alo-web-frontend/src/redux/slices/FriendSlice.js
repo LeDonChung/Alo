@@ -38,6 +38,15 @@ const blockFriend = createAsyncThunk('FriendSlice/block-friend', async (request,
 });
 
 
+const getFriendByPhoneNumber = createAsyncThunk('FriendSlice/getFriendByPhoneNumber', async (phoneNumber, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.get('/api/friend/get-friend-by-phone-number?phoneNumber=' + phoneNumber);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
 
 const FriendSlice = createSlice({
     name: 'FriendSlice',
@@ -80,9 +89,20 @@ const FriendSlice = createSlice({
             state.friend = null;
         });
 
+        // getFriendByPhoneNumber
+        builder.addCase(getFriendByPhoneNumber.pending, (state) => {
+            state.friend = null;
+        });
+        builder.addCase(getFriendByPhoneNumber.fulfilled, (state, action) => {
+            state.friend = action.payload.data;
+        });
+        builder.addCase(getFriendByPhoneNumber.rejected, (state, action) => {
+            state.friend = null;
+        });
+
     }
 });
 
 export const { } = FriendSlice.actions;
-export { getFriends, unfriend, blockFriend };
+export { getFriends, unfriend, blockFriend, getFriendByPhoneNumber };
 export default FriendSlice.reducer;

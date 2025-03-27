@@ -252,7 +252,7 @@ const getFriendByPhoneNumber = async (phoneNumber) => {
             fullName: userResult.Items[0].fullName,
             phoneNumber: accountResult.Items[0].phoneNumber,
             status: statusFriend,
-            mesage: "Tìm thấy thông tin người dùng"
+            message: "Tìm thấy thông tin người dùng"
         }
         console.log("Result: ", result);
 

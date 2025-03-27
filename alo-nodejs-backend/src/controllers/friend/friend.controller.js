@@ -244,7 +244,7 @@ exports.getFriendByPhoneNumber = async (req, res) => {
         return res.json({
             status: 200,
             data: friend,
-            message: "Thông tin bạn bè."
+            message: "Thông tin người dùng."
         });
     } catch (err) {
         console.error(err);
