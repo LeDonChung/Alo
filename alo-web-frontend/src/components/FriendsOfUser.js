@@ -2,9 +2,8 @@ import { React, useState, useEffect, useRef, use } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass, faChevronDown, faChevronRight, faTag, faCircleXmark, faEllipsis } from "@fortawesome/free-solid-svg-icons";
 import { useDispatch, useSelector } from 'react-redux';
-import { getFriends, unfriend } from '../redux/slices/FriendSlice';
+import { blockFriend, getFriends, unfriend } from '../redux/slices/FriendSlice';
 import showToast, { removeVietnameseTones } from '../utils/AppUtils';
-import ConfirmModal from './ConfirmModal';
 
 const categoryList = [
   { id: 1, name: "Bạn thân", color: "#ff6347" },
@@ -49,8 +48,8 @@ export default function FriendsOfUser() {
         // Xóa bạn
         await dispatch(unfriend({ userId: userLogin.id, friendId: id }));
         setIsOpenConfirm(false);
-          // Hiển thị thông báo thành công
-        showToast("Xóa kết bạn thành công!", "success");        
+        // Hiển thị thông báo thành công
+        showToast("Xóa kết bạn thành công!", "success");
       }
 
     } catch (error) {
@@ -59,6 +58,21 @@ export default function FriendsOfUser() {
       showToast("Đã xảy ra lỗi khi xóa kết bạn. Vui lòng thử lại.", "error");
     }
   };
+
+  const handleBlockFriend = async (id) => {
+    console.log("block friend", id);
+    try {
+      // Chặn bạn
+      await dispatch(blockFriend({ userId: userLogin.id, friendId: id }));
+      setOpenDetail(false);
+      // Hiển thị thông báo thành công
+      showToast("Chặn bạn thành công!", "success");
+    } catch (error) {
+      console.error("Error blocking friend:", error);
+      // Hiển thị thông báo lỗi
+      showToast("Đã xảy ra lỗi khi chặn bạn. Vui lòng thử lại.", "error");
+    }
+  }
 
   //detail friend
   const [openDetail, setOpenDetail] = useState(false);
@@ -313,9 +327,9 @@ export default function FriendsOfUser() {
                                 </button>
                                 {openDetail && detailFriend.id === friend.id && (
                                   <div className="absolute left-[-200px] mt-1 w-[200px] bg-white rounded-lg shadow-lg">
-                                    <div className="px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
+                                    <button className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
                                       <span className="">Xem thông tin</span>
-                                    </div>
+                                    </button>
                                     <div className="px-4 relative group py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
                                       <div className="flex items-center justify-between cursor-pointer hover:bg-gray-100">
                                         <span>Phân loại</span>
@@ -342,12 +356,18 @@ export default function FriendsOfUser() {
                                         ))}
                                       </div>
                                     </div>
-                                    <div className="px-4 py-2 cursor-pointer hover:bg-gray-100  hover:-mx-[2px] mx-2">
+                                    <button className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
                                       <span>Đặt tên gợi nhớ</span>
-                                    </div>
-                                    <div className="px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
-                                      <span>Chặn người này</span>
-                                    </div>
+                                    </button>
+                                    <>
+                                      <button
+                                        type="button"
+                                        className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2"
+                                        onClick={() => handleBlockFriend(friend.id)}
+                                      >
+                                        <span>Chặn người này</span>
+                                      </button>
+                                    </>
                                     <>
                                       <button
                                         type="button"
