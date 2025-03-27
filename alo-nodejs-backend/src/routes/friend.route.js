@@ -23,5 +23,17 @@ router.post('/reject-friend-request',
 router.get('/get-friends', 
     middleware.authenticateToken,
     friendController.getFriends);
+
+router.post('/unfriend',
+    middleware.authenticateToken,
+    friendController.unfriendRequest);
+
+router.post('/block-friend',
+    middleware.authenticateToken,
+    friendController.blockFriendRequest);
+
+router.get('/get-friend-by-phone-number',
+    middleware.authenticateToken,
+    friendController.getFriendByPhoneNumber);
     
 module.exports = router;

@@ -43,6 +43,56 @@ const acceptFriendRequest = async (data) => {
     }
 }
 
+const unfriendRequest = async (data) => {
+    try {
+        const params = {
+            TableName: 'Friends',
+            Key: {
+                userId: data.userId,
+                friendId: data.friendId
+            },
+            UpdateExpression: 'SET #status = :status',
+            ExpressionAttributeNames: {
+                '#status': 'status',
+            },
+            ExpressionAttributeValues: {
+                ':status': 4,
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+        const result = await client.update(params).promise();
+        return result.Attributes;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+};
+
+const blockFriendRequest = async (data) => {
+    try {
+        const params = {
+            TableName: 'Friends',
+            Key: {
+                userId: data.userId,
+                friendId: data.friendId
+            },
+            UpdateExpression: 'SET #status = :status',
+            ExpressionAttributeNames: {
+                '#status': 'status',
+            },
+            ExpressionAttributeValues: {
+                ':status': 3,
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+        const result = await client.update(params).promise();
+        return result.Attributes;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+};
+
 const rejectFriendRequest = async (data) => {
     try {
         const params = {
@@ -114,13 +164,14 @@ const getFriends = async (userId) => {
     try {
         const params = {
             TableName: 'Friends',
-            FilterExpression: '#status = :status and (userId = :userId or friendId = :userId)',
+            FilterExpression: '(#status in (:status1, :status2)) and (userId = :userId or friendId = :userId)',
             ExpressionAttributeNames: {
                 '#status': 'status'
             },
             ExpressionAttributeValues: {
                 ':userId': userId,
-                ':status': 1
+                ':status1': 1,
+                ':status2': 3
             }
         };
         const result = await client.scan(params).promise();
@@ -131,6 +182,88 @@ const getFriends = async (userId) => {
     }
 }
 
+const getFriendByPhoneNumber = async (phoneNumber) => {
+    try {
+
+        console.log("phoneNumber: ", phoneNumber);
+        
+        // find account by phoneNumber
+        const accountParams = {
+            TableName: "Accounts",
+            FilterExpression: "#phoneNumber = :phoneNumber",
+            ExpressionAttributeNames: {
+                "#phoneNumber": 'phoneNumber'
+            },
+            ExpressionAttributeValues: {
+                ":phoneNumber": phoneNumber
+            }
+        };
+
+        const accountResult = await client.scan(accountParams).promise();
+        console.log("Account: ", accountResult.Items[0]);
+
+        if (accountResult.Items.length === 0) {
+            return { message: "Số điện thoại chưa được đăng ký tài khoản." };
+        }
+
+        const accountId = accountResult.Items[0].accountId;
+
+        // find friend by accountId
+        const userParams = {
+            TableName: "Users",
+            FilterExpression: "#accountId = :accountId",
+            ExpressionAttributeNames: {
+                "#accountId": 'accountId'
+            },
+            ExpressionAttributeValues: {
+                ":accountId": accountId
+            }
+        };
+
+        const userResult = await client.scan(userParams).promise();
+        console.log("User: ", userResult.Items[0]);
+
+        if (userResult.Items.length === 0) {
+            return { message: "Người dùng ngăn chặn tìm kiếm bằng số điện thoại" };
+        }
+
+        const friendId = userResult.Items[0].id;
+        console.log("FriendId: ", friendId);
+        
+
+        // find friend by friendId
+        const friendParams = {
+            TableName: 'Friends',
+            FilterExpression: '#friendId = :friendId',
+            ExpressionAttributeNames: {
+                '#friendId': 'friendId'
+            },
+            ExpressionAttributeValues: {
+                ':friendId': friendId
+            }
+        };
+
+        const friendResult = await client.scan(friendParams).promise();
+        console.log("Friend: ", friendResult.Items[0]);
+
+        const statusFriend = friendResult.Items[0] ? friendResult.Items[0].status : -1;
+
+        const result = {
+            fullName: userResult.Items[0].fullName,
+            phoneNumber: accountResult.Items[0].phoneNumber,
+            status: statusFriend,
+            mesage: "Tìm thấy thông tin người dùng"
+        }
+        console.log("Result: ", result);
+
+
+        return result;
+
+    } catch (err) {
+        console.log(err);
+        throw new Error(err);
+    }
+}
 
 module.exports = {
     friendRequest,
@@ -138,5 +271,8 @@ module.exports = {
     rejectFriendRequest,
     getFriendRequests,
     getFriend,
-    getFriends
+    getFriends,
+    unfriendRequest,
+    blockFriendRequest,
+    getFriendByPhoneNumber
 };
