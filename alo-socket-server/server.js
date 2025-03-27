@@ -30,7 +30,7 @@ io.on("connection", (socket) => {
     console.log("Người dùng kết nối: " + socket.id);
 
     socket.on('login', async (userId) => {
-
+        console.log("Người dùng đăng nhập: " + userId);
         const loginTime = Date.now();
 
         // Lưu thông tin kết nối với userId và socketId vào Redis
@@ -41,6 +41,7 @@ io.on("connection", (socket) => {
         }));
 
         const userIds = await getUserOnline();
+        console.log(`Danh sách user online: ${userIds}`);
 
         io.emit('users-online', { userIds });
     });
@@ -80,6 +81,15 @@ io.on("connection", (socket) => {
 
         const userIds = await getUserOnline();
         io.emit('users-online', { userIds });
+    });
+
+    socket.on("leave_conversation", async (conversationId) => {
+        socket.leave(conversationId);
+        console.log(`Người dùng ${socket.id} đã rời khỏi phòng ${conversationId}`);
+
+        const userIds = await getUserOnline();
+        io.emit('users-online', { userIds });
+
     });
 
     socket.on('send-message', ({ conversation, message }) => {

@@ -14,4 +14,10 @@ router.post(
     middleware.authenticateToken,
     messageController.createMessage
 );
+
+router.get(
+    '/get-messages/:conversationId',
+    middleware.authenticateToken,
+    messageController.getMessagesByConversationId
+);
 module.exports = router;
