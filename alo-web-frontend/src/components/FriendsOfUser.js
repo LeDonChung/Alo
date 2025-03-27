@@ -2,8 +2,9 @@ import { React, useState, useEffect, useRef, use } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass, faChevronDown, faChevronRight, faTag, faCircleXmark, faEllipsis } from "@fortawesome/free-solid-svg-icons";
 import { useDispatch, useSelector } from 'react-redux';
-import { getFriends } from '../redux/slices/FriendSlice';
-import { removeVietnameseTones } from '../utils/AppUtils';
+import { getFriends, unfriend } from '../redux/slices/FriendSlice';
+import showToast, { removeVietnameseTones } from '../utils/AppUtils';
+import ConfirmModal from './ConfirmModal';
 
 const categoryList = [
   { id: 1, name: "Bạn thân", color: "#ff6347" },
@@ -31,6 +32,8 @@ const details = [
 export default function FriendsOfUser() {
   const dispatch = useDispatch();
   const listFr = useSelector(state => state.friend.friends);
+  const friend = useSelector(state => state.friend.friend);
+  const userLogin = localStorage.getItem("userLogin") ? JSON.parse(localStorage.getItem("userLogin")) : null;
   const [listCategory, setListCategory] = useState(categoryList);
   const [listTypeFilter, setListTypeFilter] = useState(typeFilter);
   const [textSearch, setTextSearch] = useState("");
@@ -38,6 +41,24 @@ export default function FriendsOfUser() {
   const [selectCategory, setSelectCategory] = useState({ id: 0, name: "Tất cả" });
   const [groupFriendList, setGroupFriendList] = useState([]);
   const [detailFriend, setDetailFriend] = useState(null);
+  const [isOpenConfirm, setIsOpenConfirm] = useState(false);
+
+  const handleUnfriend = async (id) => {
+    try {
+      if (isOpenConfirm) {
+        // Xóa bạn
+        await dispatch(unfriend({ userId: userLogin.id, friendId: id }));
+        setIsOpenConfirm(false);
+          // Hiển thị thông báo thành công
+        showToast("Xóa kết bạn thành công!", "success");        
+      }
+
+    } catch (error) {
+      console.error("Error unfriending:", error);
+      // Hiển thị thông báo lỗi
+      showToast("Đã xảy ra lỗi khi xóa kết bạn. Vui lòng thử lại.", "error");
+    }
+  };
 
   //detail friend
   const [openDetail, setOpenDetail] = useState(false);
@@ -51,17 +72,16 @@ export default function FriendsOfUser() {
     const fetchFriends = async () => {
       try {
         await dispatch(getFriends());
-        console.log("List friends: ", listFr);
 
       } catch (error) {
         console.log(error);
       }
     };
     fetchFriends();
-  }, [dispatch]);
+  }, [dispatch, friend]);
+
   // Lọc danh sách bạn bè theo tên A-Z hoặc Z-A
   const groupAndSortFriends = (friends, sortOrder) => {
-
     // Sắp xếp
     const sortedList = [...friends].sort((a, b) => {
       const nameA = removeVietnameseTones(a.fullName);
@@ -70,7 +90,6 @@ export default function FriendsOfUser() {
       if (nameA > nameB) return sortOrder === 'asc' ? 1 : -1;
       return 0;
     });
-
     // Gom nhóm
     const groupedObject = sortedList.reduce((acc, friend) => {
       const firstChar = removeVietnameseTones(friend.fullName).charAt(0);
@@ -78,19 +97,16 @@ export default function FriendsOfUser() {
       acc[firstChar].push(friend);
       return acc;
     }, {});
-
     // Đưa về dạng mảng
     const groupList = Object.entries(groupedObject).map(([char, list], index) => ({
       id: index + 1,
       char,
       list,
     }));
-
-    console.log("Group friend list: ", groupList);
     return groupList;
   };
 
-  // Lọc danh sách bạn bè theo phân loại a-z hoặc z-a
+  // Lọc danh sách bạn bè theo phân loại a-z hoặc z-a khi thay đổi selectFilter
   useEffect(() => {
     if (listFr?.length > 0) {
       setGroupFriendList(groupAndSortFriends(listFr, selectFilter.id === 1 ? 'asc' : 'desc'));
@@ -98,9 +114,9 @@ export default function FriendsOfUser() {
   }, [selectFilter, selectCategory, listFr]);
 
 
+  // Đóng dropdown khi click ra ngoài component của category select và detail select
   useEffect(() => {
     let isMounted = true; // Cờ để kiểm tra mount trạng thái
-
     const handleClickOutside = (event) => {
       if (!isMounted) return; // Dừng nếu component đã unmount
       if (dropdownRef?.current && !dropdownRef.current.contains(event.target)) {
@@ -110,13 +126,7 @@ export default function FriendsOfUser() {
         setOpenDetail(false);
       }
     };
-
-    console.log("Open: ", open);
-    console.log("Open detail: ", openDetail);
-
-
     document.addEventListener("mousedown", handleClickOutside);
-
     return () => {
       isMounted = false;
       document.removeEventListener("mousedown", handleClickOutside);
@@ -125,12 +135,12 @@ export default function FriendsOfUser() {
 
 
 
+  // Lọc danh sách bạn bè theo tên bằng input search
   useEffect(() => {
     if (textSearch === "") {
       setGroupFriendList(groupAndSortFriends(listFr, selectFilter.id === 1 ? 'asc' : 'desc'));
     } else {
       const groupDefault = groupAndSortFriends(listFr, selectFilter.id === 1 ? 'asc' : 'desc');
-      console.log("Search: ", textSearch);
       const newGroup = groupDefault
         .map((group) => {
           const newList = group.list.filter((friend) => {
@@ -291,7 +301,7 @@ export default function FriendsOfUser() {
                                 </div>
                               </div>
                               {/* Right - Icon 3 chấm */}
-                              <div ref={detailRef} className="relative">
+                              <div className="relative">
                                 <button
                                   className="cursor-pointer text-lg font-bold"
                                   onClick={() => {
@@ -338,10 +348,45 @@ export default function FriendsOfUser() {
                                     <div className="px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
                                       <span>Chặn người này</span>
                                     </div>
-                                    <div className="px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px]  mx-2">
-                                      <span>Xóa kết bạn</span>
-                                    </div>
+                                    <>
+                                      <button
+                                        type="button"
+                                        className="w-full flex items-center text-red-700 justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2"
+                                        onClick={() => {
+                                          console.log("button xóa kết bạn");
+                                          setIsOpenConfirm(true); // Mở modal xác nhận
+                                        }}
+                                      >
+                                        <span>Xóa kết bạn</span>
+
+                                      </button>
+
+                                      {/* Modal confirm unfriend */}
+                                      {isOpenConfirm && (
+                                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                                          <div className="bg-white rounded-lg p-4 shadow-lg w-[300px]">
+                                            <p className="text-center text-gray-800">{`Bạn có chắc chắn muốn hủy kết bạn với ${friend.fullName}`}</p>
+                                            <div className="flex justify-between mt-4">
+                                              <button
+                                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                                onClick={() => handleUnfriend(friend.id)}
+                                              >
+                                                Đồng ý
+                                              </button>
+                                              <button
+                                                className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                                                onClick={() => setIsOpenConfirm(false)}
+                                              >
+                                                Hủy
+                                              </button>
+                                            </div>
+                                          </div>
+                                        </div>
+                                      )}
+                                    </>
                                   </div>
+
+
                                 )}
                               </div>
 

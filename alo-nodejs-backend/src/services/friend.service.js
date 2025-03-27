@@ -164,13 +164,13 @@ const getFriends = async (userId) => {
     try {
         const params = {
             TableName: 'Friends',
-            FilterExpression: '#status in (:status1, :status2) and (userId = :userId or friendId = :userId)',
+            FilterExpression: '(#status in (:status1, :status2)) and (userId = :userId or friendId = :userId)',
             ExpressionAttributeNames: {
                 '#status': 'status'
             },
             ExpressionAttributeValues: {
                 ':userId': userId,
-                ':status': 1,
+                ':status1': 1,
                 ':status2': 3
             }
         };

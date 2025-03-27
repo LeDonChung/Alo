@@ -28,7 +28,7 @@ router.post('/unfriend',
     middleware.authenticateToken,
     friendController.unfriendRequest);
 
-router.get('/block-friend',
+router.post('/block-friend',
     middleware.authenticateToken,
     friendController.blockFriendRequest);
     

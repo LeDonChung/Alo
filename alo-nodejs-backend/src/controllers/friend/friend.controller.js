@@ -177,7 +177,7 @@ exports.blockFriendRequest = async (req, res) => {
         return res.json({
             status: 200,
             data: friendRequest,
-            message: "Đã chặn kết bạn."
+            message: "Đã chặn bạn thành công."
         });
     } catch (err) {
         console.error(err);
