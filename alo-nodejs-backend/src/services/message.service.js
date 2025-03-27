@@ -1,19 +1,11 @@
 const { client } = require("../config/DynamoDB");
 const { v4: uuidv4 } = require('uuid');
 
-const createMessageText = async (data) => {
+const createMessage = async (data) => {
     try {
         const params = {
             TableName: 'Messages',
-            Item: {
-                id: uuidv4(),
-                senderId: data.senderId,
-                conversationId: data.conversationId,
-                content: data.content,
-                messageType: data.messageType,
-                timestamp: Date.now(),
-                seen: []
-            }
+            Item: data
         };
         console.log(params);
         await client.put(params).promise();
@@ -23,6 +15,9 @@ const createMessageText = async (data) => {
         throw new Error(err);
     }
 }
+
+
+
 
 const getMessagesByConversationId = async (conversationId) => {
     try {
@@ -49,6 +44,6 @@ const getMessagesByConversationId = async (conversationId) => {
 }
 
 module.exports = {
-    createMessageText,
+    createMessage,
     getMessagesByConversationId
 };

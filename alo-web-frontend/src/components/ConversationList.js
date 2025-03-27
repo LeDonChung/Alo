@@ -9,7 +9,7 @@ import { setConversation, updateLastMessage } from '../redux/slices/Conversation
 const ConversationList = () => {
   const userOnlines = useSelector(state => state.user.userOnlines);
   const dispatch = useDispatch();
-  
+
   useEffect(() => {
     socket.on("users-online", ({ userIds }) => {
       dispatch(setUserOnlines(userIds));
@@ -31,10 +31,16 @@ const ConversationList = () => {
 
   const showLastMessage = (conversation) => {
     if (conversation.lastMessage) {
+      let message = conversation.lastMessage.content;
+      if (conversation.lastMessage.messageType === 'sticker') {
+        message = 'Sticker';
+      } else if (conversation.lastMessage.messageType === 'image') {
+        message = 'Hình ảnh';
+      }
       if (conversation.lastMessage.senderId === userLogin.id) {
-        return "Bạn: " + conversation.lastMessage.content;
+        return "Bạn: " + message;
       } else {
-        return getFriend(conversation).fullName + ": " + conversation.lastMessage.content;
+        return getFriend(conversation).fullName + ": " + message;
       }
     }
   }

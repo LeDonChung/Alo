@@ -19,6 +19,9 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, userLo
         {message.messageType === 'text' && (
           <p className="text-sm text-gray-800">{message.content}</p>
         )}
+        {message.messageType === 'sticker' && (
+          <img src={message.fileLink} alt="sticker" className="w-20 h-20" />
+        )}
         {isLastMessage && (
           <div className="text-xs text-gray-400 mt-1">
             {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

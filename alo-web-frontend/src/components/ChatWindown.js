@@ -54,6 +54,7 @@ const ChatWindow = () => {
       conversationId: conversation.id,
       content: inputMessage.content,
       messageType: inputMessage.messageType,
+      fileLink: inputMessage.fileLink,
       timestamp: Date.now(),
       seen: []
     };
@@ -65,7 +66,7 @@ const ChatWindow = () => {
         conversation: conversation,
         message: message
       });
-      setInputMessage({ ...inputMessage, content: '', messageType: 'text' });
+      setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
     });
   };
 

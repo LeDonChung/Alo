@@ -2,6 +2,9 @@ const friendService = require('../../services/friend.service');
 const userService = require('../../services/user.service');
 const messageService = require('../../services/message.service');
 const conversationService = require('../../services/conversation.service');
+const { v4: uuidv4 } = require('uuid');
+
+
 exports.createMessage = async (req, res) => {
     try {
         // Kiểm tra conversationId có tồn tại không
@@ -16,6 +19,7 @@ exports.createMessage = async (req, res) => {
 
         if (req.body.messageType === 'text') {
             const request = {
+                id: uuidv4(),
                 senderId: req.body.senderId,
                 conversationId: req.body.conversationId,
                 content: req.body.content,
@@ -25,11 +29,42 @@ exports.createMessage = async (req, res) => {
             }
 
             // Tạo tin nhắn
-            const message = await messageService.createMessageText(request);
+            const message = await messageService.createMessage(request);
 
             if (!message) {
                 return res.status(400).json({
                     status: 400,
+                    message: "Tạo tin nhắn không thành công.",
+                    data: null
+                });
+            }
+
+            // Lưu tin nhắn cuối cùng vào conversation
+            await conversationService.updateLastMessage(conversation.id, message);
+
+            return res.json({
+                status: 200,
+                data: message,
+                message: "Tạo tin nhắn thành công."
+            });
+        } else if (req.body.messageType === 'sticker') {
+            const request = {
+                id: uuidv4(),
+                senderId: req.body.senderId,
+                conversationId: req.body.conversationId,
+                content: req.body.content,
+                messageType: req.body.messageType,
+                fileLink: req.body.fileLink,
+                timestamp: Date.now(),
+                seen: []
+            }
+
+            // Tạo tin nhắn
+            const message = await messageService.createMessage(request);
+
+            if (!message) {
+                return res.status(400).json({
+                    status: 400, 
                     message: "Tạo tin nhắn không thành công.",
                     data: null
                 });
