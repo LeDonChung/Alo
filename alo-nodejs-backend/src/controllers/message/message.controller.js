@@ -62,4 +62,35 @@ exports.createMessage = async (req, res) => {
         });
     }
 };
+exports.getMessagesByConversationId = async (req, res) => {
+    try {
 
+        const conversationId = req.params.conversationId;
+
+        const messages = await messageService.getMessagesByConversationId(conversationId);
+
+        let senders = {};
+        for (let i = 0; i < messages.length; i++) {
+            const senderId = messages[i].senderId;
+
+            if (!senders[senderId]) {
+                const sender = await userService.getUserById(senderId);
+                senders[senderId] = sender;
+            }
+
+            messages[i].sender = senders[senderId];
+        }
+        return res.json({
+            status: 200,
+            data: messages,
+            message: "Lấy tin nhắn thành công."
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+};

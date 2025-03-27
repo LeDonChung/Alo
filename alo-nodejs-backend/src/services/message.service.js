@@ -24,6 +24,31 @@ const createMessageText = async (data) => {
     }
 }
 
+const getMessagesByConversationId = async (conversationId) => {
+    try {
+        // Lấy tất cả tin nhắn trong conversation sắp xếp theo thời gian tăng dần
+        const params = {
+            TableName: 'Messages',
+            IndexName: 'conversationId-timestamp-index',
+            FilterExpression: 'conversationId = :conversationId',
+            ExpressionAttributeValues: {
+                ':conversationId': conversationId
+            },
+            ScanIndexForward: true,
+        };
+
+
+        const messages = await client.scan(params).promise();
+        return {
+            messages: messages.Items
+        }
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
+
 module.exports = {
     createMessageText,
+    getMessagesByConversationId
 };

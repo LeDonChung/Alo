@@ -9,11 +9,11 @@ import { setConversation, updateLastMessage } from '../redux/slices/Conversation
 const ConversationList = () => {
   const userOnlines = useSelector(state => state.user.userOnlines);
   const dispatch = useDispatch();
+  
   useEffect(() => {
     socket.on("users-online", ({ userIds }) => {
       dispatch(setUserOnlines(userIds));
     });
-
   }, []);
 
   const isFriendOnline = (userId) => {
@@ -74,6 +74,9 @@ const ConversationList = () => {
           <div
             key={conversations.id}
             onClick={() => {
+              if (selectedConversation) {
+                socket.emit("leave_conversation", selectedConversation.id);
+              }
               dispatch(setConversation(conversation));
             }}
             className={`flex py-4 justify-between items-center p-2 hover:bg-gray-100 cursor-pointer ${conversation.id === selectedConversation?.id ? 'bg-gray-100' : ''}`}
