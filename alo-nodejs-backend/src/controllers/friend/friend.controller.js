@@ -235,3 +235,23 @@ exports.getFriends = async (req, res) => {
         });
     }
 }
+
+exports.getFriendByPhoneNumber = async (req, res) => {
+    try {
+        console.log(req.query.phoneNumber);
+                const phoneNumber = req.query.phoneNumber;
+        const friend = await friendService.getFriendByPhoneNumber(phoneNumber);
+        return res.json({
+            status: 200,
+            data: friend,
+            message: "Thông tin bạn bè."
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
