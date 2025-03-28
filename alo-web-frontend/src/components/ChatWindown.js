@@ -59,7 +59,9 @@ const ChatWindow = () => {
       seen: []
     };
 
-    await dispatch(sendMessage(message)).then((res) => {
+    const file = inputMessage.file;
+
+    await dispatch(sendMessage({ message, file })).then((res) => {
       dispatch(setMessages([...messages, res.payload.data]));
       message.sender = userLogin;
       socket.emit('send-message', {
@@ -72,7 +74,7 @@ const ChatWindow = () => {
 
   useEffect(() => {
     socket.emit("join_conversation", conversation.id);
-    
+
     if (!conversation.isGroup) {
       const friend = conversation.memberUserIds.find((member) => member !== userLogin.id);
       handleGetLastLogout(friend);
@@ -123,7 +125,12 @@ const ChatWindow = () => {
         />
       </div>
 
-      <RightSlidebar />
+      <RightSlidebar
+        conversation={conversation}
+        userLogin={userLogin}
+        getFriend={getFriend}
+        messages={messages}
+      />
     </>
   );
 };

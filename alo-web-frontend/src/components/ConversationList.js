@@ -36,6 +36,10 @@ const ConversationList = () => {
         message = 'Sticker';
       } else if (conversation.lastMessage.messageType === 'image') {
         message = 'Hình ảnh';
+      } else if (conversation.lastMessage.messageType === 'file') {
+        message = 'Tệp tin';
+      } else if (conversation.lastMessage.messageType === 'video') {
+        message = 'Video';
       }
       if (conversation.lastMessage.senderId === userLogin.id) {
         return "Bạn: " + message;
@@ -99,13 +103,13 @@ const ConversationList = () => {
               }
               <div>
                 <p className="font-semibold">{getFriend(conversation).fullName}</p>
-                <p className="text-sm text-gray-500">{
+                <p className="text-sm text-gray-500 truncate max-w-[280px]">{
                   showLastMessage(conversation)
                 }</p>
               </div>
             </div>
             <div className='mb-auto'>
-              <p className="text-sm text-gray-500">{
+              <p className="text-sm text-gray-500  " >{
                 conversation.lastMessage && getLastTimeMessage(conversation.lastMessage.timestamp)
               }</p>
             </div>

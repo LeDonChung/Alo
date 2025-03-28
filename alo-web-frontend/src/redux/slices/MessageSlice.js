@@ -7,16 +7,29 @@ const initialState = {
     limit: 20
 };
 
-const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async (request, { rejectWithValue }) => {
+const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ message, file }, { rejectWithValue }) => {
     try {
-        const response = await axiosInstance.post('/api/message/create-message', request);
+        const formData = new FormData();
+        if (file) {
+            formData.append("file", file);
+        }
+
+        for (const key in message) {
+            formData.append(key, message[key]);
+        }
+
+        const response = await axiosInstance.post('/api/message/create-message', formData, {
+            headers: { 
+                "Content-Type": "multipart/form-data"
+            }
+        });
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 });
 
-const getMessagesByConversationId = createAsyncThunk('MessageSlice/getMessagesByConversationId', async (conversationId , { rejectWithValue }) => {
+const getMessagesByConversationId = createAsyncThunk('MessageSlice/getMessagesByConversationId', async (conversationId, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.get(`/api/message/get-messages/${conversationId}`);
         return response.data;
@@ -56,6 +69,7 @@ const MessageSlice = createSlice({
             state.isLoadMessage = false;
         });
         builder.addCase(getMessagesByConversationId.rejected, (state, action) => {
+            state.isLoadMessage = false
         });
     }
 });
