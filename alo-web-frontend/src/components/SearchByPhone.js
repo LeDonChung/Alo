@@ -1,7 +1,8 @@
 import { use, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getFriendByPhoneNumber } from "../redux/slices/FriendSlice";
-
+import {FontAwesomeIcon} from "@fortawesome/react-fontawesome";
+import {faArrowLeft} from "@fortawesome/free-solid-svg-icons";
 export const SearchByPhone = (isOpenAdd) => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const friend = useSelector(state => state.friend.friend);
@@ -25,6 +26,18 @@ export const SearchByPhone = (isOpenAdd) => {
         }
     };
 
+    const handleClick = () => {
+        if(info.status === -1 || info.status === 4 || info.status === 2){
+            // Gửi lời mời kết bạn
+        }else if(info.status === 0){
+            // Hủy lời mời
+        }else if(info.status === 3){
+            // Mở chặn
+        }
+        else{
+            // Hủy kết bạn
+        }
+    };
 
     if (!isOpenAdd) return null;
 
@@ -33,6 +46,15 @@ export const SearchByPhone = (isOpenAdd) => {
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                 <div className="bg-white rounded-lg p-4 shadow-lg w-[300px]">
                     <div className="flex items-center justify-between">
+
+                        {
+                            isShowInfo && (
+                                <button onClick={() => setIsShowInfo(false)} className="hover:text-white hover:bg-gray-500 w-6 h-6 flex items-center justify-center rounded-full">
+                                    <FontAwesomeIcon icon={faArrowLeft} />
+                                </button>
+                            )
+                        }
+
                         <p className="text-start text-[18px] font-medium text-gray-800">{isShowInfo ? "Thông tin người dùng" : "Thêm bạn"} </p>
                         <button onClick={() => isOpenAdd.onClose()} className="hover:text-white hover:bg-gray-500 w-6 h-6 flex items-center justify-center rounded-full">
                             X
@@ -72,8 +94,7 @@ export const SearchByPhone = (isOpenAdd) => {
                                     info !== null && (
                                         <>
                                             <div className="flex items-center justify-center">
-                                                <img src="./avt_default.jpg" alt="avatar" className="w-20 h-20 rounded-full" />
-
+                                                <img src="https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" alt="avatar" className="w-20 h-20 rounded-full" />
                                             </div>
                                             <p className="text-center text-gray-800 font-semibold mt-2">{info.fullName}</p>
                                             <p className="text-center text-gray-500 mt-1">{info.phoneNumber}</p>
@@ -86,11 +107,11 @@ export const SearchByPhone = (isOpenAdd) => {
                                     )
                                 }
                                 <div className="flex justify-between mt-4">
-                                    <button
+                                <button
                                         className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-                                        onClick={() => setIsShowInfo(false)}
+                                        onClick={() => {}}
                                     >
-                                        Quay lại
+                                        Nhắn tin
                                     </button>
                                     {
                                         info !== null && (
@@ -98,7 +119,7 @@ export const SearchByPhone = (isOpenAdd) => {
                                                 className={`px-4 py-2 ${info?.status === -1 ? 'bg-blue-500' : 'bg-red-700'} text-gray-800 rounded hover:${info?.status === -1 ? 'bg-blue-700' : 'bg-red-800'} text-white`}
                                                 onClick={() => { }}
                                             >
-                                                {info?.status === -1 ? "Gửi kết bạn" : info?.status === 0 ? "Hủy yêu cầu" : "Hủy kết bạn"}
+                                                {info?.status === -1 ? "Gửi lời mời kết bạn" : info?.status === 3 ? "Mở chặn" : info?.status === 0 ? "Hủy lời mời" : info?.status === 2 ? "Gửi lời mời kết bạn" : info?.status === 4 ? "Gửi lời mời kết bạn" : "Hủy kết bạn"}
                                             </button>
                                         )
                                     }
