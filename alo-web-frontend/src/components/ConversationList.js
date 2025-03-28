@@ -9,7 +9,7 @@ import { setConversation, updateLastMessage } from '../redux/slices/Conversation
 const ConversationList = () => {
   const userOnlines = useSelector(state => state.user.userOnlines);
   const dispatch = useDispatch();
-  
+
   useEffect(() => {
     socket.on("users-online", ({ userIds }) => {
       dispatch(setUserOnlines(userIds));
@@ -31,10 +31,20 @@ const ConversationList = () => {
 
   const showLastMessage = (conversation) => {
     if (conversation.lastMessage) {
+      let message = conversation.lastMessage.content;
+      if (conversation.lastMessage.messageType === 'sticker') {
+        message = 'Sticker';
+      } else if (conversation.lastMessage.messageType === 'image') {
+        message = 'Hình ảnh';
+      } else if (conversation.lastMessage.messageType === 'file') {
+        message = 'Tệp tin';
+      } else if (conversation.lastMessage.messageType === 'video') {
+        message = 'Video';
+      }
       if (conversation.lastMessage.senderId === userLogin.id) {
-        return "Bạn: " + conversation.lastMessage.content;
+        return "Bạn: " + message;
       } else {
-        return getFriend(conversation).fullName + ": " + conversation.lastMessage.content;
+        return getFriend(conversation).fullName + ": " + message;
       }
     }
   }
@@ -93,13 +103,13 @@ const ConversationList = () => {
               }
               <div>
                 <p className="font-semibold">{getFriend(conversation).fullName}</p>
-                <p className="text-sm text-gray-500">{
+                <p className="text-sm text-gray-500 truncate max-w-[280px]">{
                   showLastMessage(conversation)
                 }</p>
               </div>
             </div>
             <div className='mb-auto'>
-              <p className="text-sm text-gray-500">{
+              <p className="text-sm text-gray-500  " >{
                 conversation.lastMessage && getLastTimeMessage(conversation.lastMessage.timestamp)
               }</p>
             </div>
