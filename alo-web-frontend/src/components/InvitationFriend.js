@@ -1,6 +1,9 @@
-import { React, useState, useEffect, useRef } from 'react';
+import { React, useState, useEffect, useRef, use } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { friendInvitations, friendRecommendations } from '../data/friendInvitationData';
+import { useDispatch, useSelector } from 'react-redux';
+import { acceptFriendRequest, getFriendsRequest, rejectFriendRequest } from '../redux/slices/FriendSlice';
+import showToast from  '../utils/AppUtils';
 
 const listType = [
   { id: 1, name: "Từ cửa sổ trò chuyện" },
@@ -15,13 +18,60 @@ const typeRecommend = [
 ]
 
 export default function InvitationFriend() {
-  const friendInvitationData = friendInvitations;
+  const dispatch = useDispatch();
+  const friends = useSelector(state => state.friends);
+  const friend = useSelector(state => state.friend);
+
+  const userLogin = JSON.parse(localStorage.getItem("userLogin"));
+
   const friendRecommendationsData = friendRecommendations;
-  const [invitationList, setInvitationList] = useState(friendInvitationData);
+  const [invitationList, setInvitationList] = useState([]);
   const [recommendList, setRecommendList] = useState(friendRecommendationsData);
 
   const [showListInvitation, setShowListInvitation] = useState(true);
   const [showListRecommend, setShowListRecommend] = useState(false);
+
+  const [changeInvitation, setChangeInvitation] = useState(false);
+
+  useEffect(() => {
+    const fetchFriendInvitation = async () => {
+      try {
+        const resp = await dispatch(getFriendsRequest());
+        setInvitationList(resp.payload.data);
+
+      } catch (error) {
+        console.log(error);
+      }
+    };
+
+    fetchFriendInvitation();
+  }, [changeInvitation]);
+
+  const handleRejectFriend = async (userId) => {
+    try {
+      const resp = await dispatch(rejectFriendRequest({ userId: userId, friendId: userLogin.id }));
+      const data = resp.payload.data;
+      if (data.status === 2) {
+        setChangeInvitation(!changeInvitation);
+        showToast("Đã từ chối lời mời kết bạn.", "info");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  const handleAcceptFriend = async (userId) => {
+    try {
+      const resp = await dispatch(acceptFriendRequest({ userId: userId, friendId: userLogin.id }));
+      const data = resp.payload.data;
+      if (data.status === 1) {
+        setChangeInvitation(!changeInvitation);
+        showToast("Giờ đây các bạn đã trở thành bạn bè.", "success");
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   return (
     <div className="flex-1 flex flex-col w-full h-full bg-[#EBECF0]">
@@ -49,27 +99,31 @@ export default function InvitationFriend() {
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {invitationList.map((item) => (
-                      <div key={item.id} className="bg-white rounded-lg shadow p-4">
+                      <div key={item.userId} className="bg-white rounded-lg shadow p-4">
                         <div className="flex items-center mb-3">
                           <img
-                            src={item.user.avatar}
-                            alt={item.user.fullName}
+                            src="https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"
+                            alt="atv_default_avatar"
                             className="w-10 h-10 rounded-full mr-3"
                           />
                           <div>
-                            <p className="font-semibold">{item.user.fullName}</p>
-                            <span className="text-xs font-[13px] text-gray-500">{new Date(item.sendDate).toLocaleDateString()} - <span>{item.type.name}</span> </span>
+                            <p className="font-semibold">{item.fullName}</p>
+                            <span className="text-xs font-[13px] text-gray-500">{new Date(item.requestDate).toLocaleDateString()} {/*- <span>{item.type.name}</span>*/} </span>
                           </div>
                         </div>
                         <div className="mb-3 w-[98%] h-[70px] bg-[#EBECF0] rounded-[5px] p-2 border border-gray-300 overflow-y-auto">
-                          <p className="text-gray-700">{item.invitationContent}</p>
+                          <p className="text-gray-700">{item.contentRequest}</p>
                         </div>
 
                         <div className="flex justify-between">
-                          <button className="px-4 py-1 rounded-[5px] hover:bg-gray-300 w-[47%] h-[38px] bg-[#EBECF0] font-bold">
+                          <button
+                            onClick={() => handleRejectFriend(item.userId)}
+                            className="px-4 py-1 rounded-[5px] hover:bg-gray-300 w-[47%] h-[38px] bg-[#EBECF0] font-bold">
                             Từ chối
                           </button>
-                          <button className="px-4 py-1 rounded-[5px] hover:bg-[#005AE0] hover:text-white w-[47%] h-[38px] bg-blue-100 font-bold text-blue-600">
+                          <button
+                            onClick={() => handleAcceptFriend(item.userId)}
+                            className="px-4 py-1 rounded-[5px] hover:bg-[#005AE0] hover:text-white w-[47%] h-[38px] bg-blue-100 font-bold text-blue-600">
                             Đồng ý
                           </button>
                         </div>

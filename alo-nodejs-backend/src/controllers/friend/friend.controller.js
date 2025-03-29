@@ -6,6 +6,7 @@ exports.sendFriendRequest = async (req, res) => {
         const request = {
             userId: req.body.userId,
             friendId: req.body.friendId,
+            contentRequest: req.body.contentRequest,
             status: 0, // 0: pending, 1: accepted, 2: reject
         }
         // Kiểm tra friendId có tồn tại không
@@ -20,7 +21,7 @@ exports.sendFriendRequest = async (req, res) => {
         // Kiểm tra đã gửi yêu cầu kết bạn chưa
         const friend = await friendService.getFriend(request);
 
-        if (friend) {
+        if (friend?.status === 0) {
             return res.status(400).json({
                 status: 400,
                 message: "Đã gửi yêu cầu kết bạn.",
@@ -244,7 +245,7 @@ exports.getFriendByPhoneNumber = async (req, res) => {
         return res.json({
             status: 200,
             data: friend,
-            message: "Thông tin bạn bè."
+            message: "Thông tin người dùng."
         });
     } catch (err) {
         console.error(err);

@@ -6,16 +6,18 @@ import FriendsOfUser from "../components/FriendsOfUser";
 import GroupsOfUser from "../components/GroupsOfUser";
 import InvitationFriend from "../components/InvitationFriend";
 import InvitationGroup from "../components/InvitationGroup";
+import { SearchByPhone } from "../components/SearchByPhone";
 
 const menu = [
-    { id: 1, name: "Danh sách bạn bè", icon: "./icon/ic_friend_list.png", showView: () => <FriendsOfUser/> },
-    { id: 2, name: "Danh sách nhóm và cộng đồng", icon: "./icon/ic_community_list.png", showView: () => <GroupsOfUser/> },
-    { id: 3, name: "Lời mời kết bạn", icon: "./icon/ic_invitation_friend.png", showView: () => <InvitationFriend/> },
-    { id: 4, name: "Lời mời vào nhóm và cộng đồng", icon: "./icon/ic_invitation_community.png", showView: () => <InvitationGroup/> },
+    { id: 1, name: "Danh sách bạn bè", icon: "./icon/ic_friend_list.png", showView: () => <FriendsOfUser /> },
+    { id: 2, name: "Danh sách nhóm và cộng đồng", icon: "./icon/ic_community_list.png", showView: () => <GroupsOfUser /> },
+    { id: 3, name: "Lời mời kết bạn", icon: "./icon/ic_invitation_friend.png", showView: () => <InvitationFriend /> },
+    { id: 4, name: "Lời mời vào nhóm và cộng đồng", icon: "./icon/ic_invitation_community.png", showView: () => <InvitationGroup /> },
 ];
 
 export default function ContactPage() {
     const [selectMenu, setSelectMenu] = useState(menu[0]);
+    const [isOpenAdd, setIsOpenAdd] = useState(false);
 
     return (
         <div className="flex h-screen">
@@ -28,9 +30,14 @@ export default function ContactPage() {
                         <FontAwesomeIcon icon={faMagnifyingGlass} className="text-gray-500 w-[5%]" size="35" />
                         <input type="text" placeholder="Tìm kiếm" className="pl-2 bg-[#EBECF0] h-[30px] focus:outline-none focus:border-none focus:ring-0 w-[95%] hover:bg-gray-100" />
                     </div>
-                    <button className="w-[30px] h-[30px] flex items-center justify-center hover:bg-gray-100">
+                    <button className="w-[30px] h-[30px] flex items-center justify-center hover:bg-gray-100" onClick={() => setIsOpenAdd(true)}>
                         <img src="./icon/ic_add_friend.png" />
                     </button>
+
+                    {
+                        isOpenAdd && <SearchByPhone isOpenAdd={isOpenAdd} onClose={() => setIsOpenAdd(false)} />
+                    }
+
                     <button className="w-[30px] h-[30px] flex items-center justify-center hover:bg-gray-100">
                         <img src="./icon/ic_create_group.png" />
                     </button>

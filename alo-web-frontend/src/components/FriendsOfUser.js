@@ -299,7 +299,7 @@ export default function FriendsOfUser() {
                           group.list && group.list.map((friend) => (
                             <div key={friend.id} className="flex items-center justify-between w-full hover:bg-gray-100 rounded-md p-2">
                               <div className="flex items-center">
-                                <img src="./avt_default.jpg" className="w-[40px] h-[40px] rounded-full" />
+                                <img src="https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" className="w-[40px] h-[40px] rounded-full" />
                                 <div className="flex flex-col ml-2">
                                   <span className="font-semibold">{friend.fullName}</span>
                                   {
