@@ -190,6 +190,35 @@ exports.blockFriendRequest = async (req, res) => {
     }
 }
 
+exports.unblockFriendRequest = async (req, res) => {
+    try {
+        const request = {
+            userId: req.body.userId,
+            friendId: req.body.friendId,
+        }
+        const friendRequest = await friendService.unblockFriendRequest(request);
+        if (!friendRequest) {
+            return res.status(400).json({
+                status: 400,
+                message: "Yêu cầu mở chặn không hợp lệ.",
+                data: null
+            });
+        }
+        return res.json({
+            status: 200,
+            data: friendRequest,
+            message: "Đã mở chặn bạn thành công."
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
+
 exports.getFriendRequests = async (req, res) => {
     try {
         const userId = req.query.userId;
@@ -213,18 +242,10 @@ exports.getFriends = async (req, res) => {
     try {
         const userId = req.query.userId;
         const friends = await friendService.getFriends(userId);
-        // {userId: 1, friendId: 2, status: 1}
-        // -> [userId]
-        const friendOfMe = friends.map(friend => {
-            if (friend.userId === userId) {
-                return friend.friendId;
-            }
-            return friend.userId;
-        });
-        const users = await userService.getUsersByIds(friendOfMe);
+        
         return res.json({
             status: 200,
-            data: users,
+            data: friends,
             message: "Danh sách bạn bè."
         });
     } catch (err) {
@@ -239,9 +260,17 @@ exports.getFriends = async (req, res) => {
 
 exports.getFriendByPhoneNumber = async (req, res) => {
     try {
-        console.log(req.query.phoneNumber);
-                const phoneNumber = req.query.phoneNumber;
-        const friend = await friendService.getFriendByPhoneNumber(phoneNumber);
+
+        // Lấy Authorization từ header
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        const params = {
+            phoneNumber: req.query.phoneNumber,
+            userId: userService.getUserIdFromToken(token)
+        }
+        console.log("params", params);
+
+        const friend = await friendService.getFriendByPhoneNumber(params);
         return res.json({
             status: 200,
             data: friend,

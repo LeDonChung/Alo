@@ -2,7 +2,7 @@ import { React, useState, useEffect, useRef, use } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass, faChevronDown, faChevronRight, faTag, faCircleXmark, faEllipsis } from "@fortawesome/free-solid-svg-icons";
 import { useDispatch, useSelector } from 'react-redux';
-import { blockFriend, getFriends, unfriend } from '../redux/slices/FriendSlice';
+import { blockFriend, getFriends, unblockFriend, unfriend } from '../redux/slices/FriendSlice';
 import showToast, { removeVietnameseTones } from '../utils/AppUtils';
 
 const categoryList = [
@@ -74,6 +74,21 @@ export default function FriendsOfUser() {
     }
   }
 
+  const handleUnblockFriend = async (id) => {
+    console.log("unblock friend", id);
+    try {
+      // Bỏ chặn bạn
+      await dispatch(unblockFriend({ userId: userLogin.id, friendId: id }));
+      setOpenDetail(false);
+      // Hiển thị thông báo thành công
+      showToast("Bỏ chặn bạn thành công!", "success");
+    } catch (error) {
+      console.error("Error unblocking friend:", error);
+      // Hiển thị thông báo lỗi
+      showToast("Đã xảy ra lỗi khi bỏ chặn bạn. Vui lòng thử lại.", "error");
+    }
+  }
+
   //detail friend
   const [openDetail, setOpenDetail] = useState(false);
   const detailRef = useRef(null);
@@ -98,15 +113,20 @@ export default function FriendsOfUser() {
   const groupAndSortFriends = (friends, sortOrder) => {
     // Sắp xếp
     const sortedList = [...friends].sort((a, b) => {
-      const nameA = removeVietnameseTones(a.fullName);
-      const nameB = removeVietnameseTones(b.fullName);
+      const aName = a.friendInfo.fullName;
+      const bName = b.friendInfo.fullName;
+      const nameA = removeVietnameseTones(aName);
+      const nameB = removeVietnameseTones(bName);
+      
       if (nameA < nameB) return sortOrder === 'asc' ? -1 : 1;
       if (nameA > nameB) return sortOrder === 'asc' ? 1 : -1;
       return 0;
     });
     // Gom nhóm
     const groupedObject = sortedList.reduce((acc, friend) => {
-      const firstChar = removeVietnameseTones(friend.fullName).charAt(0);
+      const frName = friend.friendInfo.fullName;
+      const firstChar = removeVietnameseTones(frName).charAt(0);
+      
       if (!acc[firstChar]) acc[firstChar] = [];
       acc[firstChar].push(friend);
       return acc;
@@ -158,7 +178,9 @@ export default function FriendsOfUser() {
       const newGroup = groupDefault
         .map((group) => {
           const newList = group.list.filter((friend) => {
-            const friendName = removeVietnameseTones(friend.fullName.toLowerCase());
+            const friendName = removeVietnameseTones(friend.friendInfo.fullName.toLowerCase());
+            console.log("friendName", friendName);
+            
             const searchText = removeVietnameseTones(textSearch.toLowerCase());
             return friendName.includes(searchText);
           });
@@ -297,11 +319,11 @@ export default function FriendsOfUser() {
                       <div className="flex flex-col">
                         {
                           group.list && group.list.map((friend) => (
-                            <div key={friend.id} className="flex items-center justify-between w-full hover:bg-gray-100 rounded-md p-2">
+                            <div key={friend.friendId} className="flex items-center justify-between w-full hover:bg-gray-100 rounded-md p-2">
                               <div className="flex items-center">
                                 <img src="https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" className="w-[40px] h-[40px] rounded-full" />
                                 <div className="flex flex-col ml-2">
-                                  <span className="font-semibold">{friend.fullName}</span>
+                                  <span className="font-semibold">{friend.friendInfo.fullName}</span>
                                   {
                                     friend.category && (
                                       <div className="flex items-center">
@@ -325,7 +347,7 @@ export default function FriendsOfUser() {
                                 >
                                   <FontAwesomeIcon icon={faEllipsis} />
                                 </button>
-                                {openDetail && detailFriend.id === friend.id && (
+                                {openDetail && detailFriend.friendId === friend.friendId && (
                                   <div className="absolute left-[-200px] mt-1 w-[200px] bg-white rounded-lg shadow-lg">
                                     <button className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
                                       <span className="">Xem thông tin</span>
@@ -363,9 +385,16 @@ export default function FriendsOfUser() {
                                       <button
                                         type="button"
                                         className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2"
-                                        onClick={() => handleBlockFriend(friend.id)}
+                                        onClick={() => {
+                                          if (friend.friendInfo.status === 3) {
+                                            handleUnblockFriend(friend.friendId);
+                                          }
+                                          else {
+                                            handleBlockFriend(friend.friendId);
+                                          }
+                                        }}
                                       >
-                                        <span>Chặn người này</span>
+                                        <span>{friend.friendInfo.status === 3 ? 'Bỏ chặn' : 'Chặn người này'}</span>
                                       </button>
                                     </>
                                     <>
@@ -385,11 +414,11 @@ export default function FriendsOfUser() {
                                       {isOpenConfirm && (
                                         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
                                           <div className="bg-white rounded-lg p-4 shadow-lg w-[300px]">
-                                            <p className="text-center text-gray-800">{`Bạn có chắc chắn muốn hủy kết bạn với ${friend.fullName}`}</p>
+                                            <p className="text-center text-gray-800">{`Bạn có chắc chắn muốn hủy kết bạn với ${friend.friendInfo.fullName}`}</p>
                                             <div className="flex justify-between mt-4">
                                               <button
                                                 className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                                                onClick={() => handleUnfriend(friend.id)}
+                                                onClick={() => handleUnfriend(friend.friendId)}
                                               >
                                                 Đồng ý
                                               </button>
