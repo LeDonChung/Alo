@@ -37,10 +37,9 @@ const blockFriend = createAsyncThunk('FriendSlice/block-friend', async (request,
     }
 });
 
-
-const getFriendByPhoneNumber = createAsyncThunk('FriendSlice/getFriendByPhoneNumber', async (phoneNumber, { rejectWithValue }) => {
+const unblockFriend = createAsyncThunk('FriendSlice/unblock-friend', async (request, { rejectWithValue }) => {
     try {
-        const response = await axiosInstance.get('/api/friend/get-friend-by-phone-number?phoneNumber=' + phoneNumber);
+        const response = await axiosInstance.post('/api/friend/unblock-friend', request);
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
@@ -78,7 +77,17 @@ const getFriendsRequest = createAsyncThunk('FriendSlice/getFriendsRequest', asyn
     try {
         const userLogin = JSON.parse(localStorage.getItem('userLogin'));
         const response = await axiosInstance.get('/api/friend/get-friend-request?userId=' + userLogin.id);
-                
+
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
+const getFriendByPhone = createAsyncThunk('FriendSlice/getFriendByPhone', async (phoneNumber, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.get('http://localhost:5000/api/friend/get-friend-by-phone-number?phoneNumber=' + phoneNumber );
+        
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
@@ -113,7 +122,6 @@ const FriendSlice = createSlice({
         builder.addCase(sendFriendRequest.rejected, (state, action) => {
             state.friend = null;
         });
-
 
         // accept friend request
         builder.addCase(acceptFriendRequest.pending, (state) => {
@@ -161,14 +169,14 @@ const FriendSlice = createSlice({
             state.friend = null;
         });
 
-        // getFriendByPhoneNumber
-        builder.addCase(getFriendByPhoneNumber.pending, (state) => {
+        // unblockFriend
+        builder.addCase(unblockFriend.pending, (state) => {
             state.friend = null;
         });
-        builder.addCase(getFriendByPhoneNumber.fulfilled, (state, action) => {
+        builder.addCase(unblockFriend.fulfilled, (state, action) => {
             state.friend = action.payload.data;
         });
-        builder.addCase(getFriendByPhoneNumber.rejected, (state, action) => {
+        builder.addCase(unblockFriend.rejected, (state, action) => {
             state.friend = null;
         });
 
@@ -183,9 +191,20 @@ const FriendSlice = createSlice({
             state.friends = [];
         });
 
+        // getFriendByPhone
+        builder.addCase(getFriendByPhone.pending, (state) => {
+            state.friend = null;
+        });
+        builder.addCase(getFriendByPhone.fulfilled, (state, action) => {
+            state.friend = action.payload.data;
+        });
+        builder.addCase(getFriendByPhone.rejected, (state, action) => {
+            state.friend = null;
+        });
+
     }
 });
 
 export const { } = FriendSlice.actions;
-export { getFriends, unfriend, blockFriend, getFriendByPhoneNumber, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriendsRequest };
+export { getFriends, unfriend, blockFriend, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriendsRequest, unblockFriend, getFriendByPhone };
 export default FriendSlice.reducer;
