@@ -3,6 +3,42 @@ const { client } = require("../config/DynamoDB");
 
 const friendRequest = async (data) => {
     try {
+
+        //check exists friend
+        const friendParams = {
+            userId: data.userId,
+            friendId: data.friendId
+        }
+        const friend = await getFriend(friendParams);
+
+        if(friend){
+           // update friend
+           const updateParams = {
+                TableName: 'Friends',
+                Key: {
+                    userId: friend.userId,
+                    friendId: friend.friendId
+                },
+                UpdateExpression: 'set #status = :status, #contentRequest = :contentRequest, #requestDate = :requestDate, #senderId = :senderId',
+                ExpressionAttributeNames: {
+                    '#status': 'status',
+                    '#contentRequest': 'contentRequest',
+                    '#requestDate': 'requestDate',
+                    '#senderId': 'senderId'
+                },
+                ExpressionAttributeValues: {
+                    ':status': 0,
+                    ':contentRequest': data.contentRequest,
+                    ':requestDate': Date.now(),
+                    ':senderId': data.userId
+                },
+                ReturnValues: 'ALL_NEW'
+            };
+            const result = await client.update(updateParams).promise();
+            return result.Attributes; 
+        }        
+        
+        // new friend request
         const params = {
             TableName: 'Friends',
             Item: {
@@ -10,7 +46,8 @@ const friendRequest = async (data) => {
                 friendId: data.friendId,
                 status: data.status,
                 requestDate: Date.now(),
-                contentRequest: data.contentRequest
+                contentRequest: data.contentRequest,
+                senderId: data.userId
             }
         };
         await client.put(params).promise();
@@ -22,11 +59,17 @@ const friendRequest = async (data) => {
 }
 const acceptFriendRequest = async (data) => {
     try {
+        const friend = await getFriend(data);
+
+        if (friend === undefined) {
+            return { message: "Không tìm thấy thông tin người dùng" };
+        }
+
         const params = {
             TableName: 'Friends',
             Key: {
-                userId: data.userId,
-                friendId: data.friendId
+                userId: friend.userId,
+                friendId: friend.friendId
             },
             UpdateExpression: 'set #status = :status, #contentRequest = :contentRequest, #requestDate = :requestDate',
             ExpressionAttributeNames: {
@@ -51,25 +94,9 @@ const acceptFriendRequest = async (data) => {
 
 const unfriendRequest = async (data) => {
     try {
-        const friendParams = {
-            TableName: 'Friends',
-            FilterExpression: '(#userId = :userId and #friendId = :friendId) or (#userId = :friendId and #friendId = :userId)',
-            ExpressionAttributeNames: {
-                '#userId': 'userId',
-                '#friendId': 'friendId'
-            },
-            ExpressionAttributeValues: {
-                ':userId': data.userId,
-                ':friendId': data.friendId
-            }
-        };
+        const friend = await getFriend(data);     
 
-        const friendResult = await client.scan(friendParams).promise();
-
-        const friend = friendResult.Items[0];
-        
-
-        if (friendResult.Items[0] === undefined) {
+        if (friend === undefined) {
             return { message: "Không tìm thấy thông tin người dùng" };
         }
 
@@ -79,12 +106,14 @@ const unfriendRequest = async (data) => {
                 userId: friend.userId,
                 friendId: friend.friendId
             },
-            UpdateExpression: 'SET #status = :status',
+            UpdateExpression: 'SET #status = :status, #requestDate = :requestDate',
             ExpressionAttributeNames: {
                 '#status': 'status',
+                '#requestDate': 'requestDate'
             },
             ExpressionAttributeValues: {
                 ':status': 4,
+                ':requestDate': Date.now()
             },
             ReturnValues: 'ALL_NEW'
         };
@@ -98,26 +127,9 @@ const unfriendRequest = async (data) => {
 
 const blockFriendRequest = async (data) => {
     try {
-        const friendParams = {
-            TableName: 'Friends',
-            FilterExpression: '(#userId = :userId and #friendId = :friendId) or (#userId = :friendId and #friendId = :userId)',
-            ExpressionAttributeNames: {
-                '#userId': 'userId',
-                '#friendId': 'friendId'
-            },
-            ExpressionAttributeValues: {
-                ':userId': data.userId,
-                ':friendId': data.friendId
-            }
-        };
+        const friend = await getFriend(data);   
 
-        const friendResult = await client.scan(friendParams).promise();
-
-        const friend = friendResult.Items[0];
-        console.log("Friend: ", friend);
-        
-
-        if (friendResult.Items[0] === undefined) {
+        if (friend === undefined) {
             return { message: "Không tìm thấy thông tin người dùng" };
         }
 
@@ -146,25 +158,9 @@ const blockFriendRequest = async (data) => {
 
 const unblockFriendRequest = async (data) => {
     try {
-        const friendParams = {
-            TableName: 'Friends',
-            FilterExpression: '(#userId = :userId and #friendId = :friendId) or (#userId = :friendId and #friendId = :userId)',
-            ExpressionAttributeNames: {
-                '#userId': 'userId',
-                '#friendId': 'friendId'
-            },
-            ExpressionAttributeValues: {
-                ':userId': data.userId,
-                ':friendId': data.friendId
-            }
-        };
-        const friendResult = await client.scan(friendParams).promise();
+        const friend = await getFriend(data);
 
-        const friend = friendResult.Items[0];
-        console.log("Friend: ", friend);
-        
-
-        if (friendResult.Items[0] === undefined) {
+        if (friend === undefined) {
             return { message: "Không tìm thấy thông tin người dùng" };
         }
 
@@ -193,20 +189,28 @@ const unblockFriendRequest = async (data) => {
 
 const rejectFriendRequest = async (data) => {
     try {
+        const friend = await getFriend(data);
+
+        if (friend === undefined) {
+            return { message: "Không tìm thấy thông tin người dùng" };
+        }
+        //update friend status to 2 (reject)
         const params = {
             TableName: 'Friends',
             Key: {
-                userId: data.userId,
-                friendId: data.friendId
+                userId: friend.userId,
+                friendId: friend.friendId
             },
-            UpdateExpression: 'set #status = :status, #contentRequest = :contentRequest',
+            UpdateExpression: 'set #status = :status, #contentRequest = :contentRequest, #requestDate = :requestDate',
             ExpressionAttributeNames: {
                 '#status': 'status',
-                '#contentRequest': 'contentRequest'
+                '#contentRequest': 'contentRequest',
+                '#requestDate': 'requestDate'
             },
             ExpressionAttributeValues: {
                 ':status': 2,
-                ':contentRequest': ""
+                ':contentRequest': "",
+                ':requestDate': Date.now()
             },
             ReturnValues: 'ALL_NEW'
         };
@@ -218,13 +222,52 @@ const rejectFriendRequest = async (data) => {
     }
 }
 
-const getFriendRequests = async (friendId) => {
+const cancelFriendRequest = async (data) => {
     try {
+        const friend = await getFriend(data);
+
+        if (friend === undefined) {
+            return { message: "Không tìm thấy thông tin người dùng" };
+        }
+
         const params = {
             TableName: 'Friends',
-            FilterExpression: '#status = :status and friendId = :friendId',
+            Key: {
+                userId: friend.userId,
+                friendId: friend.friendId
+            },
+            UpdateExpression: 'set #status = :status, #contentRequest = :contentRequest, #requestDate = :requestDate',
             ExpressionAttributeNames: {
-                '#status': 'status'
+                '#status': 'status',
+                '#contentRequest': 'contentRequest',
+                '#requestDate': 'requestDate'
+            },
+            ExpressionAttributeValues: {
+                ':status': -1,
+                ':contentRequest': "",
+                ':requestDate': Date.now()
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+        const result = await client.update(params).promise();
+        return result.Attributes;
+    } catch (error) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
+
+const getFriendRequests = async (friendId) => {
+    try {
+        //find friend with status = 0
+        const params = {
+            TableName: 'Friends',
+            FilterExpression: '#status = :status and (#friendId = :friendId or #userId = :friendId) and #senderId <> :friendId',
+            ExpressionAttributeNames: {
+                '#status': 'status',
+                '#friendId': 'friendId',
+                '#userId': 'userId',
+                '#senderId': 'senderId'
             },
             ExpressionAttributeValues: {
                 ':friendId': friendId,
@@ -241,7 +284,7 @@ const getFriendRequests = async (friendId) => {
             const params = {
                 TableName: 'Users',
                 Key: {
-                    id: friendRequest.userId
+                    id: friendRequest.senderId
                 }
             };
 
@@ -251,9 +294,9 @@ const getFriendRequests = async (friendId) => {
 
             // thong tin ket ban tra ve cho client
             const friendRequestResult = {
-                userId: friendRequest.userId,
+                userId: userSendRequest.id,
                 fullName: userSendRequest.fullName,
-                friendId: friendRequest.friendId,
+                friendId: friendRequest.friendId === friendRequest.senderId ? friendRequest.userId : friendRequest.friendId,
                 status: friendRequest.status,
                 requestDate: friendRequest.requestDate,
                 contentRequest: friendRequest.contentRequest
@@ -268,20 +311,23 @@ const getFriendRequests = async (friendId) => {
         throw new Error(err);
     }
 }
+
 const getFriend = async (data) => {
     try {
         // userId is partition key, friendId is sort key
         const params = {
             TableName: 'Friends',
-            KeyConditionExpression: 'userId = :userId and friendId = :friendId',
+            FilterExpression: '(#userId = :userId and #friendId = :friendId) or (#userId = :friendId and #friendId = :userId)',
+            ExpressionAttributeNames: {
+                '#userId': 'userId',
+                '#friendId': 'friendId'
+            },
             ExpressionAttributeValues: {
                 ':userId': data.userId,
                 ':friendId': data.friendId
-            }
+            }            
         };
-        console.log(params)
-
-        const result = await client.query(params).promise();
+        const result = await client.scan(params).promise();
         return result.Items[0];
     } catch (err) {
         console.error(err);
@@ -387,26 +433,15 @@ const getFriendByPhoneNumber = async (data) => {
         }
 
         const friendId = userResult.Items[0].id;
-        console.log("FriendId: ", friendId);
 
         // find friend by friendId
+
         const friendParams = {
-            TableName: 'Friends',
-            FilterExpression: '(#userId = :userId and #friendId = :friendId) or (#userId = :friendId and #friendId = :userId)',
-            ExpressionAttributeNames: {
-                '#userId': 'userId',
-                '#friendId': 'friendId'
-            },
-            ExpressionAttributeValues: {
-                ':userId': data.userId,
-                ':friendId': friendId
-            }
+            userId: data.userId,
+            friendId: friendId
         };
-
-        const friendResult = await client.scan(friendParams).promise();
-        console.log("Friend: ", friendResult.Items[0]);
-
-        const statusFriend = friendResult.Items[0] ? friendResult.Items[0].status : -1;
+        const friendResult = await getFriend(friendParams);
+        const statusFriend = friendResult ? friendResult.status : -1;
 
         const result = {
             fullName: userResult.Items[0].fullName,
@@ -414,6 +449,7 @@ const getFriendByPhoneNumber = async (data) => {
             status: statusFriend,
             message: "Tìm thấy thông tin người dùng",
             friendId: friendId,
+            senderId: friendResult ? friendResult.senderId : null,
         }
         console.log("Result: ", result);
 
@@ -436,5 +472,6 @@ module.exports = {
     unfriendRequest,
     blockFriendRequest,
     getFriendByPhoneNumber,
-    unblockFriendRequest
+    unblockFriendRequest,
+    cancelFriendRequest
 };

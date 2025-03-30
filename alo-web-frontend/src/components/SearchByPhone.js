@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getFriendByPhone, sendFriendRequest, unblockFriend, unfriend } from "../redux/slices/FriendSlice";
+import { getFriendByPhone, sendFriendRequest, unblockFriend, unfriend, cancelFriendRequest, rejectFriendRequest, acceptFriendRequest } from "../redux/slices/FriendSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import showToast from "../utils/AppUtils";
@@ -21,6 +21,8 @@ export const SearchByPhone = (isOpenAdd) => {
     const [isOpenConfirm, setIsOpenConfirm] = useState(false);
 
     useEffect(() => {
+        console.log("info", info);
+
     }, [info, isOpenAdd]);
 
     const handleSearch = async () => {
@@ -50,8 +52,8 @@ export const SearchByPhone = (isOpenAdd) => {
                 setContentInvite('Mình tìm kiếm bạn qua số điện thoại. Kết bạn với mình nhé!');
                 setIsShowInfo(false); // Hiển thị thông tin nguoi dùng
                 setInfo(null); // Đặt dữ liệu người dùng vào state
-                setPhoneNumber(''); // Đặt dữ liệu người dùng vào state
                 showToast("Gửi lời mời kết bạn thành công", "success");
+                handleSearch(); // Tìm kiếm lại bạn bè
             } else {
                 console.error("Lỗi khi gửi lời mời kết bạn:", result.payload?.message);
             }
@@ -75,9 +77,8 @@ export const SearchByPhone = (isOpenAdd) => {
                 setIsOpenModalContent(false); // Đóng modal nội dung mời kết bạn
                 setInfo(null); // Đặt dữ liệu người dùng vào state
                 setIsShowInfo(false); // Hiển thị thông tin nguoi dùng
-                setPhoneNumber(''); // Đặt dữ liệu người dùng vào state
                 showToast("Hủy kết bạn thành công", "success");
-                isOpenAdd.onClose(); // Đóng modal
+                handleSearch();
             } else {
                 console.error("Lỗi khi hủy kết bạn:", result.payload?.message);
             }
@@ -94,9 +95,71 @@ export const SearchByPhone = (isOpenAdd) => {
         try {
             const result = await dispatch(unblockFriend(request));
             const friendResult = result.payload.data ? result.payload.data : null;
-            console.log("friendResult", friendResult);
+            if (friendResult && friendResult.status === 1) {
+                setIsShowInfo(false);
+                showToast("Mở chặn bạn bè thành công", "success");
+                handleSearch();
+            }
         } catch (error) {
             console.error("Lỗi khi mở chặn bạn bè:", error);
+        }
+    }
+
+    const handleCancel = async (id) => {
+        const request = {
+            userId: userLogin.id,
+            friendId: id,
+        };
+        try {
+            const result = await dispatch(cancelFriendRequest(request));
+            const friendResult = result.payload.data ? result.payload.data : null;
+            if (friendResult && friendResult.status === -1) {
+                showToast("Hủy lời mời kết bạn thành công", "success");
+                handleSearch();
+            }
+            else {
+                console.error("Lỗi khi hủy lời mời kết bạn:", result.payload?.message);
+            }
+        } catch (error) {
+            console.error("Lỗi khi hủy lời mời kết bạn:", error);
+        }
+    }
+
+    const handleAcceptFriend = async (id) => {
+        const request = {
+            userId: userLogin.id,
+            friendId: id,
+        };
+        try {
+            const result = await dispatch(acceptFriendRequest(request));
+            const friendResult = result.payload.data ? result.payload.data : null;
+            if (friendResult && friendResult.status === 1) {
+                showToast("Đã chấp nhận lời mời kết bạn", "success");
+                handleSearch(); // Tìm kiếm lại bạn bè
+            } else {
+                console.error("Lỗi khi chấp nhận lời mời kết bạn:", result.payload?.message);
+            }
+        } catch (error) {
+            console.error("Lỗi khi chấp nhận lời mời kết bạn:", error);
+        }
+    }
+
+    const handleRejectFriend = async (id) => {
+        const request = {
+            userId: userLogin.id,
+            friendId: id,
+        };
+        try {
+            const result = await dispatch(rejectFriendRequest(request));
+            const friendResult = result.payload.data ? result.payload.data : null;
+            if (friendResult && friendResult.status === 2) {
+                showToast("Đã từ chối lời mời kết bạn", "info");
+                handleSearch(); // Tìm kiếm lại bạn bè
+            } else {
+                console.error("Lỗi khi từ chối lời mời kết bạn:", result.payload?.message);
+            }
+        } catch (error) {
+            console.error("Lỗi khi từ chối lời mời kết bạn:", error);
         }
     }
 
@@ -106,9 +169,17 @@ export const SearchByPhone = (isOpenAdd) => {
             setIsOpenModalContent(true);
             setIsShowInfo(false);
         } else if (info.status === 0) {
-            // Hủy lời mời
+            if (info.senderId === userLogin.id) {
+                // Hủy lời mời
+                handleCancel(info.friendId);
+            } else {
+                // Từ chối lời mời
+                handleRejectFriend(info.friendId);
+            }
         } else if (info.status === 3) {
             // Mở chặn
+            handleUnblock(info.friendId);
+            isOpenAdd.onClose(); // Đóng modal
         }
         else {
             // Hủy kết bạn
@@ -204,8 +275,19 @@ export const SearchByPhone = (isOpenAdd) => {
                                                             info?.status === 2 ? "bg-blue-700" : info?.status === 4 ? "bg-blue-700" : 'bg-red-800'} text-white`}
                                                     onClick={() => handleClick()}
                                                 >
-                                                    {info?.status === -1 ? "Gửi lời mời kết bạn" : info?.status === 3 ? "Mở chặn" : info?.status === 0 ? "Hủy lời mời" : info?.status === 2 ? "Gửi lời mời kết bạn" : info?.status === 4 ? "Gửi lời mời kết bạn" : "Hủy kết bạn"}
+                                                    {info?.status === -1 ? "Gửi lời mời kết bạn" : info?.status === 3 ? "Mở chặn" : info?.status === 0 ? (info.senderId === userLogin.id ? "Hủy lời mời" : " Từ chối") : info?.status === 2 ? "Gửi lời mời kết bạn" : info?.status === 4 ? "Gửi lời mời kết bạn" : "Hủy kết bạn"}
                                                 </button>
+
+                                                {
+                                                    info?.status === 0 && info.senderId !== userLogin.id && (
+                                                        <button
+                                                            className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+                                                            onClick={() => handleAcceptFriend(info.friendId)}
+                                                        >
+                                                            Đồng ý
+                                                        </button>
+                                                    )
+                                                }
                                             </>
                                         )
                                     }

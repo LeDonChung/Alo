@@ -219,6 +219,35 @@ exports.unblockFriendRequest = async (req, res) => {
     }
 }
 
+exports.cancelFriendRequest = async (req, res) => {
+    try {
+        const request = {
+            userId: req.body.userId,
+            friendId: req.body.friendId,
+        }
+        const friendRequest = await friendService.cancelFriendRequest(request);
+        if (!friendRequest) {
+            return res.status(400).json({
+                status: 400,
+                message: "Yêu cầu hủy lời mời kết bạn không hợp lệ.",
+                data: null
+            });
+        }
+        return res.json({
+            status: 200,
+            data: friendRequest,
+            message: "Đã hủy lời mời kết bạn."
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
+
 exports.getFriendRequests = async (req, res) => {
     try {
         const userId = req.query.userId;
