@@ -11,9 +11,10 @@ const friendRequest = async (data) => {
         }
         const friend = await getFriend(friendParams);
 
-        if(friend){
-           // update friend
-           const updateParams = {
+        let friendResp = {};
+        if (friend) {
+            // update friend
+            const updateParams = {
                 TableName: 'Friends',
                 Key: {
                     userId: friend.userId,
@@ -35,23 +36,51 @@ const friendRequest = async (data) => {
                 ReturnValues: 'ALL_NEW'
             };
             const result = await client.update(updateParams).promise();
-            return result.Attributes; 
-        }        
-        
-        // new friend request
+            friendResp = result.Attributes;
+        } else {
+            // new friend request
+            const params = {
+                TableName: 'Friends',
+                Item: {
+                    userId: data.userId,
+                    friendId: data.friendId,
+                    status: data.status,
+                    requestDate: Date.now(),
+                    contentRequest: data.contentRequest,
+                    senderId: data.userId
+                }
+            };
+            await client.put(params).promise();
+            friendResp = params.Item;
+        }
+
+        //get info user send request
         const params = {
-            TableName: 'Friends',
-            Item: {
-                userId: data.userId,
-                friendId: data.friendId,
-                status: data.status,
-                requestDate: Date.now(),
-                contentRequest: data.contentRequest,
-                senderId: data.userId
+            TableName: 'Users',
+            Key: {
+                id: data.userId
             }
         };
-        await client.put(params).promise();
-        return params.Item;
+
+        // thong tin nguoi gui loi moi ket ban
+        const userResult = await client.get(params).promise();
+        const userSendRequest = userResult.Item;
+
+        const resp = {
+            userId: userSendRequest.id,
+            fullName: userSendRequest.fullName,
+            avatarLink: userSendRequest.avatarLink,
+            friendId: friendResp.friendId === friendResp.senderId ? friendResp.userId : friendResp.friendId,
+            status: friendResp.status,
+            requestDate: friendResp.requestDate,
+            contentRequest: friendResp.contentRequest
+        }    
+
+        console.log("Response: ", resp);
+        
+
+        return resp;
+
     } catch (err) {
         console.error(err);
         throw new Error(err);
@@ -94,7 +123,7 @@ const acceptFriendRequest = async (data) => {
 
 const unfriendRequest = async (data) => {
     try {
-        const friend = await getFriend(data);     
+        const friend = await getFriend(data);
 
         if (friend === undefined) {
             return { message: "Không tìm thấy thông tin người dùng" };
@@ -127,7 +156,7 @@ const unfriendRequest = async (data) => {
 
 const blockFriendRequest = async (data) => {
     try {
-        const friend = await getFriend(data);   
+        const friend = await getFriend(data);
 
         if (friend === undefined) {
             return { message: "Không tìm thấy thông tin người dùng" };
@@ -296,6 +325,7 @@ const getFriendRequests = async (friendId) => {
             const friendRequestResult = {
                 userId: userSendRequest.id,
                 fullName: userSendRequest.fullName,
+                avatarLink: userSendRequest.avatarLink,
                 friendId: friendRequest.friendId === friendRequest.senderId ? friendRequest.userId : friendRequest.friendId,
                 status: friendRequest.status,
                 requestDate: friendRequest.requestDate,
@@ -325,7 +355,7 @@ const getFriend = async (data) => {
             ExpressionAttributeValues: {
                 ':userId': data.userId,
                 ':friendId': data.friendId
-            }            
+            }
         };
         const result = await client.scan(params).promise();
         return result.Items[0];
@@ -377,7 +407,8 @@ const getFriends = async (userId) => {
                     fullName: user.fullName,
                     status: friend.status,
                     accountId: user.accountId,
-                    requestDate: friend.requestDate
+                    requestDate: friend.requestDate,
+                    avatarLink: user.avatarLink,
                 }
             }
             listResult.push(response);

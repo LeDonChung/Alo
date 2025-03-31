@@ -4,7 +4,7 @@ import { getFriendByPhone, sendFriendRequest, unblockFriend, unfriend, cancelFri
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import showToast from "../utils/AppUtils";
-
+import socket from "../utils/socket";
 export const SearchByPhone = (isOpenAdd) => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const friend = useSelector(state => state.friend.friend);
@@ -48,6 +48,11 @@ export const SearchByPhone = (isOpenAdd) => {
             const result = await dispatch(sendFriendRequest(request));
             const friendResult = result.payload.data ? result.payload.data : null;
             if (friendResult && friendResult.status === 0) {
+                // 
+                socket.emit("send-friend-request", {
+                    // thong tin
+                })
+
                 setIsOpenModalContent(false);
                 setContentInvite('Mình tìm kiếm bạn qua số điện thoại. Kết bạn với mình nhé!');
                 setIsShowInfo(false); // Hiển thị thông tin nguoi dùng

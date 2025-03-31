@@ -4,6 +4,7 @@ import { friendInvitations, friendRecommendations } from '../data/friendInvitati
 import { useDispatch, useSelector } from 'react-redux';
 import { acceptFriendRequest, getFriendsRequest, rejectFriendRequest } from '../redux/slices/FriendSlice';
 import showToast from  '../utils/AppUtils';
+import socket from '../utils/socket';
 
 const listType = [
   { id: 1, name: "Từ cửa sổ trò chuyện" },
@@ -73,6 +74,13 @@ export default function InvitationFriend() {
     }
   }
 
+  useEffect(() => {
+    socket.on("receive-friend-request", (data) => {
+      
+    })
+
+  }  , []);
+
   return (
     <div className="flex-1 flex flex-col w-full h-full bg-[#EBECF0]">
       {/* header */}
@@ -102,7 +110,7 @@ export default function InvitationFriend() {
                       <div key={item.userId} className="bg-white rounded-lg shadow p-4">
                         <div className="flex items-center mb-3">
                           <img
-                            src="https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"
+                            src={item.avatarLink ? item.avatarLink : "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
                             alt="atv_default_avatar"
                             className="w-10 h-10 rounded-full mr-3"
                           />

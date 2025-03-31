@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { axiosInstance } from "../../api/APIClient";
-
+import socket from "../../utils/socket"
 const initialState = {
     friends: [],
     friend: null,
