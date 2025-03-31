@@ -4,10 +4,9 @@ import { getFriends } from "../redux/slices/FriendSlice";
 
 export default function CreateGroupPage({ isOpenGroup, onClose }) {
     const dispatch = useDispatch();
-    const friendsFromRedux = useSelector((state) => state.friend.friends);
+    const friends = useSelector((state) => state.friend.friends);
     const [selected, setSelected] = useState([]);
     const [groupName, setGroupName] = useState("");
-    const [friends, setFriends] = useState([]);
 
     // Lấy danh sách bạn bè 
     useEffect(() => {
@@ -18,20 +17,10 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                 console.log("Error fetching friends:", error);
             }
         };
-        fetchFriends();
-    }, [dispatch]);
+        fetchFriends(); 
+    }, []);
 
-    // Cập nhật state friends khi dữ liệu từ Redux thay đổi
-    useEffect(() => {
-        if (friendsFromRedux?.length > 0) {
-            const formattedFriends = friendsFromRedux.map((friend) => ({
-                id: friend.friendId,
-                name: friend.friendInfo.fullName,
-                avatar: "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg", // Dùng ảnh mặc định hoặc lấy từ friend.friendInfo nếu có
-            }));
-            setFriends(formattedFriends);
-        }
-    }, [friendsFromRedux]);
+
 
     const toggleSelect = (id) => {
         setSelected((prev) =>
@@ -40,7 +29,7 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
     };
 
     return (
-        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white rounded-lg shadow-lg w-[400px] max-h-[90vh] overflow-auto relative p-4">
                 <button
                     className="absolute top-2 right-2 text-gray-600 hover:text-black text-xl"
@@ -70,14 +59,14 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                                 onClick={() => toggleSelect(friend.id)}
                             >
                                 <img
-                                    src={friend.avatar}
-                                    alt={friend.name}
+                                    src={friend.friendInfo.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
+                                    alt={friend.friendInfo.fullName}
                                     className="w-[30px] h-[30px] rounded-full"
                                 />
-                                <span className="ml-4 font-medium flex-1">{friend.name}</span>
+                                <span className="ml-4 font-medium flex-1">{friend.friendInfo.fullName}</span>
                                 <input
                                     type="checkbox"
-                                    checked={selected.includes(friend.id)}
+                                    checked={selected.includes(friend.friendId)}
                                     readOnly
                                 />
                             </button>
