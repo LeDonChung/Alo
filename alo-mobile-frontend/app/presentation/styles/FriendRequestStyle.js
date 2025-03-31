@@ -3,18 +3,18 @@ import { StyleSheet } from "react-native";
 export const FriendRequestStyles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#121212",
+    backgroundColor: "#FFFFFF",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     padding: 10,
-    backgroundColor: "#1f1f1f",
+    backgroundColor: "#EDEDED",
     borderBottomWidth: 1,
-    borderBottomColor: "#333",
+    borderBottomColor: "#CCC",
   },
   headerTitle: {
-    color: "#fff",
+    color: "#333",
     fontSize: 18,
     fontWeight: "bold",
     flex: 1,
@@ -29,7 +29,7 @@ export const FriendRequestStyles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderBottomWidth: 1,
-    borderBottomColor: "#333",
+    borderBottomColor: "#DDD",
   },
   avatar: {
     width: 50,
@@ -38,16 +38,16 @@ export const FriendRequestStyles = StyleSheet.create({
     marginRight: 15,
   },
   contactName: {
-    color: "#fff",
+    color: "#333",
     fontSize: 16,
     fontWeight: "bold",
   },
   contactStatus: {
-    color: "#aaa",
+    color: "#666",
     fontSize: 14,
   },
   contactDate: {
-    color: "#aaa",
+    color: "#666",
     fontSize: 12,
     marginTop: 2,
   },
@@ -55,26 +55,24 @@ export const FriendRequestStyles = StyleSheet.create({
     flexDirection: "row",
   },
   actionButton: {
-    backgroundColor: "#444",
+    backgroundColor: "#DDD",
     paddingVertical: 5,
     paddingHorizontal: 10,
     borderRadius: 5,
     marginLeft: 10,
   },
   actionButtonText: {
-    color: "#fff",
+    color: "#333",
     fontSize: 14,
   },
-  // Thêm style cho tiêu đề phần
   sectionTitle: {
-    color: "#fff",
+    color: "#333",
     fontSize: 18,
     fontWeight: "bold",
     paddingHorizontal: 15,
     paddingVertical: 10,
-    backgroundColor: "#1f1f1f",
+    backgroundColor: "#F5F5F5",
   },
-  // Thêm style cho nút "Xem thêm"
   viewMoreButton: {
     alignItems: "center",
     paddingVertical: 10,
