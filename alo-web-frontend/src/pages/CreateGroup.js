@@ -1,12 +1,21 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getFriends } from "../redux/slices/FriendSlice"; 
+import FriendsOfUser from "../components/FriendsOfUser";
+import { text } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCircleXmark } from "@fortawesome/free-solid-svg-icons";
+import { SearchByPhone } from "../components/SearchByPhone";
+import { removeVietnameseTones } from "../utils/AppUtils";
 
 export default function CreateGroupPage({ isOpenGroup, onClose }) {
     const dispatch = useDispatch();
     const friends = useSelector((state) => state.friend.friends);
     const [selected, setSelected] = useState([]);
     const [groupName, setGroupName] = useState("");
+    const [textSearch, setTextSearch] = useState(""); // Quản lý textSearch trong CreateGroupPage
+    const [filteredFriends, setFilteredFriends] = useState([]);
+    const friendsFromRedux = useSelector((state) => state.friend.friends);
 
     // Lấy danh sách bạn bè 
     useEffect(() => {
@@ -18,7 +27,28 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
             }
         };
         fetchFriends(); 
-    }, []);
+    }, [dispatch]); 
+
+    //Cập nhật DS bạn bè từ redux
+    useEffect(() => {
+        if (friendsFromRedux?.length > 0) {
+            let filtered = friendsFromRedux;
+
+            if (textSearch) {
+                filtered = friendsFromRedux.filter((friend) => {
+                    const friendName = removeVietnameseTones(
+                        friend.friendInfo.fullName.toLowerCase()
+                    );
+                    const searchText = removeVietnameseTones(textSearch.toLowerCase());
+                    return friendName.includes(searchText);
+                });
+            }
+
+            setFilteredFriends(filtered);
+        } else {
+            setFilteredFriends([]);
+        }
+    }, [friendsFromRedux, textSearch]);
 
 
 
@@ -39,6 +69,14 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                 </button>
 
                 <h2 className="text-lg font-semibold mb-2 text-center">Tạo nhóm</h2>
+                <div className="flex items-center justify-between border-b border-gray-300 mb-4">    
+                <button className="flex items-center p-5 hover:bg-gray-100">
+                    <img
+                        src="./icon/ic_create_group.png"
+                        alt="Avatar"
+                        className="w-[30px] h-[30px]"
+                    />
+                </button>
                 <input
                     type="text"
                     placeholder="Nhập tên nhóm..."
@@ -46,18 +84,35 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                     onChange={(e) => setGroupName(e.target.value)}
                     className="border p-2 rounded w-full mb-4"
                 />
+                </div>
+                <input
+                    className="border p-2 rounded w-full mb-4"
+                    type="text"
+                    placeholder="Nhập tên, số điện thoại hoặc danh sách số điện thoại"
+                    value={textSearch}
+                    onChange={(e) => setTextSearch(e.target.value)}
+                />
+                {textSearch && (
+                    <FontAwesomeIcon
+                    icon={faCircleXmark}
+                    className="text-gray-500 absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
+                    size="lg"
+                    onClick={() => setTextSearch("")}
+                    />
+                    )}
+                
 
                 {/* Danh sách bạn bè */}
                 <div className="flex flex-col overflow-auto max-h-[300px]">
-                    {friends.length === 0 ? (
+                    {filteredFriends.length === 0 ? (
                         <p className="text-center text-gray-500">Đang tải danh sách...</p>
                     ) : (
-                        friends.map((friend) => (
+                        filteredFriends.map((friend) => (
                             <button
-                                key={friend.id}
+                                key={friend.friendId}
                                 className="flex items-center p-3 hover:bg-gray-100"
-                                onClick={() => toggleSelect(friend.id)}
-                            >
+                                onClick={() => toggleSelect(friend.friendId)}
+                            >   
                                 <img
                                     src={friend.friendInfo.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
                                     alt={friend.friendInfo.fullName}
