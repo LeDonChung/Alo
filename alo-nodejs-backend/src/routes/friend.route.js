@@ -40,4 +40,8 @@ router.post('/unblock-friend',
     middleware.authenticateToken,
     friendController.unblockFriendRequest);
 
+router.post('/cancel-friend',
+    middleware.authenticateToken,
+    friendController.cancelFriendRequest);
+
 module.exports = router;

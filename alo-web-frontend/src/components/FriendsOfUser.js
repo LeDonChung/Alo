@@ -42,6 +42,8 @@ export default function FriendsOfUser() {
   const [detailFriend, setDetailFriend] = useState(null);
   const [isOpenConfirm, setIsOpenConfirm] = useState(false);
 
+  const [loading, setLoading] = useState(false);
+
   const handleUnfriend = async (id) => {
     try {
       if (isOpenConfirm) {
@@ -100,7 +102,12 @@ export default function FriendsOfUser() {
   useEffect(() => {
     const fetchFriends = async () => {
       try {
-        await dispatch(getFriends());
+        setLoading(true);
+        const result = await dispatch(getFriends());
+        if(result.payload.status === 200) {
+          setLoading(false);
+          
+        }
 
       } catch (error) {
         console.log(error);
@@ -111,38 +118,42 @@ export default function FriendsOfUser() {
 
   // Lọc danh sách bạn bè theo tên A-Z hoặc Z-A
   const groupAndSortFriends = (friends, sortOrder) => {
-    // Sắp xếp
-    const sortedList = [...friends].sort((a, b) => {
-      const aName = a.friendInfo.fullName;
-      const bName = b.friendInfo.fullName;
-      const nameA = removeVietnameseTones(aName);
-      const nameB = removeVietnameseTones(bName);
-      
-      if (nameA < nameB) return sortOrder === 'asc' ? -1 : 1;
-      if (nameA > nameB) return sortOrder === 'asc' ? 1 : -1;
-      return 0;
-    });
-    // Gom nhóm
-    const groupedObject = sortedList.reduce((acc, friend) => {
-      const frName = friend.friendInfo.fullName;
-      const firstChar = removeVietnameseTones(frName).charAt(0);
-      
-      if (!acc[firstChar]) acc[firstChar] = [];
-      acc[firstChar].push(friend);
-      return acc;
-    }, {});
-    // Đưa về dạng mảng
-    const groupList = Object.entries(groupedObject).map(([char, list], index) => ({
-      id: index + 1,
-      char,
-      list,
-    }));
-    return groupList;
+    if (friends.length >= 0) {
+      // Sắp xếp
+      const sortedList = [...friends].sort((a, b) => {
+        const aName = a.friendInfo.fullName;
+        const bName = b.friendInfo.fullName;
+        const nameA = removeVietnameseTones(aName);
+        const nameB = removeVietnameseTones(bName);
+
+        if (nameA < nameB) return sortOrder === 'asc' ? -1 : 1;
+        if (nameA > nameB) return sortOrder === 'asc' ? 1 : -1;
+        return 0;
+      });
+      // Gom nhóm
+      const groupedObject = sortedList.reduce((acc, friend) => {
+        const frName = friend.friendInfo.fullName;
+        const firstChar = removeVietnameseTones(frName).charAt(0);
+
+        if (!acc[firstChar]) acc[firstChar] = [];
+        acc[firstChar].push(friend);
+        return acc;
+      }, {}); 
+      // Đưa về dạng mảng
+      const groupList = Object.entries(groupedObject).map(([char, list], index) => ({
+        id: index + 1,
+        char,
+        list,
+      }));
+      return groupList;
+    }
+
+
   };
 
   // Lọc danh sách bạn bè theo phân loại a-z hoặc z-a khi thay đổi selectFilter
   useEffect(() => {
-    if (listFr?.length > 0) {
+    if (!loading && listFr?.length > 0) {
       setGroupFriendList(groupAndSortFriends(listFr, selectFilter.id === 1 ? 'asc' : 'desc'));
     }
   }, [selectFilter, selectCategory, listFr]);
@@ -171,24 +182,26 @@ export default function FriendsOfUser() {
 
   // Lọc danh sách bạn bè theo tên bằng input search
   useEffect(() => {
-    if (textSearch === "") {
+    if (!loading && textSearch === "") {
       setGroupFriendList(groupAndSortFriends(listFr, selectFilter.id === 1 ? 'asc' : 'desc'));
     } else {
-      const groupDefault = groupAndSortFriends(listFr, selectFilter.id === 1 ? 'asc' : 'desc');
-      const newGroup = groupDefault
-        .map((group) => {
-          const newList = group.list.filter((friend) => {
-            const friendName = removeVietnameseTones(friend.friendInfo.fullName.toLowerCase());
-            console.log("friendName", friendName);
-            
-            const searchText = removeVietnameseTones(textSearch.toLowerCase());
-            return friendName.includes(searchText);
-          });
-          return newList.length > 0 ? { ...group, list: newList } : null;
-        })
-        .filter((group) => group !== null); // Loại bỏ các nhóm rỗng
+      if (!loading) {
+        const groupDefault = groupAndSortFriends(listFr, selectFilter.id === 1 ? 'asc' : 'desc');
+        const newGroup = groupDefault
+          .map((group) => {
+            const newList = group.list.filter((friend) => {
+              const friendName = removeVietnameseTones(friend.friendInfo.fullName.toLowerCase());
+              console.log("friendName", friendName);
 
-      setGroupFriendList(newGroup);
+              const searchText = removeVietnameseTones(textSearch.toLowerCase());
+              return friendName.includes(searchText);
+            });
+            return newList.length > 0 ? { ...group, list: newList } : null;
+          })
+          .filter((group) => group !== null); // Loại bỏ các nhóm rỗng
+
+        setGroupFriendList(newGroup);
+      }
     }
   }, [textSearch, listFr, selectFilter]);
 
@@ -200,261 +213,263 @@ export default function FriendsOfUser() {
       </div>
 
 
-      <div className="flex-1 overflow-y-auto p-3">
-        <p className="text-gray-600 font-semibold mt-5 mb-5 w-[98%] mx-auto" >Bạn bè ({listFr.length})</p>
-        {
-          listFr && (
-            <div className="w-[98%] flex flex-1 flex-col mx-auto bg-white h-auto rounded-lg" >
-              {/* search, filter friend */}
-              <div className="flex items-center p-3 h-[75px]">
+      {
+        !loading && (
+          <div className="flex-1 overflow-y-auto p-3">
+            <p className="text-gray-600 font-semibold mt-5 mb-5 w-[98%] mx-auto" >Bạn bè ({listFr.length})</p>
+            {
+              listFr && (
+                <div className="w-[98%] flex flex-1 flex-col mx-auto bg-white h-auto rounded-lg" >
+                  {/* search, filter friend */}
+                  <div className="flex items-center p-3 h-[75px]">
 
-                {/* input search */}
-                <div className="flex items-center p-2 bg-white rounded-[5px] h-[35px] w-3/5 hover:bg-gray-100 border border-gray-200">
-                  <FontAwesomeIcon icon={faMagnifyingGlass} className="text-gray-500" size="35" />
-                  <input type="text" placeholder="Tìm bạn"
-                    className="pl-2 bg-[#EBECF0] h-[30px] focus:outline-none focus:border-none focus:ring-0 w-[95%] hover:bg-gray-100 bg-white"
-                    value={textSearch} onChange={(e) => setTextSearch(e.target.value)} />
-                  {textSearch && (
-                    <FontAwesomeIcon icon={faCircleXmark} className="text-gray-500" size="15" onClick={() => setTextSearch("")} />
-                  )}
+                    {/* input search */}
+                    <div className="flex items-center p-2 bg-white rounded-[5px] h-[35px] w-3/5 hover:bg-gray-100 border border-gray-200">
+                      <FontAwesomeIcon icon={faMagnifyingGlass} className="text-gray-500" size="35" />
+                      <input type="text" placeholder="Tìm bạn"
+                        className="pl-2 bg-[#EBECF0] h-[30px] focus:outline-none focus:border-none focus:ring-0 w-[95%] hover:bg-gray-100 bg-white"
+                        value={textSearch} onChange={(e) => setTextSearch(e.target.value)} />
+                      {textSearch && (
+                        <FontAwesomeIcon icon={faCircleXmark} className="text-gray-500" size="15" onClick={() => setTextSearch("")} />
+                      )}
 
-                </div>
-
-
-                {/* filter type */}
-                <select
-                  className="pl-2 pr-2 bg-white rounded-[5px] h-[35px] w-1/5 hover:bg-gray-100 border border-gray-200 ml-2"
-                  value={selectFilter?.id}
-                  onChange={(e) => {
-                    const selectedItem = listTypeFilter.find((item) => item.id === parseInt(e.target.value));
-
-                    setSelectFilter(selectedItem); // Cập nhật state
-                  }}
-                >
-                  {listTypeFilter.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
-
-
-                {/* filter category */}
-                <div ref={dropdownRef} className="relative inline-block text-left w-1/5 min-w-[150px] ml-2">
-                  {/* Button hiển thị nội dung chọn */}
-                  <button
-                    onClick={() => setOpen(!open)}
-                    className="pl-2 pr-2 bg-white rounded-[5px] h-[35px] w-full hover:bg-gray-100 border border-gray-200 flex justify-between items-center"
-                  >
-
-                    <span>{selectCategory.name}</span>
-                    <FontAwesomeIcon icon={faChevronDown} className="text-gray-500" size="15" />
-                  </button>
-
-                  {/* Dropdown content */}
-                  {open && (
-                    <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg">
-                      {/* Option: Tất cả */}
-                      <div
-                        onClick={() => {
-                          setSelectCategory({ id: 0, name: "Tất cả" });
-                          setOpen(false);
-                        }}
-                        className={`px-4 py-2 cursor-pointer hover:bg-gray-100 ${selectCategory.id === 0 ? "font-semibold" : ""
-                          }`}
-                      >
-                        Tất cả
-                      </div>
-
-                      {/* Phân loại có submenu */}
-                      <div className="relative group">
-                        <div className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-100">
-                          <span>Phân loại</span>
-                          <FontAwesomeIcon icon={faChevronRight} className="text-gray-500" size="15" />
-                        </div>
-
-                        {/* Submenu: Danh sách phân loại */}
-                        <div className="absolute left-[-180px] top-0 ml-1 w-[180px] bg-white border rounded-lg shadow-lg opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200">
-                          {listCategory.map((cat) => (
-                            <div
-                              key={cat.id}
-                              onClick={() => {
-                                setSelectCategory(cat);
-                                setOpen(false);
-                              }}
-                              className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-100"
-                            >
-                              <span
-                                className="inline-block w-3 h-3 rounded-full mr-2"
-                                style={{ backgroundColor: cat.color }}
-                              ></span>
-                              <span>{cat.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Quản lý thẻ phân loại */}
-                      <div
-                        onClick={() => {
-                          alert("Quản lý thẻ phân loại");
-                          setOpen(false);
-                        }}
-                        className="px-4 py-2 text-blue-500 cursor-pointer hover:bg-gray-100"
-                      >
-                        Quản lý thẻ phân loại
-                      </div>
                     </div>
-                  )}
-                </div>
-              </div>
 
-              <div className="flex flex-col w-full mx-auto mb-5 px-2">
-                {
-                  groupFriendList && groupFriendList.map((group) => (
-                    <div key={group.id} className="flex flex-col">
-                      <div className="flex items-center p-2">
-                        <span className="font-semibold text-gray-600">{group.char}</span>
-                      </div>
-                      <div className="flex flex-col">
-                        {
-                          group.list && group.list.map((friend) => (
-                            <div key={friend.friendId} className="flex items-center justify-between w-full hover:bg-gray-100 rounded-md p-2">
-                              <div className="flex items-center">
-                                <img src="https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" className="w-[40px] h-[40px] rounded-full" />
-                                <div className="flex flex-col ml-2">
-                                  <span className="font-semibold">{friend.friendInfo.fullName}</span>
-                                  {
-                                    friend.category && (
-                                      <div className="flex items-center">
-                                        <FontAwesomeIcon icon={faTag} style={{ color: friend.category.color }} size="15" />
-                                        <span className="text-sm ml-1">
-                                          {friend.category.name}
-                                        </span>
-                                      </div>
-                                    )
-                                  }
-                                </div>
-                              </div>
-                              {/* Right - Icon 3 chấm */}
-                              <div className="relative">
-                                <button
-                                  className="cursor-pointer text-lg font-bold"
+
+                    {/* filter type */}
+                    <select
+                      className="pl-2 pr-2 bg-white rounded-[5px] h-[35px] w-1/5 hover:bg-gray-100 border border-gray-200 ml-2"
+                      value={selectFilter?.id}
+                      onChange={(e) => {
+                        const selectedItem = listTypeFilter.find((item) => item.id === parseInt(e.target.value));
+
+                        setSelectFilter(selectedItem); // Cập nhật state
+                      }}
+                    >
+                      {listTypeFilter.map((item) => (
+                        <option key={item.id} value={item.id}>
+                          {item.name}
+                        </option>
+                      ))}
+                    </select>
+
+
+                    {/* filter category */}
+                    <div ref={dropdownRef} className="relative inline-block text-left w-1/5 min-w-[150px] ml-2">
+                      {/* Button hiển thị nội dung chọn */}
+                      <button
+                        onClick={() => setOpen(!open)}
+                        className="pl-2 pr-2 bg-white rounded-[5px] h-[35px] w-full hover:bg-gray-100 border border-gray-200 flex justify-between items-center"
+                      >
+
+                        <span>{selectCategory.name}</span>
+                        <FontAwesomeIcon icon={faChevronDown} className="text-gray-500" size="15" />
+                      </button>
+
+                      {/* Dropdown content */}
+                      {open && (
+                        <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg">
+                          {/* Option: Tất cả */}
+                          <div
+                            onClick={() => {
+                              setSelectCategory({ id: 0, name: "Tất cả" });
+                              setOpen(false);
+                            }}
+                            className={`px-4 py-2 cursor-pointer hover:bg-gray-100 ${selectCategory.id === 0 ? "font-semibold" : ""
+                              }`}
+                          >
+                            Tất cả
+                          </div>
+
+                          {/* Phân loại có submenu */}
+                          <div className="relative group">
+                            <div className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-100">
+                              <span>Phân loại</span>
+                              <FontAwesomeIcon icon={faChevronRight} className="text-gray-500" size="15" />
+                            </div>
+
+                            {/* Submenu: Danh sách phân loại */}
+                            <div className="absolute left-[-180px] top-0 ml-1 w-[180px] bg-white border rounded-lg shadow-lg opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200">
+                              {listCategory.map((cat) => (
+                                <div
+                                  key={cat.id}
                                   onClick={() => {
-                                    setDetailFriend(friend);
-                                    setOpenDetail(!openDetail);
+                                    setSelectCategory(cat);
+                                    setOpen(false);
                                   }}
+                                  className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-100"
                                 >
-                                  <FontAwesomeIcon icon={faEllipsis} />
-                                </button>
-                                {openDetail && detailFriend.friendId === friend.friendId && (
-                                  <div className="absolute left-[-200px] mt-1 w-[200px] bg-white rounded-lg shadow-lg">
-                                    <button className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
-                                      <span className="">Xem thông tin</span>
-                                    </button>
-                                    <div className="px-4 relative group py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
-                                      <div className="flex items-center justify-between cursor-pointer hover:bg-gray-100">
-                                        <span>Phân loại</span>
-                                        <FontAwesomeIcon icon={faChevronRight} className="text-gray-500" size="15" />
-                                      </div>
+                                  <span
+                                    className="inline-block w-3 h-3 rounded-full mr-2"
+                                    style={{ backgroundColor: cat.color }}
+                                  ></span>
+                                  <span>{cat.name}</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
 
-                                      {/* Submenu: Danh sách phân loại */}
-                                      <div className="absolute left-[-200px] top-0 ml-1 w-[180px] bg-white border rounded-lg shadow-lg opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200">
-                                        {listCategory.map((cat) => (
-                                          <div
-                                            key={cat.id}
-                                            onClick={() => {
-                                              setSelectCategory(cat);
-                                              setOpen(false);
-                                            }}
-                                            className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-100"
-                                          >
-                                            <span
-                                              className="inline-block w-3 h-3 rounded-full mr-2"
-                                              style={{ backgroundColor: cat.color }}
-                                            ></span>
-                                            <span>{cat.name}</span>
+                          {/* Quản lý thẻ phân loại */}
+                          <div
+                            onClick={() => {
+                              alert("Quản lý thẻ phân loại");
+                              setOpen(false);
+                            }}
+                            className="px-4 py-2 text-blue-500 cursor-pointer hover:bg-gray-100"
+                          >
+                            Quản lý thẻ phân loại
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <div className="flex flex-col w-full mx-auto mb-5 px-2">
+                    {
+                      groupFriendList && groupFriendList.map((group) => (
+                        <div key={group.id} className="flex flex-col">
+                          <div className="flex items-center p-2">
+                            <span className="font-semibold text-gray-600">{group.char}</span>
+                          </div>
+                          <div className="flex flex-col">
+                            {
+                              group.list && group.list.map((friend) => (
+                                <div key={friend.friendId} className="flex items-center justify-between w-full hover:bg-gray-100 rounded-md p-2">
+                                  <div className="flex items-center">
+                                    <img src={friend.friendInfo.avatarLink ? friend.friendInfo.avatarLink : "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"} className="w-[40px] h-[40px] rounded-full" />
+                                    <div className="flex flex-col ml-2">
+                                      <span className="font-semibold">{friend.friendInfo.fullName}</span>
+                                      {
+                                        friend.category && (
+                                          <div className="flex items-center">
+                                            <FontAwesomeIcon icon={faTag} style={{ color: friend.category.color }} size="15" />
+                                            <span className="text-sm ml-1">
+                                              {friend.category.name}
+                                            </span>
                                           </div>
-                                        ))}
-                                      </div>
+                                        )
+                                      }
                                     </div>
-                                    <button className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
-                                      <span>Đặt tên gợi nhớ</span>
+                                  </div>
+                                  {/* Right - Icon 3 chấm */}
+                                  <div className="relative">
+                                    <button
+                                      className="cursor-pointer text-lg font-bold"
+                                      onClick={() => {
+                                        setDetailFriend(friend);
+                                        setOpenDetail(!openDetail);
+                                      }}
+                                    >
+                                      <FontAwesomeIcon icon={faEllipsis} />
                                     </button>
-                                    <>
-                                      <button
-                                        type="button"
-                                        className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2"
-                                        onClick={() => {
-                                          if (friend.friendInfo.status === 3) {
-                                            handleUnblockFriend(friend.friendId);
-                                          }
-                                          else {
-                                            handleBlockFriend(friend.friendId);
-                                          }
-                                        }}
-                                      >
-                                        <span>{friend.friendInfo.status === 3 ? 'Bỏ chặn' : 'Chặn người này'}</span>
-                                      </button>
-                                    </>
-                                    <>
-                                      <button
-                                        type="button"
-                                        className="w-full flex items-center text-red-700 justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2"
-                                        onClick={() => {
-                                          console.log("button xóa kết bạn");
-                                          setIsOpenConfirm(true); // Mở modal xác nhận
-                                        }}
-                                      >
-                                        <span>Xóa kết bạn</span>
+                                    {openDetail && detailFriend.friendId === friend.friendId && (
+                                      <div className="absolute left-[-200px] mt-1 w-[200px] bg-white rounded-lg shadow-lg">
+                                        <button className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
+                                          <span className="">Xem thông tin</span>
+                                        </button>
+                                        <div className="px-4 relative group py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
+                                          <div className="flex items-center justify-between cursor-pointer hover:bg-gray-100">
+                                            <span>Phân loại</span>
+                                            <FontAwesomeIcon icon={faChevronRight} className="text-gray-500" size="15" />
+                                          </div>
 
-                                      </button>
-
-                                      {/* Modal confirm unfriend */}
-                                      {isOpenConfirm && (
-                                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                                          <div className="bg-white rounded-lg p-4 shadow-lg w-[300px]">
-                                            <p className="text-center text-gray-800">{`Bạn có chắc chắn muốn hủy kết bạn với ${friend.friendInfo.fullName}`}</p>
-                                            <div className="flex justify-between mt-4">
-                                              <button
-                                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                                                onClick={() => handleUnfriend(friend.friendId)}
+                                          {/* Submenu: Danh sách phân loại */}
+                                          <div className="absolute left-[-200px] top-0 ml-1 w-[180px] bg-white border rounded-lg shadow-lg opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200">
+                                            {listCategory.map((cat) => (
+                                              <div
+                                                key={cat.id}
+                                                onClick={() => {
+                                                  setSelectCategory(cat);
+                                                  setOpen(false);
+                                                }}
+                                                className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-100"
                                               >
-                                                Đồng ý
-                                              </button>
-                                              <button
-                                                className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
-                                                onClick={() => setIsOpenConfirm(false)}
-                                              >
-                                                Hủy
-                                              </button>
-                                            </div>
+                                                <span
+                                                  className="inline-block w-3 h-3 rounded-full mr-2"
+                                                  style={{ backgroundColor: cat.color }}
+                                                ></span>
+                                                <span>{cat.name}</span>
+                                              </div>
+                                            ))}
                                           </div>
                                         </div>
-                                      )}
-                                    </>
+                                        <button className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
+                                          <span>Đặt tên gợi nhớ</span>
+                                        </button>
+                                        <>
+                                          <button
+                                            type="button"
+                                            className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2"
+                                            onClick={() => {
+                                              if (friend.friendInfo.status === 3) {
+                                                handleUnblockFriend(friend.friendId);
+                                              }
+                                              else {
+                                                handleBlockFriend(friend.friendId);
+                                              }
+                                            }}
+                                          >
+                                            <span>{friend.friendInfo.status === 3 ? 'Bỏ chặn' : 'Chặn người này'}</span>
+                                          </button>
+                                        </>
+                                        <>
+                                          <button
+                                            type="button"
+                                            className="w-full flex items-center text-red-700 justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2"
+                                            onClick={() => {
+                                              console.log("button xóa kết bạn");
+                                              setIsOpenConfirm(true); // Mở modal xác nhận
+                                            }}
+                                          >
+                                            <span>Xóa kết bạn</span>
+
+                                          </button>
+
+                                          {/* Modal confirm unfriend */}
+                                          {isOpenConfirm && (
+                                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                                              <div className="bg-white rounded-lg p-4 shadow-lg w-[300px]">
+                                                <p className="text-center text-gray-800">{`Bạn có chắc chắn muốn hủy kết bạn với ${friend.friendInfo.fullName}`}</p>
+                                                <div className="flex justify-between mt-4">
+                                                  <button
+                                                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                                    onClick={() => handleUnfriend(friend.friendId)}
+                                                  >
+                                                    Đồng ý
+                                                  </button>
+                                                  <button
+                                                    className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                                                    onClick={() => setIsOpenConfirm(false)}
+                                                  >
+                                                    Hủy
+                                                  </button>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          )}
+                                        </>
+                                      </div>
+
+
+                                    )}
                                   </div>
 
 
-                                )}
-                              </div>
+                                </div>
+                              ))
+                            }
+                          </div>
+                        </div>
+                      ))
+                    }
 
-
-                            </div>
-                          ))
-                        }
-                      </div>
-                    </div>
-                  ))
-                }
-
-              </div>
-            </div>
-          )
-        }
-
-
-      </div>
+                  </div>
+                </div>
+              )
+            }
+          </div>
+        )
+      }
     </div>
   );
 }

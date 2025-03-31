@@ -101,6 +101,13 @@ io.on("connection", (socket) => {
         socket.to(conversation.id).emit('receive-message', message);
     });
 
+    socket.on('send-friend-request', async (data) => {
+        // userId nguoi nhan
+        const socketId = await findSocketIdByUserId(data.userId);
+
+        socket.to(socketId).emit('receive-friend-request', data);
+    })
+
     const findSocketIdByUserId = async (userId) => {
         const user = await redis.get(`socket:${userId}`);
         if (user) {
@@ -123,6 +130,8 @@ io.on("connection", (socket) => {
             }
         }
     }
+
+
 
 });
 
