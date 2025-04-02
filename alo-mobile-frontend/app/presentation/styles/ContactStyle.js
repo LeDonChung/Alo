@@ -83,29 +83,6 @@ export const ContactStyles = StyleSheet.create({
     color: "#000",
     fontSize: 16,
   },
-  menuSubText: {
-    color: "#555",
-    fontSize: 14,
-    marginLeft: 10,
-  },
-  contactListContainer: {
-    flex: 1,
-  },
-  tabSwitchContainer: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingVertical: 10,
-    backgroundColor: "#F5F5F5",
-    borderBottomWidth: 1,
-    borderBottomColor: "#DDD",
-  },
-  tabItem: {
-    paddingHorizontal: 10,
-  },
-  tabText: {
-    color: "#555",
-    fontSize: 16,
-  },
   contactItem: {
     flexDirection: "row",
     alignItems: "center",
@@ -118,32 +95,32 @@ export const ContactStyles = StyleSheet.create({
     width: 50,
     height: 50,
     borderRadius: 25,
-    marginRight: 15,
+    marginRight: 10,
   },
-  contactContent: {
-    flex: 1,
-    justifyContent: "center",
+  actionContainer: {
+    flexDirection: "row",
+  },
+  userName: {
+    fontSize: 16,
+    fontWeight: "bold",
   },
   contactName: {
     color: "#000",
     fontSize: 16,
     fontWeight: "bold",
-    marginBottom: 5, 
+    marginBottom: 5,
   },
-  contactPhone: {
-    color: "#555",
-    fontSize: 14,
-  },
-  alphabetList: {
-    position: "absolute",
-    right: 10,
-    top: "20%",
-    bottom: "10%",
+  tabSwitchContainer: {
+    flexDirection: "row",
     justifyContent: "space-around",
+    paddingVertical: 10,
+    backgroundColor: "#F5F5F5",
+    borderBottomWidth: 1,
+    borderBottomColor: "#DDD",
   },
-  alphabetText: {
-    color: "#007AFF",
-    fontSize: 5,
+  tabText: {
+    color: "#555",
+    fontSize: 16,
   },
   groupHeader: {
     flexDirection: "row",
@@ -158,110 +135,39 @@ export const ContactStyles = StyleSheet.create({
     color: "#000",
     fontSize: 16,
   },
-  tabSwitchContainerGroup: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    backgroundColor: "#F5F5F5",
-    borderBottomWidth: 1,
-    borderBottomColor: "#DDD",
-  },
-  filterButton: {
-    padding: 5,
-  },
-  groupItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#DDD",
-  },
-  groupMessage: {
+  noDataText: {
     color: "#555",
-    fontSize: 14,
-  },
-  groupTime: {
-    color: "#555",
-    fontSize: 12,
-  },
-  oaItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#DDD",
-  },
-  qrContainer: {
-    alignItems: "center",
-    padding: 20,
-  },
-  qrUserName: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#000",
+    fontSize: 16,
     textAlign: "center",
-    marginBottom: 10,
+    marginTop: 20,
   },
-  qrCode: {
-    width: 200,
-    height: 200,
+  searchResultContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  addFriendButton: {
     backgroundColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
-    borderRadius: 10,
-  },
-  qrPlaceholder: {
-    color: "#000",
-    fontSize: 16,
-  },
-  qrDescription: {
-    color: "#000",
-    fontSize: 14,
-    marginVertical: 10,
-  },
-  phoneInputContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F5F5F5",
-    borderRadius: 5,
+    paddingVertical: 5,
     paddingHorizontal: 10,
-    marginVertical: 10,
+    borderRadius: 5,
   },
-  phoneCode: {
-    color: "#000",
-    fontSize: 16,
-    marginRight: 10,
+  cancelRequestButton: {
+    backgroundColor: "#FF3B30",
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 5,
   },
-  phoneInput: {
-    flex: 1,
-    color: "#000",
-    fontSize: 16,
-    paddingVertical: 10,
+  actionButtonText: {
+    color: "#FFF",
+    fontSize: 14,
+    fontWeight: "bold",
   },
-  arrowButton: {
-    padding: 5,
-  },
-  optionItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: "#DDD",
-  },
-  optionText: {
-    color: "#000",
-    fontSize: 16,
-    marginLeft: 10,
-  },
-  noteText: {
-    color: "#555",
-    fontSize: 12,
-    textAlign: "center",
-    marginTop: 10,
+  actionText: {
+    color: "#fff",
+    fontWeight: "bold",
   },
   sectionTitle: {
     color: "#000",
@@ -284,12 +190,6 @@ export const ContactStyles = StyleSheet.create({
   },
   chatButton: {
     padding: 5,
-  },
-  noDataText: {
-    color: "#555",
-    fontSize: 16,
-    textAlign: "center",
-    marginTop: 20,
   },
   groupNameContainer: {
     flexDirection: "row",
@@ -355,30 +255,18 @@ export const ContactStyles = StyleSheet.create({
     marginTop: 10,
   },
   createGroupText: {
-    color: "#000",
+    color: "#FFF",
     fontSize: 16,
     fontWeight: "bold",
   },
-  actionButtons: {
+  userRow: {
     flexDirection: "row",
-    marginLeft: "auto",
+    alignItems: "center",
+    flex: 1,
   },
-  acceptButton: {
-    backgroundColor: "#007AFF",
-    paddingVertical: 5,
-    paddingHorizontal: 15, 
-    borderRadius: 5,
-    marginLeft: 10, 
-  },
-  rejectButton: {
-    backgroundColor: "#DDD", 
-    paddingVertical: 5,
-    paddingHorizontal: 15, 
-    borderRadius: 5,
-  },
-  buttonText: {
-    color: "#FFF", 
-    fontSize: 14,
-    fontWeight: "bold",
+  requestDateText: {
+    fontSize: 12,
+    color: '#888',
+    marginTop: 2,
   },
 });

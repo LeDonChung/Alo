@@ -10,18 +10,23 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { ContactStyles } from "../../../styles/ContactStyle";
+import { ContactStyles } from "../../../styles/ContactStyle"; 
 import { FriendRequestStyles } from "../../../styles/FriendRequestStyle";
 import { ChatBoxStyles } from "../../../styles/ChatBoxStyle";
 import { SettingContactStyles } from "../../../styles/SettingContactStyle";
 import { useDispatch, useSelector } from "react-redux";
-import { createAsyncThunk } from "@reduxjs/toolkit";
 import {
   getFriends,
   getFriendsRequest,
+  getFriendByPhoneNumber,
+  sendFriendRequest,
+  acceptFriendRequest,
+  rejectFriendRequest,
+  unfriend,
+  blockFriend,
+  unblockFriend,
 } from "../../../redux/slices/FriendSlice";
-
-const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+import showToast from "../../../../utils/AppUtils";
 
 const ContactScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -37,24 +42,23 @@ const ContactScreen = ({ navigation }) => {
     contacts: true,
     suggestions: true,
   });
-
   const [selectedFriends, setSelectedFriends] = useState([]);
   const userLogin = useSelector((state) => state.user.userLogin);
-  const [friends, setFriends] = useState([]); //Listfriends
-  const [friendRequests, setFriendRequests] = useState([]); //friendRequests
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [friends, setFriends] = useState([]);
+  const [friendRequests, setFriendRequests] = useState([]);
+  const [searchResult, setSearchResult] = useState(null);
+  const [isRequestSent, setIsRequestSent] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
 
-  console.log("User Login:", userLogin);
+  // console.log("User Login:", userLogin);
 
   useEffect(() => {
     const fetchFriends = async () => {
       try {
         const result = await dispatch(getFriends()).unwrap();
         // console.log("Friends API Response:", result);
-
         const formattedFriends = result.data.map((item) => item.friendInfo);
-        // console.log("Formatted Friends:", formattedFriends);
-
         setFriends(formattedFriends);
       } catch (error) {
         console.error("Error fetching friends: ", error);
@@ -69,16 +73,21 @@ const ContactScreen = ({ navigation }) => {
     const fetchFriendRequests = async () => {
       try {
         const result = await dispatch(getFriendsRequest()).unwrap();
-        console.log("Friend Requests API Response:", result);
-
-        const formattedRequests = result.data.map((item) => ({
-          friendId: item.friendId,
-          fullName: item.fullName,
-          avatarLink: item.avatarLink,
-          status: item.status,
-          contentRequest: item.contentRequest,
-        }));
-        console.log("Formatted Friend Requests:", formattedRequests);
+        const formattedRequests = result.data.map((item) => {
+          const requestDate = item.requestDate ? new Date(item.requestDate) : null;
+          const formattedDate = requestDate
+            ? `${requestDate.getDate().toString().padStart(2, '0')}/${(requestDate.getMonth() + 1).toString().padStart(2, '0')}/${requestDate.getFullYear()}`
+            : 'Không có ngày'; 
+          return {
+            friendId: item.friendId,
+            fullName: item.fullName,
+            avatarLink: item.avatarLink,
+            status: item.status,
+            contentRequest: item.contentRequest,
+            requestDate: formattedDate, 
+          };
+        });
+        // console.log("Formatted Friend Requests:", formattedRequests);
         setFriendRequests(formattedRequests);
       } catch (error) {
         console.error("Error fetching friend requests: ", error);
@@ -87,57 +96,168 @@ const ContactScreen = ({ navigation }) => {
     fetchFriendRequests();
   }, [dispatch]);
 
-  const getUpcomingBirthdays = () => {
-    const today = new Date("2025-03-26");
-    const friendsList = getFriends(1); // Đã kết bạn
-    return friendsList
-      .filter((friend) => {
-        const birthday = new Date(friend.birthDay);
-        const diffDays = Math.ceil((birthday - today) / (1000 * 60 * 60 * 24));
-        return diffDays >= 0 && diffDays <= 30;
-      })
-      .sort((a, b) => new Date(a.birthDay) - new Date(b.birthDay));
+  const handleSearch = async () => {
+    if (!searchQuery||searchQuery===userLogin.phoneNumber) {
+      setSearchResult(null);
+      setIsRequestSent(false);
+      setIsSearching(false);
+      return;
+    }
+    try {
+      setIsSearching(true);
+      const result = await dispatch(getFriendByPhoneNumber(searchQuery)).unwrap();
+      if (result && result.data) {
+        const formattedResult = {
+          friendId: result.data.friendId,
+          fullName: result.data.fullName,
+          avatarLink: result.data.avatarLink,
+          status: result.data.status,
+
+        };
+        setSearchResult(formattedResult);
+        setIsRequestSent(false);
+        console.log("Result:", formattedResult);
+      } else {
+        setSearchResult(null);
+        showToast("Không tìm thấy người dùng", "info");
+      }
+    } catch (error) {
+      console.error("Lỗi khi tìm kiếm:", error);
+      setSearchResult(null);
+      showToast("Lỗi khi tìm kiếm bạn bè", "error");
+    } finally {
+      setIsSearching(false);
+    }
   };
 
-  const searchByQuery = () => {
-    const isPhoneSearch = /^\d+$/.test(searchQuery);
-    if (isPhoneSearch) {
-      const account = accounts.find((acc) => acc.phoneNumber === searchQuery);
-      return account ? users.find((u) => u.id === account.user.id) : null;
+  const handleSendFriendRequest = async (friendId) => {
+    const request = {
+      userId: userLogin.id,
+      friendId,
+      contentRequest: "Kết bạn với mình nhé!",
+    };
+    try {
+      await dispatch(sendFriendRequest(request)).unwrap();
+      showToast("Gửi lời mời kết bạn thành công", "success");
+      setIsRequestSent(true);
+    } catch (error) {
+      console.error("Lỗi khi gửi lời mời:", error);
+      showToast("Lỗi khi gửi lời mời kết bạn", "error");
     }
-    const friendsList = getFriends(1).map((item) => ({
-      ...item,
-      type: "friend",
-    }));
-    const groups = getConversations(true).map((item) => ({
-      ...item,
-      type: "group",
-    }));
-    const oa = getConversations(false).map((item) => ({ ...item, type: "oa" }));
-    const allData = [...friendsList, ...groups, ...oa];
-    return allData.filter((item) =>
-      item.name.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+  };
+
+
+  const handleCancelFriendRequest = async (friendId) => {
+    try {
+      showToast("Đã hủy yêu cầu kết bạn", "info");
+      setIsRequestSent(false);
+    } catch (error) {
+      console.error("Lỗi khi hủy yêu cầu:", error);
+      showToast("Lỗi khi hủy yêu cầu kết bạn", "error");
+    }
+  };
+
+
+  const handleAcceptFriend = async (friendId) => {
+    const request = { userId: userLogin.id, friendId };
+    try {
+      await dispatch(acceptFriendRequest(request)).unwrap();
+      showToast("Đã chấp nhận lời mời kết bạn", "success");
+      const result = await dispatch(getFriendsRequest()).unwrap();
+      setFriendRequests(
+        result.data.map((item) => ({
+          friendId: item.friendId,
+          fullName: item.fullName,
+          avatarLink: item.avatarLink,
+          status: item.status,
+          contentRequest: item.contentRequest,
+        }))
+      );
+    } catch (error) {
+      console.error("Lỗi khi chấp nhận:", error);
+      showToast("Lỗi khi chấp nhận lời mời", "error");
+    }
+  };
+
+  const handleRejectFriend = async (friendId) => {
+    const request = { userId: userLogin.id, friendId };
+    try {
+      await dispatch(rejectFriendRequest(request)).unwrap();
+      showToast("Đã từ chối lời mời kết bạn", "info");
+      const result = await dispatch(getFriendsRequest()).unwrap();
+      setFriendRequests(
+        result.data.map((item) => ({
+          friendId: item.friendId,
+          fullName: item.fullName,
+          avatarLink: item.avatarLink,
+          status: item.status,
+          contentRequest: item.contentRequest,
+        }))
+      );
+    } catch (error) {
+      console.error("Lỗi khi từ chối:", error);
+      showToast("Lỗi khi từ chối lời mời", "error");
+    }
+  };
+
+  const handleUnfriend = async (friendId) => {
+    const request = { userId: userLogin.id, friendId };
+    try {
+      await dispatch(unfriend(request)).unwrap();
+      showToast("Hủy kết bạn thành công", "success");
+      const result = await dispatch(getFriends()).unwrap();
+      setFriends(result.data.map((item) => item.friendInfo));
+    } catch (error) {
+      console.error("Lỗi khi hủy kết bạn:", error);
+      showToast("Lỗi khi hủy kết bạn", "error");
+    }
+  };
+
+  const handleBlockFriend = async (friendId) => {
+    const request = { userId: userLogin.id, friendId };
+    try {
+      await dispatch(blockFriend(request)).unwrap();
+      showToast("Chặn bạn thành công", "success");
+      const result = await dispatch(getFriends()).unwrap();
+      setFriends(result.data.map((item) => item.friendInfo));
+    } catch (error) {
+      console.error("Lỗi khi chặn:", error);
+      showToast("Lỗi khi chặn bạn bè", "error");
+    }
+  };
+
+  const handleUnblockFriend = async (friendId) => {
+    const request = { userId: userLogin.id, friendId };
+    try {
+      await dispatch(unblockFriend(request)).unwrap();
+      showToast("Bỏ chặn bạn thành công", "success");
+      const result = await dispatch(getFriends()).unwrap();
+      setFriends(result.data.map((item) => item.friendInfo));
+    } catch (error) {
+      console.error("Lỗi khi bỏ chặn:", error);
+      showToast("Lỗi khi bỏ chặn bạn bè", "error");
+    }
+  };
+
+  const handleCall = (friendId) => {
+    console.log(`Calling friend with ID: ${friendId}`);
+  };
+
+  const handleCallVideo = (friendId) => {
+    console.log(`Video calling friend with ID: ${friendId}`);
   };
 
   const renderItem = ({ item, onPress, showActions = false, actions = [] }) => (
     <TouchableOpacity style={ContactStyles.contactItem} onPress={onPress}>
-      <Image
-        source={{
-          uri:
-            item.avatarLink ||
-            item.avatar ||
-            "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg",
-        }}
-        style={ContactStyles.avatar}
-      />
+      <Image source={{ uri: item.avatarLink }} style={ContactStyles.avatar} />
       <View style={{ flex: 1 }}>
-        <Text style={ContactStyles.contactName}>
-          {item.fullName || item.name}
-        </Text>
-        {item.phoneNumber && <Text>{item.phoneNumber}</Text>}
-        {item.lastMessage && <Text>{item.lastMessage.content}</Text>}
-        {item.description && <Text>{item.description}</Text>}
+        <Text style={ContactStyles.contactName}>{item.fullName}</Text>
+        {item.contentRequest && <Text>{item.contentRequest}</Text>}
+        {item.requestDate && (
+          <Text style={ContactStyles.requestDateText}>
+             {item.requestDate}
+          </Text>
+        )}
       </View>
       {showActions && (
         <View style={FriendRequestStyles.actionIcons}>
@@ -145,10 +265,9 @@ const ContactScreen = ({ navigation }) => {
             <TouchableOpacity
               key={index}
               style={[FriendRequestStyles.actionButton, action.style]}
+              onPress={action.onPress}
             >
-              <Text style={FriendRequestStyles.actionButtonText}>
-                {action.text}
-              </Text>
+              <Text style={FriendRequestStyles.actionButtonText}>{action.text}</Text>
             </TouchableOpacity>
           ))}
         </View>
@@ -156,138 +275,159 @@ const ContactScreen = ({ navigation }) => {
     </TouchableOpacity>
   );
 
-  const renderSearchResults = () => {
-    const result = searchByQuery();
-    const isPhoneSearch = /^\d+$/.test(searchQuery);
-
-    if (isPhoneSearch) {
-      if (!result)
-        return (
-          <Text style={ContactStyles.noDataText}>
-            Không tìm thấy người dùng
-          </Text>
-        );
-      const isFriend = friends.some(
-        (f) => f.friendId === result.id && f.status === 1
-      );
-      return renderItem({
-        item: result,
-        onPress: isFriend
-          ? () => {
-              setSubScreen("chatbox");
-              setChatUser({ userId: result.id, userName: result.fullName });
-            }
-          : null,
-        showActions: !isFriend,
-        actions: [{ text: "Kết bạn", style: { backgroundColor: "#007AFF" } }],
-      });
-    }
+  const renderFriends = () => {
+    const filteredFriends =
+      selectedTab === "all" ? friends : friends.filter((f) => f.status === "active");
 
     return (
       <FlatList
-        data={Array.isArray(result) ? result : []}
-        keyExtractor={(item) => `${item.type}-${item.id}`}
-        renderItem={({ item }) =>
-          renderItem({
-            item,
-            onPress:
-              item.type === "friend"
-                ? () => {
-                    setSubScreen("chatbox");
-                    setChatUser({ userId: item.id, userName: item.fullName });
-                  }
-                : null,
-          })
-        }
-        ListEmptyComponent={
-          <Text style={ContactStyles.noDataText}>Không tìm thấy kết quả</Text>
-        }
+        data={filteredFriends}
+        keyExtractor={(item) => item.friendId}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={ContactStyles.contactItem}
+            onPress={() => {
+              setSubScreen("chatbox");
+              setChatUser({ userId: item.friendId, userName: item.fullName });
+            }}
+          >
+            <Image source={{ uri: item.avatarLink }} style={ContactStyles.avatar} />
+            <View style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+              <Text style={ContactStyles.contactName}>{item.fullName}</Text>
+              <View style={{ flexDirection: "row" }}>
+                <TouchableOpacity onPress={() => handleCall(item.friendId)} style={{ marginRight: 10 }}>
+                  <Icon name="phone" size={20} color="#007AFF" />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleCallVideo(item.friendId)}>
+                  <Icon name="videocam" size={20} color="#007AFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </TouchableOpacity>
+        )}
+        ListEmptyComponent={<Text style={ContactStyles.noDataText}>Không có bạn bè</Text>}
       />
     );
   };
 
-  const renderFriendRequests = () => {
-    return (
-      <SafeAreaView style={FriendRequestStyles.container}>
-        <View style={FriendRequestStyles.header}>
-          <TouchableOpacity onPress={() => setSubScreen(null)}>
-            <Icon name="arrow-back" size={20} color="#121212" />
-          </TouchableOpacity>
-          <Text style={FriendRequestStyles.headerTitle}>
-            Lời mời kết bạn ({friendRequests.length})
-          </Text>
-          <TouchableOpacity onPress={() => setSubScreen("settings")}>
-            <Icon name="settings" size={20} color="#121212" />
-          </TouchableOpacity>
-        </View>
+  const renderFriendRequests = () => (
+    <SafeAreaView style={FriendRequestStyles.container}>
+      <View style={FriendRequestStyles.header}>
+        <TouchableOpacity onPress={() => setSubScreen(null)}>
+          <Icon name="arrow-back" size={20} color="#121212" />
+        </TouchableOpacity>
+        <Text style={FriendRequestStyles.headerTitle}>
+          Lời mời kết bạn ({friendRequests.length})
+        </Text>
+        <TouchableOpacity onPress={() => setSubScreen("settings")}>
+          <Icon name="settings" size={20} color="#121212" />
+        </TouchableOpacity>
+      </View>
+      <FlatList
+        data={friendRequests}
+        keyExtractor={(item) => item.friendId}
+        renderItem={({ item }) =>
+          renderItem({
+            item,
+            showActions: true,
+            actions: [
+              { text: "Từ chối", style: { backgroundColor: "#007AFF" }, onPress: () => handleRejectFriend(item.friendId) },
+              { text: "Đồng ý", style: { backgroundColor: "#007AFF" }, onPress: () => handleAcceptFriend(item.friendId) },
+            ],
+          })
+        }
+        ListEmptyComponent={<Text style={ContactStyles.noDataText}>Không có lời mời kết bạn</Text>}
+      />
+    </SafeAreaView>
+  );
 
-        {friendRequests.length === 0 ? (
-          <Text style={FriendRequestStyles.noRequestText}>
-            Không có lời mời kết bạn nào
-          </Text>
-        ) : (
-          <FlatList
-            data={friendRequests}
-            keyExtractor={(item) => item.friendId}
-            renderItem={({ item }) => (
-              <View style={ContactStyles.contactItem}>
-                <Image source={{ uri: item.avatarLink }} style={ContactStyles.avatar} />
-                
-                <View style={ContactStyles.contactContent}>
-                  <Text style={ContactStyles.contactName}>{item.fullName}</Text>
-                  <Text style={ContactStyles.contactMessage}>{item.contentRequest}</Text>
-                  
-                  <View style={ContactStyles.actionButtons}>
-                    <TouchableOpacity style={ContactStyles.rejectButton} onPress={() => handleReject(item.friendId)}>
-                      <Text style={{ color: "#000" }}>Từ chối</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity style={ContactStyles.acceptButton} onPress={() => handleAccept(item.friendId)}>
-                      <Text style={ContactStyles.buttonText}>Đồng ý</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            )}
+  const renderSearchResultInline = () => {
+    if (!searchResult) return null;
+  
+    const status = searchResult.status;
+  
+    const getActionButton = () => {
+      switch (status) {
+        case 0:
+          return [
+            {
+              text: "Hủy yêu cầu",
+              style: ContactStyles.cancelRequestButton,
+              onPress: () => handleCancelFriendRequest(searchResult.friendId),
+            },
+          ];
+        case 1:
+          return [];
+        case -1:
+          return [
+            {
+              text: "Kết bạn",
+              style: ContactStyles.addFriendButton,
+              onPress: () => handleSendFriendRequest(searchResult.friendId),
+            },
+          ];
+        default:
+          return [];
+      }
+    };
+  
+    return (
+      <View style={ContactStyles.searchResultContainer}>
+        <TouchableOpacity
+          style={ContactStyles.userRow}
+          onPress={
+            status === 1
+              ? () => {
+                  setSubScreen("chatbox");
+                  setChatUser({ userId: searchResult.friendId, userName: searchResult.fullName });
+                }
+              : null
+          }
+        >
+          <Image
+            source={{ uri: searchResult.avatarLink }}
+            style={ContactStyles.avatar}
           />
+  
+          <View style={{ flex: 1 }}>
+            <Text style={ContactStyles.userName}>{searchResult.fullName}</Text>
+            {searchResult.requestDate && (
+              <Text style={ContactStyles.requestDateText}>
+                {status === 0
+                  ? `${searchResult.requestDate}`
+                  : status === 1
+                  ? `Kết bạn: ${searchResult.requestDate}`
+                  : `Hủy kết bạn: ${searchResult.requestDate}`}
+              </Text>
+            )}
+          </View>
+        </TouchableOpacity>
+  
+        {getActionButton().length > 0 && (
+          <View style={ContactStyles.actionContainer}>
+            {getActionButton().map((action, index) => (
+              <TouchableOpacity key={index} style={action.style} onPress={action.onPress}>
+                <Text style={ContactStyles.actionText}>{action.text}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
         )}
-      </SafeAreaView>
+      </View>
     );
   };
-
   const renderChatBox = () => {
     const messages = [
-      {
-        id: "1",
-        senderId: loggedInUser.id,
-        conversationId: "chat1",
-        messageType: 0,
-        content: "Xin chào!",
-        timestamp: "2025-03-26T10:00:00Z",
-      },
-      {
-        id: "2",
-        senderId: chatUser?.userId,
-        conversationId: "chat1",
-        messageType: 0,
-        content: "Chào bạn!",
-        timestamp: "2025-03-26T10:01:00Z",
-      },
+      { id: "1", senderId: userLogin.id, content: "Xin chào!", timestamp: "2025-03-26T10:00:00Z" },
+      { id: "2", senderId: chatUser?.userId, content: "Chào bạn!", timestamp: "2025-03-26T10:01:00Z" },
     ];
 
     return (
       <SafeAreaView style={ChatBoxStyles.container}>
         <View style={ChatBoxStyles.header}>
-          <TouchableOpacity
-            onPress={() => {
-              setSubScreen(null);
-              setChatUser(null);
-            }}
-          >
+          <TouchableOpacity onPress={() => { setSubScreen(null); setChatUser(null); }}>
             <Icon name="arrow-back" size={20} color="#121212" />
           </TouchableOpacity>
-          <Text style={ChatBoxStyles.headerTitle}>
-            {chatUser?.userName || "Chat"}
-          </Text>
+          <Text style={ChatBoxStyles.headerTitle}>{chatUser?.userName || "Chat"}</Text>
           <TouchableOpacity>
             <Icon name="more-vert" size={20} color="#121212" />
           </TouchableOpacity>
@@ -299,24 +439,16 @@ const ContactScreen = ({ navigation }) => {
             <View
               style={[
                 ChatBoxStyles.messageContainer,
-                item.senderId === loggedInUser.id
-                  ? ChatBoxStyles.messageSent
-                  : ChatBoxStyles.messageReceived,
+                item.senderId === userLogin.id ? ChatBoxStyles.messageSent : ChatBoxStyles.messageReceived,
               ]}
             >
               <Text style={ChatBoxStyles.messageText}>{item.content}</Text>
-              <Text style={ChatBoxStyles.messageTime}>
-                {new Date(item.timestamp).toLocaleTimeString()}
-              </Text>
+              <Text style={ChatBoxStyles.messageTime}>{new Date(item.timestamp).toLocaleTimeString()}</Text>
             </View>
           )}
         />
         <View style={ChatBoxStyles.inputContainer}>
-          <TextInput
-            style={ChatBoxStyles.input}
-            placeholder="Nhập tin nhắn..."
-            placeholderTextColor="#aaa"
-          />
+          <TextInput style={ChatBoxStyles.input} placeholder="Nhập tin nhắn..." placeholderTextColor="#aaa" />
           <TouchableOpacity style={ChatBoxStyles.sendButton}>
             <Icon name="send" size={20} color="#121212" />
           </TouchableOpacity>
@@ -331,15 +463,11 @@ const ContactScreen = ({ navigation }) => {
         <TouchableOpacity onPress={() => setSubScreen(null)}>
           <Icon name="arrow-back" size={20} color="#121212" />
         </TouchableOpacity>
-        <Text style={SettingContactStyles.headerTitle}>
-          Quản lý người tìm kiếm và kết bạn
-        </Text>
+        <Text style={SettingContactStyles.headerTitle}>Quản lý người tìm kiếm và kết bạn</Text>
       </View>
       <View style={SettingContactStyles.content}>
         <View style={SettingContactStyles.toggleContainer}>
-          <Text style={SettingContactStyles.toggleLabel}>
-            Cho phép người lạ tìm thấy tôi qua số điện thoại
-          </Text>
+          <Text style={SettingContactStyles.toggleLabel}>Cho phép người lạ tìm thấy tôi qua số điện thoại</Text>
           <Switch
             onValueChange={setIsDiscoverable}
             value={isDiscoverable}
@@ -348,9 +476,7 @@ const ContactScreen = ({ navigation }) => {
           />
         </View>
         <Text style={SettingContactStyles.phoneNumber}>+848966675276</Text>
-        <Text style={SettingContactStyles.sectionTitle}>
-          Nguồn để tìm kiếm bạn
-        </Text>
+        <Text style={SettingContactStyles.sectionTitle}>Nguồn để tìm kiếm bạn</Text>
         {[
           "qrCode|Mã QR của tôi",
           "groups|Nhóm chung",
@@ -362,28 +488,16 @@ const ContactScreen = ({ navigation }) => {
             <TouchableOpacity
               key={key}
               style={SettingContactStyles.optionItem}
-              onPress={() =>
-                setSourceOptions((prev) => ({ ...prev, [key]: !prev[key] }))
-              }
+              onPress={() => setSourceOptions((prev) => ({ ...prev, [key]: !prev[key] }))}
             >
               <Icon
-                name={
-                  key === "qrCode"
-                    ? "qr-code"
-                    : key === "groups"
-                    ? "group"
-                    : key === "contacts"
-                    ? "contacts"
-                    : "person-add"
-                }
+                name={key === "qrCode" ? "qr-code" : key === "groups" ? "group" : key === "contacts" ? "contacts" : "person-add"}
                 size={24}
                 color="#121212"
               />
               <Text style={SettingContactStyles.optionText}>{label}</Text>
               <View style={SettingContactStyles.checkbox}>
-                {sourceOptions[key] && (
-                  <Icon name="check" size={16} color="#007AFF" />
-                )}
+                {sourceOptions[key] && <Icon name="check" size={16} color="#007AFF" />}
               </View>
             </TouchableOpacity>
           );
@@ -392,41 +506,14 @@ const ContactScreen = ({ navigation }) => {
     </SafeAreaView>
   );
 
-  const renderAddFriend = () => (
-    <SafeAreaView style={ContactStyles.container}>
-      <View style={ContactStyles.header}>
-        <TouchableOpacity onPress={() => setSubScreen(null)}>
-          <Icon name="arrow-back" size={20} color="#121212" />
-        </TouchableOpacity>
-        <Text style={ContactStyles.headerTitle}>Thêm bạn</Text>
-      </View>
-      <View style={ContactStyles.qrContainer}>
-        <Text style={ContactStyles.qrUserName}>{loggedInUser.name}</Text>
-        <View style={ContactStyles.qrCode}>
-          <Text style={ContactStyles.qrPlaceholder}>[QR Code Placeholder]</Text>
-        </View>
-        <Text style={ContactStyles.qrDescription}>
-          Quét mã để thêm bạn Zalo với tui
-        </Text>
-      </View>
-      {[
-        "qr-code-scanner|Quét mã QR",
-        "contacts|Danh bạ máy",
-        "person-add|Bạn bè có thể quen",
-      ].map((item) => {
-        const [icon, text] = item.split("|");
-        return (
-          <TouchableOpacity key={icon} style={ContactStyles.optionItem}>
-            <Icon name={icon} size={24} color="#007AFF" />
-            <Text style={ContactStyles.optionText}>{text}</Text>
-          </TouchableOpacity>
-        );
-      })}
-    </SafeAreaView>
-  );
-
   const renderBirthdays = () => {
-    const upcomingBirthdays = getUpcomingBirthdays();
+    const upcomingBirthdays = friends.filter((friend) => {
+      const birthday = new Date(friend.birthDay);
+      const today = new Date("2025-03-26");
+      const diffDays = Math.ceil((birthday - today) / (1000 * 60 * 60 * 24));
+      return diffDays >= 0 && diffDays <= 30;
+    }).sort((a, b) => new Date(a.birthDay) - new Date(b.birthDay));
+
     return (
       <SafeAreaView style={ContactStyles.container}>
         <View style={ContactStyles.header}>
@@ -442,22 +529,16 @@ const ContactScreen = ({ navigation }) => {
         {upcomingBirthdays.length > 0 ? (
           <FlatList
             data={upcomingBirthdays}
-            keyExtractor={(item) => item.id}
+            keyExtractor={(item) => item.friendId}
             renderItem={({ item }) => {
               const birthdayDate = new Date(item.birthDay);
               return (
                 <View style={ContactStyles.birthdayItem}>
-                  <Image
-                    source={{ uri: item.avatarLink }}
-                    style={ContactStyles.avatar}
-                  />
+                  <Image source={{ uri: item.avatarLink }} style={ContactStyles.avatar} />
                   <View style={{ flex: 1 }}>
-                    <Text style={ContactStyles.contactName}>
-                      {item.fullName}
-                    </Text>
+                    <Text style={ContactStyles.contactName}>{item.fullName}</Text>
                     <Text style={ContactStyles.birthdayText}>
-                      Thứ {birthdayDate.getDay() + 1}, {birthdayDate.getDate()}{" "}
-                      tháng {birthdayDate.getMonth() + 1}
+                      Thứ {birthdayDate.getDay() + 1}, {birthdayDate.getDate()} tháng {birthdayDate.getMonth() + 1}
                     </Text>
                   </View>
                   <TouchableOpacity style={ContactStyles.chatButton}>
@@ -468,20 +549,15 @@ const ContactScreen = ({ navigation }) => {
             }}
           />
         ) : (
-          <Text style={ContactStyles.noDataText}>
-            Không có sinh nhật sắp tới
-          </Text>
+          <Text style={ContactStyles.noDataText}>Không có sinh nhật sắp tới</Text>
         )}
       </SafeAreaView>
     );
   };
 
   const renderCreateGroup = () => {
-    const friendsList = getFriends(1);
-    const filteredFriends = friendsList.filter(
-      (item) =>
-        !searchQuery ||
-        item.fullName.toLowerCase().includes(searchQuery.toLowerCase())
+    const filteredFriends = friends.filter(
+      (item) => !searchQuery || item.fullName.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     return (
@@ -491,25 +567,14 @@ const ContactScreen = ({ navigation }) => {
             <Icon name="close" size={20} color="#121212" />
           </TouchableOpacity>
           <Text style={ContactStyles.headerTitle}>Nhóm mới</Text>
-          <Text style={ContactStyles.headerSubTitle}>
-            Đã chọn: {selectedFriends.length}
-          </Text>
+          <Text style={ContactStyles.headerSubTitle}>Đã chọn: {selectedFriends.length}</Text>
         </View>
         <TouchableOpacity style={ContactStyles.groupNameContainer}>
           <Icon name="camera-alt" size={24} color="#121212" />
-          <TextInput
-            placeholder="Đặt tên nhóm"
-            placeholderTextColor="#aaa"
-            style={ContactStyles.groupNameInput}
-          />
+          <TextInput placeholder="Đặt tên nhóm" placeholderTextColor="#aaa" style={ContactStyles.groupNameInput} />
         </TouchableOpacity>
         <View style={ContactStyles.searchContainer}>
-          <Icon
-            name="search"
-            size={20}
-            color="#aaa"
-            style={ContactStyles.searchIconLeft}
-          />
+          <Icon name="search" size={20} color="#aaa" style={ContactStyles.searchIconLeft} />
           <TextInput
             placeholder="Tìm tên hoặc số điện thoại"
             value={searchQuery}
@@ -519,68 +584,47 @@ const ContactScreen = ({ navigation }) => {
         </View>
         <FlatList
           data={filteredFriends}
-          keyExtractor={(item) => item.id}
+          keyExtractor={(item) => item.friendId}
           renderItem={({ item }) => {
-            const isSelected = selectedFriends.includes(item.id);
+            const isSelected = selectedFriends.includes(item.friendId);
             return (
               <TouchableOpacity
                 style={ContactStyles.friendItem}
                 onPress={() =>
                   setSelectedFriends(
                     isSelected
-                      ? selectedFriends.filter((id) => id !== item.id)
-                      : [...selectedFriends, item.id]
+                      ? selectedFriends.filter((id) => id !== item.friendId)
+                      : [...selectedFriends, item.friendId]
                   )
                 }
               >
                 <View style={ContactStyles.checkbox}>
-                  {isSelected && (
-                    <Icon name="check" size={16} color="#007AFF" />
-                  )}
+                  {isSelected && <Icon name="check" size={16} color="#007AFF" />}
                 </View>
-                <Image
-                  source={{ uri: item.avatarLink }}
-                  style={ContactStyles.avatar}
-                />
+                <Image source={{ uri: item.avatarLink }} style={ContactStyles.avatar} />
                 <Text style={ContactStyles.contactName}>{item.fullName}</Text>
               </TouchableOpacity>
             );
           }}
-          ListHeaderComponent={
-            <Text style={ContactStyles.sectionTitle}>GẦN ĐÂY</Text>
-          }
+          ListHeaderComponent={<Text style={ContactStyles.sectionTitle}>GẦN ĐÂY</Text>}
           ListFooterComponent={
             selectedFriends.length > 0 && (
               <View style={ContactStyles.selectedFriendsContainer}>
-                {friendsList
-                  .filter((friend) => selectedFriends.includes(friend.id))
+                {friends
+                  .filter((friend) => selectedFriends.includes(friend.friendId))
                   .map((friend) => (
-                    <View
-                      key={friend.id}
-                      style={ContactStyles.selectedFriendItem}
-                    >
-                      <Image
-                        source={{ uri: friend.avatarLink }}
-                        style={ContactStyles.selectedAvatar}
-                      />
-                      <Text style={ContactStyles.selectedName}>
-                        {friend.fullName}
-                      </Text>
+                    <View key={friend.friendId} style={ContactStyles.selectedFriendItem}>
+                      <Image source={{ uri: friend.avatarLink }} style={ContactStyles.selectedAvatar} />
+                      <Text style={ContactStyles.selectedName}>{friend.fullName}</Text>
                       <TouchableOpacity
-                        onPress={() =>
-                          setSelectedFriends(
-                            selectedFriends.filter((id) => id !== friend.id)
-                          )
-                        }
+                        onPress={() => setSelectedFriends(selectedFriends.filter((id) => id !== friend.friendId))}
                       >
                         <Icon name="close" size={16} color="#121212" />
                       </TouchableOpacity>
                     </View>
                   ))}
                 <TouchableOpacity style={ContactStyles.createGroupButton}>
-                  <Text style={ContactStyles.createGroupText}>
-                    Tạo nhóm mới
-                  </Text>
+                  <Text style={ContactStyles.createGroupText}>Tạo nhóm mới</Text>
                 </TouchableOpacity>
               </View>
             )
@@ -590,191 +634,121 @@ const ContactScreen = ({ navigation }) => {
     );
   };
 
+  const handleGoBack = () => {
+    setSearchQuery("");
+    setSearchResult(null);
+    setIsRequestSent(false);
+    setIsSearching(false);
+    setSubScreen(null);
+    setChatUser(null);
+  };
+
   return (
     <SafeAreaView style={ContactStyles.container}>
       <View style={ContactStyles.searchContainer}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon
-            name="arrow-back"
-            size={20}
-            color="#121212"
-            style={ContactStyles.searchIconLeft}
-          />
+        <TouchableOpacity onPress={handleGoBack}>
+          <Icon name="arrow-back" size={20} color="#121212" style={ContactStyles.searchIconLeft} />
         </TouchableOpacity>
         <TextInput
-          placeholder="Tìm kiếm bằng tên hoặc số điện thoại"
+          placeholder="Tìm kiếm bằng số điện thoại"
           value={searchQuery}
           onChangeText={setSearchQuery}
           style={ContactStyles.searchInput}
+          onSubmitEditing={handleSearch}
         />
-        <TouchableOpacity onPress={() => setSubScreen("addFriend")}>
-          <Icon
-            name="person-add"
-            size={20}
-            color="#121212"
-            style={ContactStyles.searchIconRight}
-          />
+        <TouchableOpacity onPress={handleSearch}>
+          <Icon name="search" size={20} color="#121212" style={ContactStyles.searchIconRight} />
         </TouchableOpacity>
       </View>
-
-      {searchQuery ? (
-        renderSearchResults()
+  
+      {isSearching ? (
+        <Text style={ContactStyles.noDataText}>Đang tìm kiếm...</Text>
+      ) : searchResult ? (
+        renderSearchResultInline()
+      ) : loading ? (
+        <Text style={ContactStyles.noDataText}>Đang tải...</Text>
+      ) : subScreen === "friendrequests" ? (
+        renderFriendRequests()
+      ) : subScreen === "chatbox" && chatUser ? (
+        renderChatBox()
+      ) : subScreen === "settings" ? (
+        renderSettings()
+      ) : subScreen === "birthdays" ? (
+        renderBirthdays()
+      ) : subScreen === "createGroup" ? (
+        renderCreateGroup()
       ) : (
         <>
-          {!subScreen && (
-            <View style={ContactStyles.headerButtons}>
-              {["Bạn bè", "Nhóm", "OA"].map((label) => (
-                <TouchableOpacity
-                  key={label}
-                  onPress={() => setActiveTab(label)}
+          <View style={ContactStyles.headerButtons}>
+            {["Bạn bè", "Nhóm"].map((label) => (
+              <TouchableOpacity key={label} onPress={() => setActiveTab(label)}>
+                <Text
+                  style={[
+                    ContactStyles.headerButtonText,
+                    activeTab === label && ContactStyles.tabActive,
+                  ]}
                 >
+                  {label === "Bạn bè" ? `Bạn bè (${friends.length})` : "Nhóm"}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {activeTab === "Bạn bè" && (
+            <View style={ContactStyles.menuContainer}>
+              <TouchableOpacity
+                style={ContactStyles.menuItem}
+                onPress={() => setSubScreen("friendrequests")}
+              >
+                <Icon name="person-add" size={20} color="#121212" style={ContactStyles.menuIcon} />
+                <Text style={ContactStyles.menuText}>Lời mời kết bạn ({friendRequests.length})</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={ContactStyles.menuItem}
+                onPress={() => setSubScreen("birthdays")}
+              >
+                <Icon name="cake" size={20} color="#121212" style={ContactStyles.menuIcon} />
+                <Text style={ContactStyles.menuText}>Sinh nhật</Text>
+              </TouchableOpacity>
+
+              <View style={ContactStyles.tabSwitchContainer}>
+                <TouchableOpacity onPress={() => setSelectedTab("all")}>
                   <Text
                     style={[
-                      ContactStyles.headerButtonText,
-                      activeTab === label && ContactStyles.tabActive,
+                      ContactStyles.tabText,
+                      selectedTab === "all" && ContactStyles.tabActive,
                     ]}
                   >
-                    {label}
+                    Tất cả ({friends.length})
                   </Text>
                 </TouchableOpacity>
-              ))}
+                <TouchableOpacity onPress={() => setSelectedTab("recent")}>
+                  <Text
+                    style={[
+                      ContactStyles.tabText,
+                      selectedTab === "recent" && ContactStyles.tabActive,
+                    ]}
+                  >
+                    Mới truy cập
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {renderFriends()}
             </View>
           )}
 
-          {activeTab === "Bạn bè" && !subScreen && (
-            <View style={ContactStyles.menuContainer}>
-              {loading ? (
-                <Text>Đang tải...</Text>
-              ) : (
-                <>
-                  {[
-                    {
-                      icon: "person-add",
-                      text: `Lời mời kết bạn(${friendRequests.length})`,
-                      onPress: () => setSubScreen("friendrequests"),
-                    },
-                    {
-                      icon: "contacts",
-                      text: "Danh bạ máy",
-                      subText: "Liên hệ có dùng Zalo",
-                    },
-                    {
-                      icon: "cake",
-                      text: "Sinh nhật",
-                      onPress: () => setSubScreen("birthdays"),
-                    },
-                  ].map((item) => (
-                    <TouchableOpacity
-                      key={item.text}
-                      style={ContactStyles.menuItem}
-                      onPress={item.onPress}
-                    >
-                      <Icon
-                        name={item.icon}
-                        size={20}
-                        color="#121212"
-                        style={ContactStyles.menuIcon}
-                      />
-                      <Text style={ContactStyles.menuText}>{item.text}</Text>
-                      {item.subText && (
-                        <Text style={ContactStyles.menuSubText}>
-                          {item.subText}
-                        </Text>
-                      )}
-                    </TouchableOpacity>
-                  ))}
-
-                  <View style={ContactStyles.tabSwitchContainer}>
-                    <TouchableOpacity onPress={() => setSelectedTab("all")}>
-                      <Text
-                        style={[
-                          ContactStyles.tabText,
-                          selectedTab === "all" && ContactStyles.tabActive,
-                        ]}
-                      >
-                        Tất cả ({friends.length})
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => setSelectedTab("recent")}>
-                      <Text
-                        style={[
-                          ContactStyles.tabText,
-                          selectedTab === "recent" && ContactStyles.tabActive,
-                        ]}
-                      >
-                        Mới truy cập
-                        {/* ({activeFriends.length}) */}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  <FlatList
-                    data={
-                      selectedTab === "all"
-                        ? friends
-                        : friends.filter((f) => f.status === "active")
-                    }
-                    keyExtractor={(item) => item.accountId}
-                    renderItem={({ item }) => (
-                      <TouchableOpacity
-                        style={ContactStyles.friendItem}
-                        onPress={() => {
-                          setSubScreen("chatbox");
-                          setChatUser({ userId: item.id, userName: item.name });
-                        }}
-                      >
-                        <Image
-                          source={{ uri: item.avatarLink }}
-                          style={ContactStyles.avatar}
-                        />
-                        <Text style={ContactStyles.friendName}>
-                          {item.fullName}
-                        </Text>
-                      </TouchableOpacity>
-                    )}
-                  />
-                </>
-              )}
-            </View>
-          )}
-
-          {activeTab === "Nhóm" && !subScreen && (
+          {activeTab === "Nhóm" && (
             <View>
               <TouchableOpacity
                 style={ContactStyles.groupHeader}
                 onPress={() => setSubScreen("createGroup")}
               >
-                <Icon
-                  name="group-add"
-                  size={20}
-                  color="#121212"
-                  style={ContactStyles.menuIcon}
-                />
+                <Icon name="group-add" size={20} color="#121212" style={ContactStyles.menuIcon} />
                 <Text style={ContactStyles.groupHeaderText}>Tạo nhóm</Text>
               </TouchableOpacity>
-
-              <FlatList
-                data={conversations}
-                keyExtractor={(item) => item.id}
-                renderItem={({ item }) => renderItem({ item })}
-              />
             </View>
           )}
-
-          {activeTab === "OA" && !subScreen && (
-            <FlatList
-              data={conversations}
-              keyExtractor={(item) => item.id}
-              renderItem={({ item }) => renderItem({ item })}
-            />
-          )}
-
-          {subScreen === "friendrequests" && renderFriendRequests()}
-          {subScreen === "chatbox" && chatUser && renderChatBox()}
-          {subScreen === "settings" && renderSettings()}
-          {subScreen === "addFriend" && renderAddFriend()}
-          {subScreen === "birthdays" && renderBirthdays()}
-          {subScreen === "createGroup" && renderCreateGroup()}
         </>
       )}
     </SafeAreaView>

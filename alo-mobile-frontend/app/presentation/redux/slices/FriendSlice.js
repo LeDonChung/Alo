@@ -9,7 +9,7 @@ const initialState = {
 };
 const getFriends = createAsyncThunk('FriendSlice/getFriends', async (_, { rejectWithValue }) => {
     const userLogin = JSON.parse(await SecureStore.getItemAsync('userLogin'));
-    console.log("userLoginXXX", userLogin);
+    // console.log("userLoginXXX", userLogin);
     try {
         const response = await axiosInstance.get(`/api/friend/get-friends?userId=${userLogin.id}`);
         return response.data;
@@ -21,7 +21,7 @@ const getFriends = createAsyncThunk('FriendSlice/getFriends', async (_, { reject
 
     const getFriendsRequest = createAsyncThunk('FriendSlice/getFriendsRequest', async (_, { rejectWithValue }) => {
         const userLogin = JSON.parse(await SecureStore.getItemAsync('userLogin'));
-        console.log("userLogin", userLogin);
+        // console.log("userLogin", userLogin);
         
         try {
             const response = await axiosInstance.get(`/api/friend/get-friend-request?userId=${userLogin.id}`);
@@ -82,7 +82,7 @@ const rejectFriendRequest = createAsyncThunk('FriendSlice/rejectFriendRequest', 
 
 const getFriendByPhoneNumber = createAsyncThunk('FriendSlice/getFriendByPhoneNumber', async (phoneNumber, { rejectWithValue }) => {
     try {
-        const response = await axiosInstance.get(`/api/friend/get-friend-by-phone-number/${phoneNumber}`);
+        const response = await axiosInstance.get(`/api/friend/get-friend-by-phone-number?phoneNumber=${phoneNumber}`);
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
@@ -157,6 +157,7 @@ const FriendSlice = createSlice({
         });
         builder.addCase(getFriendByPhoneNumber.fulfilled, (state, action) => {
             state.friend = action.payload.data;
+            // console.log("Updated state.friend:", state.friend);
         });
         builder.addCase(getFriendByPhoneNumber.rejected, (state, action) => {
             state.friend = null;
