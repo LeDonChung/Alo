@@ -11,7 +11,7 @@ const store = configureStore({
         register: RegisterSlice,
         friend: FriendSlice,
         conversation: ConversationSlice,
-        message: MessageSlice
+        message: MessageSlice,
     },
     middleware: getDefaultMiddleware =>
         getDefaultMiddleware({

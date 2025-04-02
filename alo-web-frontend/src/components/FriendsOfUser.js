@@ -4,6 +4,7 @@ import { faMagnifyingGlass, faChevronDown, faChevronRight, faTag, faCircleXmark,
 import { useDispatch, useSelector } from 'react-redux';
 import { blockFriend, getFriends, unblockFriend, unfriend } from '../redux/slices/FriendSlice';
 import showToast, { removeVietnameseTones } from '../utils/AppUtils';
+import socket from '../utils/socket';
 
 const categoryList = [
   { id: 1, name: "Bạn thân", color: "#ff6347" },
@@ -42,16 +43,23 @@ export default function FriendsOfUser() {
   const [detailFriend, setDetailFriend] = useState(null);
   const [isOpenConfirm, setIsOpenConfirm] = useState(false);
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const handleUnfriend = async (id) => {
     try {
       if (isOpenConfirm) {
+
+        const friendUpdate = {
+          userId: userLogin.id, friendId: id
+        }
         // Xóa bạn
-        await dispatch(unfriend({ userId: userLogin.id, friendId: id }));
-        setIsOpenConfirm(false);
-        // Hiển thị thông báo thành công
-        showToast("Xóa kết bạn thành công!", "success");
+        const friendResp = await dispatch(unfriend(friendUpdate));
+        const friendResult = friendResp.payload.data ? friendResp.payload.data : null;
+
+        if (friendResult && friendResult.status === 4) {
+          setIsOpenConfirm(false);
+          socket.emit("unfriend-request", friendUpdate)
+        }
       }
 
     } catch (error) {
@@ -61,14 +69,55 @@ export default function FriendsOfUser() {
     }
   };
 
+  useEffect(() => {
+    const handleReceiveUnfriendRequest = async (data) => {
+      if (data.friendId === userLogin.id) {
+        const updatedList = await dispatch(getFriends());
+        if (updatedList.payload.status === 200) {
+          setLoading(false);
+        }
+      }
+
+    };
+    socket.on("receive-unfriend", handleReceiveUnfriendRequest);
+    return () => {
+      socket.off("receive-unfriend", handleReceiveUnfriendRequest);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleReceiveAcceptFriendRequest = async (data) => {
+      console.log('data', data);
+      
+      if (data.friendId === userLogin.id) {
+        const updatedList = await dispatch(getFriends());
+        if (updatedList.payload.status === 200) {
+          setLoading(false);
+        }
+      }
+    };
+    socket.on("receive-accept-friend", handleReceiveAcceptFriendRequest);
+    return () => {
+      socket.off("receive-accept-friend", handleReceiveAcceptFriendRequest);
+    };
+  }, []);
+
   const handleBlockFriend = async (id) => {
-    console.log("block friend", id);
     try {
+      const friendUpdate = {
+        userId: userLogin.id,
+        friendId: id
+      }
+
       // Chặn bạn
-      await dispatch(blockFriend({ userId: userLogin.id, friendId: id }));
-      setOpenDetail(false);
-      // Hiển thị thông báo thành công
-      showToast("Chặn bạn thành công!", "success");
+      const friendResp = await dispatch(blockFriend(friendUpdate));
+      const friendResult = friendResp.payload.data ? friendResp.payload.data : null;
+      if (friendResult && friendResult.status === 3) {
+        setOpenDetail(false);
+        // socket
+        socket.emit("block-request", friendUpdate);
+      }
+
     } catch (error) {
       console.error("Error blocking friend:", error);
       // Hiển thị thông báo lỗi
@@ -79,11 +128,18 @@ export default function FriendsOfUser() {
   const handleUnblockFriend = async (id) => {
     console.log("unblock friend", id);
     try {
-      // Bỏ chặn bạn
-      await dispatch(unblockFriend({ userId: userLogin.id, friendId: id }));
-      setOpenDetail(false);
-      // Hiển thị thông báo thành công
-      showToast("Bỏ chặn bạn thành công!", "success");
+      const friendUpdate = {
+        userId: userLogin.id,
+        friendId: id
+      }
+      // Chặn bạn
+      const friendResp = await dispatch(unblockFriend(friendUpdate));
+      const friendResult = friendResp.payload.data ? friendResp.payload.data : null;
+      if (friendResult && friendResult.status === 1) {
+        setOpenDetail(false);
+        // socket
+        socket.emit("unblock-friend", friendUpdate);
+      }
     } catch (error) {
       console.error("Error unblocking friend:", error);
       // Hiển thị thông báo lỗi
@@ -99,14 +155,13 @@ export default function FriendsOfUser() {
   const dropdownRef = useRef(null);
 
 
+
   useEffect(() => {
     const fetchFriends = async () => {
       try {
-        setLoading(true);
         const result = await dispatch(getFriends());
-        if(result.payload.status === 200) {
+        if (result.payload.status === 200) {
           setLoading(false);
-          
         }
 
       } catch (error) {
@@ -138,7 +193,7 @@ export default function FriendsOfUser() {
         if (!acc[firstChar]) acc[firstChar] = [];
         acc[firstChar].push(friend);
         return acc;
-      }, {}); 
+      }, {});
       // Đưa về dạng mảng
       const groupList = Object.entries(groupedObject).map(([char, list], index) => ({
         id: index + 1,
@@ -156,7 +211,7 @@ export default function FriendsOfUser() {
     if (!loading && listFr?.length > 0) {
       setGroupFriendList(groupAndSortFriends(listFr, selectFilter.id === 1 ? 'asc' : 'desc'));
     }
-  }, [selectFilter, selectCategory, listFr]);
+  }, [selectFilter, selectCategory, listFr, loading]);
 
 
   // Đóng dropdown khi click ra ngoài component của category select và detail select

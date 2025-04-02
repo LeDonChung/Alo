@@ -3,7 +3,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { friendInvitations, friendRecommendations } from '../data/friendInvitationData';
 import { useDispatch, useSelector } from 'react-redux';
 import { acceptFriendRequest, getFriendsRequest, rejectFriendRequest } from '../redux/slices/FriendSlice';
-import showToast from  '../utils/AppUtils';
+import showToast from '../utils/AppUtils';
 import socket from '../utils/socket';
 
 const listType = [
@@ -35,6 +35,20 @@ export default function InvitationFriend() {
   const [changeInvitation, setChangeInvitation] = useState(false);
 
   useEffect(() => {
+    const handleCancleFriendRequest = (data) => {
+      if (data.senderId !== userLogin.id) {
+        const newInvitation = invitationList.filter(item => item.userId !== data.senderId || item.friendId !== data.senderId);
+        setInvitationList(newInvitation);
+        setChangeInvitation(!changeInvitation);
+      }
+    };
+    socket.on("receive-cancle-friend-request", handleCancleFriendRequest);
+    return () => {
+      socket.off("receive-cancle-friend-request", handleCancleFriendRequest);
+    };
+  }, []);
+
+  useEffect(() => {
     const fetchFriendInvitation = async () => {
       try {
         const resp = await dispatch(getFriendsRequest());
@@ -50,11 +64,12 @@ export default function InvitationFriend() {
 
   const handleRejectFriend = async (userId) => {
     try {
-      const resp = await dispatch(rejectFriendRequest({ userId: userId, friendId: userLogin.id }));
+      const friendUpdate = { userId: userLogin.id, friendId: userId }
+      const resp = await dispatch(rejectFriendRequest(friendUpdate));
       const data = resp.payload.data;
       if (data.status === 2) {
         setChangeInvitation(!changeInvitation);
-        showToast("Đã từ chối lời mời kết bạn.", "info");
+        socket.emit('reject-friend-request', friendUpdate);
       }
     } catch (error) {
       console.log(error);
@@ -63,11 +78,13 @@ export default function InvitationFriend() {
 
   const handleAcceptFriend = async (userId) => {
     try {
-      const resp = await dispatch(acceptFriendRequest({ userId: userId, friendId: userLogin.id }));
+      const friendUpdate = { userId: userLogin.id, friendId: userId }
+      const resp = await dispatch(acceptFriendRequest(friendUpdate));
       const data = resp.payload.data;
       if (data.status === 1) {
         setChangeInvitation(!changeInvitation);
         showToast("Giờ đây các bạn đã trở thành bạn bè.", "success");
+        socket.emit('accept-friend-request', friendUpdate);
       }
     } catch (error) {
       console.log(error);
@@ -75,11 +92,26 @@ export default function InvitationFriend() {
   }
 
   useEffect(() => {
-    socket.on("receive-friend-request", (data) => {
-      
-    })
+    const handleReceiveFriendRequest = async (data) => {
+      if (data.senderId !== userLogin.id) {
+        const newInvitation = {
+          userId: data.userId,
+          fullName: data.fullName,
+          avatarLink: data.avatarLink,
+          contentRequest: data.contentRequest,
+          requestDate: data.requestDate
+        };
+        setInvitationList((prev) => [newInvitation, ...prev]);
+      }
+    };
 
-  }  , []);
+    socket.on("receive-friend-request", handleReceiveFriendRequest);
+
+    return () => {
+      socket.off("receive-friend-request", handleReceiveFriendRequest);
+    };
+  }, []);
+
 
   return (
     <div className="flex-1 flex flex-col w-full h-full bg-[#EBECF0]">
