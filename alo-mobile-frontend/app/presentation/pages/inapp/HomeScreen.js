@@ -1,59 +1,38 @@
-import React, { useState } from "react";
-import {
-  Button,
-  View,
-  Text,
-  FlatList,
-  Image,
-  TouchableOpacity,
-  TextInput,
-} from "react-native";
+import React, { useState, useEffect } from "react"; 
+import {  Button, View, Text, FlatList, Image,  TouchableOpacity,  TextInput,} from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GlobalStyles } from "../../styles/GlobalStyles";
 import Icon from "react-native-vector-icons/FontAwesome5";
-
-const friends = [
-  {
-    id: "1",
-    name: "Mẹ",
-    message: "Bạn: [Sticker]",
-    time: "24/03",
-    avatar:
-      "https://storage.googleapis.com/a1aa/image/8Jz7VGS0tREnYIewzY1DMm-Lgd9MEiUj1ftG-lIwNwo.jpg",
-  },
-  {
-    id: "2",
-    name: "Gái Em",
-    message: "[Cuộc gọi video đến]",
-    time: "16/03",
-    avatar:
-      "https://storage.googleapis.com/a1aa/image/pA56C7RLnY5CUxAvG2fMFnvTrQN13u-Ze-jHWTtk54k.jpg",
-  },
-  {
-    id: "3",
-    name: "Bố",
-    message: "Uh",
-    time: "22 giờ",
-    avatar:
-      "https://storage.googleapis.com/a1aa/image/8rmQfgLMIr2vAQ78Jm4vVwAeNmlxJb13t9oypLQmDUU.jpg",
-  },
-];
+import { getFriends } from "../../redux/slices/FriendSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { use } from "react";
 
 export const HomeScreen = ({ navigation }) => {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState('all');
+  const friends = useSelector((state) => state.friend.friends);
+  const dispatch = useDispatch();
 
-  const filteredFriends = friends.filter(f => {
-    if (tab === 'unread') return f.unread;
-    return true;
-  }).filter(f => f.name.toLowerCase().includes(search.toLowerCase()));
+  useEffect(() => {
+    const fetchFriends = async () => {
+      try {
+        await dispatch(getFriends());
+      } catch (error) {
+        console.error("Error fetching friends:", error);
+      }
+    };
+    fetchFriends();
+  }, [dispatch]);
 
+  useEffect(() => {
+    console.log("Friends data:", friends)
+  }, [friends]);
+ 
   const renderItem = ({ item }) => (
-    <View style={{ flexDirection: 'row', alignItems: 'center', padding: 10, borderBottomWidth: 1, borderColor: '#EDEDED' }}>
-      <Image source={{ uri: item.avatar }} style={{ width: 50, height: 50, borderRadius: 25, marginRight: 10 }} />
-      <View style={{ flex: 1 }}>
-        <Text style={{ fontWeight: 'bold', fontSize: 16 }}>{item.name}</Text>
-        <Text style={{ color: 'gray' }}>{item.message}</Text>
+    <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: '#EDEDED' }}>
+      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
+        <Image source={{ uri: item.friendInfo.avatarLink }} style={{ width: 50, height: 50, borderRadius: 25, marginRight: 10 }} />
+        <Text style={{ fontSize: 16 }}>{item.friendInfo.fullName}</Text>
       </View>
       <Text style={{ color: 'gray', fontSize: 12 }}>{item.time}</Text>
     </View>
@@ -89,9 +68,9 @@ export const HomeScreen = ({ navigation }) => {
 
       {/* Chat List */}
       <FlatList
-        data={filteredFriends}
+        data={friends}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.friendId}
       />
     </View>
       <Button title="Go to Chat" onPress={() => navigation.navigate("chat")} />

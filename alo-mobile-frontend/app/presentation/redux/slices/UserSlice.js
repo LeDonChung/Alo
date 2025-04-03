@@ -66,7 +66,14 @@ const updateProfile = createAsyncThunk('UserSlice/updateProfile', async (user, {
 const UserSlice = createSlice({
     name: 'UserSlice',
     initialState: initialState,
-    reducers: {},
+    reducers: {
+        setUserOnlines: (state, action) => {
+            state.userOnlines = action.payload;
+        },
+        setUserLogin: (state, action) => {
+            state.userLogin = action.payload;
+        }
+    },
     extraReducers: (builder) => {
         builder.addCase(login.pending, (state) => {
             state.userLogin = null;
@@ -137,6 +144,6 @@ const UserSlice = createSlice({
     }
 });
 
-export const { } = UserSlice.actions;
+export const { setUserOnlines, setUserLogin } = UserSlice.actions;
 export { uploadAvatar, uploadBackground, getProfile, updateProfile, login };
 export default UserSlice.reducer;
