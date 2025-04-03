@@ -25,8 +25,12 @@ import {
   unfriend,
   blockFriend,
   unblockFriend,
+  cancelFriend,
+  
 } from "../../../redux/slices/FriendSlice";
-import showToast from "../../../../utils/AppUtils";
+import {showToast} from "../../../../utils/AppUtils";
+import {socket} from "../../../../utils/socket";
+import FriendRequests from "./FriendRequests";
 
 const ContactScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -47,17 +51,16 @@ const ContactScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
+  const [sentRequests, setSentRequests] = useState([]);
   const [searchResult, setSearchResult] = useState(null);
   const [isRequestSent, setIsRequestSent] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-
   // console.log("User Login:", userLogin);
 
   useEffect(() => {
     const fetchFriends = async () => {
       try {
         const result = await dispatch(getFriends()).unwrap();
-        // console.log("Friends API Response:", result);
         const formattedFriends = result.data.map((item) => item.friendInfo);
         setFriends(formattedFriends);
       } catch (error) {
@@ -70,34 +73,28 @@ const ContactScreen = ({ navigation }) => {
   }, [dispatch]);
 
   useEffect(() => {
-    const fetchFriendRequests = async () => {
-      try {
-        const result = await dispatch(getFriendsRequest()).unwrap();
-        const formattedRequests = result.data.map((item) => {
-          const requestDate = item.requestDate ? new Date(item.requestDate) : null;
-          const formattedDate = requestDate
-            ? `${requestDate.getDate().toString().padStart(2, '0')}/${(requestDate.getMonth() + 1).toString().padStart(2, '0')}/${requestDate.getFullYear()}`
-            : 'Không có ngày'; 
-          return {
-            friendId: item.friendId,
-            fullName: item.fullName,
-            avatarLink: item.avatarLink,
-            status: item.status,
-            contentRequest: item.contentRequest,
-            requestDate: formattedDate, 
-          };
-        });
-        // console.log("Formatted Friend Requests:", formattedRequests);
-        setFriendRequests(formattedRequests);
-      } catch (error) {
-        console.error("Error fetching friend requests: ", error);
-      }
-    };
-    fetchFriendRequests();
-  }, [dispatch]);
+    socket.on("receive-friend-request", (data) => {
+      const newRequest = {
+        friendId: data.userId,
+        fullName: data.fullName,
+        avatarLink: data.avatarLink,
+        status: data.status,
+        contentRequest: data.contentRequest,
+        requestDate: data.requestDate
+          ? `${new Date(data.requestDate).getDate().toString().padStart(2, '0')}/${(new Date(data.requestDate).getMonth() + 1).toString().padStart(2, '0')}/${new Date(data.requestDate).getFullYear()}`
+          : 'Không có ngày',
+      };
+      setFriendRequests((prev) => [...prev, newRequest]);
+      showToast("info", "top", "Thông báo", "Bạn nhận được lời mời kết bạn mới!");
+    });
+  
+    return () => socket.off("receive-friend-request"); 
+  }, []);
+
 
   const handleSearch = async () => {
     if (!searchQuery||searchQuery===userLogin.phoneNumber) {
+      showToast("info", "top", "Thông báo", "Đây là số điện thoại của bạn!");
       setSearchResult(null);
       setIsRequestSent(false);
       setIsSearching(false);
@@ -119,12 +116,12 @@ const ContactScreen = ({ navigation }) => {
         console.log("Result:", formattedResult);
       } else {
         setSearchResult(null);
-        showToast("Không tìm thấy người dùng", "info");
+        showToast("info", "top", "Thông báo", "Không tìm thấy người dùng");
       }
     } catch (error) {
       console.error("Lỗi khi tìm kiếm:", error);
       setSearchResult(null);
-      showToast("Lỗi khi tìm kiếm bạn bè", "error");
+      showToast("error", "top", "Lỗi", "Lỗi khi tìm kiếm bạn bè");
     } finally {
       setIsSearching(false);
     }
@@ -138,65 +135,71 @@ const ContactScreen = ({ navigation }) => {
     };
     try {
       await dispatch(sendFriendRequest(request)).unwrap();
-      showToast("Gửi lời mời kết bạn thành công", "success");
+      showToast("success", "top", "Thành công", "Gửi lời mời kết bạn thành công");
+      const newSentRequest = {
+        friendId,
+        fullName: searchResult.fullName,
+        avatarLink: searchResult.avatarLink,
+        contentRequest: request.contentRequest,
+        requestDate: `${new Date().getDate().toString().padStart(2, "0")}/${(
+          new Date().getMonth() + 1
+        )
+          .toString()
+          .padStart(2, "0")}/${new Date().getFullYear()}`,
+      };
+      setSentRequests((prev) => [...prev, newSentRequest]);
       setIsRequestSent(true);
     } catch (error) {
       console.error("Lỗi khi gửi lời mời:", error);
-      showToast("Lỗi khi gửi lời mời kết bạn", "error");
+      showToast("error", "top", "Lỗi", "Lỗi khi gửi lời mời kết bạn");
     }
   };
 
 
   const handleCancelFriendRequest = async (friendId) => {
-    try {
-      showToast("Đã hủy yêu cầu kết bạn", "info");
-      setIsRequestSent(false);
-    } catch (error) {
-      console.error("Lỗi khi hủy yêu cầu:", error);
-      showToast("Lỗi khi hủy yêu cầu kết bạn", "error");
-    }
-  };
-
-
-  const handleAcceptFriend = async (friendId) => {
     const request = { userId: userLogin.id, friendId };
     try {
-      await dispatch(acceptFriendRequest(request)).unwrap();
-      showToast("Đã chấp nhận lời mời kết bạn", "success");
-      const result = await dispatch(getFriendsRequest()).unwrap();
-      setFriendRequests(
-        result.data.map((item) => ({
-          friendId: item.friendId,
-          fullName: item.fullName,
-          avatarLink: item.avatarLink,
-          status: item.status,
-          contentRequest: item.contentRequest,
-        }))
-      );
+      await dispatch(cancelFriend(request)).unwrap();
+      showToast("success", "top", "Thành công", "Đã hủy yêu cầu kết bạn");
+      setSentRequests((prev) => prev.filter((req) => req.friendId !== friendId));
+      setIsRequestSent(false);
+      if (searchResult?.friendId === friendId) {
+        setSearchResult({ ...searchResult, status: -1 }); 
+      }
     } catch (error) {
-      console.error("Lỗi khi chấp nhận:", error);
-      showToast("Lỗi khi chấp nhận lời mời", "error");
+      console.error("Lỗi khi hủy yêu cầu:", error);
+      showToast("error", "top", "Lỗi", "Lỗi khi hủy yêu cầu kết bạn");
     }
   };
 
+  const handleAcceptFriend = async (userId) => {
+    if (userId === userLogin.id) {
+      showToast("error", "top", "Lỗi", "Bạn không thể chấp nhận lời mời từ chính mình!");
+      return;
+    }
+    try {
+      const resp = await dispatch(acceptFriendRequest({ userId: userId, friendId: userLogin.id })).unwrap();
+      if (resp.data.status === 1) {
+        const result = await dispatch(getFriends()).unwrap();
+        setFriends(result.data.map((item) => item.friendInfo));
+        showToast("success", "top", "Thành công", "Giờ đây các bạn đã trở thành bạn bè.");
+      } else {
+        showToast("error", "top", "Lỗi", "Không thể chấp nhận lời mời kết bạn.");
+      }
+    } catch (error) {
+      console.error("Lỗi khi chấp nhận lời mời:", error);
+      showToast("error", "top", "Lỗi", "Đã xảy ra lỗi khi chấp nhận lời mời.");
+    }
+  };
+  
   const handleRejectFriend = async (friendId) => {
     const request = { userId: userLogin.id, friendId };
     try {
       await dispatch(rejectFriendRequest(request)).unwrap();
-      showToast("Đã từ chối lời mời kết bạn", "info");
-      const result = await dispatch(getFriendsRequest()).unwrap();
-      setFriendRequests(
-        result.data.map((item) => ({
-          friendId: item.friendId,
-          fullName: item.fullName,
-          avatarLink: item.avatarLink,
-          status: item.status,
-          contentRequest: item.contentRequest,
-        }))
-      );
+      showToast("info", "top", "Thông báo", "Đã từ chối lời mời kết bạn");
     } catch (error) {
       console.error("Lỗi khi từ chối:", error);
-      showToast("Lỗi khi từ chối lời mời", "error");
+      showToast("error", "top", "Lỗi", "Lỗi khi từ chối lời mời");
     }
   };
 
@@ -204,12 +207,12 @@ const ContactScreen = ({ navigation }) => {
     const request = { userId: userLogin.id, friendId };
     try {
       await dispatch(unfriend(request)).unwrap();
-      showToast("Hủy kết bạn thành công", "success");
+      showToast("success", "top", "Thành công", "Đã hủy kết bạn");
       const result = await dispatch(getFriends()).unwrap();
       setFriends(result.data.map((item) => item.friendInfo));
     } catch (error) {
       console.error("Lỗi khi hủy kết bạn:", error);
-      showToast("Lỗi khi hủy kết bạn", "error");
+      showToast("error", "top", "Lỗi", "Lỗi khi hủy kết bạn");
     }
   };
 
@@ -217,12 +220,12 @@ const ContactScreen = ({ navigation }) => {
     const request = { userId: userLogin.id, friendId };
     try {
       await dispatch(blockFriend(request)).unwrap();
-      showToast("Chặn bạn thành công", "success");
+      showToast("success", "top", "Thành công", "Chặn bạn thành công");
       const result = await dispatch(getFriends()).unwrap();
       setFriends(result.data.map((item) => item.friendInfo));
     } catch (error) {
       console.error("Lỗi khi chặn:", error);
-      showToast("Lỗi khi chặn bạn bè", "error");
+      showToast("error", "top", "Lỗi", "Lỗi khi chặn bạn bè");
     }
   };
 
@@ -230,12 +233,12 @@ const ContactScreen = ({ navigation }) => {
     const request = { userId: userLogin.id, friendId };
     try {
       await dispatch(unblockFriend(request)).unwrap();
-      showToast("Bỏ chặn bạn thành công", "success");
+      showToast("success", "top", "Thành công", "Bỏ chặn bạn thành công");
       const result = await dispatch(getFriends()).unwrap();
       setFriends(result.data.map((item) => item.friendInfo));
     } catch (error) {
       console.error("Lỗi khi bỏ chặn:", error);
-      showToast("Lỗi khi bỏ chặn bạn bè", "error");
+      showToast("error", "top", "Lỗi", "Lỗi khi bỏ chặn bạn bè");
     }
   };
 
@@ -310,37 +313,6 @@ const ContactScreen = ({ navigation }) => {
     );
   };
 
-  const renderFriendRequests = () => (
-    <SafeAreaView style={FriendRequestStyles.container}>
-      <View style={FriendRequestStyles.header}>
-        <TouchableOpacity onPress={() => setSubScreen(null)}>
-          <Icon name="arrow-back" size={20} color="#121212" />
-        </TouchableOpacity>
-        <Text style={FriendRequestStyles.headerTitle}>
-          Lời mời kết bạn ({friendRequests.length})
-        </Text>
-        <TouchableOpacity onPress={() => setSubScreen("settings")}>
-          <Icon name="settings" size={20} color="#121212" />
-        </TouchableOpacity>
-      </View>
-      <FlatList
-        data={friendRequests}
-        keyExtractor={(item) => item.friendId}
-        renderItem={({ item }) =>
-          renderItem({
-            item,
-            showActions: true,
-            actions: [
-              { text: "Từ chối", style: { backgroundColor: "#007AFF" }, onPress: () => handleRejectFriend(item.friendId) },
-              { text: "Đồng ý", style: { backgroundColor: "#007AFF" }, onPress: () => handleAcceptFriend(item.friendId) },
-            ],
-          })
-        }
-        ListEmptyComponent={<Text style={ContactStyles.noDataText}>Không có lời mời kết bạn</Text>}
-      />
-    </SafeAreaView>
-  );
-
   const renderSearchResultInline = () => {
     if (!searchResult) return null;
   
@@ -359,6 +331,14 @@ const ContactScreen = ({ navigation }) => {
         case 1:
           return [];
         case -1:
+          return [
+            {
+              text: "Kết bạn",
+              style: ContactStyles.addFriendButton,
+              onPress: () => handleSendFriendRequest(searchResult.friendId),
+            },
+          ];
+          case 2:
           return [
             {
               text: "Kết bạn",
@@ -668,7 +648,16 @@ const ContactScreen = ({ navigation }) => {
       ) : loading ? (
         <Text style={ContactStyles.noDataText}>Đang tải...</Text>
       ) : subScreen === "friendrequests" ? (
-        renderFriendRequests()
+        <FriendRequests
+          navigation={navigation}
+          handleAcceptFriend={handleAcceptFriend}
+          handleRejectFriend={handleRejectFriend}
+          handleCancelFriendRequest={handleCancelFriendRequest}
+          setSubScreen={setSubScreen}
+          setFriendRequests={setFriendRequests} 
+          sentRequests={sentRequests} 
+          setSentRequests={setSentRequests} 
+        />
       ) : subScreen === "chatbox" && chatUser ? (
         renderChatBox()
       ) : subScreen === "settings" ? (

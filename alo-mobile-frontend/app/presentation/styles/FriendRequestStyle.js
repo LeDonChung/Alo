@@ -82,4 +82,21 @@ export const FriendRequestStyles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "bold",
   },
+  styledAcceptButton: {
+    backgroundColor: "blue", 
+    borderRadius: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+ 
+  styledRejectButton: {
+    backgroundColor: "#FF3B30", 
+    borderRadius: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  buttonText: {
+    color: "#FFF",
+    fontWeight: "bold",
+  },
 });

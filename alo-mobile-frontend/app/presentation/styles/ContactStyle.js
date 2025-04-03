@@ -269,4 +269,52 @@ export const ContactStyles = StyleSheet.create({
     color: '#888',
     marginTop: 2,
   },
+  contactContent: {
+    flex: 1,
+  },
+  actionButtons: {
+    flexDirection: "row",
+    marginTop: 5,
+  },
+  noDataText: {
+    color: "#666",
+    fontSize: 16,
+    textAlign: "center",
+    marginTop: 20,
+  },
+  ButtonText: {
+    color: "#FFF",
+    fontSize: 14,
+    fontWeight: "bold",
+  },
+  rejectButton: {
+    marginRight: 10,
+    backgroundColor: "#FF3B30", 
+    borderRadius: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  acceptButton: {
+    backgroundColor: "#34C759", 
+    borderRadius: 5,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+  },
+  tabSwitchContainer: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ccc",
+  },
+  tabText: {
+    fontSize: 16,
+    color: "#666",
+  },
+  tabActive: {
+    color: "#007AFF",
+    fontWeight: "bold",
+    borderBottomWidth: 2,
+    borderBottomColor: "#007AFF",
+  },
 });
