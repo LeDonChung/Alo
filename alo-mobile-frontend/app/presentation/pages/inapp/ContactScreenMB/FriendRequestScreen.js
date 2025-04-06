@@ -4,9 +4,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { FriendRequestStyles } from "../../../styles/FriendRequestStyle";
 
-// Dữ liệu mẫu đã gộp với trường statusType
 const data_sample = [
-  // Lời mời kết bạn đã nhận (Muốn kết bạn)
   { id: "8", name: "Sunny Hiền", status: "Từ của số trò chuyện", date: "13/02", statusType: "Muốn kết bạn" },
   { id: "9", name: "Kiều Nương", status: "Muốn kết bạn", statusType: "Muốn kết bạn" },
   { id: "10", name: "Nguyễn Phước Bình", status: "Muốn kết bạn", statusType: "Muốn kết bạn" },
@@ -17,9 +15,9 @@ const data_sample = [
   { id: "15", name: "User 9", status: "Muốn kết bạn", statusType: "Muốn kết bạn" },
   { id: "16", name: "User 10", status: "Muốn kết bạn", statusType: "Muốn kết bạn" },
   { id: "17", name: "User 11", status: "Muốn kết bạn", statusType: "Muốn kết bạn" },
-  // Lời mời kết bạn đã gửi (Đã gửi)
+
   { id: "18", name: "Ngô Thị Xong", status: "Từ gợi ý kết bạn", date: "02/02", statusType: "Đã gửi" },
-  // Gợi ý kết bạn (Gợi ý)
+
   { id: "19", name: "Suggested 1", status: "Gợi ý", statusType: "Gợi ý" },
   { id: "20", name: "Suggested 2", status: "Gợi ý", statusType: "Gợi ý" },
 ];
@@ -32,12 +30,10 @@ const FriendRequestScreen = ({ navigation }) => {
     return data_sample.filter(item => item.statusType === statusType);
   };
 
-  // Đếm số lượng lời mời, đã gửi, và gợi ý
   const friendRequestCount = getFilteredData("Muốn kết bạn").length;
   const sentRequestCount = getFilteredData("Đã gửi").length;
   const suggestedCount = getFilteredData("Gợi ý").length;
 
-  // Hiển thị mục liên hệ
   const renderContactItem = ({ item }) => (
     <View style={FriendRequestStyles.contactItem}>
       <Image
