@@ -32,6 +32,59 @@ import {showToast} from "../../../../utils/AppUtils";
 import {socket} from "../../../../utils/socket";
 import FriendRequests from "./FriendRequests";
 
+const data_sample = [
+  { id: "1", name: "A Luyện", phone: "123456789", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn", birthday: "2025-03-07", isActive: true },
+  { id: "2", name: "A Tuấn", phone: "987654321", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn", birthday: "2025-03-08", isActive: false },
+  { id: "3", name: "A4", phone: "456789123", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn", birthday: "2025-03-09", isActive: true },
+  { id: "4", name: "A5", phone: "321654987", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn", birthday: "2025-03-10", isActive: false },
+  { id: "5", name: "Hải Anh", phone: "789123456", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn", birthday: "2025-04-02", isActive: true },
+  { id: "6", name: "Minh Kha", phone: "112233445", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn", birthday: "2025-04-07", isActive: false },
+  { id: "7", name: "Hoàng Anh", phone: "556677889", avatar: "https://i.ibb.co/1GpbPstC/z6381715733206-4acf9a917fb41bfef9f7af92498a9b33.jpg", statusType: "Đã kết bạn", birthday: "2025-04-08", isActive: true },
+  { id: "8", name: "Sunny Hiền", status: "Từ của số trò chuyện", date: "13/02", statusType: "Muốn kết bạn", isActive: true },
+  { id: "9", name: "Kiều Nương", status: "Muốn kết bạn", date: "12/02", statusType: "Muốn kết bạn", isActive: false },
+  { id: "10", name: "Nguyễn Phước Bình", status: "Muốn kết bạn", date: "11/02", statusType: "Muốn kết bạn", isActive: true },
+  { id: "11", name: "Đỗ Chí Tường", status: "Muốn kết bạn", date: "10/02", statusType: "Muốn kết bạn", isActive: false },
+  { id: "12", name: "Hiền", status: "Muốn kết bạn", date: "09/02", statusType: "Muốn kết bạn", isActive: true },
+  { id: "13", name: "Khắc Anh", status: "Muốn kết bạn", date: "08/02", statusType: "Muốn kết bạn", isActive: false },
+  { id: "14", name: "Trần Hoang", status: "Muốn kết bạn", date: "07/02", statusType: "Muốn kết bạn", isActive: true },
+  { id: "15", name: "User 9", status: "Muốn kết bạn", date: "06/02", statusType: "Muốn kết bạn", isActive: false },
+  { id: "16", name: "User 10", status: "Muốn kết bạn", date: "05/02", statusType: "Muốn kết bạn", isActive: true },
+  { id: "17", name: "User 11", status: "Muốn kết bạn", date: "04/02", statusType: "Muốn kết bạn", isActive: false },
+  { id: "18", name: "Ngô Thị Xong", status: "Từ gợi ý kết bạn", date: "02/02", statusType: "Đã gửi", isActive: true },
+  { id: "19", name: "Suggested 1", status: "Gợi ý", statusType: "Gợi ý", isActive: false },
+  { id: "20", name: "Suggested 2", status: "Gợi ý", statusType: "Gợi ý", isActive: true },
+];
+
+
+const groupData = [
+  { id: "2", name: "Fc Anh Tú", time: "10 phút", message: "A Tuấn GK: @Văn Hào Sport thêm bn đỏ 😍...", isActive: true },
+  { id: "3", name: "Bóng đá IUH 2024-2025", time: "4 giờ", message: "Hà Tạ Hồng: [Hình ảnh] Tình hình", isActive: true },
+  { id: "4", name: "CTV HAPAS HCM", time: "6 giờ", message: "Nga: [Link] Minh gửi bảng công tuần 4 ...", isActive: true },
+  { id: "5", name: "SinhVien_Nganh_SE_Khoa_17", time: "10 giờ", message: "Nguyen Thi HANH: Các bạn đã đăng ký tha...", isActive: true },
+  { id: "6", name: "BONG DA NAM CNTT 2025", time: "10 giờ", message: "Ngọc rội khỏi nhóm.", isActive: true },
+  { id: "7", name: "Buồn là nhậu", time: "12 giờ", message: "Nguyeen Quoc Anh: @Nguyeen Thi Thuy Vu ...", isActive: true },
+  { id: "8", name: "HỘI THAO 2025 MÔN BÓNG ĐÁ", time: "T4", message: "Bạn: Hí ae. Năm nay K16 tham gia", isActive: true },
+  { id: "9", name: "Group 9", time: "1 ngày", message: "Inactive group", isActive: false },
+  { id: "10", name: "Group 10", time: "2 ngày", message: "Inactive group", isActive: false },
+  { id: "11", name: "Group 11", time: "3 ngày", message: "Inactive group", isActive: false },
+  { id: "12", name: "Group 12", time: "4 ngày", message: "Inactive group", isActive: false },
+];
+
+
+const oaData = [
+  { id: "1", name: "Tìm thêm Official Account", description: "Official Account đang quan tâm" },
+  { id: "2", name: "Công an huyện Sơn Tịnh", description: "" },
+  { id: "3", name: "Fiza", description: "" },
+  { id: "4", name: "Nhà thuốc FPT Long Châu", description: "" },
+  { id: "5", name: "Trường Đại học Công nghiệp TP HCM", description: "" },
+  { id: "6", name: "Zalopay", description: "" },
+  { id: "7", name: "Zalo Sticker", description: "" },
+  { id: "8", name: "Zing MP3", description: "" },
+  { id: "9", name: "Z-Style - Phong Cách Zalo", description: "" },
+];
+
+const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
+
 const ContactScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState("Bạn bè");

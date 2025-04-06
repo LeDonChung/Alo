@@ -23,10 +23,7 @@ export const RegisterScreen = ({ navigation }) => {
             return;
         }
 
-        // Gửi yêu cầu API để lấy OTP (mặc định thành công và chuyển màn hình)
-        // await dispatch(sendOtp(phoneNumber));
-        // showToast("success", "top", "Thành công", "OTP đã được gửi!"); // Thông báo mặc định
-        navigation.navigate("otp"); // Chuyển sang màn hình OTP ngay lập tức
+        navigation.navigate("otp"); 
     };
     return (
         <SafeAreaView style={[GlobalStyles.container, { flex: 1, alignItems: "center", justifyContent: 'center' }]}>
