@@ -3,8 +3,11 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { GlobalStyles } from "../../styles/GlobalStyles"
 import IconMaterial from 'react-native-vector-icons/MaterialIcons'
 import * as SecureStore from 'expo-secure-store';
+import { useDispatch } from "react-redux";
+import { setUserLogin } from "../../redux/slices/UserSlice";
 
 export const AccountScreen = ({ navigation }) => {
+    const dispatch = useDispatch();
     return (
         <SafeAreaView style={GlobalStyles.container}>
             <View style={{ height: 150}}>
@@ -25,6 +28,7 @@ export const AccountScreen = ({ navigation }) => {
                     SecureStore.deleteItemAsync('accessToken');
                     SecureStore.deleteItemAsync('refreshToken');
                     SecureStore.deleteItemAsync('userLogin');
+                    dispatch(setUserLogin(null));
                     navigation.navigate('login')
                 }}>
                     <IconMaterial name="logout" size={24} color={"#2261E2"} />

@@ -9,7 +9,6 @@ const initialState = {
 
 const getProfile = createAsyncThunk('UserSlice/getProfile', async (token, { rejectWithValue }) => {
     try {
-        console.log("Axios instance: ", axiosInstance.headers);
         const response = await axiosInstance.get('/api/user/profile');
         return response.data;
     } catch (error) {
@@ -31,6 +30,14 @@ const uploadAvatar = createAsyncThunk('UserSlice/uploadAvatar', async (file, { r
         return rejectWithValue(error.response.data);
     }
 })
+const login = createAsyncThunk('UserSlice/login', async (user, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/auth/login', user);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response.data);
+    }
+});
 
 const uploadBackground = createAsyncThunk('UserSlice/uploadBackground', async (file, { rejectWithValue }) => {
     try {
@@ -59,8 +66,19 @@ const updateProfile = createAsyncThunk('UserSlice/updateProfile', async (user, {
 const UserSlice = createSlice({
     name: 'UserSlice',
     initialState: initialState,
-    reducers: {},
+    reducers: {
+        setUserLogin: (state, action) => {
+            state.userLogin = action.payload;
+        }
+    },
     extraReducers: (builder) => {
+        builder.addCase(login.pending, (state) => {
+            state.userLogin = null;
+        });
+        builder.addCase(login.fulfilled, (state, action) => {
+            SecureStore.setItemAsync("accessToken", action.payload.data.accessToken);
+            SecureStore.setItemAsync("refreshToken", action.payload.data.refreshToken);
+        });
         builder.addCase(uploadAvatar.pending, (state) => {
             state.avatar = null;
         });
@@ -123,6 +141,6 @@ const UserSlice = createSlice({
     }
 });
 
-export const { } = UserSlice.actions;
-export { uploadAvatar, uploadBackground, getProfile, updateProfile };
+export const { setUserLogin } = UserSlice.actions;
+export { uploadAvatar, uploadBackground, getProfile, updateProfile, login };
 export default UserSlice.reducer;

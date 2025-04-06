@@ -19,7 +19,7 @@ export const SearchByPhone = (isOpenAdd) => {
 
     // xac nhan xoa ban be
     const [isOpenConfirm, setIsOpenConfirm] = useState(false);
-
+    const [isLoadingPhone, setIsLoadingPhone] = useState(false);
     useEffect(() => {
     }, [info, isOpenAdd]);
 
@@ -48,6 +48,7 @@ export const SearchByPhone = (isOpenAdd) => {
     }, []);
 
     const handleSearch = async () => {
+        setIsLoadingPhone(true);
         if (!phoneNumber) return;
         try {
             const result = await dispatch(getFriendByPhone(phoneNumber));
@@ -57,6 +58,7 @@ export const SearchByPhone = (isOpenAdd) => {
         } catch (error) {
             console.error("Lỗi khi tìm kiếm bạn bè:", error);
         }
+        setIsLoadingPhone(false);
     };
 
     const sendFriend = async () => {
@@ -250,10 +252,16 @@ export const SearchByPhone = (isOpenAdd) => {
                                         Hủy
                                     </button>
                                     <button
-                                        className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                                        className="px-4 py-2 bg-blue-500 text-gray-800 rounded  hover:bg-blue-600 text-white"
                                         onClick={() => handleSearch()}
                                     >
-                                        Tìm kiếm
+                                        {isLoadingPhone ? (
+                                            <div className="flex justify-center items-center">
+                                                <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                                            </div>
+                                        ) : (
+                                            "Tìm kiếm"
+                                        )}
                                     </button>
                                 </div>
                             </>

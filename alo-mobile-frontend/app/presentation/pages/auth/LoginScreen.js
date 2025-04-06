@@ -10,14 +10,15 @@ import {
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { GlobalStyles } from "../../styles/GlobalStyles";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { axiosInstance } from "../../../api/APIClient";
-import * as SecureStore from "expo-secure-store";
+import { useDispatch } from "react-redux";
+import { getProfile, login } from "../../redux/slices/UserSlice";
 
 export const LoginScreen = ({ navigation }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const dispatch = useDispatch();
 
   const handleLogin = async () => {
     setErrorMessage("");
@@ -28,21 +29,18 @@ export const LoginScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
-      const response = await axiosInstance.post("/api/auth/login", {
+      const user = {
         phoneNumber,
         password,
-      });
-
-      if (response.data.status === 200) {
-        const { accessToken, refreshToken } = response.data.data;
-
-        await SecureStore.setItemAsync("accessToken", accessToken);
-        await SecureStore.setItemAsync("refreshToken", refreshToken);
-
-        navigation.navigate("inapp");
-      } else {
-        setErrorMessage(response.data.message || "Số điện thoại hoặc mật khẩu không đúng.");
       }
+      await dispatch(login(user)).unwrap().then((response) => {
+        dispatch(getProfile()).then((res) => {
+          navigation.navigate("inapp");
+
+        })
+      }).catch((e) => { 
+        setErrorMessage(e.data.message || "Số điện thoại hoặc mật khẩu không đúng.");
+      })
     } catch (error) {
       console.log("Login Error: ", error);
       setErrorMessage("Số điện thoại hoặc mật khẩu không đúng.");
@@ -86,13 +84,12 @@ export const LoginScreen = ({ navigation }) => {
       {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
 
       <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
-        {/* {isLoading ?  */}
-        (
+        {loading ? (
           <ActivityIndicator size="small" color="#fff" />
         ) : (
           <Text style={{ fontSize: 16, fontWeight: "bold", color: "#fff" }}>Đăng nhập với mật khẩu</Text>
-        )
-        {/* } */}
+         ) 
+        }
 
 
       </TouchableOpacity>
