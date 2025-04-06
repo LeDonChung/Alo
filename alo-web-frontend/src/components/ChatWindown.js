@@ -64,6 +64,7 @@ const ChatWindow = () => {
     await dispatch(sendMessage({ message, file })).then((res) => {
       dispatch(setMessages([...messages, res.payload.data]));
       message.sender = userLogin;
+      message.fileLink = res.payload.data.fileLink;
       socket.emit('send-message', {
         conversation: conversation,
         message: message
