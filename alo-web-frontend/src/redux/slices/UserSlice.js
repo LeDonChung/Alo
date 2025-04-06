@@ -81,6 +81,24 @@ const login = createAsyncThunk('UserSlice/login', async (request, { rejectWithVa
     }
 });
 
+const generateOtp = createAsyncThunk('UserSlice/generateOtp', async (phoneNumber, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/auth/generate-otp?phoneNumber=' + phoneNumber);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response.data);
+    }
+});
+
+const verifyOtp = createAsyncThunk('UserSlice/verifyOtp', async (request, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/auth/verify-otp?phoneNumber=' + request.phoneNumber + '&otp=' + request.otp);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response.data);
+    }
+});
+
 const UserSlice = createSlice({
     name: 'UserSlice',
     initialState: initialState,
@@ -180,9 +198,29 @@ const UserSlice = createSlice({
         });
         builder.addCase(logout.rejected, (state, action) => {
         });
+
+        builder.addCase(generateOtp.pending, (state) => {
+        });
+
+        builder.addCase(generateOtp.fulfilled, (state, action) => {
+        });
+
+        builder.addCase(generateOtp.rejected, (state, action) => {
+        });
+
+        builder.addCase(verifyOtp.pending, (state) => {
+        });
+
+        builder.addCase(verifyOtp.fulfilled, (state, action) => {
+            
+        });
+
+        builder.addCase(verifyOtp.rejected, (state, action) => {
+            
+        });
     }
 });
 
 export const { setUserOnlines, setUserLogin } = UserSlice.actions;
-export { uploadAvatar, uploadBackground, getProfile, updateProfile, register, login, logout };
+export { uploadAvatar, uploadBackground, getProfile, updateProfile, register, login, logout, generateOtp, verifyOtp };
 export default UserSlice.reducer;
