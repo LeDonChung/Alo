@@ -4,7 +4,8 @@ import * as SecureStore from 'expo-secure-store';
 
 const initialState = {
     avatar: null,
-    userLogin: null
+    userLogin: null,
+    userOnlines: [],
 };
 
 const getProfile = createAsyncThunk('UserSlice/getProfile', async (token, { rejectWithValue }) => {

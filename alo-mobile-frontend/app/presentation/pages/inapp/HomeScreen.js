@@ -5,7 +5,7 @@ import { GlobalStyles } from "../../styles/GlobalStyles";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import { useDispatch, useSelector } from "react-redux";
 import socket from '../../../utils/socket'
-import { setUserLogin } from '../../redux/slices/UserSlice'
+import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice'
 import { getAllConversation } from '../../redux/slices/ConversationSlice'
 
 export const HomeScreen = ({ navigation }) => {
@@ -13,6 +13,8 @@ export const HomeScreen = ({ navigation }) => {
   const [tab, setTab] = useState('all');
   const dispatch = useDispatch();
   const userLogin = useSelector((state) => state.user.userLogin)
+  const userOnlines = useSelector(state => state.user.userOnlines);
+
   const conversations = useSelector(state => state.conversation.conversations);
 
   const init = async () => {
@@ -32,10 +34,16 @@ export const HomeScreen = ({ navigation }) => {
   useEffect(() => {
     init();
   }, []);
+  useEffect(() => {
+    socket.on("users-online", ({ userIds }) => {
+      dispatch(setUserOnlines(userIds));
+    });
+  }, []);
 
 
   useEffect(() => {
     console.log("conversations data:", conversations)
+    console.log("userOnlines data:", userOnlines)
   }, [conversations]);
  
   const renderItem = ({ item }) => {
@@ -92,7 +100,9 @@ export const HomeScreen = ({ navigation }) => {
     return (
       <TouchableOpacity
         onPress={() => {
-          navigation.navigate("chat", { conversation: item });
+          navigation.navigate("chat", { conversation: item, friend: friend });
+          socket.emit('join_conversation', item.id);
+
         }}
         style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: '#EDEDED' }}
       >
@@ -145,7 +155,6 @@ export const HomeScreen = ({ navigation }) => {
         keyExtractor={(item) => item.id}
       />
     </View>
-      <Button title="Go to Chat" onPress={() => navigation.navigate("chat")} />
     </SafeAreaView>
   );
 };

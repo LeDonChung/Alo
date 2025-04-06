@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
 import { View, Text, FlatList, Image, TextInput, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import AntDesign from 'react-native-vector-icons/AntDesign';
+import { axiosInstance } from '../../../api/APIClient';
+import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
+import socket from '../../../utils/socket';
 
 const messages = [
   { id: '1', type: 'received', text: 'anh yeu em', time: '17:45', avatar: 'https://placehold.co/40x40' },
@@ -18,7 +22,48 @@ const messages = [
   { id: '12', type: 'received', image: 'https://placehold.co/100x100', time: '13:05', avatar: 'https://placehold.co/40x40' }
 ];
 
-export const ChatScreen = ({ navigation }) => {
+export const ChatScreen = ({ route, navigation }) => {
+  const [lastLogout, setLastLogout] = useState(null);
+  const { conversation, friend } = route.params;
+  const userLogin = useSelector(state => state.user.userLogin);
+  const userOnlines = useSelector(state => state.user.userOnlines);
+
+  const isFriendOnline = (userId) => {
+    return userOnlines.includes(userId);
+  };
+  useEffect(() => {
+    console.log("conversationId", conversation);
+    console.log("friend", friend.id);
+    console.log("userOnlines", userOnlines);
+    console.log("userLogin", userLogin);
+    console.log("isFriendOnline", isFriendOnline(friend.id));
+  }, [conversation, friend, userOnlines]);
+    useEffect(() => {
+      socket.on("users-online", ({ userIds }) => {
+        dispatch(setUserOnlines(userIds));
+      });
+    }, []);
+
+  const getLastLoginMessage = () => {
+    if(!lastLogout) return 'Chưa truy cập';
+    const now = new Date();
+    const logoutTime = new Date(lastLogout);
+    const diffInMs = now - logoutTime;
+    const diffInSec = Math.floor(diffInMs / 1000);
+    const diffInMin = Math.floor(diffInSec / 60);
+    const diffInHours = Math.floor(diffInMin / 60);
+
+    if (diffInSec < 60) return `Truy cập ${diffInSec} giây trước`;
+    if (diffInMin < 60) return `Truy cập ${diffInMin} phút trước`;
+    if (diffInHours < 24) return `Truy cập ${diffInHours} giờ trước`;
+    return `Truy cập ${logoutTime.toLocaleDateString('vi-VN')}`;
+  }
+  const handleGetLastLogout = async (userId) => {
+    await axiosInstance.get(`/api/user/get-profile/${userId}`).then((res) => {
+      setLastLogout(res.data.data.lastLogout);
+    });
+  };
+
   const renderItem = ({ item }) => (
     <View style={{
       flexDirection: 'row',
@@ -47,12 +92,16 @@ export const ChatScreen = ({ navigation }) => {
   return (
     <View style={{ flex: 1, backgroundColor: '#F3F3F3' }}>
       {/* Header */}
-      <View style={{backgroundColor: '#007AFF', padding: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{backgroundColor: '#007AFF', padding: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 40 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <AntDesign name="left" size={20} color="white" onPress={() => navigation.goBack()} />
           <View style={{ marginLeft: 20 }}>
-            <Text style={{ color: 'white', fontSize: 18 }}>Tôn</Text>
-            <Text style={{ color: 'white', fontSize: 12 }}>Truy cập 32 phút trước</Text>
+            <Text style={{ color: 'white', fontSize: 18 }}>{friend?.fullName}</Text>
+            <Text style={{ color: 'white', fontSize: 12 }}>
+            {isFriendOnline(conversation.memberUserIds.find(v => v !== userLogin.id)) 
+              ? 'Đang hoạt động' 
+              : getLastLoginMessage(lastLogout)}
+            </Text>
           </View>
         </View>
         <View style={{ flexDirection: 'row' }}>
