@@ -44,7 +44,7 @@ export const ProfileScreen = ({ navigation }) => {
                 userLogin && (
                     <View>
                         <View >
-                            <Image source={{ uri: userLogin.avatarLink }} style={{ width: 100, height: 100, borderRadius: 50, marginHorizontal: 'auto', marginVertical: 10 }} />
+                            <Image source={{ uri: userLogin.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" }} style={{ width: 100, height: 100, borderRadius: 50, marginHorizontal: 'auto', marginVertical: 10 }} />
                         </View>
                         <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center' }}>
                             <IconF6 name="circle-user" size={24} color={"#2261E2"} />
@@ -59,7 +59,7 @@ export const ProfileScreen = ({ navigation }) => {
                             <View style={{ marginLeft: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1, borderBottomWidth: 1, borderBottomColor: 'gray', paddingVertical: 15 }}>
                                 <Text style={{ fontSize: 16 }}>Ngày sinh</Text>
                                 <Text style={{ fontSize: 16, fontWeight: 'bold' }}>{
-                                    userLogin.birthday ? new Date(userLogin.birthday).toLocaleDateString() : 'Chưa cập nhật'
+                                    userLogin.birthDay ? new Date(userLogin.birthDay).toLocaleDateString() : 'Chưa cập nhật'
                                 }</Text>
                             </View>
                         </TouchableOpacity>

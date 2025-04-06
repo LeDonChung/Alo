@@ -6,6 +6,7 @@ import { GlobalStyles } from "../../styles/GlobalStyles";
 import { showToast } from "../../../utils/AppUtils";
 import { useDispatch, useSelector } from "react-redux";
 import { setUserRegister } from "../../redux/slices/RegisterSlice";
+import { generateOtp, verifyOtp } from "../../redux/slices/UserSlice";
 
 
 export const OTPScreen = ({ navigation }) => {
@@ -15,7 +16,7 @@ export const OTPScreen = ({ navigation }) => {
     const [isCounting, setIsCounting] = useState(true);
     const userRegister = useSelector(state => state.register.userRegister)
     const dispatch = useDispatch();
-    
+
     useEffect(() => {
         handleSendOTP();
     }, []);
@@ -31,15 +32,43 @@ export const OTPScreen = ({ navigation }) => {
         return () => clearInterval(interval);
     }, [isCounting, timer]);
 
-    const handleSendOTP = () => {
+    const handleSendOTP = async () => {
         if (!isCounting) {
-            setTimer(59);
-            setIsCounting(true);
-            showToast("success", "top", "OTP Đã Gửi", "Vui lòng kiểm tra tin nhắn của bạn.");
+
+            if (!userRegister.phoneNumber) {
+                showToast("error", "top", "Thông báo", "Vui lòng nhập số điện thoại.");
+                return;
+            }
+
+            const phoneNumber = userRegister.phoneNumber.startsWith('0') ? `+84${userRegister.phoneNumber.slice(1)}` : userRegister.phoneNumber;
+            try {
+                const response = await dispatch(generateOtp(phoneNumber)).unwrap();
+                setTimer(59); 
+                setIsCounting(true);
+                showToast("success", "top", "OTP Đã Gửi", "Vui lòng kiểm tra tin nhắn của bạn.");
+            } catch (error) {
+                console.error("Error generating OTP:", error);
+                showToast("error", "top", "Thông báo", error.message || 'Có lỗi xảy ra khi gửi OTP');
+            }
+
+
         }
     };
-    const handleContinue = () => {
-        navigation.navigate("registerInformation"); 
+    const handleContinue = async () => {
+        if (!otp) {
+            showToast("error", "top", "Thông báo", "Vui lòng nhập OTP.");
+            return; 
+        }
+
+        const phoneNumber = userRegister.phoneNumber.startsWith('0') ? `+84${userRegister.phoneNumber.slice(1)}` : userRegister.phoneNumber;
+        try {
+            const response = await dispatch(verifyOtp({ phoneNumber, otp })).unwrap();
+            showToast("success", "top", "Thông báo", response.message || 'Có lỗi xảy ra khi gửi OTP');
+            navigation.navigate("registerInformation");
+        } catch (error) { 
+            console.error("Error verifying OTP:", error);
+            showToast("error", "top", "Thông báo", error.message || 'Có lỗi xảy ra khi gửi OTP');
+        }
     };
     return (
         <SafeAreaView style={[GlobalStyles.container, { flex: 1, alignItems: "center", justifyContent: 'center' }]}>
@@ -48,9 +77,9 @@ export const OTPScreen = ({ navigation }) => {
 
             <View style={styles.inputContainer}>
                 <Icon name="cellphone" size={20} color="gray" style={styles.icon} />
-                <TextInput value={userRegister.phoneNumber}  placeholder="Số điện thoại" style={styles.input} keyboardType="phone-pad" editable={isEdit} onChangeText={(value) => {
-                        dispatch(setUserRegister({...userRegister, phoneNumber: value}))
-                    }}  />
+                <TextInput value={userRegister.phoneNumber} placeholder="Số điện thoại" style={styles.input} keyboardType="phone-pad" editable={isEdit} onChangeText={(value) => {
+                    dispatch(setUserRegister({ ...userRegister, phoneNumber: value }))
+                }} />
                 <TouchableOpacity onPress={() => setIsEdit(true)}>
                     <Icon name="pencil" size={20} color="gray" style={styles.icon} />
                 </TouchableOpacity>

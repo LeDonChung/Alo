@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Button, Image, Text, TextInput, TouchableOpacity, View, Platform, Alert, ActivityIndicator } from "react-native";
+import { Button, Image, Text, TextInput, TouchableOpacity, View, Platform, Alert, ActivityIndicator, Linking } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import * as ImagePicker from "expo-image-picker";
 import IconMaterial from "react-native-vector-icons/MaterialIcons";
@@ -46,21 +46,35 @@ export const UpdateProfileScreen = ({ navigation }) => {
         }
     }; 
 
-    // Mở thư viện ảnh để chọn ảnh đại diện
     const pickImage = async () => {
         let permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    
         if (permissionResult.granted === false) {
-            Alert.alert("Quyền bị từ chối", "Bạn cần cấp quyền để chọn ảnh.");
+            Alert.alert(
+                "Quyền bị từ chối",
+                "Bạn cần cấp quyền để chọn ảnh. Muốn mở cài đặt không?",
+                [
+                    {
+                        text: "Hủy",
+                        style: "cancel"
+                    },
+                    {
+                        text: "Mở Cài đặt",
+                        onPress: () => Linking.openSettings(),
+                        style: "default"
+                    }
+                ]
+            );
             return;
         }
-
+    
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
-            aspect: [1, 1], // Tỷ lệ 1:1
+            aspect: [1, 1],
             quality: 1
         });
-
+    
         if (!result.canceled) {
             setIsLoading(true);
             const file = {
@@ -68,7 +82,7 @@ export const UpdateProfileScreen = ({ navigation }) => {
                 type: getMimeType(result.assets[0].uri),
                 name: result.assets[0].uri.split('/').pop(),
             };
-
+    
             await dispatch(uploadAvatar(file));
             showToast("success", "top", "Cập nhật ảnh đại diện", "Cập nhật ảnh đại diện thành công.");
             setIsLoading(false);
