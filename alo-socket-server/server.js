@@ -30,7 +30,7 @@ io.on("connection", (socket) => {
     console.log("Người dùng kết nối: " + socket.id);
 
     socket.on('login', async (userId) => {
-
+        console.log("Người dùng đăng nhập: " + userId);
         const loginTime = Date.now();
 
         // Lưu thông tin kết nối với userId và socketId vào Redis
@@ -41,6 +41,7 @@ io.on("connection", (socket) => {
         }));
 
         const userIds = await getUserOnline();
+        console.log(`Danh sách user online: ${userIds}`);
 
         io.emit('users-online', { userIds });
     });
@@ -82,6 +83,15 @@ io.on("connection", (socket) => {
         io.emit('users-online', { userIds });
     });
 
+    socket.on("leave_conversation", async (conversationId) => {
+        socket.leave(conversationId);
+        console.log(`Người dùng ${socket.id} đã rời khỏi phòng ${conversationId}`);
+
+        const userIds = await getUserOnline();
+        io.emit('users-online', { userIds });
+
+    });
+
     socket.on('send-message', ({ conversation, message }) => {
         console.log(`Người dùng ${socket.id} đã gửi tin nhắn: ${message} trong phòng ${conversation.id}`);
 
@@ -89,6 +99,58 @@ io.on("connection", (socket) => {
         handleUpdateLastMessage(conversation, message);
 
         socket.to(conversation.id).emit('receive-message', message);
+    });
+
+    socket.on('send-friend-request', async (data) => {
+        const receiveId = data.userId === data.senderId ? data.friendId : data.userId;
+        
+        // userId nguoi nhan
+        const socketId = await findSocketIdByUserId(receiveId);
+        socket.to(socketId).emit('receive-friend-request', data);
+    });
+
+    socket.on('unfriend-request', async (data) => {
+        const receiveId = data.friendId;          
+        // userId nguoi nhan
+        const socketId = await findSocketIdByUserId(receiveId);
+        socket.to(socketId).emit('receive-unfriend', data);
+    });
+
+    socket.on('block-request', async (data) => {
+        const receiveId = data.friendId;
+        
+        // userId nguoi nhan
+        const socketId = await findSocketIdByUserId(receiveId);
+        socket.to(socketId).emit('receive-block', data);
+    });
+
+    socket.on('unblock-friend', async (data) => {
+        const receiveId = data.friendId;
+        
+        // userId nguoi nhan
+        const socketId = await findSocketIdByUserId(receiveId);
+        socket.to(socketId).emit('receive-unblock', data);
+    });
+
+    socket.on('cancel-friend-request', async (data) => {
+        const receiveId = data.friendId === data.senderId ? data.userId : data.friendId;      
+        // userId nguoi nhan
+        const socketId = await findSocketIdByUserId(receiveId);
+        socket.to(socketId).emit('receive-cancle-friend-request', data);
+    });
+
+    socket.on('accept-friend-request', async (data) => {
+        const receiveId = data.friendId;        
+        // userId nguoi nhan
+        const socketId = await findSocketIdByUserId(receiveId);
+        socket.to(socketId).emit('receive-accept-friend', data);
+    });
+
+    socket.on('reject-friend-request', async (data) => {
+        const receiveId = data.friendId;        
+        // userId nguoi nhan
+        const socketId = await findSocketIdByUserId(receiveId);
+        socket.to(socketId).emit('receive-reject-friend', data);
     });
 
     const findSocketIdByUserId = async (userId) => {
@@ -113,6 +175,8 @@ io.on("connection", (socket) => {
             }
         }
     }
+
+
 
 });
 

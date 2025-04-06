@@ -11,18 +11,23 @@ export const Navigation = () => {
     const userLogin = useSelector((state) => state.user.userLogin);
 
     const init = async () => {
+        console.log("HIIII")
         if (!userLogin) {
             const user = JSON.parse(localStorage.getItem('userLogin'));
             const accessToken = localStorage.getItem('accessToken');
             if (user && accessToken) {
+                console.log("SAVE")
                 dispatch(setUserLogin(user));
             } else {
                 window.location.href = '/login';
             }
-            socket.emit('login', userLogin?.id);
         }
         await dispatch(getAllConversation());
     }
+
+    useEffect(() => {
+        socket.emit('login', userLogin?.id);
+    }, [userLogin?.id]);
     useEffect(() => {
         init();
     }, []);

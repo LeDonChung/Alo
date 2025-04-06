@@ -6,6 +6,7 @@ exports.sendFriendRequest = async (req, res) => {
         const request = {
             userId: req.body.userId,
             friendId: req.body.friendId,
+            contentRequest: req.body.contentRequest,
             status: 0, // 0: pending, 1: accepted, 2: reject
         }
         // Kiểm tra friendId có tồn tại không
@@ -20,7 +21,7 @@ exports.sendFriendRequest = async (req, res) => {
         // Kiểm tra đã gửi yêu cầu kết bạn chưa
         const friend = await friendService.getFriend(request);
 
-        if (friend) {
+        if (friend?.status === 0) {
             return res.status(400).json({
                 status: 400,
                 message: "Đã gửi yêu cầu kết bạn.",
@@ -131,6 +132,122 @@ exports.rejectFriendRequest = async (req, res) => {
     }
 }
 
+exports.unfriendRequest = async (req, res) => {
+    try {
+        const request = {
+            userId: req.body.userId,
+            friendId: req.body.friendId,
+        }
+        const friendRequest = await friendService.unfriendRequest(request);
+        if (!friendRequest) {
+            return res.status(400).json({
+                status: 400,
+                message: "Yêu cầu hủy kết bạn không hợp lệ.",
+                data: null
+            });
+        }
+        return res.json({
+            status: 200,
+            data: friendRequest,
+            message: "Đã hủy kết bạn."
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
+
+exports.blockFriendRequest = async (req, res) => {
+    try {
+        const request = {
+            userId: req.body.userId,
+            friendId: req.body.friendId,
+        }
+        const friendRequest = await friendService.blockFriendRequest(request);
+        if (!friendRequest) {
+            return res.status(400).json({
+                status: 400,
+                message: "Yêu cầu chặn không hợp lệ.",
+                data: null
+            });
+        }
+        return res.json({
+            status: 200,
+            data: friendRequest,
+            message: "Đã chặn bạn thành công."
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
+
+exports.unblockFriendRequest = async (req, res) => {
+    try {
+        const request = {
+            userId: req.body.userId,
+            friendId: req.body.friendId,
+        }
+        const friendRequest = await friendService.unblockFriendRequest(request);
+        if (!friendRequest) {
+            return res.status(400).json({
+                status: 400,
+                message: "Yêu cầu mở chặn không hợp lệ.",
+                data: null
+            });
+        }
+        return res.json({
+            status: 200,
+            data: friendRequest,
+            message: "Đã mở chặn bạn thành công."
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
+
+exports.cancelFriendRequest = async (req, res) => {
+    try {
+        const request = {
+            userId: req.body.userId,
+            friendId: req.body.friendId,
+        }
+        const friendRequest = await friendService.cancelFriendRequest(request);
+        if (!friendRequest) {
+            return res.status(400).json({
+                status: 400,
+                message: "Yêu cầu hủy lời mời kết bạn không hợp lệ.",
+                data: null
+            });
+        }
+        return res.json({
+            status: 200,
+            data: friendRequest,
+            message: "Đã hủy lời mời kết bạn."
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
+
 exports.getFriendRequests = async (req, res) => {
     try {
         const userId = req.query.userId;
@@ -154,19 +271,39 @@ exports.getFriends = async (req, res) => {
     try {
         const userId = req.query.userId;
         const friends = await friendService.getFriends(userId);
-        // {userId: 1, friendId: 2, status: 1}
-        // -> [userId]
-        const friendOfMe = friends.map(friend => {
-            if (friend.userId === userId) {
-                return friend.friendId;
-            }
-            return friend.userId;
-        });
-        const users = await userService.getUsersByIds(friendOfMe);
+        
         return res.json({
             status: 200,
-            data: users,
+            data: friends,
             message: "Danh sách bạn bè."
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
+
+exports.getFriendByPhoneNumber = async (req, res) => {
+    try {
+
+        // Lấy Authorization từ header
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        const params = {
+            phoneNumber: req.query.phoneNumber,
+            userId: userService.getUserIdFromToken(token)
+        }
+        console.log("params", params);
+
+        const friend = await friendService.getFriendByPhoneNumber(params);
+        return res.json({
+            status: 200,
+            data: friend,
+            message: "Thông tin người dùng."
         });
     } catch (err) {
         console.error(err);
