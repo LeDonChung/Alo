@@ -3,40 +3,112 @@ import {  Button, View, Text, FlatList, Image,  TouchableOpacity,  TextInput,} f
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GlobalStyles } from "../../styles/GlobalStyles";
 import Icon from "react-native-vector-icons/FontAwesome5";
-import { getFriends } from "../../redux/slices/FriendSlice";
 import { useDispatch, useSelector } from "react-redux";
-import { use } from "react";
+import socket from '../../../utils/socket'
+import { setUserLogin } from '../../redux/slices/UserSlice'
+import { getAllConversation } from '../../redux/slices/ConversationSlice'
 
 export const HomeScreen = ({ navigation }) => {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState('all');
-  const friends = useSelector((state) => state.friend.friends);
   const dispatch = useDispatch();
+  const userLogin = useSelector((state) => state.user.userLogin)
+  const conversations = useSelector(state => state.conversation.conversations);
+
+  const init = async () => {
+    if(!userLogin) {
+      const user = JSON.parse(await SecureStore.getItemAsync("userLogin"));
+      const accessToken = await SecureStore.getItemAsync("accessToken");
+      if(user && accessToken) {
+        console.log("SAVE")
+        dispatch(setUserLogin(user));
+    }
+    }
+    await dispatch(getAllConversation());
+  }
+  useEffect(() => {
+    socket.emit('login', userLogin?.id);
+  }, [userLogin?.id]);
+  useEffect(() => {
+    init();
+  }, []);
+
 
   useEffect(() => {
-    const fetchFriends = async () => {
-      try {
-        await dispatch(getFriends());
-      } catch (error) {
-        console.error("Error fetching friends:", error);
+    console.log("conversations data:", conversations)
+  }, [conversations]);
+ 
+  const renderItem = ({ item }) => {
+    const friend = item.members.find(member => member.id !== userLogin.id);
+  
+    const getLastMessage = () => {
+      if (!item.lastMessage) return '';
+  
+      const message = item.lastMessage;
+      let content = message.content;
+  
+      switch (message.messageType) {
+        case 'sticker':
+          content = 'Sticker';
+          break;
+        case 'image':
+          content = 'Hình ảnh';
+          break;
+        case 'file':
+          content = 'Tệp tin';
+          break;
+        case 'video':
+          content = 'Video';
+          break;
+      }
+  
+      if (message.senderId === userLogin.id) {
+        return 'Bạn: ' + content;
+      } else {
+        return friend?.fullName + ': ' + content;
       }
     };
-    fetchFriends();
-  }, [dispatch]);
-
-  useEffect(() => {
-    console.log("Friends data:", friends)
-  }, [friends]);
- 
-  const renderItem = ({ item }) => (
-    <View style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: '#EDEDED' }}>
-      <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center' }}>
-        <Image source={{ uri: item.friendInfo.avatarLink }} style={{ width: 50, height: 50, borderRadius: 25, marginRight: 10 }} />
-        <Text style={{ fontSize: 16 }}>{item.friendInfo.fullName}</Text>
-      </View>
-      <Text style={{ color: 'gray', fontSize: 12 }}>{item.time}</Text>
-    </View>
-  );
+  
+    const getLastTime = () => {
+      if (!item.lastMessage?.timestamp) return '';
+      const now = new Date();
+      const timeX = new Date(item.lastMessage.timestamp);
+      const diffInMs = now - timeX;
+      const diffInSec = Math.floor(diffInMs / 1000);
+      const diffInMin = Math.floor(diffInSec / 60);
+      const diffInHours = Math.floor(diffInMin / 60);
+  
+      if (diffInSec < 60) {
+        return 'Vài giây';
+      } else if (diffInMin < 60) {
+        return `${diffInMin} phút`;
+      } else if (diffInHours < 24) {
+        return `${diffInHours} giờ`;
+      } else {
+        return timeX.toLocaleDateString('vi-VN');
+      }
+    };
+  
+    return (
+      <TouchableOpacity
+        onPress={() => {
+          navigation.navigate("chat", { conversation: item });
+        }}
+        style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: '#EDEDED' }}
+      >
+        <Image
+          source={{ uri: friend?.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg' }}
+          style={{ width: 50, height: 50, borderRadius: 25, marginRight: 10 }}
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontSize: 16, fontWeight: '500' }}>{friend?.fullName}</Text>
+          <Text style={{ fontSize: 14, color: 'gray' }} numberOfLines={1}>{getLastMessage()}</Text>
+        </View>
+        <Text style={{ fontSize: 12, color: 'gray', marginLeft: 8 }}>{getLastTime()}</Text>
+      </TouchableOpacity>
+    );
+  };
+  
 
   return (
     <SafeAreaView style={GlobalStyles.container}>
@@ -68,9 +140,9 @@ export const HomeScreen = ({ navigation }) => {
 
       {/* Chat List */}
       <FlatList
-        data={friends}
+        data={conversations}
         renderItem={renderItem}
-        keyExtractor={(item) => item.friendId}
+        keyExtractor={(item) => item.id}
       />
     </View>
       <Button title="Go to Chat" onPress={() => navigation.navigate("chat")} />
