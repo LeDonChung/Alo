@@ -177,7 +177,7 @@ const ProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
         <div className="fixed inset-0 bg-black opacity-50 z-40"></div>
 
         {/* Modal */}
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex justify-center items-center">
+        <div className="fixed inset-0 flex justify-center items-center z-50">
             <div className="bg-white rounded-lg shadow-lg w-[400px]">
                 {/* Header */}
                 <div className="relative">
@@ -251,14 +251,21 @@ const UpdateProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
     const userLogin = useSelector((state) => state.user.userLogin);
     const [name, setName] = useState(userLogin ? userLogin.fullName : "");
 
-    // Lấy thông tin ngày sinh từ userLogin và khởi tạo giá trị cho selectedDay, selectedMonth, selectedYear
-    const birthday = new Date(userLogin ? userLogin.birthDay : "2003-08-01");  // Chuyển đổi ngày sinh thành đối tượng Date
-    const [selectedDay, setSelectedDay] = useState(birthday.getDate().toString().padStart(2, '0'));  // Lấy ngày sinh
-    const [selectedMonth, setSelectedMonth] = useState((birthday.getMonth() + 1).toString().padStart(2, '0'));  // Lấy tháng (tháng bắt đầu từ 0)
-    const [selectedYear, setSelectedYear] = useState(birthday.getFullYear().toString());  // Lấy năm sinh
-    const [gender, setGender] = useState(userLogin ? userLogin.gender : "nam");
+    // Xác định ngày sinh từ userLogin hoặc mặc định là ngày hôm nay
+    let initialBirthday;
+    if (userLogin && userLogin.birthDay) {
+        initialBirthday = new Date(userLogin.birthDay); // Giả sử birthDay là chuỗi "YYYY-MM-DD"
+    } else {
+        initialBirthday = new Date(); // Mặc định là ngày hôm nay
+    }
 
-    console.log(selectedDay, selectedMonth, selectedYear, userLogin, birthday);
+    const [selectedDay, setSelectedDay] = useState(initialBirthday.getDate().toString().padStart(2, '0'));
+    const [selectedMonth, setSelectedMonth] = useState((initialBirthday.getMonth() + 1).toString().padStart(2, '0')); // Tháng bắt đầu từ 0
+    const [selectedYear, setSelectedYear] = useState(initialBirthday.getFullYear().toString());
+    const [gender, setGender] = useState(userLogin ? userLogin.gender : "Nam"); // Mặc định là "Nam"
+
+    console.log(selectedDay, selectedMonth, selectedYear, userLogin, initialBirthday);
+
     // Tạo danh sách ngày dựa trên tháng & năm
     const [days, setDays] = useState([]);
 
@@ -270,9 +277,14 @@ const UpdateProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
 
     // Tính lại số ngày trong tháng khi tháng hoặc năm thay đổi
     useEffect(() => {
-        const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+        const daysInMonth = new Date(selectedYear, selectedMonth - 1, 0).getDate(); // -1 vì tháng trong JS bắt đầu từ 0
         setDays(Array.from({ length: daysInMonth }, (_, i) => (i + 1).toString().padStart(2, "0")));
+        // Đảm bảo selectedDay không vượt quá số ngày trong tháng
+        if (parseInt(selectedDay) > daysInMonth) {
+            setSelectedDay(daysInMonth.toString().padStart(2, '0'));
+        }
     }, [selectedMonth, selectedYear]);
+
     const handlerActionUpdateProfile = async (e) => {
         e.preventDefault();
         setIsLoading(true);
@@ -281,106 +293,135 @@ const UpdateProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
             fullName: name,
             gender: gender,
             birthDay: `${selectedYear}-${selectedMonth}-${selectedDay}`
+        };
+
+        try {
+            await dispatch(updateProfile(userUpdate));
+            setIsLoading(false);
+            showToast("Cập nhật thông tin thành công", "success");
+            setShowUpdateModal(false);
+        } catch (error) {
+            setIsLoading(false);
+            showToast("Có lỗi khi cập nhật thông tin", "error");
+            console.error("Error updating profile:", error);
         }
-        await dispatch(updateProfile(userUpdate))
-        setIsLoading(false);
-        showToast("Cập nhật thông tin thành công", "success");
-        setShowUpdateModal(false);
-    }
+    };
+
     return (
         <>
             <div className="fixed inset-0 bg-black opacity-50 z-40"></div>
-            {
-                userLogin && (
-                    <div className="fixed inset-0 flex justify-center items-center z-50">
-                        <form id="updateProfile" onSubmit={(e) => {
-                            handlerActionUpdateProfile(e);
-                        }}>
-                            <div className="bg-white rounded-lg shadow-lg w-[400px] p-4">
-                                <div className="flex items-center">
-                                    <button
-                                        className="text-gray-600 mr-2"
-                                        onClick={() => { setShowUpdateModal(false); setShowProfileModal(true); }}
+            {userLogin && (
+                <div className="fixed inset-0 flex justify-center items-center z-50">
+                    <form id="updateProfile" onSubmit={(e) => handlerActionUpdateProfile(e)}>
+                        <div className="bg-white rounded-lg shadow-lg w-[400px] p-4">
+                            <div className="flex items-center">
+                                <button
+                                    className="text-gray-600 mr-2"
+                                    onClick={() => { setShowUpdateModal(false); setShowProfileModal(true); }}
+                                >
+                                    <i className="fas fa-arrow-left"></i>
+                                </button>
+                                <h2 className="text-lg font-semibold text-center flex-1">Cập nhật thông tin</h2>
+                            </div>
+                            <div className="p-4">
+                                {/* Nhập tên hiển thị */}
+                                <label className="block mb-2">Tên hiển thị</label>
+                                <input
+                                    type="text"
+                                    className="border w-full p-2 rounded"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                />
+
+                                {/* Chọn giới tính */}
+                                <label className="block mt-4 mb-2">Giới tính</label>
+                                <div className="flex space-x-4">
+                                    <label className="flex items-center">
+                                        <input
+                                            type="radio"
+                                            name="gender"
+                                            value="Nam"
+                                            checked={gender === "Nam"}
+                                            onChange={() => setGender("Nam")}
+                                            className="mr-2"
+                                        />
+                                        Nam
+                                    </label>
+                                    <label className="flex items-center">
+                                        <input
+                                            type="radio"
+                                            name="gender"
+                                            value="Nữ"
+                                            checked={gender === "Nữ"}
+                                            onChange={() => setGender("Nữ")}
+                                            className="mr-2"
+                                        />
+                                        Nữ
+                                    </label>
+                                </div>
+
+                                {/* Chọn ngày sinh */}
+                                <label className="block mt-4 mb-2">Ngày sinh</label>
+                                <div className="flex space-x-2">
+                                    {/* Chọn ngày */}
+                                    <select
+                                        className="border p-2 rounded"
+                                        value={selectedDay}
+                                        onChange={(e) => setSelectedDay(e.target.value)}
                                     >
-                                        <i className="fas fa-arrow-left"></i>
-                                    </button>
-                                    <h2 className="text-lg font-semibold text-center flex-1">Cập nhật thông tin</h2>
-                                </div>
-                                <div className="p-4">
-                                    {/* Nhập tên hiển thị */}
-                                    <label className="block mb-2">Tên hiển thị</label>
-                                    <input
-                                        type="text"
-                                        className="border w-full p-2 rounded"
-                                        value={name}
-                                        onChange={(e) => setName(e.target.value)}
-                                    />
-
-                                    {/* Chọn giới tính */}
-                                    <label className="block mt-4 mb-2">Giới tính</label>
-                                    <div className="flex space-x-4">
-                                        <label className="flex items-center">
-                                            <input
-                                                type="radio"
-                                                name="gender"
-                                                value="Nam"
-                                                checked={gender === "Nam"}
-                                                onChange={() => setGender("Nam")}
-                                                className="mr-2"
-                                            />
-                                            Nam
-                                        </label>
-                                        <label className="flex items-center">
-                                            <input
-                                                type="radio"
-                                                name="gender"
-                                                value="Nữ"
-                                                checked={gender === "Nữ"}
-                                                onChange={() => setGender("Nữ")}
-                                                className="mr-2"
-                                            />
-                                            Nữ
-                                        </label>
-                                    </div>
-
-                                    {/* Chọn ngày sinh */}
-                                    <label className="block mt-4 mb-2">Ngày sinh</label>
-                                    <div className="flex space-x-2">
-                                        {/* Chọn ngày */}
-                                        <select className="border p-2 rounded" value={selectedDay} onChange={(e) => setSelectedDay(e.target.value)}>
-                                            {days.map(day => <option key={day} value={day}>{day}</option>)}
-                                        </select>
-                                        {/* Chọn tháng */}
-                                        <select className="border p-2 rounded" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)}>
-                                            {months.map(month => <option key={month} value={month}>{month}</option>)}
-                                        </select>
-                                        {/* Chọn năm */}
-                                        <select className="border p-2 rounded" value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
-                                            {years.map(year => <option key={year} value={year}>{year}</option>)}
-                                        </select>
-                                    </div>
-                                </div>
-
-                                {/* Nút cập nhật */}
-                                <div className="flex justify-between mt-4">
-                                    <button className="bg-gray-400 text-white px-4 py-2 rounded" onClick={() => setShowUpdateModal(false)}>
-                                        Hủy
-                                    </button>
-                                    <button type="submit" className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">
-                                        {isLoading ? (
-                                            <div className="flex justify-center items-center">
-                                                <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
-                                            </div>
-                                        ) : (
-                                            "Cập nhật"
-                                        )}
-                                    </button>
+                                        {days.map(day => (
+                                            <option key={day} value={day}>{day}</option>
+                                        ))}
+                                    </select>
+                                    {/* Chọn tháng */}
+                                    <select
+                                        className="border p-2 rounded"
+                                        value={selectedMonth}
+                                        onChange={(e) => setSelectedMonth(e.target.value)}
+                                    >
+                                        {months.map(month => (
+                                            <option key={month} value={month}>{month}</option>
+                                        ))}
+                                    </select>
+                                    {/* Chọn năm */}
+                                    <select
+                                        className="border p-2 rounded"
+                                        value={selectedYear}
+                                        onChange={(e) => setSelectedYear(e.target.value)}
+                                    >
+                                        {years.map(year => (
+                                            <option key={year} value={year}>{year}</option>
+                                        ))}
+                                    </select>
                                 </div>
                             </div>
-                        </form>
-                    </div>
-                )
-            }
+
+                            {/* Nút cập nhật */}
+                            <div className="flex justify-between mt-4">
+                                <button
+                                    className="bg-gray-400 text-white px-4 py-2 rounded"
+                                    onClick={() => setShowUpdateModal(false)}
+                                >
+                                    Hủy
+                                </button>
+                                <button
+                                    type="submit"
+                                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                                    disabled={isLoading}
+                                >
+                                    {isLoading ? (
+                                        <div className="flex justify-center items-center">
+                                            <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                                        </div>
+                                    ) : (
+                                        "Cập nhật"
+                                    )}
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            )}
         </>
     );
 };

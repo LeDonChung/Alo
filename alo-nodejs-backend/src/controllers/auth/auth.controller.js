@@ -5,7 +5,7 @@ const redis = require('../../config/RedisClient');
 const smsService = require('../../services/sms.service');
 const crypto = require('crypto');
 
-function generateOTP() {
+function handlerGenerateOTP() {
     return crypto.randomInt(100000, 999999).toString();
   }
 
@@ -134,15 +134,16 @@ exports.generateOtp = async (req, res) => {
     }
 
     // Tạo OTP ngẫu nhiên
-    const otp = generateOTP();
+    const otp = handlerGenerateOTP();
     console.log(`OTP for ${phoneNumber}: ${otp}`);
 
     // Lưu OTP vào Redis với thời gian sống là 1 phút
     await redis.set(phoneNumber, otp, 'EX', 60);
 
     // Gửi OTP qua SMS (giả sử bạn đã có hàm gửi SMS)
-    const smsSent = await smsService.sendOtp(phoneNumber, otp);
-    if (!smsSent) {
+    // const smsSent = await smsService.sendOtp(phoneNumber, otp);
+    const smsSent = true; // Giả lập gửi SMS thành công
+    if (!smsSent) { 
         return res.status(500).json({
             status: 500,
             message: "Gửi OTP thất bại.",
