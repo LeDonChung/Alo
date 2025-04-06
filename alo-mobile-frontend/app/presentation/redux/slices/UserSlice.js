@@ -154,7 +154,7 @@ const UserSlice = createSlice({
             console.log("User login: ", state.userLogin);
         });
         builder.addCase(getProfile.rejected, (state, action) => {
-            state.userLogin = null;
+            state.userLogin = null; 
             console.log("User login: ", action);
 
         });

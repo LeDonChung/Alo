@@ -71,7 +71,7 @@ const FriendRequestScreen = ({ navigation }) => {
   );
 
   return (
-    <SafeAreaView style={FriendRequestStyles.container}>
+    <View style={FriendRequestStyles.container}>
       <View style={FriendRequestStyles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={20} color="#fff" />
@@ -107,7 +107,7 @@ const FriendRequestScreen = ({ navigation }) => {
         renderItem={renderContactItem}
         style={FriendRequestStyles.list}
       />
-    </SafeAreaView>
+    </View>
   );
 };
 

@@ -48,10 +48,7 @@ export const ContactStyles = StyleSheet.create({
   headerButtons: {
     flexDirection: "row",
     justifyContent: "space-around",
-    paddingVertical: 10,
     backgroundColor: "#F5F5F5",
-    borderBottomWidth: 1,
-    borderBottomColor: "#DDD",
   },
   headerButtonText: {
     color: "#555",
@@ -69,13 +66,13 @@ export const ContactStyles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     backgroundColor: "#F5F5F5",
-    borderRadius: 10,
+    borderRadius: 5,
     marginBottom: 10,
   },
   menuIcon: {
     backgroundColor: "#007AFF",
-    borderRadius: 15,
-    padding: 5,
+    borderRadius: 5,
+    padding: 7,
     marginRight: 10,
     marginLeft: 10,
   },
@@ -115,8 +112,9 @@ export const ContactStyles = StyleSheet.create({
     justifyContent: "space-around",
     paddingVertical: 10,
     backgroundColor: "#F5F5F5",
-    borderBottomWidth: 1,
+    borderBottomWidth: 2,
     borderBottomColor: "#DDD",
+
   },
   tabText: {
     color: "#555",
@@ -314,7 +312,5 @@ export const ContactStyles = StyleSheet.create({
   tabActive: {
     color: "#007AFF",
     fontWeight: "bold",
-    borderBottomWidth: 2,
-    borderBottomColor: "#007AFF",
   },
 });
