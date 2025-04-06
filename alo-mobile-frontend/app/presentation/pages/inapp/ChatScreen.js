@@ -44,7 +44,7 @@ export const ChatScreen = ({ route, navigation }) => {
       });
     }, []);
 
-  const getLastLoginMessage = () => {
+  const getLastLoginMessage = (lastLogout) => {
     if(!lastLogout) return 'Chưa truy cập';
     const now = new Date();
     const logoutTime = new Date(lastLogout);
@@ -63,7 +63,15 @@ export const ChatScreen = ({ route, navigation }) => {
       setLastLogout(res.data.data.lastLogout);
     });
   };
+  useEffect(() => {
+    socket.emit("join_conversation", conversation.id);
 
+    if (!conversation.isGroup) {
+      const friend = conversation.memberUserIds.find((member) => member !== userLogin.id);
+      handleGetLastLogout(friend);
+    }
+  }, [conversation, userLogin.id]);
+  
   const renderItem = ({ item }) => (
     <View style={{
       flexDirection: 'row',
@@ -92,7 +100,7 @@ export const ChatScreen = ({ route, navigation }) => {
   return (
     <View style={{ flex: 1, backgroundColor: '#F3F3F3' }}>
       {/* Header */}
-      <View style={{backgroundColor: '#007AFF', padding: 15, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 40 }}>
+      <View style={{backgroundColor: '#007AFF', padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 50 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <AntDesign name="left" size={20} color="white" onPress={() => navigation.goBack()} />
           <View style={{ marginLeft: 20 }}>

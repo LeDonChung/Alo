@@ -101,8 +101,7 @@ export const HomeScreen = ({ navigation }) => {
       <TouchableOpacity
         onPress={() => {
           navigation.navigate("chat", { conversation: item, friend: friend });
-          socket.emit('join_conversation', item.id);
-
+          // socket.emit('join_conversation', item.id);
         }}
         style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: '#EDEDED' }}
       >
