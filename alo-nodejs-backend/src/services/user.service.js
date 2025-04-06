@@ -324,6 +324,29 @@ const updateLastLogout = async (userId) => {
   }
 
 }
+
+const updatePassword = async (accountId, hashedPassword) => {
+
+  const params = {
+    TableName: 'Accounts',
+    Key: {
+      accountId: accountId
+    },
+    UpdateExpression: 'set password = :password',
+    ExpressionAttributeValues: {
+      ':password': hashedPassword
+    },
+    ReturnValues: 'UPDATED_NEW'
+  };
+
+  try {
+    await client.update(params).promise();
+    return true;
+  } catch (err) {
+    console.log(err);
+    return false;
+  }
+}
 module.exports = {
   existingUser,
   register,
@@ -335,5 +358,6 @@ module.exports = {
   updateProfile,
   getUserById,
   getUsersByIds,
-  updateLastLogout
+  updateLastLogout,
+  updatePassword
 }
