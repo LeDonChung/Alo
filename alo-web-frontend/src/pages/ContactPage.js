@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { use, useEffect, useState } from "react";
 import { Navigation } from "../components/Navigation";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
@@ -7,6 +7,8 @@ import GroupsOfUser from "../components/GroupsOfUser";
 import InvitationFriend from "../components/InvitationFriend";
 import InvitationGroup from "../components/InvitationGroup";
 import { SearchByPhone } from "../components/SearchByPhone";
+import socket from "../utils/socket";
+import { useDispatch, useSelector } from "react-redux";
 
 const menu = [
     { id: 1, name: "Danh sách bạn bè", icon: "./icon/ic_friend_list.png", showView: () => <FriendsOfUser /> },
@@ -18,6 +20,36 @@ const menu = [
 export default function ContactPage() {
     const [selectMenu, setSelectMenu] = useState(menu[0]);
     const [isOpenAdd, setIsOpenAdd] = useState(false);
+    const userLogin = JSON.parse(localStorage.getItem("userLogin"));
+    const [numFriendRequest, setNumFriendRequest] = useState(0);
+
+    useEffect(() => {
+        const handleReceiveFriendRequest = (data) => {
+            if (data.senderId !== userLogin.id) {
+                setNumFriendRequest((prev) => prev + 1);
+            }
+        };
+        socket.on("receive-friend-request", handleReceiveFriendRequest);
+        return () => {
+            socket.off("receive-friend-request", handleReceiveFriendRequest);
+        };
+    }, []);
+
+    useEffect(() => {
+        const handleCancleFriendRequest = (data) => {
+            if (data.senderId !== userLogin.id) {
+                setNumFriendRequest((prev) => prev - 1);
+            }
+        };
+        socket.on("receive-cancle-friend-request", handleCancleFriendRequest);
+        return () => {
+            socket.off("receive-cancle-friend-request", handleCancleFriendRequest);
+        };
+    }, []);
+
+    useEffect(() => {
+
+    }, [numFriendRequest]);
 
     return (
         <div className="flex h-screen">
@@ -46,10 +78,27 @@ export default function ContactPage() {
                 {/* menu */}
                 <div className="flex flex-col">
                     {menu.map((item) => (
-                        <button key={item.id} className={`flex items-center p-3 hover:bg-gray-100 ${selectMenu.id === item.id ? "bg-blue-100" : ""}`} onClick={() => { setSelectMenu(item); }}>
-                            <img src={item.icon} alt={item.name} className="w-[30px] h-[30px]" />
-                            <span className="ml-4 font-medium">{item.name}</span>
-                        </button>
+                        <>
+
+                            <button key={item.id}
+                                className={`relative flex items-center p-3 hover:bg-gray-100 ${selectMenu.id === item.id ? "bg-blue-100" : ""}`}
+                                onClick={() => {
+                                    if (item.id === 3) {
+                                        setNumFriendRequest(0);
+                                    }
+                                    setSelectMenu(item);
+                                }}>
+                                <img src={item.icon} alt={item.name} className="w-[30px] h-[30px]" />
+                                <span className="ml-4 font-medium">{item.name}</span>
+                                {
+                                    item.id === 3 && numFriendRequest > 0 && (
+                                        <span className="absolute top-[20px] right-3 bg-red-500 text-white text-xs font-semibold rounded-full px-2 py-1">
+                                            {numFriendRequest}
+                                        </span>
+                                    )
+                                }
+                            </button>
+                        </>
                     ))}
                 </div>
             </div>

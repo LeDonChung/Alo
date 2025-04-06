@@ -22,7 +22,7 @@ export const RegisterPage = () => {
       return;
     }
 
-    navigate('/register-info');
+    navigate('/otp');
   };
 
   return (
@@ -73,7 +73,11 @@ export const RegisterPage = () => {
             </button>
           </form>
           <div className="flex justify-between mt-4 text-sm text-gray-600">
-            <a href="#" className="hover:underline">Đăng nhập</a>
+            <a href="#" className="hover:underline"
+              onClick={() => {
+                navigate('/login');
+              }}
+            >Đăng nhập</a>
             <a href="#" className="hover:underline">Quên mật khẩu</a>
           </div>
         </div>

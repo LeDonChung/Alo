@@ -64,6 +64,32 @@ const updateProfile = createAsyncThunk('UserSlice/updateProfile', async (user, {
     }
 });
 
+
+const generateOtp = createAsyncThunk('UserSlice/generateOtp', async (phoneNumber, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/auth/generate-otp?phoneNumber=' + phoneNumber);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response.data);
+    }
+});
+
+const verifyOtp = createAsyncThunk('UserSlice/verifyOtp', async (request, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/auth/verify-otp?phoneNumber=' + request.phoneNumber + '&otp=' + request.otp);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response.data);
+    }
+});
+const logout = createAsyncThunk('UserSlice/logout', async (_, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/auth/logout');
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response.data);
+    }
+});
 const UserSlice = createSlice({
     name: 'UserSlice',
     initialState: initialState,
@@ -142,9 +168,37 @@ const UserSlice = createSlice({
         builder.addCase(updateProfile.rejected, (state, action) => {
             state.userLogin = null;
         });
+
+        builder.addCase(generateOtp.pending, (state) => {
+        });
+
+        builder.addCase(generateOtp.fulfilled, (state, action) => {
+        });
+
+        builder.addCase(generateOtp.rejected, (state, action) => {
+        });
+
+        builder.addCase(verifyOtp.pending, (state) => {
+        });
+
+        builder.addCase(verifyOtp.fulfilled, (state, action) => {
+            
+        });
+
+        builder.addCase(verifyOtp.rejected, (state, action) => {
+            
+        });
+
+        builder.addCase(logout.pending, (state) => {
+        });
+        builder.addCase(logout.fulfilled, (state, action) => {
+        });
+        builder.addCase(logout.rejected, (state, action) => {
+        });
+
     }
 });
 
 export const { setUserOnlines, setUserLogin } = UserSlice.actions;
-export { uploadAvatar, uploadBackground, getProfile, updateProfile, login };
+export { uploadAvatar, uploadBackground, getProfile, updateProfile, login, verifyOtp, generateOtp, logout };
 export default UserSlice.reducer;

@@ -19,13 +19,36 @@ export const SearchByPhone = (isOpenAdd) => {
 
     // xac nhan xoa ban be
     const [isOpenConfirm, setIsOpenConfirm] = useState(false);
-
+    const [isLoadingPhone, setIsLoadingPhone] = useState(false);
     useEffect(() => {
-        console.log("info", info);
-
     }, [info, isOpenAdd]);
 
+    useEffect(() => {
+        const handleRejectFriendRequest = (data) => {
+            if (data.friendId === userLogin.id) {
+                handleSearch();
+            }
+        };
+        socket.on("receive-reject-friend", handleRejectFriendRequest);
+        return () => {
+            socket.off("receive-reject-friend", handleRejectFriendRequest);
+        };
+    }, []);
+
+    useEffect(() => {
+        const handleAcceptFriendRequest = (data) => {
+            if (data.friendId === userLogin.id) {
+                handleSearch();
+            }
+        };
+        socket.on("receive-accept-friend", handleAcceptFriendRequest);
+        return () => {
+            socket.off("receive-accept-friend", handleAcceptFriendRequest);
+        };
+    }, []);
+
     const handleSearch = async () => {
+        setIsLoadingPhone(true);
         if (!phoneNumber) return;
         try {
             const result = await dispatch(getFriendByPhone(phoneNumber));
@@ -35,6 +58,7 @@ export const SearchByPhone = (isOpenAdd) => {
         } catch (error) {
             console.error("Lỗi khi tìm kiếm bạn bè:", error);
         }
+        setIsLoadingPhone(false);
     };
 
     const sendFriend = async () => {
@@ -48,16 +72,11 @@ export const SearchByPhone = (isOpenAdd) => {
             const result = await dispatch(sendFriendRequest(request));
             const friendResult = result.payload.data ? result.payload.data : null;
             if (friendResult && friendResult.status === 0) {
-                // 
-                socket.emit("send-friend-request", {
-                    // thong tin
-                })
-
+                socket.emit("send-friend-request", friendResult)
                 setIsOpenModalContent(false);
                 setContentInvite('Mình tìm kiếm bạn qua số điện thoại. Kết bạn với mình nhé!');
                 setIsShowInfo(false); // Hiển thị thông tin nguoi dùng
                 setInfo(null); // Đặt dữ liệu người dùng vào state
-                showToast("Gửi lời mời kết bạn thành công", "success");
                 handleSearch(); // Tìm kiếm lại bạn bè
             } else {
                 console.error("Lỗi khi gửi lời mời kết bạn:", result.payload?.message);
@@ -75,14 +94,13 @@ export const SearchByPhone = (isOpenAdd) => {
         try {
             const result = await dispatch(unfriend(request));
             const friendResult = result.payload.data ? result.payload.data : null;
-            console.log("friendResult", friendResult);
 
             if (friendResult && friendResult.status === 4) {
+                socket.emit("unfriend-request", friendResult); // Gửi sự kiện hủy kết bạn đến server
                 setIsOpenConfirm(false); // Đóng modal xác nhận
                 setIsOpenModalContent(false); // Đóng modal nội dung mời kết bạn
                 setInfo(null); // Đặt dữ liệu người dùng vào state
                 setIsShowInfo(false); // Hiển thị thông tin nguoi dùng
-                showToast("Hủy kết bạn thành công", "success");
                 handleSearch();
             } else {
                 console.error("Lỗi khi hủy kết bạn:", result.payload?.message);
@@ -101,8 +119,8 @@ export const SearchByPhone = (isOpenAdd) => {
             const result = await dispatch(unblockFriend(request));
             const friendResult = result.payload.data ? result.payload.data : null;
             if (friendResult && friendResult.status === 1) {
+                socket.emit("unblock-friend", friendResult); // Gửi sự kiện mở chặn đến server
                 setIsShowInfo(false);
-                showToast("Mở chặn bạn bè thành công", "success");
                 handleSearch();
             }
         } catch (error) {
@@ -119,7 +137,7 @@ export const SearchByPhone = (isOpenAdd) => {
             const result = await dispatch(cancelFriendRequest(request));
             const friendResult = result.payload.data ? result.payload.data : null;
             if (friendResult && friendResult.status === -1) {
-                showToast("Hủy lời mời kết bạn thành công", "success");
+                socket.emit("cancel-friend-request", friendResult); // Gửi sự kiện hủy lời mời đến server
                 handleSearch();
             }
             else {
@@ -136,10 +154,11 @@ export const SearchByPhone = (isOpenAdd) => {
             friendId: id,
         };
         try {
+
             const result = await dispatch(acceptFriendRequest(request));
             const friendResult = result.payload.data ? result.payload.data : null;
             if (friendResult && friendResult.status === 1) {
-                showToast("Đã chấp nhận lời mời kết bạn", "success");
+                socket.emit("accept-friend-request", friendResult); // Gửi sự kiện chấp nhận lời mời đến server
                 handleSearch(); // Tìm kiếm lại bạn bè
             } else {
                 console.error("Lỗi khi chấp nhận lời mời kết bạn:", result.payload?.message);
@@ -158,7 +177,7 @@ export const SearchByPhone = (isOpenAdd) => {
             const result = await dispatch(rejectFriendRequest(request));
             const friendResult = result.payload.data ? result.payload.data : null;
             if (friendResult && friendResult.status === 2) {
-                showToast("Đã từ chối lời mời kết bạn", "info");
+                socket.emit("reject-friend-request", friendResult); // Gửi sự kiện từ chối lời mời đến server
                 handleSearch(); // Tìm kiếm lại bạn bè
             } else {
                 console.error("Lỗi khi từ chối lời mời kết bạn:", result.payload?.message);
@@ -233,10 +252,16 @@ export const SearchByPhone = (isOpenAdd) => {
                                         Hủy
                                     </button>
                                     <button
-                                        className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                                        className="px-4 py-2 bg-blue-500 text-gray-800 rounded  hover:bg-blue-600 text-white"
                                         onClick={() => handleSearch()}
                                     >
-                                        Tìm kiếm
+                                        {isLoadingPhone ? (
+                                            <div className="flex justify-center items-center">
+                                                <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                                            </div>
+                                        ) : (
+                                            "Tìm kiếm"
+                                        )}
                                     </button>
                                 </div>
                             </>

@@ -1,18 +1,34 @@
-import { Button, Text, TouchableOpacity, View } from "react-native"
+import { Button, Image, Text, TouchableOpacity, View } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import { GlobalStyles } from "../../styles/GlobalStyles"
 import IconMaterial from 'react-native-vector-icons/MaterialIcons'
 import * as SecureStore from 'expo-secure-store';
 import socket from "../../../utils/socket";
 import { useDispatch, useSelector } from "react-redux"
+import { setUserLogin } from "../../redux/slices/UserSlice";
 
 export const AccountScreen = ({ navigation }) => {
-    const userLogin = useSelector((state) => state.user.userLogin);
-
+    const dispatch = useDispatch();
+    const userLogin = useSelector(state => state.user.userLogin);
     return (
         <SafeAreaView style={GlobalStyles.container}>
-            <View style={{ height: 150}}>
-                <TouchableOpacity style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 }} onPress={() => {
+            <View style={{ height: 300 }}>
+                <TouchableOpacity style={{ flex: 1, alignItems: 'center', flexDirection: 'row', paddingVertical: 40, borderBottomColor: '#b0b3ba', borderBottomWidth: 1 }}>
+                    <Image source={{ uri: userLogin.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" }} style={{ width: 60, height: 60, borderRadius: 50 }} />
+                    <View style={{ marginRight: 10 }}>
+                        <Text style={{ fontSize: 16, fontWeight: 'bold', marginRight: 'auto', marginLeft: 10 }}>
+                            {
+                                userLogin.fullName
+                            }
+                        </Text>
+                        <Text style={{ fontSize: 16, marginRight: 'auto', marginLeft: 10, color: '#b0b3ba', marginTop: 10 }}>
+                            {
+                                "Xem trang cá nhân"
+                            }
+                        </Text>
+                    </View>
+                </TouchableOpacity>
+                <TouchableOpacity style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10, marginTop: 10 }} onPress={() => {
                     navigation.navigate('profile')
                 }}>
                     <IconMaterial name="local-police" size={24} color={"#2261E2"} />
@@ -30,6 +46,7 @@ export const AccountScreen = ({ navigation }) => {
                     SecureStore.deleteItemAsync('refreshToken');
                     SecureStore.deleteItemAsync('userLogin');
                     socket.emit("logout", userLogin?.id);
+                    dispatch(setUserLogin(null));
                     navigation.navigate('login')
                 }}>
                     <IconMaterial name="logout" size={24} color={"#2261E2"} />

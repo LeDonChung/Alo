@@ -8,6 +8,7 @@ import HomePage from './pages/HomePage';
 import ContactPage from './pages/ContactPage';
 import MainLayout from './layouts/MainLayout';
 import AuthLayout from './layouts/AuthLayout';
+import CreateGroupPage from './pages/CreateGroup';
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { getFriends } from './redux/slices/FriendSlice';
@@ -35,6 +36,7 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/otp" element={<OTPPage />} />
           <Route path="/register-info" element={<RegisterInformationPage />} />
+          <Route path="/create-group" element={<CreateGroupPage/>} />
         </Route>
 
         {/* Main Routes - Có Navigation */}

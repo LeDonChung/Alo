@@ -102,11 +102,56 @@ io.on("connection", (socket) => {
     });
 
     socket.on('send-friend-request', async (data) => {
+        const receiveId = data.userId === data.senderId ? data.friendId : data.userId;
+        
         // userId nguoi nhan
-        const socketId = await findSocketIdByUserId(data.userId);
-
+        const socketId = await findSocketIdByUserId(receiveId);
         socket.to(socketId).emit('receive-friend-request', data);
-    })
+    });
+
+    socket.on('unfriend-request', async (data) => {
+        const receiveId = data.friendId;          
+        // userId nguoi nhan
+        const socketId = await findSocketIdByUserId(receiveId);
+        socket.to(socketId).emit('receive-unfriend', data);
+    });
+
+    socket.on('block-request', async (data) => {
+        const receiveId = data.friendId;
+        
+        // userId nguoi nhan
+        const socketId = await findSocketIdByUserId(receiveId);
+        socket.to(socketId).emit('receive-block', data);
+    });
+
+    socket.on('unblock-friend', async (data) => {
+        const receiveId = data.friendId;
+        
+        // userId nguoi nhan
+        const socketId = await findSocketIdByUserId(receiveId);
+        socket.to(socketId).emit('receive-unblock', data);
+    });
+
+    socket.on('cancel-friend-request', async (data) => {
+        const receiveId = data.friendId === data.senderId ? data.userId : data.friendId;      
+        // userId nguoi nhan
+        const socketId = await findSocketIdByUserId(receiveId);
+        socket.to(socketId).emit('receive-cancle-friend-request', data);
+    });
+
+    socket.on('accept-friend-request', async (data) => {
+        const receiveId = data.friendId;        
+        // userId nguoi nhan
+        const socketId = await findSocketIdByUserId(receiveId);
+        socket.to(socketId).emit('receive-accept-friend', data);
+    });
+
+    socket.on('reject-friend-request', async (data) => {
+        const receiveId = data.friendId;        
+        // userId nguoi nhan
+        const socketId = await findSocketIdByUserId(receiveId);
+        socket.to(socketId).emit('receive-reject-friend', data);
+    });
 
     const findSocketIdByUserId = async (userId) => {
         const user = await redis.get(`socket:${userId}`);

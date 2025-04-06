@@ -11,8 +11,10 @@ export const RegisterInformationPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
 
+  const [isLoading, setIsLoading] = useState(false);
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setIsLoading(true);
     if (userRegister.password !== userRegister.rePassword) {
       setError('Mật khẩu không khớp!');
       return;
@@ -31,6 +33,7 @@ export const RegisterInformationPage = () => {
       console.log("❌ Lỗi đăng ký:", error);
       showToast(error.message, 'error');
     });
+    setIsLoading(false);
   }
   return (
     <div className="bg-blue-100 flex items-center justify-center min-h-screen">
@@ -44,7 +47,7 @@ export const RegisterInformationPage = () => {
         <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
           <div className="border-b border-gray-300 mb-6">
             <h2 className="text-center font-medium pb-2">Hoàn tất đăng ký</h2>
-          </div> 
+          </div>
           <form onSubmit={handleSubmit}>
             <div className="mb-4 relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3">
@@ -105,11 +108,23 @@ export const RegisterInformationPage = () => {
               type="submit"
               className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200"
             >
-              Đăng ký
+              {
+                isLoading ? (
+                  <div className="flex justify-center items-center">
+                    <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                  </div>
+                ) : (
+                  "Đăng ký"
+                )
+              }
             </button>
           </form>
           <div className="flex justify-between mt-4 text-sm text-gray-600">
-            <a href="#" className="hover:underline">Đăng nhập</a>
+            <a href="#" className="hover:underline"
+              onClick={() => {
+                navigate('/login');
+              }}
+            >Đăng nhập</a>
             <a href="#" className="hover:underline">Quên mật khẩu</a>
           </div>
         </div>

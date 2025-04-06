@@ -14,6 +14,7 @@ import ConversationList from "../components/ConversationList";
 import { getAllConversation } from "../redux/slices/ConversationSlice";
 import { setUserLogin } from "../redux/slices/UserSlice";
 import { SearchByPhone } from "../components/SearchByPhone";
+import CreateGroupPage from "./CreateGroup";
 const menu = [
     { id: 1, name: "Danh sách bạn bè", icon: "./icon/ic_friend_list.png", showView: () => <FriendsOfUser /> },
     { id: 2, name: "Danh sách nhóm và cộng đồng", icon: "./icon/ic_community_list.png", showView: () => <GroupsOfUser /> },
@@ -32,6 +33,7 @@ export default function HomePage() {
     const dispatch = useDispatch();
 
     const [isOpenAdd, setIsOpenAdd] = useState(false);
+    const [isOpenGroup, setIsOpenGroup] = useState(false);
 
     useEffect(() => {
     }, [isOpenAdd]);
@@ -57,9 +59,12 @@ export default function HomePage() {
                         isOpenAdd && <SearchByPhone isOpenAdd={isOpenAdd} onClose={() => setIsOpenAdd(false)} />
                     }
 
-                    <button className="w-[30px] h-[30px] flex items-center justify-center hover:bg-gray-100">
-                        <img src="./icon/ic_create_group.png" />
+                    <button className="w-[30px] h-[30px] flex items-center justify-center hover:bg-gray-100" onClick={() => setIsOpenGroup(true)}>
+                        <img src="./icon/ic_create_group.png" />    
                     </button>
+                    {
+                        isOpenGroup && <CreateGroupPage isOpenGroup={isOpenGroup} onClose={() => setIsOpenGroup(false)} />
+                    }
                 </div>
 
                 {/* menu */}

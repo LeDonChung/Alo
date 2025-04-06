@@ -2,6 +2,13 @@ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const userService = require('../../services/user.service');
 const redis = require('../../config/RedisClient');
+const smsService = require('../../services/sms.service');
+const crypto = require('crypto');
+
+function handlerGenerateOTP() {
+    return crypto.randomInt(100000, 999999).toString();
+  }
+
 const generateAccessToken = (user) => {
     return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
 };
@@ -39,6 +46,7 @@ exports.login = async (req, res) => {
         return res.status(401).json({ message: 'Yêu cầu không hợp lệ.' });
     }
 };
+
 exports.logout = async(req, res) => {
     // Lấy Authorization từ header
     const authHeader = req.headers['authorization'];
@@ -59,6 +67,7 @@ exports.logout = async(req, res) => {
     })
 
 };
+
 exports.refreshToken = async(req, res) => {
     const { token } = req.body;
     if (!token) return res.sendStatus(401);
@@ -111,3 +120,116 @@ exports.register = async (req, res) => {
 };
 
 
+exports.generateOtp = async (req, res) => {
+    const { phoneNumber } = req.query;
+
+    // Kiểm tra số điện thoại đã có otp trong Redis chưa
+    const existingOtp = await redis.get(phoneNumber);
+    if (existingOtp) {
+        return res.status(400).json({
+            status: 400,
+            message: "Đã có OTP được gửi đến số điện thoại này.",
+            data: null
+        });
+    }
+
+    // Tạo OTP ngẫu nhiên
+    const otp = handlerGenerateOTP();
+    console.log(`OTP for ${phoneNumber}: ${otp}`);
+
+    // Lưu OTP vào Redis với thời gian sống là 1 phút
+    await redis.set(phoneNumber, otp, 'EX', 60);
+
+    // Gửi OTP qua SMS (giả sử bạn đã có hàm gửi SMS)
+    // const smsSent = await smsService.sendOtp(phoneNumber, otp);
+    const smsSent = true; // Giả lập gửi SMS thành công
+    if (!smsSent) { 
+        return res.status(500).json({
+            status: 500,
+            message: "Gửi OTP thất bại.",
+            data: null
+        });
+    }
+
+    return res.json({
+        status: 200,
+        message: "Gửi OTP thành công.",
+        data: null
+    })
+}
+
+exports.verifyOtp = async (req, res) => {
+    const { phoneNumber, otp } = req.query;
+
+    // Kiểm tra OTP trong Redis
+    const storedOtp = await redis.get(phoneNumber);
+    if (!storedOtp) {
+        return res.status(400).json({
+            status: 400,
+            message: "OTP không hợp lệ hoặc đã hết hạn.",
+            data: null
+        });
+    }
+
+    if (storedOtp !== otp) {
+        return res.status(400).json({
+            status: 400,
+            message: "OTP không chính xác.",
+            data: null
+        });
+    }
+
+    // Xóa OTP khỏi Redis sau khi xác thực thành công
+    await redis.del(phoneNumber);
+
+    return res.json({
+        status: 200,
+        message: "Xác thực OTP thành công.",
+        data: null
+    })
+}
+
+exports.changePassword = async (req, res) => {
+    const { phoneNumber, oldPassword, newPassword } = req.body;
+
+    const account = await userService.findByPhoneNumber(phoneNumber);
+    // Kiểm tra tài khoản có tồn tại không
+    if (!account) {
+        return res.status(401).json({ message: 'Tài khoản không tồn tại.' });
+    }
+
+    // Kiểm tra mật khẩu cũ
+    if (!bcrypt.compareSync(oldPassword, account.password)) { 
+        return res.status(401).json({ message: 'Mật khẩu cũ không đúng.' });
+    }
+
+    const hashedPassword = await bcrypt.hashSync(newPassword, 10);
+    await userService.updatePassword(account.id, hashedPassword);
+
+    return res.json({
+        status: 200,
+        data: null,
+        message: "Đổi mật khẩu thành công."
+    })
+}
+
+
+exports.forgotPassword = async (req, res) => {
+    const { phoneNumber, passwordNew } = req.body;
+
+    // Kiểm tra tài khoản có tồn tại không
+    const account = await userService.findByPhoneNumber(phoneNumber);
+    if (!account) {
+        return res.status(401).json({ message: 'Tài khoản không tồn tại.' });
+    }
+
+    // Tạo mật khẩu mới
+    const hashedPassword = await bcrypt.hashSync(passwordNew, 10);
+    await userService.updatePassword(account.id, hashedPassword);
+    
+    return res.json({
+        status: 200,
+        data: null,
+        message: "Cập nhật mật khẩu thành công."
+    })
+}

@@ -13,9 +13,11 @@ export const LoginPage = () => {
     const error = useSelector(state => state.user.errorResponse);
     const navigate = useNavigate();
     const dispatch = useDispatch();
+    const [isLoading, setIsLoading] = useState(false);
 
     const handleSubmitLogin = async (e) => {
         e.preventDefault();
+        setIsLoading(true);
         await dispatch(login(userLogin)).unwrap().then(async (response) => {
             showToast('Đăng nhập thành công', 'success');
             await dispatch(getProfile()).unwrap().then((response) => {
@@ -29,6 +31,7 @@ export const LoginPage = () => {
 
             showToast('Tài khoản hoặc mật khẩu không chính xác', error);
         });
+        setIsLoading(false);
     }
 
     return <>
@@ -65,7 +68,15 @@ export const LoginPage = () => {
                             id="password"
                             placeholder="Mật khẩu" />
                     </div>
-                    <button type='button' onClick={e => handleSubmitLogin(e)} className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200">Đăng nhập với mật khẩu</button>
+                    <button type='button' onClick={e => handleSubmitLogin(e)} className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200">
+                        {isLoading ? (
+                            <div className="flex justify-center items-center">
+                                <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                            </div>
+                        ) : (
+                            "Đăng nhập với mật khẩu"
+                        )}
+                    </button>
 
                     <div className="flex justify-between mt-4 text-sm text-gray-600">
                         <Link to={'/register'} className="hover:underline">Đăng ký</Link>

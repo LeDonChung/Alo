@@ -112,7 +112,7 @@ const createAccountsTable = async () => {
   const createParams = {
     TableName: 'Accounts',
     KeySchema: [
-      { AttributeName: 'accountId', KeyType: 'HASH' }
+      { AttributeName: 'accountId', KeyType: 'HASH' },
     ],
     AttributeDefinitions: [
       { AttributeName: 'accountId', AttributeType: 'S' },

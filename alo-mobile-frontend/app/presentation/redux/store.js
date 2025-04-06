@@ -3,6 +3,7 @@ import UserSlice from './slices/UserSlice';
 import registerReducer from "./slices/RegisterSlice";
 import FriendSlice from './slices/FriendSlice';
 import ConversationSlice from './slices/ConversationSlice'
+
 export const store = configureStore({
     reducer: {
         user: UserSlice,

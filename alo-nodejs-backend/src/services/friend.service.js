@@ -73,7 +73,8 @@ const friendRequest = async (data) => {
             friendId: friendResp.friendId === friendResp.senderId ? friendResp.userId : friendResp.friendId,
             status: friendResp.status,
             requestDate: friendResp.requestDate,
-            contentRequest: friendResp.contentRequest
+            contentRequest: friendResp.contentRequest,
+            senderId: friendResp.senderId,
         }    
 
         console.log("Response: ", resp);
