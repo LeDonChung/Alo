@@ -4,7 +4,8 @@ import * as SecureStore from 'expo-secure-store';
 
 const initialState = {
     avatar: null,
-    userLogin: null
+    userLogin: null,
+    userOnlines: [],
 };
 
 const getProfile = createAsyncThunk('UserSlice/getProfile', async (token, { rejectWithValue }) => {
@@ -93,6 +94,9 @@ const UserSlice = createSlice({
     name: 'UserSlice',
     initialState: initialState,
     reducers: {
+        setUserOnlines: (state, action) => {
+            state.userOnlines = action.payload;
+        },
         setUserLogin: (state, action) => {
             state.userLogin = action.payload;
         }
@@ -195,6 +199,6 @@ const UserSlice = createSlice({
     }
 });
 
-export const { setUserLogin } = UserSlice.actions;
+export const { setUserOnlines, setUserLogin } = UserSlice.actions;
 export { uploadAvatar, uploadBackground, getProfile, updateProfile, login, verifyOtp, generateOtp, logout };
 export default UserSlice.reducer;

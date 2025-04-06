@@ -3,7 +3,8 @@ import { SafeAreaView } from "react-native-safe-area-context"
 import { GlobalStyles } from "../../styles/GlobalStyles"
 import IconMaterial from 'react-native-vector-icons/MaterialIcons'
 import * as SecureStore from 'expo-secure-store';
-import { useDispatch, useSelector } from "react-redux";
+import socket from "../../../utils/socket";
+import { useDispatch, useSelector } from "react-redux"
 import { setUserLogin } from "../../redux/slices/UserSlice";
 
 export const AccountScreen = ({ navigation }) => {
@@ -44,6 +45,7 @@ export const AccountScreen = ({ navigation }) => {
                     SecureStore.deleteItemAsync('accessToken');
                     SecureStore.deleteItemAsync('refreshToken');
                     SecureStore.deleteItemAsync('userLogin');
+                    socket.emit("logout", userLogin?.id);
                     dispatch(setUserLogin(null));
                     navigation.navigate('login')
                 }}>
