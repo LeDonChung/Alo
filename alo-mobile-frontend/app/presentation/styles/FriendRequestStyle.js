@@ -32,9 +32,9 @@ export const FriendRequestStyles = StyleSheet.create({
     borderBottomColor: "#DDD",
   },
   avatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 65,
+    height: 65,
+    borderRadius: 100,
     marginRight: 15,
   },
   contactName: {

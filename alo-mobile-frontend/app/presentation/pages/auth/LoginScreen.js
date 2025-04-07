@@ -10,8 +10,9 @@ import {
 import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { GlobalStyles } from "../../styles/GlobalStyles";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useDispatch } from "react-redux";
-import { getProfile, login } from "../../redux/slices/UserSlice";
+import { useDispatch, useSelector } from "react-redux";
+import { getProfile, login, setUserLogin } from "../../redux/slices/UserSlice";
+import { socket } from "../../../utils/socket";
 
 export const LoginScreen = ({ navigation }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -33,13 +34,12 @@ export const LoginScreen = ({ navigation }) => {
         phoneNumber,
         password,
       }
-      await dispatch(login(user)).unwrap().then((response) => {
-        dispatch(getProfile()).then((res) => {
+      await dispatch(login(user)).unwrap().then(async (response) => {
+        await dispatch(getProfile()).then((res) => {
           navigation.navigate("inapp");
-
         })
-      }).catch((e) => { 
-        setErrorMessage(e.data.message || "Số điện thoại hoặc mật khẩu không đúng.");
+      }).catch((e) => {
+        console.log(e)
       })
     } catch (error) {
       console.log("Login Error: ", error);
@@ -48,6 +48,27 @@ export const LoginScreen = ({ navigation }) => {
       setLoading(false);
     }
   };
+
+  const init = async () => {
+    const accessToken = await SecureStore.getItemAsync("accessToken");
+    const refreshToken = await SecureStore.getItemAsync("refreshToken");
+    const userLogin = await SecureStore.getItemAsync("userLogin");
+    console.log(
+      "Access Token: ",
+      accessToken,
+      "Refresh Token: ",
+      refreshToken, 
+      "User Login: ",
+      userLogin
+    )
+    if (accessToken && refreshToken && userLogin) {
+      dispatch(setUserLogin(JSON.parse(userLogin)));
+      socket.emit("login", JSON.parse(userLogin).id);
+    } 
+  }
+  useDispatch(() => {
+    init(); 
+  }, []);
 
   return (
     <SafeAreaView
@@ -88,7 +109,7 @@ export const LoginScreen = ({ navigation }) => {
           <ActivityIndicator size="small" color="#fff" />
         ) : (
           <Text style={{ fontSize: 16, fontWeight: "bold", color: "#fff" }}>Đăng nhập với mật khẩu</Text>
-         ) 
+        )
         }
 
 

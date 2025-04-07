@@ -6,7 +6,7 @@ import { SettingContactStyles } from "../../../styles/SettingContactStyle";
 
 const SettingContact = ({ navigation }) => {
   return (
-    <SafeAreaView style={SettingContactStyles.container}>
+    <View style={SettingContactStyles.container}>
       <View style={SettingContactStyles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={20} color="#fff" />
@@ -35,7 +35,7 @@ const SettingContact = ({ navigation }) => {
           <Text style={SettingContactStyles.menuText}>Dung lượng và dữ liệu</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
