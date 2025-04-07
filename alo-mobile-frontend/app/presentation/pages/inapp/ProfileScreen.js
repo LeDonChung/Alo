@@ -30,7 +30,7 @@ export const ProfileScreen = ({ navigation }) => {
     }, [navigation]);
 
     return (
-        <SafeAreaView style={{ paddingHorizontal: 15, backgroundColor: '#fff' }}>
+        <View style={{ paddingHorizontal: 15, backgroundColor: '#fff' }}>
             <View style={{ flexDirection: 'row', paddingVertical: 10, alignItems: 'center' }}>
                 <TouchableOpacity onPress={() => {
                     navigation.goBack()
@@ -83,6 +83,6 @@ export const ProfileScreen = ({ navigation }) => {
                     </View>
                 )
             }
-        </SafeAreaView>
+        </View>
     )
 }

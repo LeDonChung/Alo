@@ -42,13 +42,13 @@ export const UpdateProfileScreen = ({ navigation }) => {
             case 'gif':
                 return 'image/gif';
             default:
-                return 'image/jpeg'; 
+                return 'image/jpeg';
         }
-    }; 
+    };
 
     const pickImage = async () => {
         let permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    
+
         if (permissionResult.granted === false) {
             Alert.alert(
                 "Quyền bị từ chối",
@@ -67,14 +67,14 @@ export const UpdateProfileScreen = ({ navigation }) => {
             );
             return;
         }
-    
+
         let result = await ImagePicker.launchImageLibraryAsync({
             mediaTypes: ImagePicker.MediaTypeOptions.Images,
             allowsEditing: true,
             aspect: [1, 1],
             quality: 1
         });
-    
+
         if (!result.canceled) {
             setIsLoading(true);
             const file = {
@@ -82,7 +82,7 @@ export const UpdateProfileScreen = ({ navigation }) => {
                 type: getMimeType(result.assets[0].uri),
                 name: result.assets[0].uri.split('/').pop(),
             };
-    
+
             await dispatch(uploadAvatar(file));
             showToast("success", "top", "Cập nhật ảnh đại diện", "Cập nhật ảnh đại diện thành công.");
             setIsLoading(false);
@@ -106,7 +106,7 @@ export const UpdateProfileScreen = ({ navigation }) => {
     };
 
     return (
-        <SafeAreaView style={{ paddingHorizontal: 15, backgroundColor: '#fff' }}>
+        <View style={{ paddingHorizontal: 15, backgroundColor: '#fff' }}>
             <View style={{ flexDirection: "row", paddingVertical: 10, alignItems: "center" }}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <IconMaterial name="arrow-back" size={24} color={"#2261E2"} />
@@ -178,6 +178,6 @@ export const UpdateProfileScreen = ({ navigation }) => {
                     )}
                 </TouchableOpacity>
             </View>
-        </SafeAreaView>
+        </View>
     );
 };

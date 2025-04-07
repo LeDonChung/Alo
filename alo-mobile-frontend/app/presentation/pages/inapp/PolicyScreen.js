@@ -4,9 +4,9 @@ import { GlobalStyles } from "../../styles/GlobalStyles"
 
 export const PolicyScreen = ({navigation}) => {
     return (
-        <SafeAreaView style={GlobalStyles.container}>
+        <View style={GlobalStyles.container}>
             <Text>Chat Screen</Text>
             <Button title="Go to Policy" onPress={() => navigation.navigate('inapp')} />
-        </SafeAreaView>
+        </View>
     )
 }
