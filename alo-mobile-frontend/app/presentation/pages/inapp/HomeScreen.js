@@ -15,6 +15,19 @@ export const HomeScreen = ({ navigation }) => {
 
   const conversations = useSelector(state => state.conversation.conversations);
 
+
+  useEffect(() => {
+    socket.on("users-online", ({ userIds }) => {
+      dispatch(setUserOnlines(userIds));
+    })
+  }, []); 
+
+  useEffect(() => {
+    socket.emit('login', userLogin.id);
+  }, [userLogin.id]);
+
+  console.log("userOnlines: ", userOnlines);
+
   const renderItem = ({ item }) => {
     const friend = item.members.find(member => member.id !== userLogin.id);
 
