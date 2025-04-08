@@ -17,6 +17,23 @@ export const LoginPage = () => {
 
     const handleSubmitLogin = async (e) => {
         e.preventDefault();
+        let errors = false;
+        // Validate
+        const regexPhone = /^(0|\+84)(3[2-9]|5[2689]|7[0-9]|8[1-9]|9[0-9])\d{7}$/;
+        if (!regexPhone.test(userLogin.phoneNumber.trim())) {
+            showToast('Số điện thoại không hợp lệ.', 'error');
+            errors = true;
+        }
+
+        if(userLogin.password.trim() === "") {
+            showToast('Mật khẩu không hợp lệ.', 'error');
+            errors = true;
+        }
+
+        if (errors) {
+            return;
+        }
+
         setIsLoading(true);
         await dispatch(login(userLogin)).unwrap().then(async (response) => {
             showToast('Đăng nhập thành công', 'success');

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { setUserRegister } from '../redux/slices/RegisterSlice';
+import showToast from '../utils/AppUtils';
 
 export const RegisterPage = () => {
   const userRegister = useSelector((state) => state.register.userRegister);
@@ -13,8 +14,9 @@ export const RegisterPage = () => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
-    if (!userRegister.phoneNumber) {
-      setError('Vui lòng nhập số điện thoại!');
+    const regexPhone = /^(0|\+84)(3[2-9]|5[2689]|7[0-9]|8[1-9]|9[0-9])\d{7}$/;
+    if (!regexPhone.test(userRegister.phoneNumber.trim())) {
+      showToast('Số điện thoại không hợp lệ.', 'error');
       return;
     }
     if (!agree) {
@@ -49,8 +51,7 @@ export const RegisterPage = () => {
                 id="phone"
                 placeholder="Số điện thoại"
                 value={userRegister.phoneNumber}
-                onChange={(e) => dispatch(setUserRegister({...userRegister, phoneNumber: e.target.value}))}
-                required
+                onChange={(e) => dispatch(setUserRegister({ ...userRegister, phoneNumber: e.target.value }))}
               />
             </div>
             <div className="mb-6 relative">
