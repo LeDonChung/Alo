@@ -146,7 +146,7 @@ export const ChatScreen = ({ route, navigation }) => {
   return (
     <View style={{ flex: 1, backgroundColor: '#F3F3F3' }}>
       {/* Header */}
-      <View style={{backgroundColor: '#007AFF', padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingTop: 50 }}>
+      <View style={{backgroundColor: '#007AFF', padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between'}}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <AntDesign name="left" size={20} color="white" onPress={() => socket.emit("leave_conversation", conversation.id) && navigation.goBack()} />
           <View style={{ marginLeft: 20 }}>
