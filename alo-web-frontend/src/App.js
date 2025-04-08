@@ -12,6 +12,7 @@ import CreateGroupPage from './pages/CreateGroup';
 import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { getFriends } from './redux/slices/FriendSlice';
+import { ForgetPassword } from './pages/ForgetPassword';
 
 function App() {
   const dispatch = useDispatch();
@@ -36,6 +37,7 @@ function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/otp" element={<OTPPage />} />
           <Route path="/register-info" element={<RegisterInformationPage />} />
+          <Route path="/forget-password" element={<ForgetPassword />} />
           <Route path="/create-group" element={<CreateGroupPage/>} />
         </Route>
 
