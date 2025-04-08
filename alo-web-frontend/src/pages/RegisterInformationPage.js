@@ -12,13 +12,47 @@ export const RegisterInformationPage = () => {
   const dispatch = useDispatch();
 
   const [isLoading, setIsLoading] = useState(false);
+  const [validPassword, setValidPassword] = useState('');
+  const [validFullName, setValidFullName] = useState('');
+  const [validPhone, setValidPhone] = useState('');
+  const [validRePassword, setValidRePassword] = useState('');
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setIsLoading(true);
-    if (userRegister.password !== userRegister.rePassword) {
-      setError('Mật khẩu không khớp!');
+
+    const regexPassword = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{6,}$/;
+    const regexHoTen = /^[A-ZÀ-Ỹ][a-zà-ỹ]+(?:\s[A-ZÀ-Ỹ][a-zà-ỹ]+)*$/;
+    const regexPhone = /^(0|\+84)(3[2-9]|5[2689]|7[0-9]|8[1-9]|9[0-9])\d{7}$/;
+
+    let errors = false;
+    if (!regexPassword.test(userRegister.password.trim())) {
+      setValidPassword('Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ hoa, số và ký tự đặc biệt, không chứa khoảng trắng.');
+      errors = true;
+    }
+
+    if (!regexHoTen.test(userRegister.fullName.trim())) {
+      setValidFullName('Họ tên không hợp lệ.');
+      errors = true;
+
+    }
+
+    if (!regexPhone.test(userRegister.phoneNumber.trim())) {
+      setValidPhone('Số điện thoại không hợp lệ.');
+      errors = true;
+    }
+
+    if (userRegister.password.trim() !== userRegister.rePassword.trim()) {
+      setValidRePassword('Mật khẩu không khớp.');
+      errors = true;
+    }
+
+    if (errors) {
+      setIsLoading(false);
       return;
     }
+
+
+    setIsLoading(true);
 
     const data = {
       phoneNumber: userRegister.phoneNumber,
@@ -49,7 +83,7 @@ export const RegisterInformationPage = () => {
             <h2 className="text-center font-medium pb-2">Hoàn tất đăng ký</h2>
           </div>
           <form onSubmit={handleSubmit}>
-            <div className="mb-4 relative">
+            <div className="mt-4 relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                 <i className="fas fa-mobile-alt"></i>
               </span>
@@ -61,7 +95,7 @@ export const RegisterInformationPage = () => {
                 disabled
               />
             </div>
-            <div className="mb-4 relative">
+            <div className="mt-4 relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                 <i className="fas fa-user"></i>
               </span>
@@ -71,11 +105,15 @@ export const RegisterInformationPage = () => {
                 id="fullName"
                 placeholder="Họ và tên"
                 value={userRegister.fullName}
-                onChange={(e) => dispatch(setUserRegister({ ...userRegister, fullName: e.target.value }))}
-                required
+                onChange={(e) => {
+                  setValidFullName('');
+                  dispatch(setUserRegister({ ...userRegister, fullName: e.target.value }));
+                }}
               />
             </div>
-            <div className="mb-6 relative">
+            {validFullName && <p className="text-red-500 text-sm mt-1">{validFullName}</p>}
+
+            <div className="mt-4 relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                 <i className="fas fa-lock"></i>
               </span>
@@ -85,11 +123,15 @@ export const RegisterInformationPage = () => {
                 id="password"
                 placeholder="Mật khẩu"
                 value={userRegister.password}
-                onChange={(e) => dispatch(setUserRegister({ ...userRegister, password: e.target.value }))}
-                required
+                onChange={(e) => {
+                  setValidPassword('');
+                  dispatch(setUserRegister({ ...userRegister, password: e.target.value }));
+                }}
               />
             </div>
-            <div className="mb-6 relative">
+            {validPassword && <p className="text-red-500 text-sm mt-1">{validPassword}</p>}
+
+            <div className="mt-4 relative">
               <span className="absolute inset-y-0 left-0 flex items-center pl-3">
                 <i className="fas fa-lock"></i>
               </span>
@@ -99,14 +141,17 @@ export const RegisterInformationPage = () => {
                 id="rePassword"
                 placeholder="Nhập lại mật khẩu"
                 value={userRegister.rePassword}
-                onChange={(e) => dispatch(setUserRegister({ ...userRegister, rePassword: e.target.value }))}
-                required
+                onChange={(e) => {
+                  setValidRePassword('');
+                  dispatch(setUserRegister({ ...userRegister, rePassword: e.target.value }));
+                }}
               />
             </div>
-            {error && <p className="text-red-500 text-sm mb-4">{error}</p>}
+            {validRePassword && <p className="text-red-500 text-sm mt-1">{validRePassword}</p>}
+
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200"
+              className="mt-4 w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200"
             >
               {
                 isLoading ? (
