@@ -40,6 +40,15 @@ export const AccountScreen = ({ navigation }) => {
                     <Text style={{ fontSize: 16, fontWeight: 'bold', marginRight: 'auto', marginLeft: 10 }}>Quyền riêng tư</Text>
                     <IconMaterial name="keyboard-arrow-right" size={24} color={"#000"} />
                 </TouchableOpacity>
+
+                <TouchableOpacity style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 }} onPress={() => {
+                    navigation.navigate('accountAndSecurity')
+                }}>
+                    <IconMaterial name="lock" size={24} color={"#2261E2"} />
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', marginRight: 'auto', marginLeft: 10 }} >Tài Khoản và Bảo Mật</Text>
+                    <IconMaterial name="keyboard-arrow-right" size={24} color={"#000"} />
+                </TouchableOpacity>
+
                 <TouchableOpacity style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 }} onPress={() => {
                     // remove 
                     SecureStore.deleteItemAsync('accessToken');

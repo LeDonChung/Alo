@@ -14,12 +14,13 @@ export const RegisterScreen = ({ navigation }) => {
     const { isLoading, error } = useSelector((state) => state.register);
     const userRegister = useSelector(state => state.register.userRegister)
     const handleRegister = () => {
+        const regexPhone = /^(0|\+84)(3[2-9]|5[2689]|7[0-9]|8[1-9]|9[0-9])\d{7}$/;
         if (!isChecked) {
             showToast("error", "top", "Lỗi", "Bạn chưa đồng ý với điều khoản sử dụng");
             return;
         }
-        if (!userRegister.phoneNumber) {
-            showToast("error", "top", "Lỗi", "Vui lòng nhập số điện thoại");
+        if (!regexPhone.test(userRegister.phoneNumber.trim())) {
+            showToast("error", "top", "Lỗi", "Số điện thoại không hợp lệ.");
             return;
         }
 

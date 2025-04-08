@@ -6,6 +6,7 @@ import { AccountScreen } from "../pages/inapp/AccountScreen"
 import { PolicyScreen } from "../pages/inapp/PolicyScreen"
 import { ProfileScreen } from "../pages/inapp/ProfileScreen"
 import { UpdateProfileScreen } from "../pages/inapp/UpdateProfileScreen"
+import {AccountAndSecurityScreen} from "../pages/inapp/AccountAndSecurity"
 const Stack = createStackNavigator()
 export const AccountNavigation = () => {
     return (
@@ -15,6 +16,7 @@ export const AccountNavigation = () => {
                     <Stack.Screen name="profile" component={ProfileScreen} />
                     <Stack.Screen name="updateProfile" component={UpdateProfileScreen} />
                     <Stack.Screen name="policy" component={PolicyScreen} />
+                    <Stack.Screen name="accountAndSecurity" component={AccountAndSecurityScreen} />
                 </Stack.Navigator>
         </>
     )

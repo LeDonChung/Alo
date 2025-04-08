@@ -90,6 +90,24 @@ const logout = createAsyncThunk('UserSlice/logout', async (_, { rejectWithValue 
         return rejectWithValue(error.response.data);
     }
 });
+
+const changePassword = createAsyncThunk('UserSlice/changePassword', 
+    async ({ phoneNumber, oldPassword, newPassword }, { rejectWithValue }) => {
+    try {
+        const accessToken = await SecureStore.getItemAsync("accessToken");
+        const response = await axiosInstance.post('/api/auth/change-password',{ phoneNumber, oldPassword, newPassword}, {
+            headers: {
+                    "Content-Type": "application/json", 
+                    Authorization: `Bearer ${accessToken}`, 
+                 },
+          });
+        return response.data;
+    } catch (error) {
+        console.log("API Error:", error);
+        return rejectWithValue(error.response.data);
+    }
+});
+
 const UserSlice = createSlice({
     name: 'UserSlice',
     initialState: initialState,
@@ -196,9 +214,17 @@ const UserSlice = createSlice({
         builder.addCase(logout.rejected, (state, action) => {
         });
 
+        builder.addCase(changePassword.pending, (state) => {
+        });
+        builder.addCase(changePassword.fulfilled, (state, action) => {
+        });
+        builder.addCase(changePassword.rejected, (state, action) => {
+        });
+
+
     }
 });
 
 export const { setUserOnlines, setUserLogin } = UserSlice.actions;
-export { uploadAvatar, uploadBackground, getProfile, updateProfile, login, verifyOtp, generateOtp, logout };
+export { uploadAvatar, uploadBackground, getProfile, updateProfile, login, verifyOtp, generateOtp, logout, changePassword };
 export default UserSlice.reducer;
