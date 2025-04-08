@@ -80,7 +80,7 @@ export const LoginPage = () => {
 
                     <div className="flex justify-between mt-4 text-sm text-gray-600">
                         <Link to={'/register'} className="hover:underline">Đăng ký</Link>
-                        <a href="#" className="hover:underline">Quên mật khẩu</a>
+                        <Link to={'/forget-password'} className="hover:underline">Quên mật khẩu</Link>
                     </div>
                 </div>
             </div>

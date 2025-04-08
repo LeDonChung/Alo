@@ -36,12 +36,12 @@ export const Navigation = () => {
         { id: 1, icon: "./icon/ic_message.png", onPress: () => navigate("/me") },
         { id: 2, icon: "./icon/ic_round-perm-contact-calendar.png", onPress: () => navigate("/contact") },
         { id: 3, icon: "./icon/ic_outline-cloud.png" },
-        { id: 4, icon: "./icon/weui_setting-outlined.png" }
     ]);
     const [selectedMenu, setSelectedMenu] = useState(menus[0]);
     const [showSettings, setShowSettings] = useState(false);
     const [showProfileModal, setShowProfileModal] = useState(false);
     const [showUpdateModal, setShowUpdateModal] = useState(false);
+    const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
     const navigate = useNavigate();
     const settingsRef = useRef(null);
 
@@ -85,13 +85,20 @@ export const Navigation = () => {
                     </a>
 
                     {showSettings && (
-                        <div className="absolute left-full top-[-30px] bg-white text-black shadow-md rounded-lg w-[200px] p-2">
+                        <div className="absolute left-full top-[-100px] bg-white text-black shadow-md rounded-lg w-[200px] p-2">
                             <div
                                 className="flex flex-row items-center cursor-pointer hover:bg-gray-200 px-2"
                                 onClick={() => { setShowProfileModal(true); setShowSettings(false); }}
                             >
                                 <i className="fas fa-user"></i>
                                 <p className="p-2"> Thông tin cá nhân </p>
+                            </div>
+                            <div
+                                className="flex flex-row items-center cursor-pointer hover:bg-gray-200 px-2"
+                                onClick={() => { setShowChangePasswordModal(true); setShowSettings(false); }}
+                            >
+                                <i className="fas fa-user"></i>
+                                <p className="p-2"> Đổi mật khẩu </p>
                             </div>
                             <div className="flex flex-row items-center cursor-pointer hover:bg-gray-200 px-2" onClick={async () => {
                                 await dispatch(logout());
@@ -119,10 +126,81 @@ export const Navigation = () => {
                 <ProfileModal setShowProfileModal={setShowProfileModal} setShowUpdateModal={setShowUpdateModal} />
             }
 
+            {/* Modal Hiển Thị Đổi Mật Khẩu */}
+            {showChangePasswordModal &&
+                <ChangePasswordModal setShowChangePasswordModal={setShowChangePasswordModal} />
+            }
+
             {/* Modal Cập Nhật Thông Tin Cá Nhân */}
             {showUpdateModal &&
                 <UpdateProfileModal setShowProfileModal={setShowProfileModal} setShowUpdateModal={setShowUpdateModal} />
             }
+        </>
+    );
+};
+
+const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
+    const [isLoading, setIsLoading] = useState(false);
+    const dispatch = useDispatch();
+    const userLogin = useSelector((state) => state.user.userLogin);
+
+    const handlerActionChangePasswordProfile = (e) => {
+        e.preventDefault();
+    }
+    return (
+        <>
+            <div className="fixed inset-0 bg-black opacity-50 z-40"></div>
+            {userLogin && (
+                <div className="fixed inset-0 flex justify-center items-center z-50">
+                    <form id="updateProfile" onSubmit={(e) => handlerActionChangePasswordProfile(e)}>
+                        <div className="bg-white rounded-lg shadow-lg w-[400px] p-4">
+                            <div className="flex items-center">
+                                <button
+                                    className="text-gray-600 mr-2"
+                                    onClick={() => { setShowChangePasswordModal(false); }}
+                                >
+                                    <i className="fas fa-arrow-left"></i>
+                                </button>
+                                <h2 className="text-lg font-semibold text-center flex-1">Đổi mật khẩu</h2>
+                            </div>
+                            <div className="p-4">
+                                {/* Nhập tên hiển thị */}
+                                <label className="block mb-2">Số điện thoại</label>
+                                <input
+                                    type="text"
+                                    className="border w-full p-2 rounded"
+                                    value={userLogin.phoneNumber}
+                                    disabled
+                                />
+
+
+                                {/* Nút cập nhật */}
+                                <div className="flex justify-between mt-4">
+                                    <button
+                                        className="bg-gray-400 text-white px-4 py-2 rounded"
+                                        onClick={() => setShowChangePasswordModal(false)}
+                                    >
+                                        Hủy
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+                                        disabled={isLoading}
+                                    >
+                                        {isLoading ? (
+                                            <div className="flex justify-center items-center">
+                                                <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                                            </div>
+                                        ) : (
+                                            "Cập nhật"
+                                        )}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            )}
         </>
     );
 };
