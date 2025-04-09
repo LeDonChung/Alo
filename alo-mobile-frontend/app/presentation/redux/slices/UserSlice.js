@@ -92,24 +92,18 @@ const logout = createAsyncThunk('UserSlice/logout', async (_, { rejectWithValue 
     }
 });
 
-const changePassword = createAsyncThunk('UserSlice/changePassword', 
+const changePassword = createAsyncThunk('UserSlice/changePassword',
     async ({ phoneNumber, oldPassword, newPassword }, { rejectWithValue }) => {
+        try {
+            const response = await axiosInstance.post('/api/auth/change-password', { phoneNumber, oldPassword, newPassword });
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response.data);
+        }
+    });
+const forgetPassword = createAsyncThunk('UserSlice/forgetPassword', async ({ phoneNumber, passwordNew }, { rejectWithValue }) => {
     try {
-        const accessToken = await SecureStore.getItemAsync("accessToken");
-        const response = await axiosInstance.post('/api/auth/change-password',{ phoneNumber, oldPassword, newPassword}, {
-            headers: {
-                    "Content-Type": "application/json", 
-                    Authorization: `Bearer ${accessToken}`, 
-                 },
-          });
-        return response.data;
-    } catch (error) {
-        console.log("API Error:", error);
-    }
-  });
-const forgetPassword = createAsyncThunk('UserSlice/forgetPassword', async ({phoneNumber, passwordNew}, { rejectWithValue }) => {
-    try {
-        const response = await axiosInstance.post('/api/auth/reset-password', {phoneNumber, passwordNew});
+        const response = await axiosInstance.post('/api/auth/reset-password', { phoneNumber, passwordNew });
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response.data);
@@ -180,7 +174,7 @@ const UserSlice = createSlice({
             console.log("User login: ", state.userLogin);
         });
         builder.addCase(getProfile.rejected, (state, action) => {
-            state.userLogin = null; 
+            state.userLogin = null;
             console.log("User login: ", action);
 
         });
@@ -208,11 +202,11 @@ const UserSlice = createSlice({
         });
 
         builder.addCase(verifyOtp.fulfilled, (state, action) => {
-            
+
         });
 
         builder.addCase(verifyOtp.rejected, (state, action) => {
-            
+
         });
 
         builder.addCase(logout.pending, (state) => {

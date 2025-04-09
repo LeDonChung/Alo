@@ -47,7 +47,7 @@ export const OTPScreen = ({ navigation }) => {
                 setIsCounting(true);
                 showToast("success", "top", "OTP Đã Gửi", "Vui lòng kiểm tra tin nhắn của bạn.");
             } catch (error) {
-                console.error("Error generating OTP:", error);
+                // console.error("Error generating OTP:", error);
                 showToast("error", "top", "Thông báo", error.message || 'Có lỗi xảy ra khi gửi OTP');
             }
 
@@ -66,7 +66,7 @@ export const OTPScreen = ({ navigation }) => {
             showToast("success", "top", "Thông báo", response.message || 'Có lỗi xảy ra khi gửi OTP');
             navigation.navigate("registerInformation");
         } catch (error) { 
-            console.error("Error verifying OTP:", error);
+            // console.error("Error verifying OTP:", error);
             showToast("error", "top", "Thông báo", error.message || 'Có lỗi xảy ra khi gửi OTP');
         }
     };

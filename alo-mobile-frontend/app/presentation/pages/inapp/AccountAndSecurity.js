@@ -98,36 +98,24 @@ export const AccountAndSecurityScreen = ({ navigation }) => {
 
     setIsLoading(true);
     try {
-        await dispatch(
-          changePassword({
-            phoneNumber: userLogin.phoneNumber,
-            oldPassword,
-            newPassword,
-          })
-        )
-          .unwrap()
-          .then((response) => {
-            showToast("success", "top", "Thành công", response.message || "Đổi mật khẩu thành công.");
-            navigation.goBack();
-          })
-          .catch((error) => {
-            console.log("API Error:", error);
-            if (error.message === "Mật khẩu cũ không đúng.") {
-              setErrorOldPassword("Mật khẩu cũ không đúng.");
-            } else if (error.message === "Tài khoản không tồn tại.") {
-              showToast("error", "top", "Lỗi", "Tài khoản không tồn tại.");
-            } else {
-                
-              showToast("error", "top", "Lỗi", error.message || "Có lỗi xảy ra, vui lòng thử lại.");
-            }
-          });
-      } catch (error) {
-        console.log("API Error:", error);
-        showToast("error", "top", "Lỗi", "Có lỗi xảy ra, vui lòng thử lại.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+      await dispatch(
+        changePassword({
+          phoneNumber: userLogin.phoneNumber,
+          oldPassword,
+          newPassword,
+        })
+      )
+        .unwrap()
+        .then((response) => {
+          showToast("success", "top", "Thành công", response.message || "Đổi mật khẩu thành công.");
+          navigation.goBack();
+        }) 
+    } catch (error) {
+      showToast("error", "top", "Lỗi", error.message || "Có lỗi xảy ra, vui lòng thử lại.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   return (
     <View style={{ paddingHorizontal: 15, backgroundColor: "#fff", flex: 1 }}>
@@ -153,18 +141,17 @@ export const AccountAndSecurityScreen = ({ navigation }) => {
             paddingVertical: 10,
           }}
         >
-          Tài Khoản và Bảo Mật
+          Đổi mật khẩu
         </Text>
       </View>
       {userLogin && (
         <View>
           <View style={styles.inputContainer}>
-            <IconF6 name="phone" size={24} color={"#2261E2"} />
+            <IconF6 name="phone" size={20} color={"#2261E2"} />
             <View
               style={{
                 marginLeft: 10,
                 flex: 1,
-                borderBottomWidth: 1,
                 borderBottomColor: "gray",
                 paddingVertical: 15,
                 flexDirection: "row",
@@ -172,15 +159,14 @@ export const AccountAndSecurityScreen = ({ navigation }) => {
                 alignItems: "center",
               }}
             >
-              <Text style={{ fontSize: 16 }}>Số điện thoại</Text>
-              <Text style={{ fontSize: 16, fontWeight: "bold" }}>
+              <Text style={{ fontSize: 16 }}>
                 {userLogin.phoneNumber}
               </Text>
             </View>
           </View>
 
           <View style={styles.inputContainer}>
-            <IconF6 name="lock" size={24} color={"#2261E2"} />
+            <IconF6 name="lock" size={20} color={"#2261E2"} />
             <TextInput
               style={styles.input}
               placeholder="Mật khẩu cũ"
@@ -197,7 +183,7 @@ export const AccountAndSecurityScreen = ({ navigation }) => {
           )}
 
           <View style={styles.inputContainer}>
-            <IconF6 name="lock" size={24} color={"#2261E2"} />
+            <IconF6 name="lock" size={20} color={"#2261E2"} />
             <TextInput
               style={styles.input}
               placeholder="Mật khẩu mới"
@@ -215,7 +201,7 @@ export const AccountAndSecurityScreen = ({ navigation }) => {
           )}
 
           <View style={styles.inputContainer}>
-            <IconF6 name="lock" size={24} color={"#2261E2"} />
+            <IconF6 name="lock" size={20} color={"#2261E2"} />
             <TextInput
               style={styles.input}
               placeholder="Nhập lại mật khẩu mới"
@@ -248,18 +234,18 @@ export const AccountAndSecurityScreen = ({ navigation }) => {
             {isLoading ? (
               <ActivityIndicator size="small" color="#fff" />
             ) : (
-              <IconEI name="check" size={24} color={"#fff"} />
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: "bold",
+                  marginLeft: 10,
+                  color: "#fff",
+                }}
+              >
+                Xác nhận
+              </Text>
             )}
-            <Text
-              style={{
-                fontSize: 16,
-                fontWeight: "bold",
-                marginLeft: 10,
-                color: "#fff",
-              }}
-            >
-              Xác nhận
-            </Text>
+
           </TouchableOpacity>
         </View>
       )}

@@ -28,8 +28,8 @@ import {
 
 } from "../../../redux/slices/FriendSlice";
 import { showToast } from "../../../../utils/AppUtils";
-import { socket } from "../../../../utils/socket";
 import FriendRequests from "./FriendRequests";
+import socket from "../../../../utils/socket";
 
 const ContactScreen = ({ navigation }) => {
   const dispatch = useDispatch();

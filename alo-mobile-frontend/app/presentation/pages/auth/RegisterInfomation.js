@@ -25,53 +25,53 @@ export const RegisterInformationScreen = ({ navigation }) => {
   const [errorFullName, setErrorFullName] = useState("");
   const [errorPassword, setErrorPassword] = useState("");
   const [errorRePassword, setErrorRePassword] = useState("");
-  
 
-    const regexPassword = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{6,}$/;
-    const regexHoTen = /^[A-ZÀ-Ỹ][a-zà-ỹ]+(?:\s[A-ZÀ-Ỹ][a-zà-ỹ]+)*$/;
-    const regexPhone = /^(0|\+84)(3[2-9]|5[2689]|7[0-9]|8[1-9]|9[0-9])\d{7}$/;
 
-    const validatePhone = (value) => {
-        if (!value) {
-          setErrorPhone("Vui lòng nhập số điện thoại.");
-        } else if (!regexPhone.test(value.trim())) {
-          setErrorPhone("Số điện thoại không hợp lệ.");
-        } else {
-          setErrorPhone("");
-        }
-      };
-    
-      const validateFullName = (value) => {
-        if (!value) {
-          setErrorFullName("Vui lòng nhập họ và tên.");
-        } else if (!regexHoTen.test(value.trim())) {
-          setErrorFullName("Họ tên không hợp lệ (chữ cái đầu mỗi từ phải in hoa).");
-        } else {
-          setErrorFullName("");
-        }
-      };
-    
-      const validatePassword = (value) => {
-        if (!value) {
-          setErrorPassword("Vui lòng nhập mật khẩu.");
-        } else if (!regexPassword.test(value.trim())) {
-          setErrorPassword(
-            "Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ hoa, số và ký tự đặc biệt, không chứa khoảng trắng."
-          );
-        } else {
-          setErrorPassword("");
-        }
-      };
-    
-      const validateRePassword = (value) => {
-        if (!value) {
-          setErrorRePassword("Vui lòng nhập lại mật khẩu.");
-        } else if (value.trim() !== userRegister.password.trim()) {
-          setErrorRePassword("Mật khẩu không khớp.");
-        } else {
-          setErrorRePassword("");
-        }
-      };
+  const regexPassword = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{6,}$/;
+  const regexHoTen = /^[A-ZÀ-Ỹ][a-zà-ỹ]+(?:\s[A-ZÀ-Ỹ][a-zà-ỹ]+)*$/;
+  const regexPhone = /^(0|\+84)(3[2-9]|5[2689]|7[0-9]|8[1-9]|9[0-9])\d{7}$/;
+
+  const validatePhone = (value) => {
+    if (!value) {
+      setErrorPhone("Vui lòng nhập số điện thoại.");
+    } else if (!regexPhone.test(value.trim())) {
+      setErrorPhone("Số điện thoại không hợp lệ.");
+    } else {
+      setErrorPhone("");
+    }
+  };
+
+  const validateFullName = (value) => {
+    if (!value) {
+      setErrorFullName("Vui lòng nhập họ và tên.");
+    } else if (!regexHoTen.test(value.trim())) {
+      setErrorFullName("Họ tên không hợp lệ (chữ cái đầu mỗi từ phải in hoa).");
+    } else {
+      setErrorFullName("");
+    }
+  };
+
+  const validatePassword = (value) => {
+    if (!value) {
+      setErrorPassword("Vui lòng nhập mật khẩu.");
+    } else if (!regexPassword.test(value.trim())) {
+      setErrorPassword(
+        "Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ hoa, số và ký tự đặc biệt, không chứa khoảng trắng."
+      );
+    } else {
+      setErrorPassword("");
+    }
+  };
+
+  const validateRePassword = (value) => {
+    if (!value) {
+      setErrorRePassword("Vui lòng nhập lại mật khẩu.");
+    } else if (value.trim() !== userRegister.password.trim()) {
+      setErrorRePassword("Mật khẩu không khớp.");
+    } else {
+      setErrorRePassword("");
+    }
+  };
 
   const handleRegister = async () => {
     setErrorPhone("");
@@ -79,42 +79,40 @@ export const RegisterInformationScreen = ({ navigation }) => {
     setErrorPassword("");
     setErrorRePassword("");
 
-    // Kiểm tra cơ bản
-    if (!userRegister.phoneNumber || !userRegister.fullName || !userRegister.password || !userRegister.rePassword) {
-      if (!userRegister.phoneNumber) setErrorPhone("Vui lòng nhập số điện thoại.");
-      if (!userRegister.fullName) setErrorFullName("Vui lòng nhập họ và tên.");
-      if (!userRegister.password) setErrorPassword("Vui lòng nhập mật khẩu.");
-      if (!userRegister.rePassword) setErrorRePassword("Vui lòng nhập lại mật khẩu.");
-      return;
-    }
+    const errors = false; 
 
     if (!regexPhone.test(userRegister.phoneNumber.trim())) {
-        setErrorPhone("Số điện thoại không hợp lệ.");
-        return;
-      }
-      if (!regexHoTen.test(userRegister.fullName.trim())) {
-        setErrorFullName("Họ tên không hợp lệ (chữ cái đầu mỗi từ phải in hoa).");
-        return;
-      }
-      if (!regexPassword.test(userRegister.password.trim())) {
-        setErrorPassword(
-          "Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ hoa, số và ký tự đặc biệt, không chứa khoảng trắng."
-        );
-        return;
-      }
-      if (userRegister.password.trim() !== userRegister.rePassword.trim()) {
-        setErrorRePassword("Mật khẩu không khớp.");
-        return;
-      }
+      setErrorPhone("Số điện thoại không hợp lệ.");
+      errors = true;
+    }
+    if (!regexHoTen.test(userRegister.fullName.trim())) {
+      setErrorFullName("Họ tên không hợp lệ (chữ cái đầu mỗi từ phải in hoa).");
+      errors = true;
+
+    }
+    if (!regexPassword.test(userRegister.password.trim())) {
+      setErrorPassword(
+        "Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ hoa, số và ký tự đặc biệt, không chứa khoảng trắng."
+      );
+      errors = true;
+
+    }
+    if (userRegister.password.trim() !== userRegister.rePassword.trim()) {
+      setErrorRePassword("Mật khẩu không khớp.");
+      errors = true;
+
+    }
+
+    if (errors) return;
 
     try {
       const actionResult = await dispatch(registerUser(userRegister)).unwrap().then(() => {
-          showToast("success", "top", "Đăng ký", "Đăng ký tài khoản thành công."
-          );
-          navigation.navigate("login");
-        }).catch((e) => {
-          showToast("error", "top", "Đăng ký", e.message);
-        });
+        showToast("success", "top", "Đăng ký", "Đăng ký tài khoản thành công."
+        );
+        navigation.navigate("login");
+      }).catch((e) => {
+        showToast("error", "top", "Đăng ký", e.message);
+      });
     } catch (error) {
       console.error("Unexpected error:", error);
       showToast("error", "top", "Lỗi", "Có lỗi xảy ra, vui lòng thử lại.");
@@ -160,6 +158,7 @@ export const RegisterInformationScreen = ({ navigation }) => {
           value={userRegister.fullName}
           onChangeText={(value) => {
             dispatch(setUserRegister({ ...userRegister, fullName: value }));
+            setErrorFullName("");
           }}
         />
       </View>
@@ -174,6 +173,7 @@ export const RegisterInformationScreen = ({ navigation }) => {
           value={userRegister.password}
           onChangeText={(value) => {
             dispatch(setUserRegister({ ...userRegister, password: value }));
+            setErrorPassword("");
           }}
         />
       </View>
@@ -188,6 +188,7 @@ export const RegisterInformationScreen = ({ navigation }) => {
           value={userRegister.rePassword}
           onChangeText={(value) => {
             dispatch(setUserRegister({ ...userRegister, rePassword: value }));
+            setErrorRePassword("");
           }}
         />
       </View>

@@ -13,7 +13,7 @@ export const AccountScreen = ({ navigation }) => {
     console.log("userLogin", userLogin);
     return (
         <View style={GlobalStyles.container}>
-            <View style={{ height: 300, paddingHorizontal: 15 }}>
+            <View style={{ height: 350, paddingHorizontal: 15 }}>
                 <TouchableOpacity style={{ flex: 1, alignItems: 'center', flexDirection: 'row', paddingVertical: 40, borderBottomColor: '#b0b3ba', borderBottomWidth: 1 }}>
                     <Image source={{ uri: userLogin?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" }} style={{ width: 60, height: 60, borderRadius: 50 }} />
                     <View style={{ marginRight: 10 }}>
@@ -46,7 +46,7 @@ export const AccountScreen = ({ navigation }) => {
                     navigation.navigate('accountAndSecurity')
                 }}>
                     <IconMaterial name="lock" size={24} color={"#2261E2"} />
-                    <Text style={{ fontSize: 16, fontWeight: 'bold', marginRight: 'auto', marginLeft: 10 }} >Tài Khoản và Bảo Mật</Text>
+                    <Text style={{ fontSize: 16, fontWeight: 'bold', marginRight: 'auto', marginLeft: 10 }} >Đổi mật khẩu</Text>
                     <IconMaterial name="keyboard-arrow-right" size={24} color={"#000"} />
                 </TouchableOpacity>
 
