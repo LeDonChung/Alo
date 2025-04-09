@@ -38,8 +38,8 @@ export const HomeScreen = ({ navigation }) => {
   }, []); 
 
   useEffect(() => {
-    socket.emit('login', userLogin.id);
-  }, [userLogin.id]);
+    socket.emit('login', userLogin?.id);
+  }, [userLogin?.id]);
 
   console.log("userOnlines: ", userOnlines);
 

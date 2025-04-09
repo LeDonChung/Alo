@@ -168,28 +168,42 @@ export const ChatScreen = ({ route, navigation }) => {
       <FlatList
         data={[...messages].sort((a, b) => b.timestamp - a.timestamp)}
         renderItem={renderItem}
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item, index) => item.id?.toString() || item.timestamp?.toString() || index.toString()}
         contentContainerStyle={{ paddingVertical: 10 }}
         inverted
       />
       {/* Footer */}
       <View style={{ backgroundColor: 'white', padding: 10, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderColor: '#EDEDED' }}>
-          <TouchableOpacity>
-            <Icon name="smile" size={20} color="gray" />
+        <TouchableOpacity>
+          <Icon name="smile" size={20} color="gray" />
+        </TouchableOpacity>
+  
+        <TextInput
+          placeholder="Tin nhắn"
+          value={inputMessage.content}
+          onChangeText={(text) => setInputMessage({ ...inputMessage, content: text })}
+          style={{ flex: 1, backgroundColor: 'white', padding: 10, borderRadius: 20, marginHorizontal: 10 }}
+        />
+
+        {inputMessage.content.trim() ? (
+          <TouchableOpacity onPress={handlerSendMessage} style={{ paddingHorizontal: 10 }}>
+            <Text style={{ color: '#007AFF', fontWeight: 'bold' }}>GỬI</Text>
           </TouchableOpacity>
-        <TextInput placeholder="Tin nhắn" style={{ flex: 1, backgroundColor: 'white', padding: 10, borderRadius: 20 }} />
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
-          <TouchableOpacity style={{ marginHorizontal: 10 }}>
-            <Icon name="ellipsis-h" size={20} color="gray" />
-          </TouchableOpacity>
-          <TouchableOpacity style={{ marginHorizontal: 10 }}>
-            <Icon name="microphone" size={20} color="gray" />
-          </TouchableOpacity>
-          <TouchableOpacity style={{ marginHorizontal: 10 }}>
-            <Icon name="image" size={20} color="gray" />
-          </TouchableOpacity>
-        </View>
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity style={{ marginHorizontal: 10 }}>
+              <Icon name="ellipsis-h" size={20} color="gray" />
+            </TouchableOpacity>
+            <TouchableOpacity style={{ marginHorizontal: 10 }}>
+              <Icon name="microphone" size={20} color="gray" />
+            </TouchableOpacity>
+            <TouchableOpacity style={{ marginHorizontal: 10 }}>
+              <Icon name="image" size={20} color="gray" />
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
+
     </View>
   );
 };
