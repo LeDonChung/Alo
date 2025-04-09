@@ -2,7 +2,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { getProfile, logout, setUserLogin, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
+import { changePassword, getProfile, logout, setUserLogin, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
 import { getAllConversation } from "../redux/slices/ConversationSlice";
@@ -144,8 +144,74 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
     const dispatch = useDispatch();
     const userLogin = useSelector((state) => state.user.userLogin);
 
-    const handlerActionChangePasswordProfile = (e) => {
+    const inputOldPasswordRef = useRef(null);
+    const inputNewPasswordRef = useRef(null);
+    const inputConfirmPasswordRef = useRef(null);
+
+
+    const [oldPassword, setOldPassword] = useState("");
+    const [newPassword, setNewPassword] = useState("");
+    const [confirmPassword, setConfirmPassword] = useState("");
+
+    const [validNewPassword, setValidNewPassword] = useState("");
+    const [validConfirmPassword, setValidConfirmPassword] = useState("");
+    const [validOldPassword, setValidOldPassword] = useState("");
+
+
+    const handlerActionChangePasswordProfile = async (e) => {
         e.preventDefault();
+        const regexPassword = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{6,}$/;
+        let errors = false;
+
+        if (oldPassword.trim() === "") {
+            setValidOldPassword("Vui lòng nhập mật khẩu cũ.");
+            inputOldPasswordRef.current.focus();
+            errors = true;
+        } else {
+            if (!regexPassword.test(newPassword.trim())) {
+                setValidNewPassword("Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ hoa, số và ký tự đặc biệt, không chứa khoảng trắng.");
+                inputNewPasswordRef.current.focus();
+                errors = true;
+            }
+
+            if (newPassword.trim() !== confirmPassword.trim()) {
+                setValidConfirmPassword("Mật khẩu không khớp.");
+                inputConfirmPasswordRef.current.focus();
+                errors = true;
+            }
+        }
+
+
+
+        if (errors) {
+            setIsLoading(false);
+            return;
+        }
+
+        setIsLoading(true);
+        const data = {
+            phoneNumber: userLogin.phoneNumber,
+            oldPassword: oldPassword,
+            newPassword: newPassword,
+        };
+
+        const resp = await dispatch(changePassword(data));
+        const message = resp.payload?.message;
+        if (message && message === "Mật khẩu cũ không đúng.") {
+            showToast("Mật khẩu cũ không đúng", "error");
+            inputOldPasswordRef.current.focus();
+            setIsLoading(false);
+        } else {
+
+            showToast("Đổi mật khẩu thành công", "success");
+            setIsLoading(false);
+            setOldPassword("");
+            setNewPassword("");
+            setConfirmPassword("");
+            setShowChangePasswordModal(false);
+        }
+
+
     }
     return (
         <>
@@ -172,6 +238,48 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
                                     value={userLogin.phoneNumber}
                                     disabled
                                 />
+
+                                <label className="block mt-4 mb-2">Mật khẩu cũ</label>
+                                <input
+                                    type="password"
+                                    className="w-full pl-2 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-0"
+                                    placeholder="Mật khẩu cũ"
+                                    value={oldPassword}
+                                    ref={inputOldPasswordRef}
+                                    onChange={(e) => {
+                                        setValidOldPassword("");
+                                        setOldPassword(e.target.value);
+                                    }}
+                                />
+                                {validOldPassword && <p className="text-red-500 text-sm mt-1">{validOldPassword}</p>}
+
+                                <label className="block mt-4 mb-2">Mật khẩu mới</label>
+                                <input
+                                    type="password"
+                                    className="w-full pl-2 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-0"
+                                    placeholder="Mật khẩu mới"
+                                    value={newPassword}
+                                    ref={inputNewPasswordRef}
+                                    onChange={(e) => {
+                                        setValidNewPassword("");
+                                        setNewPassword(e.target.value);
+                                    }}
+                                />
+                                {validNewPassword && <p className="text-red-500 text-sm mt-1">{validNewPassword}</p>}
+
+                                <label className="block mt-4 mb-2">Nhập lại mật khẩu mới</label>
+                                <input
+                                    type="password"
+                                    className="w-full pl-2 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-0"
+                                    placeholder="Nhập lại mật khẩu mới"
+                                    value={confirmPassword}
+                                    ref={inputConfirmPasswordRef}
+                                    onChange={(e) => {
+                                        setValidConfirmPassword("");
+                                        setConfirmPassword(e.target.value);
+                                    }}
+                                />
+                                {validConfirmPassword && <p className="text-red-500 text-sm mt-1">{validConfirmPassword}</p>}
 
 
                                 {/* Nút cập nhật */}

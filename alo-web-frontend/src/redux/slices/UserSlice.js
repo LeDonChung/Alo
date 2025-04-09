@@ -99,6 +99,15 @@ const verifyOtp = createAsyncThunk('UserSlice/verifyOtp', async (request, { reje
     }
 });
 
+const changePassword = createAsyncThunk('UserSlice/changePassword', async (request, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/auth/change-password', request);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response.data);
+    }
+});
+
 const UserSlice = createSlice({
     name: 'UserSlice',
     initialState: initialState,
@@ -218,9 +227,20 @@ const UserSlice = createSlice({
         builder.addCase(verifyOtp.rejected, (state, action) => {
             
         });
+
+        // Change password
+        builder.addCase(changePassword.pending, (state) => {            
+            
+        });
+        builder.addCase(changePassword.fulfilled, (state, action) => {
+            
+        });
+        builder.addCase(changePassword.rejected, (state, action) => {
+            
+        });
     }
 });
 
 export const { setUserOnlines, setUserLogin } = UserSlice.actions;
-export { uploadAvatar, uploadBackground, getProfile, updateProfile, register, login, logout, generateOtp, verifyOtp };
+export { uploadAvatar, uploadBackground, getProfile, updateProfile, register, login, logout, generateOtp, verifyOtp, changePassword };
 export default UserSlice.reducer;
