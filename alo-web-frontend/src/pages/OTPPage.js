@@ -13,16 +13,16 @@ export const OTPPage = () => {
     const dispatch = useDispatch();
 
     const handlerGenerateOtp = async () => {
-        if (!userRegister.phoneNumber) {
-            showToast('Vui lòng nhập số điện thoại.', 'error');
-            return; 
+        const regexPhone = /^(0|\+84)(3[2-9]|5[2689]|7[0-9]|8[1-9]|9[0-9])\d{7}$/;
+        if (!regexPhone.test(userRegister.phoneNumber.trim())) {
+            showToast('Số điện thoại không hợp lệ.', 'error');
+            return;
         }
-
         const phoneNumber = userRegister.phoneNumber.startsWith('0') ? `+84${userRegister.phoneNumber.slice(1)}` : userRegister.phoneNumber;
         try {
             const response = await dispatch(generateOtp(phoneNumber)).unwrap();
             showToast(response.message, 'success');
-            setTimer(60); 
+            setTimer(60);
             setCanResend(false);
         } catch (error) {
             console.error("Error generating OTP:", error);
@@ -32,7 +32,7 @@ export const OTPPage = () => {
 
     const handlerResendOtp = (e) => {
         e.preventDefault();
-        if (canResend) { 
+        if (canResend) {
             handlerGenerateOtp();
         }
     };
@@ -41,7 +41,13 @@ export const OTPPage = () => {
         e.preventDefault();
         if (!otp) {
             showToast('Vui lòng nhập OTP.', 'error');
-            return; 
+            return;
+        }
+
+        const regexOtp = /\d{6}/;
+        if (!regexOtp.test(otp.trim())) {
+            showToast('OTP không hợp lệ.', 'error');
+            return;
         }
 
         const phoneNumber = userRegister.phoneNumber.startsWith('0') ? `+84${userRegister.phoneNumber.slice(1)}` : userRegister.phoneNumber;
@@ -56,7 +62,7 @@ export const OTPPage = () => {
     }
     useEffect(() => {
         handlerGenerateOtp();
-    }, []); 
+    }, []);
 
     useEffect(() => {
         let interval;
@@ -120,10 +126,10 @@ export const OTPPage = () => {
                             {canResend ? 'Gửi lại OTP' : `Gửi lại OTP trong ${timer} giây`}
                         </button>
 
-                        <button 
+                        <button
                             onClick={(e) => handlerVerifyOtp(e)}
                             type='button'
-                        className="mt-5 w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200">
+                            className="mt-5 w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200">
                             Tiếp tục
                         </button>
                     </div>

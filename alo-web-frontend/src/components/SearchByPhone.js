@@ -20,6 +20,8 @@ export const SearchByPhone = (isOpenAdd) => {
     // xac nhan xoa ban be
     const [isOpenConfirm, setIsOpenConfirm] = useState(false);
     const [isLoadingPhone, setIsLoadingPhone] = useState(false);
+
+    const [isLoading, setIsLoading] = useState(false);
     useEffect(() => {
     }, [info, isOpenAdd]);
 
@@ -62,6 +64,7 @@ export const SearchByPhone = (isOpenAdd) => {
     };
 
     const sendFriend = async () => {
+        setIsLoading(true);
         const request = {
             userId: userLogin.id,
             friendId: info.friendId,
@@ -84,9 +87,11 @@ export const SearchByPhone = (isOpenAdd) => {
         } catch (error) {
             console.error("Lỗi khi gửi lời mời kết bạn:", error);
         }
+        setIsLoading(false);
     }
 
     const handleUnfriend = async (id) => {
+        setIsLoading(true);
         const request = {
             userId: userLogin.id,
             friendId: id,
@@ -108,9 +113,11 @@ export const SearchByPhone = (isOpenAdd) => {
         } catch (error) {
             console.error("Lỗi khi hủy kết bạn:", error);
         }
+        setIsLoading(false);
     }
 
     const handleUnblock = async (id) => {
+        setIsLoading(true);
         const request = {
             userId: userLogin.id,
             friendId: id,
@@ -126,9 +133,11 @@ export const SearchByPhone = (isOpenAdd) => {
         } catch (error) {
             console.error("Lỗi khi mở chặn bạn bè:", error);
         }
+        setIsLoading(false);
     }
 
     const handleCancel = async (id) => {
+        setIsLoading(true);
         const request = {
             userId: userLogin.id,
             friendId: id,
@@ -138,7 +147,7 @@ export const SearchByPhone = (isOpenAdd) => {
             const friendResult = result.payload.data ? result.payload.data : null;
             if (friendResult && friendResult.status === -1) {
                 socket.emit("cancel-friend-request", friendResult); // Gửi sự kiện hủy lời mời đến server
-                handleSearch();
+                await handleSearch();
             }
             else {
                 console.error("Lỗi khi hủy lời mời kết bạn:", result.payload?.message);
@@ -146,9 +155,11 @@ export const SearchByPhone = (isOpenAdd) => {
         } catch (error) {
             console.error("Lỗi khi hủy lời mời kết bạn:", error);
         }
+        setIsLoading(false);
     }
 
     const handleAcceptFriend = async (id) => {
+        setIsLoading(true);
         const request = {
             userId: userLogin.id,
             friendId: id,
@@ -166,9 +177,11 @@ export const SearchByPhone = (isOpenAdd) => {
         } catch (error) {
             console.error("Lỗi khi chấp nhận lời mời kết bạn:", error);
         }
+        setIsLoading(false);
     }
 
     const handleRejectFriend = async (id) => {
+        setIsLoading(true);
         const request = {
             userId: userLogin.id,
             friendId: id,
@@ -185,6 +198,7 @@ export const SearchByPhone = (isOpenAdd) => {
         } catch (error) {
             console.error("Lỗi khi từ chối lời mời kết bạn:", error);
         }
+        setIsLoading(false);
     }
 
     const handleClick = () => {
@@ -274,7 +288,7 @@ export const SearchByPhone = (isOpenAdd) => {
                                     info !== null && (
                                         <>
                                             <div className="flex items-center justify-center">
-                                                <img src="https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" alt="avatar" className="w-20 h-20 rounded-full" />
+                                                <img src={info.avatarLink ? info.avatarLink : "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"} alt="avatar" className="w-20 h-20 rounded-full" />
                                             </div>
                                             <p className="text-center text-gray-800 font-semibold mt-2">{info.fullName}</p>
                                             <p className="text-center text-gray-500 mt-1">{info.phoneNumber}</p>
@@ -305,7 +319,14 @@ export const SearchByPhone = (isOpenAdd) => {
                                                             info?.status === 2 ? "bg-blue-700" : info?.status === 4 ? "bg-blue-700" : 'bg-red-800'} text-white`}
                                                     onClick={() => handleClick()}
                                                 >
-                                                    {info?.status === -1 ? "Gửi lời mời kết bạn" : info?.status === 3 ? "Mở chặn" : info?.status === 0 ? (info.senderId === userLogin.id ? "Hủy lời mời" : " Từ chối") : info?.status === 2 ? "Gửi lời mời kết bạn" : info?.status === 4 ? "Gửi lời mời kết bạn" : "Hủy kết bạn"}
+                                                    {isLoading && info?.status !== -1 && info?.status !== 2 && info?.status !== 4 ? (
+                                                                <div className="flex justify-center items-center">
+                                                                    <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                                                                </div>
+                                                            ) : (
+                                                                info?.status === -1 ? "Gửi lời mời kết bạn" : info?.status === 3 ? "Mở chặn" : info?.status === 0 ? (info.senderId === userLogin.id ? "Hủy lời mời" : " Từ chối") : info?.status === 2 ? "Gửi lời mời kết bạn" : info?.status === 4 ? "Gửi lời mời kết bạn" : "Hủy kết bạn"
+                                                            )}
+                                                    
                                                 </button>
 
                                                 {
@@ -314,7 +335,13 @@ export const SearchByPhone = (isOpenAdd) => {
                                                             className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
                                                             onClick={() => handleAcceptFriend(info.friendId)}
                                                         >
-                                                            Đồng ý
+                                                            {isLoading ? (
+                                                                <div className="flex justify-center items-center">
+                                                                    <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                                                                </div>
+                                                            ) : (
+                                                                "Đồng ý"
+                                                            )}
                                                         </button>
                                                     )
                                                 }
@@ -351,7 +378,13 @@ export const SearchByPhone = (isOpenAdd) => {
                                         className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
                                         onClick={() => sendFriend()}
                                     >
-                                        Gửi lời mời
+                                        {isLoading ? (
+                                            <div className="flex justify-center items-center">
+                                                <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                                            </div>
+                                        ) : (
+                                            "Gửi lời mời"
+                                        )}
                                     </button>
                                 </div>
                             </>
@@ -371,7 +404,13 @@ export const SearchByPhone = (isOpenAdd) => {
                                     className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
                                     onClick={() => handleUnfriend(info.friendId)}
                                 >
-                                    Đồng ý
+                                    {isLoading ? (
+                                        <div className="flex justify-center items-center">
+                                            <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                                        </div>
+                                    ) : (
+                                        "Đồng ý"
+                                    )}
                                 </button>
                                 <button
                                     className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
