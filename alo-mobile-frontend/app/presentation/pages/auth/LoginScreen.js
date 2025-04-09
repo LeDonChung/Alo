@@ -33,17 +33,16 @@ export const LoginScreen = ({ navigation }) => {
       const user = {
         phoneNumber,
         password,
-      }
-      await dispatch(login(user)).unwrap().then(async (response) => {
-        await dispatch(getProfile()).then((res) => {
-          navigation.navigate("inapp");
-        })
-      }).catch((e) => {
-        console.log(e)
-      })
+      };
+      await dispatch(login(user)).unwrap();
+
+      await dispatch(getProfile()).unwrap();
+      navigation.navigate("inapp");
     } catch (error) {
-      console.log("Login Error: ", error);
+      console.log("Login 3rror: ", error);
+      
       setErrorMessage("Số điện thoại hoặc mật khẩu không đúng.");
+      
     } finally {
       setLoading(false);
     }
@@ -57,17 +56,17 @@ export const LoginScreen = ({ navigation }) => {
       "Access Token: ",
       accessToken,
       "Refresh Token: ",
-      refreshToken, 
+      refreshToken,
       "User Login: ",
       userLogin
-    )
+    );
     if (accessToken && refreshToken && userLogin) {
       dispatch(setUserLogin(JSON.parse(userLogin)));
       socket.emit("login", JSON.parse(userLogin).id);
-    } 
-  }
+    }
+  };
   useDispatch(() => {
-    init(); 
+    init();
   }, []);
 
   return (
@@ -102,24 +101,29 @@ export const LoginScreen = ({ navigation }) => {
         />
       </View>
 
-      {errorMessage ? <Text style={styles.errorText}>{errorMessage}</Text> : null}
+      {errorMessage ? (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      ) : null}
 
-      <TouchableOpacity style={styles.button} onPress={handleLogin} disabled={loading}>
+      <TouchableOpacity
+        style={styles.button}
+        onPress={handleLogin}
+        disabled={loading}
+      >
         {loading ? (
           <ActivityIndicator size="small" color="#fff" />
         ) : (
-          <Text style={{ fontSize: 16, fontWeight: "bold", color: "#fff" }}>Đăng nhập với mật khẩu</Text>
-        )
-        }
-
-
+          <Text style={{ fontSize: 16, fontWeight: "bold", color: "#fff" }}>
+            Đăng nhập với mật khẩu
+          </Text>
+        )}
       </TouchableOpacity>
 
       <View style={styles.footer}>
         <TouchableOpacity onPress={() => navigation.navigate("register")}>
           <Text style={styles.link}>Đăng ký</Text>
         </TouchableOpacity>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate("forgetPassword")}>
           <Text style={styles.link}>Quên mật khẩu</Text>
         </TouchableOpacity>
       </View>

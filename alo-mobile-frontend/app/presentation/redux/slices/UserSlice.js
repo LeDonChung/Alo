@@ -68,6 +68,7 @@ const updateProfile = createAsyncThunk('UserSlice/updateProfile', async (user, {
 const generateOtp = createAsyncThunk('UserSlice/generateOtp', async (phoneNumber, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.post('/api/auth/generate-otp?phoneNumber=' + phoneNumber);
+        console.log("Response: ", response);
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response.data);
@@ -90,6 +91,16 @@ const logout = createAsyncThunk('UserSlice/logout', async (_, { rejectWithValue 
         return rejectWithValue(error.response.data);
     }
 });
+
+const forgetPassword = createAsyncThunk('UserSlice/forgetPassword', async ({phoneNumber, passwordNew}, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/auth/reset-password', {phoneNumber, passwordNew});
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response.data);
+    }
+});
+
 const UserSlice = createSlice({
     name: 'UserSlice',
     initialState: initialState,
@@ -196,9 +207,16 @@ const UserSlice = createSlice({
         builder.addCase(logout.rejected, (state, action) => {
         });
 
+        builder.addCase(forgetPassword.pending, (state) => {
+        });
+        builder.addCase(forgetPassword.fulfilled, (state, action) => {
+        });
+        builder.addCase(forgetPassword.rejected, (state, action) => {
+        });
+
     }
 });
 
 export const { setUserOnlines, setUserLogin } = UserSlice.actions;
-export { uploadAvatar, uploadBackground, getProfile, updateProfile, login, verifyOtp, generateOtp, logout };
+export { uploadAvatar, uploadBackground, getProfile, updateProfile, login, verifyOtp, generateOtp, logout, forgetPassword };
 export default UserSlice.reducer;
