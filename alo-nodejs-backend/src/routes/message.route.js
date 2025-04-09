@@ -30,4 +30,25 @@ router.get(
     middleware.authenticateToken,
     messageController.getMessagesByConversationId
 );
+
+// cập nhật trạng thái tin nhắn query params
+router.put(
+    '/:messageId/status',
+    middleware.authenticateToken,
+    messageController.updateMessageStatus
+)
+// cập nhật reaction
+router.put(
+    '/:messageId/reaction',
+    middleware.authenticateToken,
+    messageController.updateMessageReaction
+)
+
+// Cập nhật người đã xem tin nhắn
+router.put(
+    '/:messageId/seen',
+    middleware.authenticateToken,
+    messageController.updateSeenMessage
+)
+
 module.exports = router;
