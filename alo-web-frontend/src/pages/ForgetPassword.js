@@ -23,7 +23,7 @@ export const ForgetPassword = () => {
     const regexPassword = /^(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9])\S{6,}$/;
 
     const handleGenerateOtp = async () => {
-        if (!phoneNumber || !regexPhone.test(phoneNumber)) {
+        if (!phoneNumber || !regexPhone.test(phoneNumber.trim())) {
             setErrorPhone('Số điện thoại không hợp lệ');
             return;
         }
@@ -53,7 +53,7 @@ export const ForgetPassword = () => {
     const handleVerifyOtp = async (e) => {
         e.preventDefault();
 
-        if (!phoneNumber || !regexPhone.test(phoneNumber)) {
+        if (!phoneNumber || !regexPhone.test(phoneNumber.trim())) {
             setErrorPhone('Số điện thoại không hợp lệ');
             return;
         }
@@ -81,11 +81,11 @@ export const ForgetPassword = () => {
     const handleForgetPassword = async (e) => {
         e.preventDefault();
 
-        if (!phoneNumber || !regexPhone.test(phoneNumber)) {
+        if (!phoneNumber || !regexPhone.test(phoneNumber.trim())) {
             setErrorPhone('Số điện thoại không hợp lệ');
             return;
         }
-        if (!password || !regexPassword.test(password)) {
+        if (!password || !regexPassword.test(password.trim())) {
             setErrorMessage('Mật khẩu phải có ít nhất 6 ký tự, bao gồm chữ cái in hoa, số và ký tự đặc biệt');
             return;
         }
