@@ -1,58 +1,110 @@
 import React, { useEffect, useRef, useState } from 'react';
 import EmojiPicker from 'emoji-picker-react';
 import StickerPicker from './StickerPicker';
+import { useDispatch, useSelector } from 'react-redux';
+import { addMessage, sendMessage, setInputMessage, setMessages } from '../../redux/slices/MessageSlice';
+import socket from '../../utils/socket';
 
-const ChatInput = ({ inputMessage, setInputMessage, handlerSendMessage, isSending }) => {
+const ChatInput = ({ isSending }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
+  const conversation = useSelector((state) => state.conversation.conversation);
+  const userLogin = useSelector((state) => state.user.userLogin);
+
+  const messages = useSelector((state) => state.message.messages);
+
+  const handlerSendMessage = async (messageNew) => {
+    const message = {
+      senderId: userLogin.id,
+      conversationId: conversation.id,
+      content: messageNew.content,
+      messageType: messageNew.messageType,
+      fileLink: messageNew.fileLink,
+      timestamp: Date.now(),
+      seen: []
+    };
+
+    const file = messageNew.file;
+
+    await dispatch(sendMessage({ message, file })).then(async (res) => {
+      dispatch(addMessage(res.payload.data));
+      message.sender = userLogin;
+      message.fileLink = res.payload.data.fileLink;
+      socket.emit('send-message', {
+        conversation: conversation,
+        message: message
+      });
+      dispatch(setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' }));
+    });
+  };
+
+  const inputMessage = useSelector((state) => state.message.inputMessage);
+  const dispatch = useDispatch();
   const handleEmojiClick = (emojiData, event) => {
-    setInputMessage({ ...inputMessage, content: inputMessage.content + emojiData.emoji });
+    dispatch(setInputMessage({ ...inputMessage, content: inputMessage.content + emojiData.emoji }));
   };
 
   const [showStickerPicker, setShowStickerPicker] = useState(false);
 
+  useEffect(() => {
+    if (inputMessage.messageType === 'sticker') {
+      handlerSendMessage(inputMessage); 
+    }
+  }, [inputMessage]);
+
   const handleStickerSelect = async (stickerUrl) => {
-    setInputMessage({ ...inputMessage, fileLink: stickerUrl, messageType: 'sticker' })
+    dispatch(setInputMessage({ ...inputMessage, fileLink: stickerUrl, messageType: 'sticker' }))
     setShowStickerPicker(false);
   };
 
-  useEffect(() => {
-    if (inputMessage.messageType === 'sticker' || inputMessage.messageType === 'image' || inputMessage.messageType === 'file') {
-      console.log('inputMessage', inputMessage);
-      handlerSendMessage();
-    }
-  }, [inputMessage]);
 
 
   const imageInputRef = useRef(null);
   const fileInputRef = useRef(null);
 
-  const handleImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleImageUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
 
-    const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'video/mp4'];
-    if (!allowedTypes.includes(file.type)) {
-      alert('Chỉ chấp nhận file ảnh (PNG, JPEG, GIF)');
-      return;
+    for (const file of files) {
+      const allowedTypes = ['image/png', 'image/jpeg', 'image/gif', 'video/mp4'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Chỉ chấp nhận file ảnh (PNG, JPEG, GIF, MP4)');
+        continue;
+      }
+
+      // Tạo dữ liệu message mới trực tiếp
+      const newMessage = { ...inputMessage, messageType: 'image', file: file };
+      dispatch(setInputMessage(newMessage));
+      await handlerSendMessage(newMessage); // Chờ gửi xong trước khi tiếp tục
     }
 
-    setInputMessage({ ...inputMessage, messageType: 'image', file: file });
+    // Reset sau khi xử lý tất cả
+    dispatch(setInputMessage({ ...inputMessage, messageType: 'text', content: '' }));
   };
 
-  const handleFileUpload = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleFileUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
 
     const allowedExtensions = ['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', 'mp4'];
-    const fileExtension = file.name.split('.').pop().toLowerCase();
 
-    if (!allowedExtensions.includes(fileExtension)) {
-      alert('Chỉ chấp nhận file (PDF, DOC, DOCX, TXT)');
-      return;
+    for (const file of files) {
+      const fileExtension = file.name.split('.').pop().toLowerCase();
+
+      if (!allowedExtensions.includes(fileExtension)) {
+        alert('Chỉ chấp nhận file (PDF, DOC, DOCX, TXT, XLS, XLSX, PPT, PPTX, ZIP, RAR, MP4)');
+        continue;
+      }
+
+      // Tạo dữ liệu message mới trực tiếp
+      const newMessage = { ...inputMessage, messageType: 'file', file: file };
+      dispatch(setInputMessage(newMessage));
+      await handlerSendMessage(newMessage); // Chờ gửi xong trước khi tiếp tục
     }
 
-    setInputMessage({ ...inputMessage, messageType: 'file', file: file });
+    // Reset sau khi xử lý tất cả
+    dispatch(setInputMessage({ ...inputMessage, messageType: 'text', content: '' }));
   };
 
   return (
@@ -89,6 +141,7 @@ const ChatInput = ({ inputMessage, setInputMessage, handlerSendMessage, isSendin
             ref={imageInputRef}
             accept="image/png, image/jpeg, image/gif, video/mp4"
             onChange={handleImageUpload}
+            multiple
             hidden
           />
         </button>
@@ -107,6 +160,7 @@ const ChatInput = ({ inputMessage, setInputMessage, handlerSendMessage, isSendin
             accept=".pdf,.doc,.docx,.txt,.xls,.xlsx,.ppt,.pptx,.zip,.rar,.mp4"
             onChange={handleFileUpload}
             hidden
+            multiple
           />
         </button>
 
@@ -136,8 +190,8 @@ const ChatInput = ({ inputMessage, setInputMessage, handlerSendMessage, isSendin
         <input
           type="text"
           value={inputMessage.content}
-          onChange={(e) => setInputMessage({ ...inputMessage, content: e.target.value })}
-          placeholder="Nhập tin nhắn..."
+          onChange={(e) => dispatch(setInputMessage({ ...inputMessage, content: e.target.value }))}
+          placeholder="Nhập tin nhắn..." 
           className="flex-1 p-2 border rounded-lg"
         />
 
@@ -160,7 +214,7 @@ const ChatInput = ({ inputMessage, setInputMessage, handlerSendMessage, isSendin
           <div className="w-6 h-6 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
         ) : (
           <button
-            onClick={handlerSendMessage}
+            onClick={() => handlerSendMessage(inputMessage)}
             type="button"
             className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"
           >
