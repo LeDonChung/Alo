@@ -5,11 +5,12 @@ import IconMaterial from 'react-native-vector-icons/MaterialIcons'
 import * as SecureStore from 'expo-secure-store';
 import { useDispatch, useSelector } from "react-redux"
 import { setUserLogin } from "../../redux/slices/UserSlice";
-import { socket } from "../../../utils/socket";
+import socket from "../../../utils/socket";
 
 export const AccountScreen = ({ navigation }) => {
     const dispatch = useDispatch();
     const userLogin = useSelector(state => state.user.userLogin);
+    console.log("userLogin", userLogin);
     return (
         <View style={GlobalStyles.container}>
             <View style={{ height: 300, paddingHorizontal: 15 }}>
@@ -55,8 +56,8 @@ export const AccountScreen = ({ navigation }) => {
                     SecureStore.deleteItemAsync('refreshToken');
                     SecureStore.deleteItemAsync('userLogin');
                     dispatch(setUserLogin(null));
-                    navigation.navigate('login')
                     socket.emit("logout", userLogin?.id);
+                    navigation.navigate('login')
                 }}>
                     <IconMaterial name="logout" size={24} color={"#2261E2"} />
                     <Text style={{ fontSize: 16, fontWeight: 'bold', marginRight: 'auto', marginLeft: 10 }}>Đăng xuất</Text>

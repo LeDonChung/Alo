@@ -3,11 +3,13 @@ import { Button, View, Text, FlatList, Image, TouchableOpacity, TextInput, } fro
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GlobalStyles } from "../../styles/GlobalStyles";
 import { useDispatch, useSelector } from "react-redux";
+import Icon from "react-native-vector-icons/FontAwesome5";
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice'
 import { getAllConversation } from '../../redux/slices/ConversationSlice'
-import { socket } from "../../../utils/socket";
+import socket from "../../../utils/socket";
 
 export const HomeScreen = ({ navigation }) => {
+  const [search, setSearch] = useState('');
   const [tab, setTab] = useState('all');
   const dispatch = useDispatch();
   const userLogin = useSelector((state) => state.user.userLogin)
@@ -15,7 +17,20 @@ export const HomeScreen = ({ navigation }) => {
 
   const conversations = useSelector(state => state.conversation.conversations);
 
-
+  const init = async () => {
+    if(!userLogin) {
+      const user = JSON.parse(await SecureStore.getItemAsync("userLogin"));
+      const accessToken = await SecureStore.getItemAsync("accessToken");
+      if(user && accessToken) {
+        console.log("SAVE")
+        dispatch(setUserLogin(user));
+    }
+    }
+    await dispatch(getAllConversation());
+  }
+  useEffect(() => {
+    init();
+  }, []);
   useEffect(() => {
     socket.on("users-online", ({ userIds }) => {
       dispatch(setUserOnlines(userIds));
@@ -23,8 +38,8 @@ export const HomeScreen = ({ navigation }) => {
   }, []); 
 
   useEffect(() => {
-    socket.emit('login', userLogin.id);
-  }, [userLogin.id]);
+    socket.emit('login', userLogin?.id);
+  }, [userLogin?.id]);
 
   console.log("userOnlines: ", userOnlines);
 
@@ -81,6 +96,10 @@ export const HomeScreen = ({ navigation }) => {
 
     return (
       <TouchableOpacity
+        onPress={() => {
+          navigation.navigate("chat", { conversation: item, friend: friend });
+          // socket.emit('join_conversation', item.id);
+        }}
         style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: '#EDEDED' }}
       >
         <Image
@@ -93,6 +112,7 @@ export const HomeScreen = ({ navigation }) => {
         </View>
         <Text style={{ fontSize: 12, color: 'gray', marginLeft: 8 }}>{getLastTime()}</Text>
       </TouchableOpacity>
+
     );
   };
 

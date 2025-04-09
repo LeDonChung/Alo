@@ -478,6 +478,7 @@ const getFriendByPhoneNumber = async (data) => {
         const result = {
             fullName: userResult.Items[0].fullName,
             phoneNumber: accountResult.Items[0].phoneNumber,
+            avatarLink: userResult.Items[0].avatarLink ? userResult.Items[0].avatarLink : null,
             status: statusFriend,
             message: "Tìm thấy thông tin người dùng",
             friendId: friendId,
