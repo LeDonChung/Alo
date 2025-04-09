@@ -4,7 +4,11 @@ const initialState = {
     isSending: false,
     isLoadMessage: false,
     messages: [],
-    limit: 20
+    limit: 20,
+    inputMessage: {
+        messageType: 'text',
+        content: '',
+    },
 };
 
 const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ message, file }, { rejectWithValue }) => {
@@ -46,6 +50,12 @@ const MessageSlice = createSlice({
         },
         increaseLimit: (state, action) => {
             state.limit += action.payload;
+        },
+        setInputMessage: (state, action) => {
+            state.inputMessage = action.payload;
+        },
+        addMessage: (state, action) => {
+            state.messages = [...state.messages, action.payload];
         }
     },
     extraReducers: (builder) => {
@@ -74,6 +84,6 @@ const MessageSlice = createSlice({
     }
 });
 
-export const { setMessages, increaseLimit } = MessageSlice.actions;
+export const { setMessages, increaseLimit, setInputMessage, addMessage } = MessageSlice.actions;
 export { sendMessage, getMessagesByConversationId };
 export default MessageSlice.reducer;

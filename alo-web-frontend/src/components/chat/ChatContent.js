@@ -78,7 +78,6 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
             isUserMessage={isUserMessage}
             isLastMessage={isLastMessage}
             showAvatar={showAvatar}
-            userLogin={userLogin}
           />
         );
       })}

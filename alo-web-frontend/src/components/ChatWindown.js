@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { axiosInstance } from '../api/APIClient';
 import socket from '../utils/socket';
-import { getMessagesByConversationId, sendMessage, setMessages } from '../redux/slices/MessageSlice';
+import { getMessagesByConversationId, sendMessage, setInputMessage, setMessages } from '../redux/slices/MessageSlice';
 import RightSlidebar from './RightSlideBarChat';
 import ChatHeader from './chat/ChatHeader';
 import ChatContent from './chat/ChatContent';
@@ -11,10 +11,6 @@ import ChatInput from './chat/ChatInput';
 const ChatWindow = () => {
   const isSending = useSelector(state => state.message.isSending);
   const isLoadMessage = useSelector(state => state.message.isLoadMessage);
-  const [inputMessage, setInputMessage] = useState({
-    messageType: 'text',
-    content: '',
-  });
   const dispatch = useDispatch();
   const userOnlines = useSelector(state => state.user.userOnlines);
   const userLogin = useSelector(state => state.user.userLogin);
@@ -48,30 +44,10 @@ const ChatWindow = () => {
     });
   };
 
-  const handlerSendMessage = async () => {
-    const message = {
-      senderId: userLogin.id,
-      conversationId: conversation.id,
-      content: inputMessage.content,
-      messageType: inputMessage.messageType,
-      fileLink: inputMessage.fileLink,
-      timestamp: Date.now(),
-      seen: []
-    };
+  
 
-    const file = inputMessage.file;
 
-    await dispatch(sendMessage({ message, file })).then((res) => {
-      dispatch(setMessages([...messages, res.payload.data]));
-      message.sender = userLogin;
-      message.fileLink = res.payload.data.fileLink;
-      socket.emit('send-message', {
-        conversation: conversation,
-        message: message
-      });
-      setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
-    });
-  };
+  
 
   useEffect(() => {
     socket.emit("join_conversation", conversation.id);
@@ -120,9 +96,6 @@ const ChatWindow = () => {
 
 
         <ChatInput
-          inputMessage={inputMessage}
-          setInputMessage={setInputMessage}
-          handlerSendMessage={handlerSendMessage}
           isSending={isSending}
         />
       </div>
