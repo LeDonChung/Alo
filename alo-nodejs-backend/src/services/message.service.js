@@ -43,7 +43,109 @@ const getMessagesByConversationId = async (conversationId) => {
     }
 }
 
+const updateMessageStatus = async (messageId, timestamp, status) => {
+    try {
+        const params = {
+            TableName: 'Messages',
+            Key: {
+                id: messageId,
+                timestamp: timestamp
+            },
+            UpdateExpression: 'set #status = :status',
+            ExpressionAttributeNames: {
+                '#status': 'status'
+            },
+            ExpressionAttributeValues: {
+                ':status': status
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+
+        console.log(params);
+        const result = await client.update(params).promise();
+        return result.Attributes;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
+
+const updateMessageReaction = async (messageId, timestamp, reaction) => {
+    try {
+        const params = {
+            TableName: 'Messages',
+            Key: {
+                id: messageId,
+                timestamp:  timestamp
+            },
+            UpdateExpression: 'set reaction = :reaction',
+            ExpressionAttributeValues: {
+                ':reaction': reaction
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+
+        console.log(params)
+
+        const result = await client.update(params).promise();
+        console.log(result)
+        return result.Attributes;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
+
+const getMessageById = async (messageId) => {
+    try {
+        const params = {
+            TableName: 'Messages',
+            KeyConditionExpression: 'id = :messageId',
+            ExpressionAttributeValues: {
+                ':messageId': messageId
+            },
+        };
+
+        console.log(params);
+        const result = await client.query(params).promise();
+        return result.Items[0];
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
+
+const updateSeenMessage = async (messageId, timestamp, seen) => {
+    try {
+        const params = {
+            TableName: 'Messages',
+            Key: {
+                id: messageId,
+                timestamp: timestamp
+            },
+            UpdateExpression: 'set #seen = :seen',
+            ExpressionAttributeNames: {
+                '#seen': 'seen'
+            },
+            ExpressionAttributeValues: {
+                ':seen': seen
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+
+        const result = await client.update(params).promise();
+        return result.Attributes;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
+
 module.exports = {
     createMessage,
-    getMessagesByConversationId
+    getMessagesByConversationId,
+    updateMessageStatus,
+    getMessageById,
+    updateMessageReaction,
+    updateSeenMessage
 };
