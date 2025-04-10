@@ -14,7 +14,9 @@ const getFriends = createAsyncThunk('FriendSlice/getFriends', async (_, { reject
     // console.log("userLoginXXX", userLogin);
     try {
         const response = await axiosInstance.get(`/api/friend/get-friends?userId=${userLogin.id}`);
+        console.log("Friends data from API:", response.data);
         return response.data;
+        
     }
     catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");

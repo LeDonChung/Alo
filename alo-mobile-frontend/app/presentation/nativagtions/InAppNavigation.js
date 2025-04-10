@@ -103,6 +103,7 @@ export const InAppNavigation = () => {
     try {
       await dispatch(sendFriendRequest(request)).unwrap();
       showToast("success", "top", "Thành công", "Gửi lời mời kết bạn thành công");
+      socket.emit("send-friend-request", { ...request, fullName: userLogin.fullName, avatarLink: userLogin.avatarLink });
       const newSentRequest = {
         friendId: selectedFriendId,
         fullName: searchResult.fullName,
@@ -126,6 +127,7 @@ export const InAppNavigation = () => {
     const request = { userId: userLogin.id, friendId };
     try {
       await dispatch(cancelFriend(request)).unwrap();
+      socket.emit("cancel-friend-request", request);
       showToast("success", "top", "Thành công", "Đã hủy yêu cầu kết bạn");
       setSearchResult({ ...searchResult, status: -1 });
     } catch (error) {
@@ -135,17 +137,22 @@ export const InAppNavigation = () => {
   };
 
   const handleUnfriend = async (friendId) => {
-    const request = { userId: userLogin.id, friendId };
-    try {
-      await dispatch(unfriend(request)).unwrap();
-      showToast("success", "top", "Thành công", "Đã hủy kết bạn thành công");
-      setSearchResult({ ...searchResult, status: -1 }); 
-      socket.emit("unfriend", { userId: userLogin.id, friendId }); 
-    } catch (error) {
-      console.error("Lỗi khi hủy kết bạn:", error);
-      showToast("error", "top", "Lỗi", error.message || "Lỗi khi hủy kết bạn");
+    if (!friendId) {
+        showToast("error", "top", "Lỗi", "Không tìm thấy friendId");
+        return;
     }
-  };
+    const request = { userId: userLogin.id, friendId };
+    console.log("Request sent to unfriend:", request); 
+    try {
+        await dispatch(unfriend(request)).unwrap();
+        socket.emit("unfriend-request", request);
+        setSearchResult({ ...searchResult, status: -1 });
+        showToast("success", "top", "Thành công", "Đã hủy kết bạn thành công");
+    } catch (error) {
+        console.error("Lỗi khi hủy kết bạn:", error);
+        showToast("error", "top", "Lỗi", error.message || "Lỗi khi hủy kết bạn");
+    }
+};
 
   const handleGoBackToHome = () => {
     setSearch('');
@@ -239,9 +246,8 @@ export const InAppNavigation = () => {
   };
 
   useEffect(() => {
-    if (search.length > 0) {
-      handleSearch();
-    } else {
+    if (search.length > 0) handleSearch();
+    else {
       setSearchResult(null);
       setShowBackIcon(false);
     }
@@ -249,40 +255,27 @@ export const InAppNavigation = () => {
 
   useEffect(() => {
     socket.on("receive-friend-request", (data) => {
-      const newRequest = {
-        friendId: data.userId,
-        fullName: data.fullName,
-        avatarLink: data.avatarLink,
-        status: data.status,
-        contentRequest: data.contentRequest,
-        requestDate: data.requestDate
-          ? `${new Date(data.requestDate).getDate().toString().padStart(2, "0")}/${(
-              new Date(data.requestDate).getMonth() + 1
-            ).toString().padStart(2, "0")}/${new Date(data.requestDate).getFullYear()}`
-          : "Không có ngày",
-      };
       showToast("info", "top", "Thông báo", "Bạn nhận được lời mời kết bạn mới!");
     });
-
-    return () => socket.off("receive-friend-request");
-  }, []);
+    socket.on("receive-unfriend", (data) => {
+      if (data.friendId === searchResult?.friendId) setSearchResult({ ...searchResult, status: -1 });
+    });
+    socket.on("receive-cancel-friend-request", (data) => {
+      if (data.friendId === searchResult?.friendId) setSearchResult({ ...searchResult, status: -1 });
+    });
+    return () => {
+      socket.off("receive-friend-request");
+      socket.off("receive-unfriend");
+      socket.off("receive-cancel-friend-request");
+    };
+  }, [searchResult]);
 
   return (
     <SafeAreaView style={{ flex: 1, flexDirection: 'column' }}>
       {(chooseTab === 'home' || chooseTab === 'contact') && (
-        <View style={{
-          backgroundColor: '#007AFF',
-          padding: 5,
-          flexDirection: 'row',
-          alignItems: 'center'
-        }}>
+        <View style={{ backgroundColor: '#007AFF', padding: 5, flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity onPress={showBackIcon ? handleGoBackToHome : null}>
-            <Icon 
-              name={showBackIcon ? "arrow-left" : "search"}
-              size={20} 
-              color="white" 
-              style={{ marginHorizontal: 10 }} 
-            />
+            <Icon name={showBackIcon ? "arrow-left" : "search"} size={20} color="white" style={{ marginHorizontal: 10 }} />
           </TouchableOpacity>
           <TextInput
             placeholder="Tìm kiếm"
@@ -296,83 +289,35 @@ export const InAppNavigation = () => {
           </TouchableOpacity>
         </View>
       )}
-
       {search.length > 0 ? (
         <View>
-          <Text style={{ fontSize: 16, fontWeight: 'bold', marginLeft: 10, paddingVertical: 10 }}>
-            Kết quả tìm kiếm
-          </Text>
+          <Text style={{ fontSize: 16, fontWeight: 'bold', marginLeft: 10, paddingVertical: 10 }}>Kết quả tìm kiếm</Text>
           {renderSearchResult()}
         </View>
       ) : (
-        <Tab.Navigator
-          screenOptions={({ route }) => ({
-            tabBarIcon: ({ focused, color, size }) => {
-              let iconName;
-              if (route.name === "home") {
-                iconName = "chatbubble-ellipses";
-              } else if (route.name === "contact") {
-                iconName = "perm-contact-cal";
-              } else if (route.name === "filter") {
-                iconName = "users";
-              } else if (route.name === "account") {
-                iconName = "user-alt";
-              } else if (route.name === "chatbox") {
-                iconName = "chatbox";
-              } else if (route.name === "friendrequests") {
-                iconName = "person-add";
-              } else if (route.name === "settings") {
-                iconName = "settings";
-              }
-
-              if (iconName === "chatbubble-ellipses" || iconName === "chatbox") {
-                return <IconIO name={iconName} size={size} color={color} />;
-              } else if (iconName === "perm-contact-cal" || iconName === "person-add" || iconName === "settings") {
-                return <IconMI name={iconName} size={size} color={color} />;
-              } else if (iconName === "users") {
-                return <IconFA name={iconName} size={size} color={color} />;
-              } else if (iconName === "user-alt") {
-                return <IconFA5 name={iconName} size={size} color={color} />;
-              }
-            },
-            tabBarActiveTintColor: '#2261E2',
-            tabBarInactiveTintColor: '#717D8D',
-            headerShown: false,
-          })}
-        >
-          <Tab.Screen 
-            name="home" 
-            component={HomeNavigation} 
-            listeners={{ focus: () => setChooseTab('home') }}
-            options={{ tabBarShowLabel: false }} 
-          />
-          <Tab.Screen 
-            name="contact" 
-            component={ContactScreen} 
-            listeners={{ focus: () => setChooseTab('contact') }}
-            options={{ tabBarShowLabel: false }} 
-          />
-          <Tab.Screen 
-            name="filter" 
-            component={FilterScreen} 
-            listeners={{ focus: () => setChooseTab('filter') }}
-            options={{ tabBarShowLabel: false }} 
-          />
-          <Tab.Screen 
-            name="account" 
-            component={AccountNavigation} 
-            listeners={{ focus: () => setChooseTab('account') }}
-            options={{ tabBarShowLabel: false }} 
-          />
+        <Tab.Navigator screenOptions={({ route }) => ({
+          tabBarIcon: ({ focused, color, size }) => {
+            let iconName;
+            if (route.name === "home") iconName = "chatbubble-ellipses";
+            else if (route.name === "contact") iconName = "perm-contact-cal";
+            else if (route.name === "filter") iconName = "users";
+            else if (route.name === "account") iconName = "user-alt";
+            if (iconName === "chatbubble-ellipses") return <IconIO name={iconName} size={size} color={color} />;
+            else if (iconName === "perm-contact-cal") return <IconMI name={iconName} size={size} color={color} />;
+            else if (iconName === "users") return <IconFA name={iconName} size={size} color={color} />;
+            else if (iconName === "user-alt") return <IconFA5 name={iconName} size={size} color={color} />;
+          },
+          tabBarActiveTintColor: '#2261E2',
+          tabBarInactiveTintColor: '#717D8D',
+          headerShown: false,
+        })}>
+          <Tab.Screen name="home" component={HomeNavigation} listeners={{ focus: () => setChooseTab('home') }} options={{ tabBarShowLabel: false }} />
+          <Tab.Screen name="contact" component={ContactScreen} listeners={{ focus: () => setChooseTab('contact') }} options={{ tabBarShowLabel: false }} />
+          <Tab.Screen name="filter" component={FilterScreen} listeners={{ focus: () => setChooseTab('filter') }} options={{ tabBarShowLabel: false }} />
+          <Tab.Screen name="account" component={AccountNavigation} listeners={{ focus: () => setChooseTab('account') }} options={{ tabBarShowLabel: false }} />
         </Tab.Navigator>
       )}
-
-      <Modal
-        animationType="slide"
-        transparent={true}
-        visible={modalVisible}
-        onRequestClose={() => setModalVisible(false)}
-      >
+      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
@@ -385,23 +330,12 @@ export const InAppNavigation = () => {
               </TouchableOpacity>
             </View>
             <Text style={styles.modalSubtitle}>Nội dung lời mời kết bạn</Text>
-            <TextInput
-              style={styles.modalInput}
-              placeholder="Kết bạn với mình nhé!"
-              value={contentRequest}
-              onChangeText={setContentRequest}
-            />
+            <TextInput style={styles.modalInput} placeholder="Kết bạn với mình nhé!" value={contentRequest} onChangeText={setContentRequest} />
             <View style={styles.modalActionContainer}>
-              <TouchableOpacity
-                style={styles.modalCancelButton}
-                onPress={() => setModalVisible(false)}
-              >
+              <TouchableOpacity style={styles.modalCancelButton} onPress={() => setModalVisible(false)}>
                 <Text style={styles.modalCancelButtonText}>Hủy</Text>
               </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.modalSendButton}
-                onPress={handleSendFriendRequest}
-              >
+              <TouchableOpacity style={styles.modalSendButton} onPress={handleSendFriendRequest}>
                 <Text style={styles.modalSendButtonText}>Gửi lời mời</Text>
               </TouchableOpacity>
             </View>
