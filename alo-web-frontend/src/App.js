@@ -33,7 +33,6 @@ function App() {
         {/* Auth Routes - Không có Navigation */}
         <Route element={<AuthLayout />}>
           <Route path="/login" element={<LoginPage />} />
-          <Route path="/" element={<Navigate replace to="/login" />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/otp" element={<OTPPage />} />
           <Route path="/register-info" element={<RegisterInformationPage />} />
@@ -43,6 +42,7 @@ function App() {
 
         {/* Main Routes - Có Navigation */}
         <Route element={<MainLayout />}>
+          <Route path="/" element={<Navigate replace to="/me" />} />
           <Route path="/me" element={<HomePage />} />
           <Route path="/contact" element={<ContactPage />} />
         </Route>

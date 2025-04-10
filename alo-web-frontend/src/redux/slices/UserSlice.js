@@ -120,6 +120,7 @@ const forgetPassword = createAsyncThunk('UserSlice/forgetPassword', async ({phon
     }
 });
 
+
 const UserSlice = createSlice({
     name: 'UserSlice',
     initialState: initialState,

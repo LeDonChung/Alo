@@ -25,10 +25,10 @@ const menu = [
 
 export default function HomePage() {
 
-    const conversations = useSelector(state => state.conversation.conversations);
-
+    // Xử lý verify token
     const userLogin = useSelector(state => state.user.userLogin);
 
+    const conversations = useSelector(state => state.conversation.conversations);
 
     const dispatch = useDispatch();
 

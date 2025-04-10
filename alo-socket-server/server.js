@@ -23,6 +23,7 @@ io.on("connection", (socket) => {
     console.log("Người dùng kết nối: " + socket.id);
 
     socket.on('login', async (userId) => {
+        if(userId === null) return ;
         console.log("Người dùng đăng nhập: " + userId);
 
         const session = JSON.stringify({

@@ -4,6 +4,7 @@ const router = express.Router();
 const authController = require('../controllers/auth/auth.controller');
 const middleware = require('../controllers/auth/auth.middleware');
 
+router.post('/verify-token', middleware.authenticateToken, authController.verifyToken);
 router.post('/login', authController.login);
 router.post('/refresh', authController.refreshToken);
 router.post('/register', authController.register);
