@@ -7,6 +7,7 @@ const initialState = {
     friends: [],
     friend: null,
     error: null,
+    sentRequests: [],
 };
 const getFriends = createAsyncThunk('FriendSlice/getFriends', async (_, { rejectWithValue }) => {
     const userLogin = JSON.parse(await SecureStore.getItemAsync('userLogin'));
@@ -107,6 +108,15 @@ const FriendSlice = createSlice({
         clearError: (state) => {
             state.error = null;
         },
+        addSentRequest: (state, action) => {
+            state.sentRequests.push(action.payload);
+        },
+        removeSentRequest: (state, action) => { 
+            state.sentRequests = state.sentRequests.filter(req => req.friendId !== action.payload);
+        },
+        clearSentRequests: (state) => { 
+            state.sentRequests = [];
+        },
     },  
     extraReducers: (builder) => {
         builder.addCase(getFriends.pending, (state) => {
@@ -197,6 +207,6 @@ const FriendSlice = createSlice({
 
     }
 });
-export const { clearError } = FriendSlice.actions;
+export const { clearError, addSentRequest, removeSentRequest, clearSentRequests } = FriendSlice.actions;
 export { getFriends, unfriend, blockFriend, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriendByPhoneNumber, getFriendsRequest, cancelFriend };
 export default FriendSlice.reducer;

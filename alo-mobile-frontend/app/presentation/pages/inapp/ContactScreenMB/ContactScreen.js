@@ -7,6 +7,8 @@ import {
   TextInput,
   TouchableOpacity,
   Switch,
+  Modal,
+  StyleSheet,
 } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { ContactStyles } from "../../../styles/ContactStyle";
@@ -25,8 +27,9 @@ import {
   blockFriend,
   unblockFriend,
   cancelFriend,
-
-} from "../../../redux/slices/FriendSlice";
+  addSentRequest,
+  removeSentRequest,
+} from "../../../redux/slices/FriendSlice"; 
 import { showToast } from "../../../../utils/AppUtils";
 import FriendRequests from "./FriendRequests";
 import socket from "../../../../utils/socket";
@@ -50,11 +53,13 @@ const ContactScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState([]);
-  const [sentRequests, setSentRequests] = useState([]);
+  const sentRequests = useSelector((state) => state.friend.sentRequests); 
   const [searchResult, setSearchResult] = useState(null);
   const [isRequestSent, setIsRequestSent] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
-  // console.log("User Login:", userLogin);
+  const [modalVisible, setModalVisible] = useState(false); 
+  const [contentRequest, setContentRequest] = useState("Kết bạn với mình nhé!"); 
+  const [selectedFriendId, setSelectedFriendId] = useState(null); 
 
   useEffect(() => {
     const fetchFriends = async () => {
@@ -90,7 +95,6 @@ const ContactScreen = ({ navigation }) => {
     return () => socket.off("receive-friend-request");
   }, []);
 
-
   const handleSearch = async () => {
     if (!searchQuery || searchQuery === userLogin.phoneNumber) {
       showToast("info", "top", "Thông báo", "Đây là số điện thoại của bạn!");
@@ -108,7 +112,6 @@ const ContactScreen = ({ navigation }) => {
           fullName: result.data.fullName,
           avatarLink: result.data.avatarLink,
           status: result.data.status,
-
         };
         setSearchResult(formattedResult);
         setIsRequestSent(false);
@@ -126,41 +129,47 @@ const ContactScreen = ({ navigation }) => {
     }
   };
 
-  const handleSendFriendRequest = async (friendId) => {
+  const handleSendFriendRequest = async () => {  
+    if (!selectedFriendId || !userLogin.id) {
+      showToast("error", "top", "Lỗi", "Không tìm thấy người dùng để gửi lời mời");
+      setModalVisible(false);
+      return;
+    }
+
     const request = {
       userId: userLogin.id,
-      friendId,
-      contentRequest: "Kết bạn với mình nhé!",
+      friendId: selectedFriendId,
+      contentRequest: contentRequest || "Kết bạn với mình nhé!",
     };
     try {
       await dispatch(sendFriendRequest(request)).unwrap();
       showToast("success", "top", "Thành công", "Gửi lời mời kết bạn thành công");
       const newSentRequest = {
-        friendId,
+        friendId: selectedFriendId,
         fullName: searchResult.fullName,
         avatarLink: searchResult.avatarLink,
         contentRequest: request.contentRequest,
         requestDate: `${new Date().getDate().toString().padStart(2, "0")}/${(
           new Date().getMonth() + 1
-        )
-          .toString()
-          .padStart(2, "0")}/${new Date().getFullYear()}`,
+        ).toString().padStart(2, "0")}/${new Date().getFullYear()}`,
       };
-      setSentRequests((prev) => [...prev, newSentRequest]);
+      dispatch(addSentRequest(newSentRequest)); 
+      setSearchResult({ ...searchResult, status: 0 });
       setIsRequestSent(true);
+      setModalVisible(false);
     } catch (error) {
       console.error("Lỗi khi gửi lời mời:", error);
-      showToast("error", "top", "Lỗi", "Lỗi khi gửi lời mời kết bạn");
+      showToast("error", "top", "Lỗi", error.message || "Lỗi khi gửi lời mời kết bạn");
+      setModalVisible(false);
     }
   };
-
 
   const handleCancelFriendRequest = async (friendId) => {
     const request = { userId: userLogin.id, friendId };
     try {
       await dispatch(cancelFriend(request)).unwrap();
       showToast("success", "top", "Thành công", "Đã hủy yêu cầu kết bạn");
-      setSentRequests((prev) => prev.filter((req) => req.friendId !== friendId));
+      dispatch(removeSentRequest(friendId));
       setIsRequestSent(false);
       if (searchResult?.friendId === friendId) {
         setSearchResult({ ...searchResult, status: -1 });
@@ -251,7 +260,7 @@ const ContactScreen = ({ navigation }) => {
 
   const renderItem = ({ item, onPress, showActions = false, actions = [] }) => (
     <TouchableOpacity style={ContactStyles.contactItem} onPress={onPress}>
-      <Image source={{ uri: item.avatarLink }} style={ContactStyles.avatar} />
+      <Image source={{ uri: item.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1744185940896-LTDD.jpg" }} style={ContactStyles.avatar} />
       <View style={{ flex: 1 }}>
         <Text style={ContactStyles.contactName}>{item.fullName}</Text>
         {item.contentRequest && <Text>{item.contentRequest}</Text>}
@@ -294,7 +303,7 @@ const ContactScreen = ({ navigation }) => {
               setChatUser({ userId: item.friendId, userName: item.fullName });
             }}
           >
-            <Image source={{ uri: item?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" }} style={ContactStyles.avatar} />
+            <Image source={{ uri: item?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1744185940896-LTDD.jpg"}} style={ContactStyles.avatar} />
             <View style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
               <Text style={ContactStyles.contactName}>{item.fullName}</Text>
               <View style={{ flexDirection: "row" }}>
@@ -335,7 +344,10 @@ const ContactScreen = ({ navigation }) => {
             {
               text: "Kết bạn",
               style: ContactStyles.addFriendButton,
-              onPress: () => handleSendFriendRequest(searchResult.friendId),
+              onPress: () => { 
+                setSelectedFriendId(searchResult.friendId);
+                setModalVisible(true);
+              },
             },
           ];
         case 2:
@@ -343,7 +355,10 @@ const ContactScreen = ({ navigation }) => {
             {
               text: "Kết bạn",
               style: ContactStyles.addFriendButton,
-              onPress: () => handleSendFriendRequest(searchResult.friendId),
+              onPress: () => { 
+                setSelectedFriendId(searchResult.friendId);
+                setModalVisible(true);
+              },
             },
           ];
         default:
@@ -358,17 +373,16 @@ const ContactScreen = ({ navigation }) => {
           onPress={
             status === 1
               ? () => {
-                setSubScreen("chatbox");
-                setChatUser({ userId: searchResult.friendId, userName: searchResult.fullName });
-              }
+                  setSubScreen("chatbox");
+                  setChatUser({ userId: searchResult.friendId, userName: searchResult.fullName });
+                }
               : null
           }
         >
           <Image
-            source={{ uri: searchResult.avatarLink }}
+            source={{ uri: searchResult.avatarLink|| "https://my-alo-bucket.s3.amazonaws.com/1744185940896-LTDD.jpg" }}
             style={ContactStyles.avatar}
           />
-
           <View style={{ flex: 1 }}>
             <Text style={ContactStyles.userName}>{searchResult.fullName}</Text>
             {searchResult.requestDate && (
@@ -395,6 +409,7 @@ const ContactScreen = ({ navigation }) => {
       </View>
     );
   };
+
   const renderChatBox = () => {
     const messages = [
       { id: "1", senderId: userLogin.id, content: "Xin chào!", timestamp: "2025-03-26T10:00:00Z" },
@@ -514,7 +529,7 @@ const ContactScreen = ({ navigation }) => {
               const birthdayDate = new Date(item.birthDay);
               return (
                 <View style={ContactStyles.birthdayItem}>
-                  <Image source={{ uri: item.avatarLink }} style={ContactStyles.avatar} />
+                  <Image source={{ uri: item.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1744185940896-LTDD.jpg" }} style={ContactStyles.avatar} />
                   <View style={{ flex: 1 }}>
                     <Text style={ContactStyles.contactName}>{item.fullName}</Text>
                     <Text style={ContactStyles.birthdayText}>
@@ -581,7 +596,7 @@ const ContactScreen = ({ navigation }) => {
                 <View style={ContactStyles.checkbox}>
                   {isSelected && <Icon name="check" size={16} color="#007AFF" />}
                 </View>
-                <Image source={{ uri: item.avatarLink }} style={ContactStyles.avatar} />
+                <Image source={{ uri: item.avatarLink ||"https://my-alo-bucket.s3.amazonaws.com/1744185940896-LTDD.jpg" }} style={ContactStyles.avatar} />
                 <Text style={ContactStyles.contactName}>{item.fullName}</Text>
               </TouchableOpacity>
             );
@@ -594,7 +609,7 @@ const ContactScreen = ({ navigation }) => {
                   .filter((friend) => selectedFriends.includes(friend.friendId))
                   .map((friend) => (
                     <View key={friend.friendId} style={ContactStyles.selectedFriendItem}>
-                      <Image source={{ uri: friend.avatarLink }} style={ContactStyles.selectedAvatar} />
+                      <Image source={{ uri: friend.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1744185940896-LTDD.jpg" }} style={ContactStyles.selectedAvatar} />
                       <Text style={ContactStyles.selectedName}>{friend.fullName}</Text>
                       <TouchableOpacity
                         onPress={() => setSelectedFriends(selectedFriends.filter((id) => id !== friend.friendId))}
@@ -640,8 +655,6 @@ const ContactScreen = ({ navigation }) => {
           handleCancelFriendRequest={handleCancelFriendRequest}
           setSubScreen={setSubScreen}
           setFriendRequests={setFriendRequests}
-          sentRequests={sentRequests}
-          setSentRequests={setSentRequests}
         />
       ) : subScreen === "chatbox" && chatUser ? (
         renderChatBox()
@@ -661,7 +674,6 @@ const ContactScreen = ({ navigation }) => {
                   activeTab === label && {
                     borderBottomWidth: 2,
                     borderBottomColor: "#007AFF",
-
                   }
                 ]}
               >
@@ -735,8 +747,110 @@ const ContactScreen = ({ navigation }) => {
           )}
         </>
       )}
+
+      <Modal 
+        animationType="slide"
+        transparent={true}
+        visible={modalVisible}
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View style={modalStyles.modalOverlay}>
+          <View style={modalStyles.modalContainer}>
+            <View style={modalStyles.modalHeader}>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Icon name="arrow-left" size={20} color="#000" />
+              </TouchableOpacity>
+              <Text style={modalStyles.modalTitle}>Thêm bạn</Text>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Icon name="times" size={20} color="#000" />
+              </TouchableOpacity>
+            </View>
+            <Text style={modalStyles.modalSubtitle}>Nội dung lời mời kết bạn</Text>
+            <TextInput
+              style={modalStyles.modalInput}
+              placeholder="Kết bạn với mình nhé!"
+              value={contentRequest}
+              onChangeText={setContentRequest}
+            />
+            <View style={modalStyles.modalActionContainer}>
+              <TouchableOpacity
+                style={modalStyles.modalCancelButton}
+                onPress={() => setModalVisible(false)}
+              >
+                <Text style={modalStyles.modalCancelButtonText}>Hủy</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={modalStyles.modalSendButton}
+                onPress={handleSendFriendRequest}
+              >
+                <Text style={modalStyles.modalSendButtonText}>Gửi lời mời</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
+
+const modalStyles = StyleSheet.create({ 
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    width: "80%",
+    backgroundColor: "#fff",
+    borderRadius: 10,
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+  },
+  modalSubtitle: {
+    fontSize: 16,
+    marginBottom: 10,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: "#ddd",
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 20,
+  },
+  modalActionContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+  },
+  modalCancelButton: {
+    backgroundColor: "#FF3B30",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+  },
+  modalCancelButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+  modalSendButton: {
+    backgroundColor: "#007AFF",
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+  },
+  modalSendButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+  },
+});
 
 export default ContactScreen;

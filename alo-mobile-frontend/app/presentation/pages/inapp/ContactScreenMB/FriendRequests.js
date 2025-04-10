@@ -10,9 +10,8 @@ import {
 import { FriendRequestStyles } from "../../../styles/FriendRequestStyle";
 import { ContactStyles } from "../../../styles/ContactStyle";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import { useDispatch } from "react-redux";
-import { getFriendsRequest } from "../../../redux/slices/FriendSlice";
-
+import { useDispatch, useSelector } from "react-redux"; 
+import { getFriendsRequest, removeSentRequest } from "../../../redux/slices/FriendSlice"; 
 
 const FriendRequests = ({
   navigation,
@@ -21,13 +20,12 @@ const FriendRequests = ({
   handleCancelFriendRequest,
   setSubScreen,
   setFriendRequests: setParentFriendRequests,
-  sentRequests,
-  setSentRequests: setParentSentRequests,
   handleGoBack,
 }) => {
   const dispatch = useDispatch();
   const [friendRequests, setFriendRequests] = useState([]);
   const [activeTab, setActiveTab] = useState("received");
+  const sentRequests = useSelector((state) => state.friend.sentRequests); 
 
   useEffect(() => {
     const fetchFriendRequests = async () => {
@@ -39,10 +37,8 @@ const FriendRequests = ({
             : null;
           const formattedDate = requestDate
             ? `${requestDate.getDate().toString().padStart(2, "0")}/${(
-              requestDate.getMonth() + 1
-            )
-              .toString()
-              .padStart(2, "0")}/${requestDate.getFullYear()}`
+                requestDate.getMonth() + 1
+              ).toString().padStart(2, "0")}/${requestDate.getFullYear()}`
             : "Không có ngày";
           return {
             friendId: item.userId,
@@ -62,7 +58,6 @@ const FriendRequests = ({
     fetchFriendRequests();
   }, [dispatch, setParentFriendRequests]);
 
-  //updateTimeLap
   const handleAccept = async (friendId) => {
     await handleAcceptFriend(friendId);
     setFriendRequests((prev) => prev.filter((request) => request.friendId !== friendId));
@@ -74,14 +69,15 @@ const FriendRequests = ({
     setFriendRequests((prev) => prev.filter((request) => request.friendId !== friendId));
     setParentFriendRequests((prev) => prev.filter((request) => request.friendId !== friendId));
   };
+
   const handleCancel = async (friendId) => {
     await handleCancelFriendRequest(friendId);
-    setParentSentRequests((prev) => prev.filter((req) => req.friendId !== friendId));
+    dispatch(removeSentRequest(friendId)); 
   };
-  //daNhan
+
   const renderReceivedItem = ({ item }) => (
     <View style={FriendRequestStyles.contactItem}>
-      <Image source={{ uri: item?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" }} style={FriendRequestStyles.avatar} />
+      <Image source={{ uri: item?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1744185940896-LTDD.jpg"}} style={FriendRequestStyles.avatar} />
       <View style={ContactStyles.contactContent}>
         <Text style={FriendRequestStyles.contactName}>{item.fullName}</Text>
         <Text style={[FriendRequestStyles.contactStatus, { marginTop: 5 }]}>{item.contentRequest}</Text>
@@ -109,10 +105,10 @@ const FriendRequests = ({
       </View>
     </View>
   );
-  //daGui
+
   const renderSentItem = ({ item }) => (
     <View style={FriendRequestStyles.contactItem}>
-      <Image source={{ uri: item?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" }} style={FriendRequestStyles.avatar} />
+      <Image source={{ uri: item?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1744185940896-LTDD.jpg" }} style={FriendRequestStyles.avatar} />
       <View style={ContactStyles.contactContent}>
         <Text style={FriendRequestStyles.contactName}>{item.fullName}</Text>
         <Text style={[FriendRequestStyles.contactStatus, { marginTop: 5 }]}>{item.contentRequest}</Text>
