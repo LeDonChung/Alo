@@ -101,17 +101,17 @@ export const Navigation = () => {
                                 <p className="p-2"> Đổi mật khẩu </p>
                             </div>
                             <div className="flex flex-row items-center cursor-pointer hover:bg-gray-200 px-2" onClick={async () => {
-                                await dispatch(logout());
-
-                                // remove 
-                                localStorage.removeItem('accessToken');
-                                localStorage.removeItem('refreshToken');
-                                localStorage.removeItem('userLogin');
-                                setShowProfileModal(false);
-                                setShowSettings(false);
-                                showToast("Đăng xuất thành công", "success");
-                                socket.emit("logout", userLogin?.id);
-                                navigate("/login");
+                                await dispatch(logout()).unwrap().then((res) => {
+                                    // remove 
+                                    localStorage.removeItem('accessToken');
+                                    localStorage.removeItem('refreshToken');
+                                    localStorage.removeItem('userLogin');
+                                    setShowProfileModal(false);
+                                    setShowSettings(false);
+                                    showToast("Đăng xuất thành công", "success");
+                                    socket.emit("logout", userLogin?.id);
+                                    navigate("/login");
+                                });
                             }}>
                                 <i className="fas fa-sign-out-alt"></i>
                                 <p className="p-2 text-red-600"> Đăng xuất </p>
