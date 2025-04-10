@@ -2,10 +2,12 @@ import React from 'react';
 import { View, TextInput, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 
-const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage }) => {
+const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isStickerPickerVisible, setIsStickerPickerVisible }) => {
   return (
     <View style={{ backgroundColor: 'white', padding: 10, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderColor: '#EDEDED' }}>
-      <TouchableOpacity>
+      <TouchableOpacity
+      onPress={() => setIsStickerPickerVisible(!isStickerPickerVisible)}
+      >
         <Icon name="smile" size={20} color="gray" />
       </TouchableOpacity>
 
