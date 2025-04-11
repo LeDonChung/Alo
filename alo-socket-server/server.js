@@ -23,9 +23,16 @@ io.on("connection", (socket) => {
     console.log("Người dùng kết nối: " + socket.id);
 
     socket.on('login', async (userId) => {
-        if(userId === null) return ;
+        if (userId === null) return;
         console.log("Người dùng đăng nhập: " + userId);
 
+        // Kiểm tra xem socketId đã tồn tại trong Redis chưa
+        const sessions = await redis.smembers(`socket:${userId}`);
+        const existingSession = sessions.find(session => JSON.parse(session).socketId === socket.id);
+        if (existingSession) {
+            console.log("SocketId đã tồn tại trong Redis, không cần thêm mới.");
+            return;
+        }
         const session = JSON.stringify({
             socketId: socket.id,
             userId,
@@ -35,6 +42,35 @@ io.on("connection", (socket) => {
         // Thêm phiên mới vào Redis (cho phép nhiều socket cùng userId)
         await redis.sadd(`socket:${userId}`, session);
 
+        const userIds = await getUserOnline();
+        console.log("User online:", userIds);
+        io.emit('users-online', { userIds });
+    });
+
+    socket.on('request-logout-changed-password', async (userId) => {
+        // Tìm toàn bộ socketId của userId khác với socket.id hiện tại
+        const sessions = await redis.smembers(`socket:${userId}`);
+        const updated = sessions.filter(session => JSON.parse(session).socketId !== socket.id);
+
+        // Thông báo logout cho các socketId khác
+        updated.forEach(session => {
+            const sessionData = JSON.parse(session);
+            console.log("Đang thông báo logout cho socketId:", sessionData.socketId);
+            io.to(sessionData.socketId).emit('logout-changed-password');
+        });
+
+        // Cập nhật chỉ còn lại socker.id hiện tại được lưu trong Redis
+        await redis.del(`socket:${userId}`);
+        if (updated.length > 0) {
+            // Lưu lại session hiện tại
+            await redis.sadd(`socket:${userId}`, JSON.stringify({
+                socketId: socket.id,
+                userId,
+                loginTime: Date.now()
+            }));
+        }
+
+        // Cập nhật danh sách người dùng online
         const userIds = await getUserOnline();
         console.log("User online:", userIds);
         io.emit('users-online', { userIds });

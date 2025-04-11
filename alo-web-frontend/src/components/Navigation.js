@@ -10,6 +10,32 @@ export const Navigation = () => {
     const dispatch = useDispatch();
     const userLogin = useSelector((state) => state.user.userLogin);
 
+    const handleLogout = async () => {
+        await dispatch(logout()).unwrap().then((res) => {
+            // remove 
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userLogin');
+            setShowProfileModal(false);
+            setShowSettings(false);
+            showToast("Đăng xuất thành công", "success");
+            socket.emit("logout", userLogin?.id);
+            navigate("/login");
+        });
+    }
+    useEffect(() => {
+        const handleLogoutChangedPassword = () => {
+            showToast("Phiên đăng nhập đã hết.", "error");
+            handleLogout();
+        };
+    
+        socket.on("logout-changed-password", handleLogoutChangedPassword);
+    
+        return () => {
+            socket.off("logout-changed-password", handleLogoutChangedPassword); 
+        };
+    }, []);
+    
     const init = async () => {
         console.log("HIIII")
         if (!userLogin) {
@@ -209,10 +235,10 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
             setNewPassword("");
             setConfirmPassword("");
             setShowChangePasswordModal(false);
+            socket.emit("request-logout-changed-password", userLogin?.id);
         }
-
-
     }
+
     return (
         <>
             <div className="fixed inset-0 bg-black opacity-50 z-40"></div>

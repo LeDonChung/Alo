@@ -88,7 +88,7 @@ axiosInstance.interceptors.response.use(
             }
         }
 
-        // Nếu là lỗi 401 -> không có token -> chuyển hướng login luôn
+        // Nếu là lỗi 403 -> chuyển hướng login luôn
         if (error.response?.status === 403) {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');

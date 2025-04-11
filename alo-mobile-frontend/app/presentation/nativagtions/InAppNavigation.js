@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -13,16 +13,29 @@ import { HomeNavigation } from "./HomeNavigation";
 import ContactScreen from "../pages/inapp/ContactScreenMB/ContactScreen";
 import { FilterScreen } from "../pages/inapp/FilterScreen";
 import { AccountNavigation } from "./AccountNavigation";
-
+import { useDispatch, useSelector } from "react-redux";
+import socket from "../../utils/socket";
+import { logout } from "../redux/slices/UserSlice";
+import * as SecureStore from "expo-secure-store";
+import { showToast } from "../../utils/AppUtils";
 const Tab = createBottomTabNavigator();
 
-export const InAppNavigation = () => {
+export const InAppNavigation = ({navigation}) => {
   const [search, setSearch] = useState('');
   const [chooseTab, setChoostTab] = useState('home');
 
+
+
+  const dispatch = useDispatch();
+  const userLogin = useSelector((state) => state.user.userLogin);
+  useEffect(() => {
+    socket.emit('login', userLogin?.id);
+  }, [userLogin?.id, dispatch, socket, chooseTab]);
+
+
   return (
     <SafeAreaView style={{ flex: 1, flexDirection: 'column' }}>
-      
+
       {/* Search Bar */}
       {(chooseTab === 'home' || chooseTab === 'contact') && (
         <View style={{
@@ -89,29 +102,29 @@ export const InAppNavigation = () => {
             headerShown: false,
           })}
         >
-          <Tab.Screen 
-            name="home" 
-            component={HomeNavigation} 
+          <Tab.Screen
+            name="home"
+            component={HomeNavigation}
             listeners={{ focus: () => setChoostTab('home') }}
-            options={{ tabBarShowLabel: false }} 
+            options={{ tabBarShowLabel: false }}
           />
-          <Tab.Screen 
-            name="contact" 
-            component={ContactScreen} 
+          <Tab.Screen
+            name="contact"
+            component={ContactScreen}
             listeners={{ focus: () => setChoostTab('contact') }}
-            options={{ tabBarShowLabel: false }} 
+            options={{ tabBarShowLabel: false }}
           />
-          <Tab.Screen 
-            name="filter" 
-            component={FilterScreen} 
+          <Tab.Screen
+            name="filter"
+            component={FilterScreen}
             listeners={{ focus: () => setChoostTab('filter') }}
-            options={{ tabBarShowLabel: false }} 
+            options={{ tabBarShowLabel: false }}
           />
-          <Tab.Screen 
-            name="account" 
-            component={AccountNavigation} 
+          <Tab.Screen
+            name="account"
+            component={AccountNavigation}
             listeners={{ focus: () => setChoostTab('account') }}
-            options={{ tabBarShowLabel: false }} 
+            options={{ tabBarShowLabel: false }}
           />
         </Tab.Navigator>
       )}

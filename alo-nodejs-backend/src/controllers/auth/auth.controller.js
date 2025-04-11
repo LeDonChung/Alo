@@ -11,10 +11,12 @@ function handlerGenerateOTP() {
 
 const generateAccessToken = (user) => {
     return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
+
 };
 
 const generateRefreshToken = async (user) => {
     const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+
 
     const redisKey = `user:${user.userId}:refreshTokens`;
     await redis.sadd(redisKey, refreshToken);
