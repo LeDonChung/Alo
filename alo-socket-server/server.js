@@ -5,22 +5,15 @@ const cors = require("cors");
 require("dotenv").config();
 
 const redis = require('./src/config/RedisClient');
-const { stringify } = require("querystring");
-// app
-const app = express();
 
-// middleware
+const app = express();
 app.use(cors());
 
-// create server
 const server = http.createServer(app);
-
 
 const io = new Server(server, {
     cors: {
-        origin: [
-            "http://localhost:3000",
-        ],
+        origin: ["http://localhost:3000"],
         methods: ["GET", "POST"],
         credentials: true,
     },
@@ -30,54 +23,77 @@ io.on("connection", (socket) => {
     console.log("Người dùng kết nối: " + socket.id);
 
     socket.on('login', async (userId) => {
+        if (userId === null) return;
         console.log("Người dùng đăng nhập: " + userId);
-        const loginTime = Date.now();
 
-        // Lưu thông tin kết nối với userId và socketId vào Redis
-        await redis.set(`socket:${userId}`, JSON.stringify({
+        // Kiểm tra xem socketId đã tồn tại trong Redis chưa
+        const sessions = await redis.smembers(`socket:${userId}`);
+        const existingSession = sessions.find(session => JSON.parse(session).socketId === socket.id);
+        if (existingSession) {
+            console.log("SocketId đã tồn tại trong Redis, không cần thêm mới.");
+            return;
+        }
+        const session = JSON.stringify({
             socketId: socket.id,
-            userId: userId,
-            loginTime
-        }));
+            userId,
+            loginTime: Date.now()
+        });
+
+        // Thêm phiên mới vào Redis (cho phép nhiều socket cùng userId)
+        await redis.sadd(`socket:${userId}`, session);
 
         const userIds = await getUserOnline();
-        console.log(`Danh sách user online: ${userIds}`);
-
+        console.log("User online:", userIds);
         io.emit('users-online', { userIds });
     });
 
-    const getUserOnline = async () => {
-        const usersOnline = await redis.keys('socket:*');
-        const userIds = await Promise.all(usersOnline.map(async key => {
-            const user = await redis.get(key);
-            return JSON.parse(user).userId;
-        }));
+    socket.on('request-logout-changed-password', async (userId) => {
+        // Tìm toàn bộ socketId của userId khác với socket.id hiện tại
+        const sessions = await redis.smembers(`socket:${userId}`);
+        const updated = sessions.filter(session => JSON.parse(session).socketId !== socket.id);
 
-        return userIds;
+        // Thông báo logout cho các socketId khác
+        updated.forEach(session => {
+            const sessionData = JSON.parse(session);
+            console.log("Đang thông báo logout cho socketId:", sessionData.socketId);
+            io.to(sessionData.socketId).emit('logout-changed-password');
+        });
 
-    }
-    socket.on('logout', async (userId) => {
-        console.log("Người dùng ngắt kết nối: " + userId);
-
-        // Tìm userId từ Redis dựa trên socketId
-        const user = await redis.get(`socket:${userId}`);
-        if (user) {
-            const { userId } = JSON.parse(user);
-            // Xóa thông tin người dùng khỏi Redis
-            await redis.del(`socket:${userId}`);
-
-            const userIds = await getUserOnline();
-
-            // Gửi danh sách user online cho tất cả client
-            console.log(`Danh sách user online: ${userIds}`);
-
-            io.emit('users-online', { userIds });
+        // Cập nhật chỉ còn lại socker.id hiện tại được lưu trong Redis
+        await redis.del(`socket:${userId}`);
+        if (updated.length > 0) {
+            // Lưu lại session hiện tại
+            await redis.sadd(`socket:${userId}`, JSON.stringify({
+                socketId: socket.id,
+                userId,
+                loginTime: Date.now()
+            }));
         }
+
+        // Cập nhật danh sách người dùng online
+        const userIds = await getUserOnline();
+        console.log("User online:", userIds);
+        io.emit('users-online', { userIds });
+    });
+
+    socket.on('logout', async (userId) => {
+        console.log("Logout socket: " + socket.id);
+
+        const sessions = await redis.smembers(`socket:${userId}`);
+        const updated = sessions.filter(session => JSON.parse(session).socketId !== socket.id);
+
+        await redis.del(`socket:${userId}`);
+        if (updated.length > 0) {
+            await redis.sadd(`socket:${userId}`, ...updated);
+        }
+
+        const userIds = await getUserOnline();
+        io.emit('users-online', { userIds });
     });
 
     socket.on("join_conversation", async (conversationId) => {
         socket.join(conversationId);
-        console.log(`Người dùng ${socket.id} đã tham gia vào phòng ${conversationId}`);
+        console.log(`📥 ${socket.id} tham gia phòng ${conversationId}`);
 
         const userIds = await getUserOnline();
         io.emit('users-online', { userIds });
@@ -85,102 +101,99 @@ io.on("connection", (socket) => {
 
     socket.on("leave_conversation", async (conversationId) => {
         socket.leave(conversationId);
-        console.log(`Người dùng ${socket.id} đã rời khỏi phòng ${conversationId}`);
+        console.log(`${socket.id} rời phòng ${conversationId}`);
 
         const userIds = await getUserOnline();
         io.emit('users-online', { userIds });
-
     });
 
     socket.on('send-message', ({ conversation, message }) => {
-        console.log(`Người dùng ${socket.id} đã gửi tin nhắn: ${message} trong phòng ${conversation.id}`);
+        console.log(`${socket.id} gửi tin nhắn trong phòng ${conversation.id}: ${message}`);
 
-        // Gửi yêu cầu cập nhật tin nhắn cuối cùng trong conversation
         handleUpdateLastMessage(conversation, message);
-
         socket.to(conversation.id).emit('receive-message', message);
     });
 
+    // Không gộp các sự kiện bạn yêu cầu
     socket.on('send-friend-request', async (data) => {
         const receiveId = data.userId === data.senderId ? data.friendId : data.userId;
-        
-        // userId nguoi nhan
-        const socketId = await findSocketIdByUserId(receiveId);
-        socket.to(socketId).emit('receive-friend-request', data);
+        const socketIds = await findSocketIdsByUserId(receiveId);
+        socketIds.forEach(id => io.to(id).emit('receive-friend-request', data));
     });
 
     socket.on('unfriend-request', async (data) => {
-        const receiveId = data.friendId;          
-        // userId nguoi nhan
-        const socketId = await findSocketIdByUserId(receiveId);
-        socket.to(socketId).emit('receive-unfriend', data);
+        const socketIds = await findSocketIdsByUserId(data.friendId);
+        socketIds.forEach(id => io.to(id).emit('receive-unfriend', data));
     });
 
     socket.on('block-request', async (data) => {
-        const receiveId = data.friendId;
-        
-        // userId nguoi nhan
-        const socketId = await findSocketIdByUserId(receiveId);
-        socket.to(socketId).emit('receive-block', data);
+        const socketIds = await findSocketIdsByUserId(data.friendId);
+        socketIds.forEach(id => io.to(id).emit('receive-block', data));
     });
 
     socket.on('unblock-friend', async (data) => {
-        const receiveId = data.friendId;
-        
-        // userId nguoi nhan
-        const socketId = await findSocketIdByUserId(receiveId);
-        socket.to(socketId).emit('receive-unblock', data);
+        const socketIds = await findSocketIdsByUserId(data.friendId);
+        socketIds.forEach(id => io.to(id).emit('receive-unblock', data));
     });
 
     socket.on('cancel-friend-request', async (data) => {
-        const receiveId = data.friendId === data.senderId ? data.userId : data.friendId;      
-        // userId nguoi nhan
-        const socketId = await findSocketIdByUserId(receiveId);
-        socket.to(socketId).emit('receive-cancle-friend-request', data);
+        const receiveId = data.friendId === data.senderId ? data.userId : data.friendId;
+        const socketIds = await findSocketIdsByUserId(receiveId);
+        socketIds.forEach(id => io.to(id).emit('receive-cancle-friend-request', data));
     });
 
     socket.on('accept-friend-request', async (data) => {
-        const receiveId = data.friendId;        
-        // userId nguoi nhan
-        const socketId = await findSocketIdByUserId(receiveId);
-        socket.to(socketId).emit('receive-accept-friend', data);
+        const socketIds = await findSocketIdsByUserId(data.friendId);
+        socketIds.forEach(id => io.to(id).emit('receive-accept-friend', data));
     });
 
     socket.on('reject-friend-request', async (data) => {
-        const receiveId = data.friendId;        
-        // userId nguoi nhan
-        const socketId = await findSocketIdByUserId(receiveId);
-        socket.to(socketId).emit('receive-reject-friend', data);
+        const socketIds = await findSocketIdsByUserId(data.friendId);
+        socketIds.forEach(id => io.to(id).emit('receive-reject-friend', data));
     });
 
-    const findSocketIdByUserId = async (userId) => {
-        const user = await redis.get(`socket:${userId}`);
-        if (user) {
-            console.log(`User: ${user}`);
-            return JSON.parse(user).socketId;
+    socket.on('disconnect', async () => {
+        console.log("Socket ngắt kết nối: " + socket.id);
 
+        const keys = await redis.keys('socket:*');
+        for (const key of keys) {
+            const sessions = await redis.smembers(key);
+            const updated = sessions.filter(session => JSON.parse(session).socketId !== socket.id);
+            await redis.del(key);
+            if (updated.length > 0) {
+                await redis.sadd(key, ...updated);
+            }
         }
-        return null;
+
+        const userIds = await getUserOnline();
+        io.emit('users-online', { userIds });
+    });
+
+    // =====================
+    // Helper functions
+    // =====================
+
+    const getUserOnline = async () => {
+        const keys = await redis.keys('socket:*');
+        return keys.map(key => key.split(':')[1]);
+    }
+
+    const findSocketIdsByUserId = async (userId) => {
+        const sessions = await redis.smembers(`socket:${userId}`);
+        return sessions.map(session => JSON.parse(session).socketId);
     }
 
     const handleUpdateLastMessage = async (conversation, message) => {
         const members = conversation.memberUserIds;
-        for (let i = 0; i < members.length; i++) {
-            const userId = members[i];
-            const socketId = await findSocketIdByUserId(userId);
-            console.log(`User: ${userId} - ${socketId}`);
-            if (socketId) {
-                console.log("Gửi yêu cầu cập nhật tin nhắn cuối cùng cho user: " + userId);
-                io.to(socketId).emit('update-last-message', conversation.id, message);
-            }
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            socketIds.forEach(id => {
+                console.log("Cập nhật tin nhắn cuối cho user:", userId);
+                io.to(id).emit('update-last-message', conversation.id, message);
+            });
         }
     }
-
-
-
 });
-
-
 
 server.listen(process.env.SERVER_PORT, () => {
     console.log(`Server running at http://localhost:${process.env.SERVER_PORT}`);

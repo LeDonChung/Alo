@@ -7,7 +7,7 @@ import Icon from "react-native-vector-icons/FontAwesome5";
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice'
 import { getAllConversation } from '../../redux/slices/ConversationSlice'
 import socket from "../../../utils/socket";
-
+import * as SecureStore from 'expo-secure-store';
 export const HomeScreen = ({ navigation }) => {
   const [search, setSearch] = useState('');
   const [tab, setTab] = useState('all');
@@ -18,28 +18,24 @@ export const HomeScreen = ({ navigation }) => {
   const conversations = useSelector(state => state.conversation.conversations);
 
   const init = async () => {
-    if(!userLogin) {
+    if (!userLogin) {
       const user = JSON.parse(await SecureStore.getItemAsync("userLogin"));
       const accessToken = await SecureStore.getItemAsync("accessToken");
-      if(user && accessToken) {
+      if (user && accessToken) {
         console.log("SAVE")
         dispatch(setUserLogin(user));
-    }
+      }
     }
     await dispatch(getAllConversation());
   }
   useEffect(() => {
     init();
-  }, []);
+  }, [userLogin?.id]);
   useEffect(() => {
     socket.on("users-online", ({ userIds }) => {
       dispatch(setUserOnlines(userIds));
     })
-  }, []); 
-
-  useEffect(() => {
-    socket.emit('login', userLogin?.id);
-  }, [userLogin?.id]);
+  }, []);
 
   console.log("userOnlines: ", userOnlines);
 

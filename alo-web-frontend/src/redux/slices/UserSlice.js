@@ -1,6 +1,6 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { axiosInstance } from "../../api/APIClient";
-
+import axios from "axios";
 const initialState = {
     avatar: null,
     errorResponse: null,
@@ -18,12 +18,17 @@ const getProfile = createAsyncThunk('UserSlice/getProfile', async (_, { rejectWi
 });
 const logout = createAsyncThunk('UserSlice/logout', async (_, { rejectWithValue }) => {
     try {
-        const response = await axiosInstance.post('/api/auth/logout');
+        const headers = {
+            Authorization: `Bearer ${localStorage.getItem('refreshToken')}`
+        };
+
+        const response = await axios.post('http://localhost:5000/api/auth/logout', {}, { headers });
         return response.data;
     } catch (error) {
-        return rejectWithValue(error.response.data);
+        return rejectWithValue(error.response?.data || error.message);
     }
 });
+
 const uploadAvatar = createAsyncThunk('UserSlice/uploadAvatar', async (file, { rejectWithValue }) => {
     try {
         const formData = new FormData();
@@ -119,6 +124,7 @@ const forgetPassword = createAsyncThunk('UserSlice/forgetPassword', async ({phon
         return rejectWithValue(error.response?.data || { message: 'Lỗi khi cập nhật mật khẩu' });
     }
 });
+
 
 const UserSlice = createSlice({
     name: 'UserSlice',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { Text, TextInput, TouchableOpacity, View, Image, Modal, StyleSheet } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -8,7 +8,6 @@ import IconMI from "react-native-vector-icons/MaterialIcons";
 import IconFA from "react-native-vector-icons/FontAwesome";
 import IconFA5 from "react-native-vector-icons/FontAwesome5";
 import Icon from "react-native-vector-icons/FontAwesome5";
-import socket from "../../utils/socket";
 
 import { HomeNavigation } from "./HomeNavigation";
 import ContactScreen from "../pages/inapp/ContactScreenMB/ContactScreen";
@@ -18,10 +17,12 @@ import { AccountNavigation } from "./AccountNavigation";
 import { useDispatch, useSelector } from "react-redux";
 import { getFriendByPhoneNumber, sendFriendRequest, cancelFriend, addSentRequest, unfriend } from "../redux/slices/FriendSlice";
 import { showToast } from "../../utils/AppUtils";
-
+import socket from "../../utils/socket";
+import { logout } from "../redux/slices/UserSlice";
+import * as SecureStore from "expo-secure-store";
 const Tab = createBottomTabNavigator();
 
-export const InAppNavigation = () => {
+export const InAppNavigation = ({navigation}) => {
   const [search, setSearch] = useState('');
   const [chooseTab, setChooseTab] = useState('home');
 
@@ -270,8 +271,18 @@ export const InAppNavigation = () => {
     };
   }, [searchResult]);
 
+
+
+  const dispatch = useDispatch();
+  const userLogin = useSelector((state) => state.user.userLogin);
+  useEffect(() => {
+    socket.emit('login', userLogin?.id);
+  }, [userLogin?.id, dispatch, socket, chooseTab]);
+
+
   return (
     <SafeAreaView style={{ flex: 1, flexDirection: 'column' }}>
+      {/* Search Bar */}
       {(chooseTab === 'home' || chooseTab === 'contact') && (
         <View style={{ backgroundColor: '#007AFF', padding: 5, flexDirection: 'row', alignItems: 'center' }}>
           <TouchableOpacity onPress={showBackIcon ? handleGoBackToHome : null}>
@@ -315,6 +326,65 @@ export const InAppNavigation = () => {
           <Tab.Screen name="contact" component={ContactScreen} listeners={{ focus: () => setChooseTab('contact') }} options={{ tabBarShowLabel: false }} />
           <Tab.Screen name="filter" component={FilterScreen} listeners={{ focus: () => setChooseTab('filter') }} options={{ tabBarShowLabel: false }} />
           <Tab.Screen name="account" component={AccountNavigation} listeners={{ focus: () => setChooseTab('account') }} options={{ tabBarShowLabel: false }} />
+        <Tab.Navigator
+          screenOptions={({ route }) => ({
+            tabBarIcon: ({ focused, color, size }) => {
+              let iconName;
+              if (route.name === "home") {
+                iconName = "chatbubble-ellipses";
+              } else if (route.name === "contact") {
+                iconName = "perm-contact-cal";
+              } else if (route.name === "filter") {
+                iconName = "users";
+              } else if (route.name === "account") {
+                iconName = "user-alt";
+              } else if (route.name === "chatbox") {
+                iconName = "chatbox";
+              } else if (route.name === "friendrequests") {
+                iconName = "person-add";
+              } else if (route.name === "settings") {
+                iconName = "settings";
+              }
+
+              if (iconName === "chatbubble-ellipses" || iconName === "chatbox") {
+                return <IconIO name={iconName} size={size} color={color} />;
+              } else if (iconName === "perm-contact-cal" || iconName === "person-add" || iconName === "settings") {
+                return <IconMI name={iconName} size={size} color={color} />;
+              } else if (iconName === "users") {
+                return <IconFA name={iconName} size={size} color={color} />;
+              } else if (iconName === "user-alt") {
+                return <IconFA5 name={iconName} size={size} color={color} />;
+              }
+            },
+            tabBarActiveTintColor: '#2261E2',
+            tabBarInactiveTintColor: '#717D8D',
+            headerShown: false,
+          })}
+        >
+          <Tab.Screen
+            name="home"
+            component={HomeNavigation}
+            listeners={{ focus: () => setChoostTab('home') }}
+            options={{ tabBarShowLabel: false }}
+          />
+          <Tab.Screen
+            name="contact"
+            component={ContactScreen}
+            listeners={{ focus: () => setChoostTab('contact') }}
+            options={{ tabBarShowLabel: false }}
+          />
+          <Tab.Screen
+            name="filter"
+            component={FilterScreen}
+            listeners={{ focus: () => setChoostTab('filter') }}
+            options={{ tabBarShowLabel: false }}
+          />
+          <Tab.Screen
+            name="account"
+            component={AccountNavigation}
+            listeners={{ focus: () => setChoostTab('account') }}
+            options={{ tabBarShowLabel: false }}
+          />
         </Tab.Navigator>
       )}
       <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>

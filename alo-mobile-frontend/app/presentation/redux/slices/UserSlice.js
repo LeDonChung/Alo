@@ -1,6 +1,9 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { axiosInstance } from "../../../api/APIClient";
 import * as SecureStore from 'expo-secure-store';
+import axios from "axios";
+import Constants from 'expo-constants';
+const API_URL = Constants.expoConfig?.extra?.API_URL;
 
 const initialState = {
     avatar: null,
@@ -13,7 +16,7 @@ const getProfile = createAsyncThunk('UserSlice/getProfile', async (token, { reje
         const response = await axiosInstance.get('/api/user/profile');
         return response.data;
     } catch (error) {
-        return rejectWithValue(error);
+        return rejectWithValue(error.response?.data);
     }
 });
 const uploadAvatar = createAsyncThunk('UserSlice/uploadAvatar', async (file, { rejectWithValue }) => {
@@ -36,7 +39,8 @@ const login = createAsyncThunk('UserSlice/login', async (user, { rejectWithValue
         const response = await axiosInstance.post('/api/auth/login', user);
         return response.data;
     } catch (error) {
-        return rejectWithValue(error.response.data);
+        console.log("Login error 222: ", error);
+        return rejectWithValue(error);
     }
 });
 
@@ -85,10 +89,14 @@ const verifyOtp = createAsyncThunk('UserSlice/verifyOtp', async (request, { reje
 });
 const logout = createAsyncThunk('UserSlice/logout', async (_, { rejectWithValue }) => {
     try {
-        const response = await axiosInstance.post('/api/auth/logout');
+        const headers = {
+            Authorization: `Bearer ${SecureStore.getItem('refreshToken')}`
+        };
+
+        const response = await axios.post(`${API_URL}/api/auth/logout`, {}, { headers });
         return response.data;
     } catch (error) {
-        return rejectWithValue(error.response.data);
+        return rejectWithValue(error.response?.data || error.message);
     }
 });
 
@@ -128,6 +136,9 @@ const UserSlice = createSlice({
         builder.addCase(login.fulfilled, (state, action) => {
             SecureStore.setItemAsync("accessToken", action.payload.data.accessToken);
             SecureStore.setItemAsync("refreshToken", action.payload.data.refreshToken);
+        });
+        builder.addCase(login.rejected, (state) => {
+            state.userLogin = null;
         });
         builder.addCase(uploadAvatar.pending, (state) => {
             state.avatar = null;
@@ -175,7 +186,6 @@ const UserSlice = createSlice({
         });
         builder.addCase(getProfile.rejected, (state, action) => {
             state.userLogin = null;
-            console.log("User login: ", action);
 
         });
 
