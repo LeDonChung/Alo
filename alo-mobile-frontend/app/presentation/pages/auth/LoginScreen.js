@@ -11,8 +11,7 @@ import Icon from "react-native-vector-icons/MaterialCommunityIcons";
 import { GlobalStyles } from "../../styles/GlobalStyles";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { useDispatch, useSelector } from "react-redux";
-import { getProfile, login, setUserLogin } from "../../redux/slices/UserSlice";
-import { socket } from "../../../utils/socket";
+import { getProfile, login } from "../../redux/slices/UserSlice";
 
 export const LoginScreen = ({ navigation }) => {
   const [phoneNumber, setPhoneNumber] = useState("");
@@ -34,40 +33,22 @@ export const LoginScreen = ({ navigation }) => {
         phoneNumber,
         password,
       };
-      await dispatch(login(user)).unwrap();
+      await dispatch(login(user)).unwrap().then(async (res) => {
+        await dispatch(getProfile()).unwrap().then((res) => {
+          navigation.navigate("inapp");
+        })
+      });
 
-      await dispatch(getProfile()).unwrap();
-      navigation.navigate("inapp");
     } catch (error) {
       console.log("Login 3rror: ", error);
-      
+
       setErrorMessage("Số điện thoại hoặc mật khẩu không đúng.");
-      
+
     } finally {
       setLoading(false);
     }
   };
 
-  const init = async () => {
-    const accessToken = await SecureStore.getItemAsync("accessToken");
-    const refreshToken = await SecureStore.getItemAsync("refreshToken");
-    const userLogin = await SecureStore.getItemAsync("userLogin");
-    console.log(
-      "Access Token: ",
-      accessToken,
-      "Refresh Token: ",
-      refreshToken,
-      "User Login: ",
-      userLogin
-    );
-    if (accessToken && refreshToken && userLogin) {
-      dispatch(setUserLogin(JSON.parse(userLogin)));
-      socket.emit("login", JSON.parse(userLogin).id);
-    }
-  };
-  useDispatch(() => {
-    init();
-  }, []);
 
   return (
     <SafeAreaView

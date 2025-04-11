@@ -7,87 +7,112 @@ const crypto = require('crypto');
 
 function handlerGenerateOTP() {
     return crypto.randomInt(100000, 999999).toString();
-  }
+}
 
 const generateAccessToken = (user) => {
-    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '7d' });
+    return jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1d' });
+
 };
 
-const generateRefreshToken = async(user) => {
-    const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET);
-    
-    await redis.set(refreshToken, user.sub);
+const generateRefreshToken = async (user) => {
+    const refreshToken = jwt.sign(user, process.env.REFRESH_TOKEN_SECRET, { expiresIn: '7d' });
+
+
+    const redisKey = `user:${user.userId}:refreshTokens`;
+    await redis.sadd(redisKey, refreshToken);
+    await redis.expire(redisKey, 7 * 24 * 60 * 60); // TTL 7 ngày
+
     return refreshToken;
 };
 
 exports.login = async (req, res) => {
     console.log(`Start login for: ${req.body.phoneNumber}`);
-
     const { phoneNumber, password } = req.body;
     const account = await userService.findByPhoneNumber(phoneNumber);
+
     if (account && bcrypt.compareSync(password, account.password)) {
         const roles = account.roles.map(role => role);
-        const payload = { sub: account.phoneNumber, userId: account.user.id, roles: roles };
+        const payload = { sub: account.phoneNumber, userId: account.user.id, roles };
 
         const accessToken = generateAccessToken(payload);
         const refreshToken = await generateRefreshToken(payload);
 
-        
         console.log(`End login for: ${req.body.phoneNumber}`);
 
         return res.json({
             status: 200,
             data: { accessToken, refreshToken },
             message: "Đăng nhập thành công."
-        })
-
+        });
     } else {
         console.log(`Error login for: ${req.body.phoneNumber}`);
         return res.status(401).json({ message: 'Yêu cầu không hợp lệ.' });
     }
 };
 
-exports.logout = async(req, res) => {
-    // Lấy Authorization từ header
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    // Lấy userId từ token
-    const userId = userService.getUserIdFromToken(token);
-
-    // Xóa refresh token trong Redis
-    await redis.del(token);
-
-    // cập nhật lastLogout cho user
-    await userService.updateLastLogout(userId);
-
+exports.verifyToken = (req, res) => {
     return res.json({
         status: 200,
-        data: null,
-        message: "Đăng xuất thành công."
-    })
-
-};
-
-exports.refreshToken = async(req, res) => {
-    const { token } = req.body;
-    if (!token) return res.sendStatus(401);
-
-    // Kiểm tra xem refresh token có tồn tại trong Redis không
-    const user = await redis.get(token);
-
-    if (!user) return res.sendStatus(403);
-
-    jwt.verify(token, process.env.REFRESH_TOKEN_SECRET, (err, token) => {
-        if (err) return res.sendStatus(403);
-
-        const refreshToken = generateAccessToken({ sub: token.sub, userId: user.id, roles: token.roles });
-        return res.json({
-            status: 200,
-            data: refreshToken ,
-            message: "Access token mới."
-        })
+        data: "ok",
+        message: "Token hợp lệ."
     });
 };
+
+exports.logout = async (req, res) => {
+    const authHeader = req.headers['authorization'];
+    const refreshToken = authHeader && authHeader.split(' ')[1];
+
+    if (!refreshToken) return res.sendStatus(400);
+
+    try {
+        const decoded = jwt.verify(refreshToken, process.env.REFRESH_TOKEN_SECRET);
+        const redisKey = `user:${decoded.userId}:refreshTokens`;
+
+        await redis.srem(redisKey, refreshToken); // Xóa token cụ thể ra khỏi Redis
+        await userService.updateLastLogout(decoded.userId);
+
+        return res.json({
+            status: 200,
+            data: null,
+            message: "Đăng xuất thành công."
+        });
+    } catch (err) {
+        return res.status(403).json({ message: 'Token không hợp lệ.' });
+    }
+};
+
+
+exports.refreshToken = async (req, res) => {
+
+    const { token } = req.body;
+    console.log(`Refresh token: ${token}`);
+    if (!token) return res.sendStatus(403);
+
+    try {
+        const decoded = jwt.verify(token, process.env.REFRESH_TOKEN_SECRET);
+        console.log(`Decoded refresh token: ${JSON.stringify(decoded)}`);
+        const redisKey = `user:${decoded.userId}:refreshTokens`;
+
+        const exists = await redis.sismember(redisKey, token);
+        console.log(`Token exists in Redis: ${exists}`);
+        if (!exists) return res.sendStatus(403);
+
+        const newAccessToken = generateAccessToken({
+            sub: decoded.sub,
+            userId: decoded.userId,
+            roles: decoded.roles
+        });
+
+        return res.json({
+            status: 200,
+            data: newAccessToken,
+            message: "Access token mới."
+        });
+    } catch (err) {
+        return res.status(403).json({ message: 'Token không hợp lệ hoặc đã hết hạn.' });
+    }
+};
+
 
 exports.register = async (req, res) => {
     console.log(`Start register for username: ${req.body.phoneNumber}`);
@@ -102,7 +127,7 @@ exports.register = async (req, res) => {
         });
     }
 
-    if(userRegister.password !== userRegister.rePassword) {
+    if (userRegister.password !== userRegister.rePassword) {
         return res.status(400).json({
             status: 400,
             message: "Mật khẩu không khớp.",
@@ -114,7 +139,7 @@ exports.register = async (req, res) => {
 
     return res.json({
         status: 200,
-        data: newUser ,
+        data: newUser,
         message: "Đăng ký thành công."
     })
 };
@@ -143,7 +168,7 @@ exports.generateOtp = async (req, res) => {
     // Gửi OTP qua SMS (giả sử bạn đã có hàm gửi SMS)
     // const smsSent = await smsService.sendOtp(phoneNumber, otp);
     const smsSent = true; // Giả lập gửi SMS thành công
-    if (!smsSent) { 
+    if (!smsSent) {
         return res.status(500).json({
             status: 500,
             message: "Gửi OTP thất bại.",
@@ -199,7 +224,7 @@ exports.changePassword = async (req, res) => {
     }
 
     // Kiểm tra mật khẩu cũ
-    if (!bcrypt.compareSync(oldPassword, account.password)) { 
+    if (!bcrypt.compareSync(oldPassword, account.password)) {
         return res.status(401).json({ message: 'Mật khẩu cũ không đúng.' });
     }
 
@@ -226,7 +251,7 @@ exports.forgotPassword = async (req, res) => {
     // Tạo mật khẩu mới
     const hashedPassword = await bcrypt.hashSync(passwordNew, 10);
     await userService.updatePassword(account.id, hashedPassword);
-    
+
     return res.json({
         status: 200,
         data: null,

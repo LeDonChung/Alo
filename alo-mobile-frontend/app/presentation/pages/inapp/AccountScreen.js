@@ -4,13 +4,12 @@ import { GlobalStyles } from "../../styles/GlobalStyles"
 import IconMaterial from 'react-native-vector-icons/MaterialIcons'
 import * as SecureStore from 'expo-secure-store';
 import { useDispatch, useSelector } from "react-redux"
-import { setUserLogin } from "../../redux/slices/UserSlice";
+import { logout, setUserLogin } from "../../redux/slices/UserSlice";
 import socket from "../../../utils/socket";
 
 export const AccountScreen = ({ navigation }) => {
     const dispatch = useDispatch();
     const userLogin = useSelector(state => state.user.userLogin);
-    console.log("userLogin", userLogin);
     return (
         <View style={GlobalStyles.container}>
             <View style={{ height: 350, paddingHorizontal: 15 }}>
@@ -19,7 +18,7 @@ export const AccountScreen = ({ navigation }) => {
                     <View style={{ marginRight: 10 }}>
                         <Text style={{ fontSize: 16, fontWeight: 'bold', marginRight: 'auto', marginLeft: 10 }}>
                             {
-                                userLogin.fullName
+                                userLogin && userLogin.fullName
                             }
                         </Text>
                         <Text style={{ fontSize: 16, marginRight: 'auto', marginLeft: 10, color: '#b0b3ba', marginTop: 10 }}>
@@ -50,14 +49,22 @@ export const AccountScreen = ({ navigation }) => {
                     <IconMaterial name="keyboard-arrow-right" size={24} color={"#000"} />
                 </TouchableOpacity>
 
-                <TouchableOpacity style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 }} onPress={() => {
-                    // remove 
-                    SecureStore.deleteItemAsync('accessToken');
-                    SecureStore.deleteItemAsync('refreshToken');
-                    SecureStore.deleteItemAsync('userLogin');
-                    dispatch(setUserLogin(null));
-                    socket.emit("logout", userLogin?.id);
-                    navigation.navigate('login')
+                <TouchableOpacity style={{ flex: 1, flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 10 }} onPress={async () => {
+                    await dispatch(logout()).unwrap().then(() => {
+                        // remove 
+                        SecureStore.deleteItemAsync('accessToken');
+                        SecureStore.deleteItemAsync('refreshToken');
+                        SecureStore.deleteItemAsync('userLogin');
+
+                        socket.emit("logout", userLogin?.id);
+
+                        dispatch(setUserLogin(null));
+
+                        navigation.navigate('authentication');
+                    }).catch((err) => {
+                        console.log("Logout error: ", err);
+                    })
+
                 }}>
                     <IconMaterial name="logout" size={24} color={"#2261E2"} />
                     <Text style={{ fontSize: 16, fontWeight: 'bold', marginRight: 'auto', marginLeft: 10 }}>Đăng xuất</Text>

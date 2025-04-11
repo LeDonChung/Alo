@@ -1,18 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FlatList, View } from 'react-native';
+import { View } from 'react-native';
 import { axiosInstance } from '../../../api/APIClient';
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
 import { getMessagesByConversationId, sendMessage, setMessages } from '../../redux/slices/MessageSlice';
-import ImageViewerComponent from '../../components/chat/ImageViewComponent';
-import InputComponent from '../../components/chat/InputComponent';
-import MessageItem from '../../components/chat/MessageItem';
 import HeaderComponent from '../../components/chat/HeaderComponent';
+import InputComponent  from '../../components/chat/InputComponent';
+import  MessageItem  from '../../components/chat/MessageItem';
+import ImageViewerComponent  from '../../components/chat/ImageViewComponent';
+
+import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
+import StickerPicker from '../../components/chat/StickerPicker';
+
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export const ChatScreen = ({ route, navigation }) => {
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
+  const [isStickerPickerVisible, setIsStickerPickerVisible] = useState(false); // State cho StickerPicker
   const isLoadMessage = useSelector(state => state.message.isLoadMessage);
   const limit = useSelector(state => state.message.limit);
   const messages = useSelector(state => state.message.messages);
@@ -64,6 +70,17 @@ export const ChatScreen = ({ route, navigation }) => {
       setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
     });
   };
+
+  const handleStickerSelect = async (stickerUrl) => {
+    dispatch(setInputMessage({ ...inputMessage, fileLink: stickerUrl, messageType: 'sticker' }))
+    setShowStickerPicker(false);
+  };
+
+  useEffect(() => {
+    if (inputMessage.messageType === 'sticker') {
+      handlerSendMessage(inputMessage); 
+    }
+  }, [inputMessage]);
 
   useEffect(() => {
     socket.on('receive-message', (message) => {
@@ -182,10 +199,16 @@ export const ChatScreen = ({ route, navigation }) => {
         setIsImageViewVisible={setIsImageViewVisible}
       />
       <InputComponent
+        setIsStickerPickerVisible={setIsStickerPickerVisible}
+        isStickerPickerVisible={isStickerPickerVisible}
         inputMessage={inputMessage}
         setInputMessage={setInputMessage}
         handlerSendMessage={handlerSendMessage}
       />
+      {isStickerPickerVisible && (
+        <StickerPicker onStickerSelect={handleStickerSelect} />
+      )}
+      
     </View>
   );
 };

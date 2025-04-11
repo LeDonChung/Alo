@@ -98,7 +98,7 @@ const MessageItem = ({ item, index, messageSort, userLogin, friend, setSelectedI
           }}>
             <Image
               source={{ uri: item.fileLink }}
-              style={{ width: 200, height: 160, borderRadius: 10 }}
+              style={{ width: 200, height: 160, borderRadius: 10,cache: 'reload' }}
               resizeMode="contain"
             />
           </TouchableOpacity>
