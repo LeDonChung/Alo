@@ -4,7 +4,7 @@ import { FriendRequestStyles } from "../../../styles/FriendRequestStyle";
 import { ContactStyles } from "../../../styles/ContactStyle";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useDispatch, useSelector } from "react-redux";
-import { getFriendsRequest, removeSentRequest } from "../../../redux/slices/FriendSlice";
+import { getFriendsRequest, removeSentRequest, setFriendRequests } from "../../../redux/slices/FriendSlice";
 import socket from "../../../../utils/socket";
 
 const FriendRequests = ({
@@ -13,83 +13,19 @@ const FriendRequests = ({
   handleRejectFriend,
   handleCancelFriendRequest,
   setSubScreen,
-  setFriendRequests: setParentFriendRequests,
   handleGoBack,
 }) => {
   const dispatch = useDispatch();
-  const [friendRequests, setFriendRequests] = useState([]);
+  const friendRequests = useSelector((state) => state.friend.friendRequests || []);
   const [activeTab, setActiveTab] = useState("received");
   const sentRequests = useSelector((state) => state.friend.sentRequests || []);
   const userLogin = useSelector((state) => state.user.userLogin);
-
-  useEffect(() => {
-    const fetchFriendRequests = async () => {
-      try {
-        const result = await dispatch(getFriendsRequest()).unwrap();
-        const formattedRequests = (result.data || []).map((item) => {
-          const requestDate = item.requestDate ? new Date(item.requestDate) : null;
-          const formattedDate = requestDate
-            ? `${requestDate.getDate().toString().padStart(2, "0")}/${(requestDate.getMonth() + 1).toString().padStart(2, "0")}/${requestDate.getFullYear()}`
-            : "Không có ngày";
-          return {
-            friendId: item.userId,
-            fullName: item.fullName,
-            avatarLink: item.avatarLink,
-            status: item.status,
-            contentRequest: item.contentRequest,
-            requestDate: formattedDate,
-          };
-        });
-        setFriendRequests(formattedRequests);
-        setParentFriendRequests(formattedRequests);
-      } catch (error) {
-        console.error("Error fetching friend requests: ", error);
-        setFriendRequests([]);
-        setParentFriendRequests([]);
-      }
-    };
-    fetchFriendRequests();
-    socket.on("receive-friend-request", (data) => {
-      const newRequest = {
-        friendId: data.userId,
-        fullName: data.fullName,
-        avatarLink: data.avatarLink,
-        status: data.status,
-        contentRequest: data.contentRequest,
-        requestDate: `${new Date().getDate().toString().padStart(2, "0")}/${(new Date().getMonth() + 1).toString().padStart(2, "0")}/${new Date().getFullYear()}`,
-      };
-      setFriendRequests((prev) => [...prev, newRequest]);
-      setParentFriendRequests((prev) => [...prev, newRequest]);
-    });
-
-    socket.on("receive-cancel-friend-request", (data) => {
-      dispatch(removeSentRequest(data.friendId));
-    });
-
-    socket.on("receive-accept-friend", (data) => {
-      setFriendRequests((prev) => prev.filter((req) => req.friendId !== data.friendId)); 
-      setParentFriendRequests((prev) => prev.filter((req) => req.friendId !== data.friendId));
-    });
-
-    socket.on("receive-reject-friend", (data) => {
-      setFriendRequests((prev) => prev.filter((req) => req.friendId !== data.friendId));
-      setParentFriendRequests((prev) => prev.filter((req) => req.friendId !== data.friendId));
-    });
-
-    return () => {
-      socket.off("receive-friend-request");
-      socket.off("receive-cancel-friend-request");
-      socket.off("receive-accept-friend");
-      socket.off("receive-reject-friend");
-    };
-  }, [dispatch, setParentFriendRequests]);
 
   const handleAccept = async (friendId) => {
     try {
       await handleAcceptFriend(friendId);
       socket.emit("accept-friend-request", { userId: friendId, friendId: userLogin.id });
-      setFriendRequests((prev) => prev.filter((req) => req.friendId !== friendId));
-      setParentFriendRequests((prev) => prev.filter((req) => req.friendId !== friendId));
+      dispatch(setFriendRequests((prev) => prev.filter((req) => req.friendId !== friendId)))
     } catch (error) {
       console.error("Lỗi khi chấp nhận:", error);
     }
@@ -99,8 +35,7 @@ const FriendRequests = ({
     try {
       await handleRejectFriend(friendId);
       socket.emit("reject-friend-request", { userId: userLogin.id, friendId });
-      setFriendRequests((prev) => prev.filter((req) => req.friendId !== friendId));
-      setParentFriendRequests((prev) => prev.filter((req) => req.friendId !== friendId));
+      dispatch(setFriendRequests((prev) => prev.filter((req) => req.friendId !== friendId)))
     } catch (error) {
       console.error("Lỗi khi từ chối:", error);
     }
@@ -147,7 +82,7 @@ const FriendRequests = ({
   };
 
   const renderSentItem = ({ item }) => {
-    if (!item || !item.friendId) return null; 
+    if (!item || !item.friendId) return null;
     return (
       <View style={FriendRequestStyles.contactItem}>
         <Image
@@ -170,6 +105,7 @@ const FriendRequests = ({
       </View>
     );
   };
+  console.log(friendRequests)
 
   return (
     <SafeAreaView style={FriendRequestStyles.container}>
@@ -214,12 +150,12 @@ const FriendRequests = ({
         friendRequests.length === 0 ? (
           <Text style={ContactStyles.noDataText}>Không có lời mời kết bạn nào</Text>
         ) : (
-          <FlatList data={friendRequests} keyExtractor={(item) => item?.friendId?.toString() || Math.random().toString()} renderItem={renderReceivedItem} />
+          <FlatList data={friendRequests} keyExtractor={(item) => (item.userId + item.friendId)} renderItem={renderReceivedItem} />
         )
       ) : sentRequests.length === 0 ? (
         <Text style={ContactStyles.noDataText}>Bạn chưa gửi lời mời nào</Text>
       ) : (
-        <FlatList data={sentRequests} keyExtractor={(item) => item?.friendId?.toString() || Math.random().toString()} renderItem={renderSentItem} />
+        <FlatList data={sentRequests} keyExtractor={(item) => (item.userId + item.friendId)} renderItem={renderSentItem} />
       )}
     </SafeAreaView>
   );

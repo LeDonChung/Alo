@@ -129,7 +129,7 @@ export const HomeScreen = ({ navigation }) => {
 
         {/* Chat List */}
         {
-          conversations.length > 0 && (
+          conversations.length > 0 && userLogin && (
             <FlatList
               data={conversations}
               renderItem={renderItem}

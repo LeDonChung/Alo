@@ -122,31 +122,7 @@ export const AccountAndSecurityScreen = ({ navigation }) => {
   };
 
 
-  const handleLogout = async () => {
-    await dispatch(logout()).unwrap().then(() => {
-      // remove 
-      SecureStore.deleteItemAsync('accessToken');
-      SecureStore.deleteItemAsync('refreshToken');
-      SecureStore.deleteItemAsync('userLogin');
-
-      socket.emit("logout", userLogin?.id);
-
-      navigation.navigate('authentication');
-    }).catch((err) => {
-      console.log("Logout error: ", err);
-    })
-  }
-
-  useEffect(() => {
-    console.log("aa")
-    socket.on("logout-changed-password", () => {
-      console.log("hi")
-      console.log("Logout due to password change 2");
-      showToast("info", "top", "Thông báo", "Phiên đăng nhập đã hết.");
-      handleLogout();
-    });
-
-  }, []);
+  
 
   return (
     <View style={{ paddingHorizontal: 15, backgroundColor: "#fff", flex: 1 }}>
