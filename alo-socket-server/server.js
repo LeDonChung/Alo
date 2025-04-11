@@ -185,6 +185,12 @@ io.on("connection", (socket) => {
 
     const handleUpdateLastMessage = async (conversation, message) => {
         const members = conversation.memberUserIds;
+        console.log(
+            "Cập nhật tin nhắn cuối cho các thành viên trong cuộc trò chuyện:",
+            members,
+            conversation.id,
+            message
+        )
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);
             socketIds.forEach(id => {

@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
-import { Text, TextInput, TouchableOpacity, View } from "react-native";
+import { Image, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-
 import IconIO from "react-native-vector-icons/Ionicons";
 import IconMI from "react-native-vector-icons/MaterialIcons";
 import IconFA from "react-native-vector-icons/FontAwesome";
@@ -15,6 +14,11 @@ import { FilterScreen } from "../pages/inapp/FilterScreen";
 import { AccountNavigation } from "./AccountNavigation";
 import { useDispatch, useSelector } from "react-redux";
 import socket from "../../utils/socket";
+import { updateLastMessage } from "../redux/slices/ConversationSlice";
+import { cancelFriend, getFriendByPhoneNumber, getFriends, getFriendsRequest, setFriendRequests, unfriend } from "../redux/slices/FriendSlice";
+import { showToast } from "../../utils/AppUtils";
+import { FlatList } from "react-native-gesture-handler";
+import { ContactStyles } from "../styles/ContactStyle";
 
 const Tab = createBottomTabNavigator();
 
@@ -23,7 +27,7 @@ export const InAppNavigation = () => {
   const [search, setSearch] = useState('');
   const [chooseTab, setChooseTab] = useState('home');
 
-  const [searchResult, setSearchResult] = useState(null);
+  const [searchResult, setSearchResult] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const friends = useSelector((state) => state.friend.friends);
   //khoi tao modal content
@@ -31,7 +35,7 @@ export const InAppNavigation = () => {
   const [contentRequest, setContentRequest] = useState("Kết bạn với mình nhé!");
   const [selectedFriendId, setSelectedFriendId] = useState(null);
   //ktra sdt or text
-  const isPhoneNumber = (input) => /^\d+$/.test(input);
+  const isPhoneNumber = (input) => /^(0|\+84)(3[2-9]|5[2689]|7[0-9]|8[1-9]|9[0-9])\d{7}$/.test(input);
   const [showBackIcon, setShowBackIcon] = useState(false);
 
   const handleSearch = async () => {
@@ -39,85 +43,47 @@ export const InAppNavigation = () => {
 
     setIsSearching(true);
     if (isPhoneNumber(search)) {
-      if (search === userLogin.phoneNumber) {
-        showToast("info", "top", "Thông báo", "Đây là số điện thoại của bạn!");
-        setSearchResult(null);
-        setIsSearching(false);
-        setShowBackIcon(false);
-        return;
-      }
+      // if (search === userLogin.phoneNumber) {
+      //   showToast("info", "top", "Thông báo", "Đây là số điện thoại của bạn!");
+      //   setSearchResult(null);
+      //   setIsSearching(false);
+      //   setShowBackIcon(false);
+      //   return;
+      // }
       try {
         const result = await dispatch(getFriendByPhoneNumber(search)).unwrap();
         if (result && result.data) {
-          setSearchResult({
-            friendId: result.data.friendId,
-            fullName: result.data.fullName,
-            avatarLink: result.data.avatarLink,
-            phoneNumber: search,
-            status: result.data.status,
-          });
+          console.log("Search result:", result.data);
+          // Đưa vào mảng searchResult
+          setSearchResult([result.data]);
           setShowBackIcon(true);
         } else {
-          setSearchResult(null);
-          setShowBackIcon(false);
-          // showToast("info", "top", "Thông báo", "Không tìm thấy người dùng");
+          setSearchResult([]);
         }
       } catch (error) {
-        console.error("Lỗi khi tìm kiếm số điện thoại:", error);
-        setSearchResult(null);
         setShowBackIcon(false);
-        showToast("error", "top", "Lỗi", "Lỗi khi tìm kiếm");
+        setSearchResult([]);
       }
     } else {
       const filteredFriends = friends.filter((friend) =>
         friend.friendInfo.fullName.toLowerCase().includes(search.toLowerCase())
       );
       if (filteredFriends.length > 0) {
-        setSearchResult(filteredFriends[0].friendInfo);
+        console.log(
+          "Filtered friends:", filteredFriends
+        )
+        setSearchResult(filteredFriends);
         setShowBackIcon(true);
       } else {
-        setSearchResult(null);
         setShowBackIcon(false);
-        // showToast("info", "top", "Thông báo", "Không tìm thấy người dùng");
+        setSearchResult([]);
+        console.log("Không tìm thấy bạn bè nào với tên này");
       }
     }
     setIsSearching(false);
   };
 
-  const handleSendFriendRequest = async () => {
-    if (!selectedFriendId) {
-      showToast("error", "top", "Lỗi", "Không tìm thấy người dùng để gửi lời mời");
-      setModalVisible(false);
-      return;
-    }
-
-    const request = {
-      userId: userLogin.id,
-      friendId: selectedFriendId,
-      contentRequest: contentRequest || "Kết bạn với mình nhé!",
-    };
-    try {
-      await dispatch(sendFriendRequest(request)).unwrap();
-      showToast("success", "top", "Thành công", "Gửi lời mời kết bạn thành công");
-      socket.emit("send-friend-request", { ...request, fullName: userLogin.fullName, avatarLink: userLogin.avatarLink });
-      const newSentRequest = {
-        friendId: selectedFriendId,
-        fullName: searchResult.fullName,
-        avatarLink: searchResult.avatarLink,
-        contentRequest: request.contentRequest,
-        requestDate: `${new Date().getDate().toString().padStart(2, "0")}/${(
-          new Date().getMonth() + 1
-        ).toString().padStart(2, "0")}/${new Date().getFullYear()}`,
-      };
-      dispatch(addSentRequest(newSentRequest));
-      setSearchResult({ ...searchResult, status: 0 });
-      setModalVisible(false);
-    } catch (error) {
-      console.error("Lỗi khi gửi lời mời:", error);
-      showToast("error", "top", "Lỗi", error.message || "Lỗi khi gửi lời mời kết bạn");
-      setModalVisible(false);
-    }
-  };
+  
 
   const handleCancelFriendRequest = async (friendId) => {
     const request = { userId: userLogin.id, friendId };
@@ -150,11 +116,6 @@ export const InAppNavigation = () => {
     }
   };
 
-  const handleGoBackToHome = () => {
-    setSearch('');
-    setSearchResult(null);
-    setShowBackIcon(false);
-  };
 
   const getActionButton = (status, friendId) => {
     switch (status) {
@@ -212,61 +173,81 @@ export const InAppNavigation = () => {
     }
   };
 
-  const renderSearchResult = () => {
-    if (isSearching) {
-      return <Text style={{ textAlign: "center" }}>Đang tìm kiếm...</Text>;
-    }
-    if (!searchResult) {
-      return <Text style={{ textAlign: "center" }}>Không tìm thấy kết quả</Text>;
-    }
-
-    return (
-      <View style={styles.resultContainer}>
-        <View style={styles.userRow}> { }
-          <Image
-            source={{ uri: searchResult.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1744185940896-LTDD.jpg" }}
-            style={styles.avatar}
-          />
-          <View style={styles.userInfo}> { }
-            <Text style={styles.fullName}>{searchResult.fullName}</Text>
-            {isPhoneNumber(search) && (
-              <Text style={styles.phoneNumber}>{searchResult.phoneNumber}</Text>
-            )}
-          </View>
-        </View>
-        <View style={styles.actionContainer}> { }
-          {getActionButton(searchResult.status, searchResult.friendId)}
-        </View>
-      </View>
-    );
-  };
-
   useEffect(() => {
     if (search.length > 0) handleSearch();
-    else {
-      setSearchResult(null);
-      setShowBackIcon(false);
-    }
   }, [search]);
 
+
+  const friendRequests = useSelector((state) => state.friend.friendRequests);
+  const callRenderFriends = async() => {
+    await dispatch(getFriends());
+  }
+
+  const callRenderFriendRequests = async() => {
+    await dispatch(getFriendsRequest());
+  }
+
   useEffect(() => {
-    socket.on("receive-friend-request", (data) => {
+    const handlerReceiveFriendRequest = (data) => {
+      const newRequest = {
+        userId: data.senderId === userLogin.id ? data.friendId : data.senderId,
+        friendId: data.userId,
+        fullName: data.fullName,
+        avatarLink: data.avatarLink,
+        contentRequest: data.contentRequest,
+        requestDate: `${new Date().getDate().toString().padStart(2, "0")}/${(new Date().getMonth() + 1).toString().padStart(2, "0")}/${new Date().getFullYear()}`,
+      };
+
+      dispatch(setFriendRequests([...friendRequests, newRequest]));
+      // Thêm lời mời kết bạn mới vào danh sách
       showToast("info", "top", "Thông báo", "Bạn nhận được lời mời kết bạn mới!");
-    });
-    socket.on("receive-unfriend", (data) => {
-      if (data.friendId === searchResult?.friendId) setSearchResult({ ...searchResult, status: -1 });
-    });
-    socket.on("receive-cancel-friend-request", (data) => {
-      if (data.friendId === searchResult?.friendId) setSearchResult({ ...searchResult, status: -1 });
-    });
+    }
+    socket.on("receive-friend-request", handlerReceiveFriendRequest);
     return () => {
-      socket.off("receive-friend-request");
-      socket.off("receive-unfriend");
-      socket.off("receive-cancel-friend-request");
+      socket.off("receive-friend-request", handlerReceiveFriendRequest);
     };
-  }, [searchResult]);
 
+  }, [])
 
+  useEffect(() => {
+    socket.on("receive-accept-friend", callRenderFriends);
+    return () => {
+      socket.off("receive-accept-friend", callRenderFriends);
+    };
+
+  }, [])
+
+  useEffect(() => {
+    socket.on("receive-reject-friend", callRenderFriends);
+    return () => {
+      socket.off("receive-reject-friend", callRenderFriends);
+    };
+
+  }, [])
+
+  useEffect(() => {
+    socket.on("receive-unfriend", callRenderFriends);
+    return () => {
+      socket.off("receive-unfriend", callRenderFriends);
+    };
+
+  }, [])
+
+  useEffect(() => {
+    socket.on("receive-block", callRenderFriends);
+    return () => {
+      socket.off("receive-block", callRenderFriends);
+    };
+
+  }, [])
+
+  useEffect(() => {
+    socket.on("receive-unblock", callRenderFriends);
+    return () => {
+      socket.off("receive-unblock", callRenderFriends);
+    };
+
+  }, [])
 
   const dispatch = useDispatch();
   const userLogin = useSelector((state) => state.user.userLogin);
@@ -293,6 +274,14 @@ export const InAppNavigation = () => {
     socket.on("logout-changed-password", () => {
       showToast("info", "top", "Thông báo", "Phiên đăng nhập đã hết.");
       handleLogout();
+    });
+
+  }, []);
+
+  useEffect(() => {
+    socket.on('update-last-message', (conversationId, message) => {
+      console.log('update-last-message', conversationId, message);
+      dispatch(updateLastMessage({ conversationId, message }));
     });
 
   }, []);
@@ -328,6 +317,28 @@ export const InAppNavigation = () => {
             Kết quả tìm kiếm
           </Text>
           {/* Render kết quả ở đây nếu có */}
+          <FlatList
+            data={searchResult.map((item) => item.friendInfo)}
+            keyExtractor={(item) => item.accountId}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                style={[ContactStyles.contactItem, { paddingVertical: 15 }]}
+              >
+                <Image source={{ uri: item.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" }} style={ContactStyles.avatar} />
+                <View style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
+                  <Text style={ContactStyles.contactName}>{item.fullName}</Text>
+                  <View style={{ flexDirection: "row" }}>
+                    <TouchableOpacity onPress={() => console.log(`Calling ${item.friendId}`)} style={{ marginRight: 10 }}>
+                      <IconMI name="phone" size={20} color="#007AFF" />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => console.log(`Video calling ${item.friendId}`)}>
+                      <IconMI name="videocam" size={20} color="#007AFF" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )}
+          />
         </View>
       ) : (
         <Tab.Navigator

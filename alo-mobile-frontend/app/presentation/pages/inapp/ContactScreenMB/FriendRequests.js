@@ -6,79 +6,56 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import { useDispatch, useSelector } from "react-redux";
 import { getFriendsRequest, removeSentRequest, setFriendRequests } from "../../../redux/slices/FriendSlice";
 import socket from "../../../../utils/socket";
+import { ActivityIndicator } from "react-native-paper";
 
 const FriendRequests = ({
-  navigation,
   handleAcceptFriend,
   handleRejectFriend,
-  handleCancelFriendRequest,
   setSubScreen,
   handleGoBack,
 }) => {
-  const dispatch = useDispatch();
   const friendRequests = useSelector((state) => state.friend.friendRequests || []);
   const [activeTab, setActiveTab] = useState("received");
   const sentRequests = useSelector((state) => state.friend.sentRequests || []);
   const userLogin = useSelector((state) => state.user.userLogin);
-
-  const handleAccept = async (friendId) => {
-    try {
-      await handleAcceptFriend(friendId);
-      socket.emit("accept-friend-request", { userId: friendId, friendId: userLogin.id });
-      dispatch(setFriendRequests((prev) => prev.filter((req) => req.friendId !== friendId)))
-    } catch (error) {
-      console.error("Lỗi khi chấp nhận:", error);
-    }
-  };
-
-  const handleReject = async (friendId) => {
-    try {
-      await handleRejectFriend(friendId);
-      socket.emit("reject-friend-request", { userId: userLogin.id, friendId });
-      dispatch(setFriendRequests((prev) => prev.filter((req) => req.friendId !== friendId)))
-    } catch (error) {
-      console.error("Lỗi khi từ chối:", error);
-    }
-  };
-
-  const handleCancel = async (friendId) => {
-    try {
-      await handleCancelFriendRequest(friendId);
-      socket.emit("cancel-friend-request", { userId: userLogin.id, friendId, senderId: userLogin.id });
-    } catch (error) {
-      console.error("Lỗi khi hủy:", error);
-    }
-  };
 
   const renderReceivedItem = ({ item }) => {
     if (!item || !item.friendId) return null;
     return (
       <View style={FriendRequestStyles.contactItem}>
         <Image
-          source={{ uri: item.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1744185940896-LTDD.jpg" }}
+          source={{ uri: item.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" }}
           style={FriendRequestStyles.avatar}
         />
         <View style={ContactStyles.contactContent}>
           <Text style={FriendRequestStyles.contactName}>{item.fullName}</Text>
           <Text style={[FriendRequestStyles.contactStatus, { marginTop: 5 }]}>{item.contentRequest}</Text>
-          <Text style={[FriendRequestStyles.contactDate, { marginTop: 5 }]}>{item.requestDate}</Text>
+          <Text style={[FriendRequestStyles.contactDate, { marginTop: 5 }]}>{new Date(item.requestDate).toLocaleDateString("vi-VN")}</Text>
           <View style={ContactStyles.actionButtons}>
             <TouchableOpacity
               style={[ContactStyles.rejectButton, { backgroundColor: "#ddd", borderRadius: 50, paddingVertical: 8, paddingHorizontal: 15, marginTop: 10 }]}
-              onPress={() => handleReject(item.friendId)}
+              onPress={() => handleRejectFriend(item)}
             >
               <Text style={{ color: "#000", fontWeight: "bold" }}>Từ chối</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[ContactStyles.acceptButton, { backgroundColor: "#ddd", borderRadius: 50, paddingVertical: 8, paddingHorizontal: 15, marginTop: 10 }]}
-              onPress={() => handleAccept(item.friendId)}
+              onPress={() => {
+                handleAcceptFriend(item)
+              }}
             >
-              <Text style={{ color: "blue", fontWeight: "bold" }}>Đồng ý</Text>
+              {
+                // isAccepted ? (
+                  // <ActivityIndicator size="small" color="#fff" />
+                // ):(
+                  <Text style={{ color: "blue", fontWeight: "bold" }}>Đồng ý</Text>
+                // )
+              }
             </TouchableOpacity>
           </View>
         </View>
       </View>
-    );
+    ); 
   };
 
   const renderSentItem = ({ item }) => {
@@ -105,7 +82,6 @@ const FriendRequests = ({
       </View>
     );
   };
-  console.log(friendRequests)
 
   return (
     <SafeAreaView style={FriendRequestStyles.container}>

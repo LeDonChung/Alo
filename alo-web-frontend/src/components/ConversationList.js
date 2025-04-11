@@ -75,13 +75,14 @@ const ConversationList = () => {
       return `${timeX.toLocaleDateString('vi-VN')}`;
     }
   }
+  console.log(conversations)
   const selectedConversation = useSelector(state => state.conversation.conversation);
   return (
     <div className=" bg-white border-r border-gray-200 py-4 overflow-y-auto max-h-[2000px] scrollable">
       <div>
-        {conversations.map((conversation) => (
+        {conversations && conversations.map((conversation) => (
           !conversation.isGroup &&
-          <div
+          <div 
             key={conversations.id}
             onClick={() => {
               if (selectedConversation) {
