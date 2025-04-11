@@ -32,7 +32,29 @@ export const InAppNavigation = ({navigation}) => {
     socket.emit('login', userLogin?.id);
   }, [userLogin?.id, dispatch, socket, chooseTab]);
 
+  const handleLogout = async () => {
+    await dispatch(logout()).unwrap().then(() => {
+      // remove 
+      SecureStore.deleteItemAsync('accessToken');
+      SecureStore.deleteItemAsync('refreshToken');
+      SecureStore.deleteItemAsync('userLogin');
 
+      socket.emit("logout", userLogin?.id);
+
+      navigation.navigate('authentication');
+    }).catch((err) => {
+      console.log("Logout error: ", err);
+    })
+  }
+
+  useEffect(() => {
+    console.log("aa")
+    socket.on("logout-changed-password", () => {
+      showToast("info", "top", "Thông báo", "Phiên đăng nhập đã hết.");
+      handleLogout();
+    });
+
+  }, []);
   return (
     <SafeAreaView style={{ flex: 1, flexDirection: 'column' }}>
 
