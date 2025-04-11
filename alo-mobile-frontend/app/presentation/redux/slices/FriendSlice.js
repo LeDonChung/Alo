@@ -7,13 +7,16 @@ const initialState = {
     friends: [],
     friend: null,
     error: null,
+    sentRequests: [],
 };
 const getFriends = createAsyncThunk('FriendSlice/getFriends', async (_, { rejectWithValue }) => {
     const userLogin = JSON.parse(await SecureStore.getItemAsync('userLogin'));
     // console.log("userLoginXXX", userLogin);
     try {
         const response = await axiosInstance.get(`/api/friend/get-friends?userId=${userLogin.id}`);
+        console.log("Friends data from API:", response.data);
         return response.data;
+        
     }
     catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
@@ -107,6 +110,15 @@ const FriendSlice = createSlice({
         clearError: (state) => {
             state.error = null;
         },
+        addSentRequest: (state, action) => {
+            state.sentRequests.push(action.payload);
+        },
+        removeSentRequest: (state, action) => { 
+            state.sentRequests = state.sentRequests.filter(req => req.friendId !== action.payload);
+        },
+        clearSentRequests: (state) => { 
+            state.sentRequests = [];
+        },
     },  
     extraReducers: (builder) => {
         builder.addCase(getFriends.pending, (state) => {
@@ -197,6 +209,6 @@ const FriendSlice = createSlice({
 
     }
 });
-export const { clearError } = FriendSlice.actions;
+export const { clearError, addSentRequest, removeSentRequest, clearSentRequests } = FriendSlice.actions;
 export { getFriends, unfriend, blockFriend, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriendByPhoneNumber, getFriendsRequest, cancelFriend };
 export default FriendSlice.reducer;
