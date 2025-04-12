@@ -30,7 +30,10 @@ exports.login = async (req, res) => {
     const { phoneNumber, password } = req.body;
     const account = await userService.findByPhoneNumber(phoneNumber);
 
-    if (account && bcrypt.compareSync(password, account.password)) {
+    if (!account) {
+        return res.status(401).json({ message: 'Số điện thoại chưa được đăng ký.' });
+    }
+    if (bcrypt.compareSync(password, account.password)) {
         const roles = account.roles.map(role => role);
         const payload = { sub: account.phoneNumber, userId: account.user.id, roles };
 
@@ -46,7 +49,7 @@ exports.login = async (req, res) => {
         });
     } else {
         console.log(`Error login for: ${req.body.phoneNumber}`);
-        return res.status(401).json({ message: 'Số điện thoại chưa được đăng ký.' });
+        return res.status(401).json({ message: 'Tài khoản hoặc mật khẩu không chính xác.' });
     }
 };
 
@@ -229,7 +232,7 @@ exports.changePassword = async (req, res) => {
     }
 
 
-    
+
 
     // Kiểm tra mật khẩu cũ
     if (!bcrypt.compareSync(oldPassword, account.password)) {

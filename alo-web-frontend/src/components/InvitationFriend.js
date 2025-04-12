@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { acceptFriendRequest, getFriendsRequest, rejectFriendRequest } from '../redux/slices/FriendSlice';
 import showToast from '../utils/AppUtils';
 import socket from '../utils/socket';
+import { getAllConversation } from '../redux/slices/ConversationSlice';
 
 const listType = [
   { id: 1, name: "Từ cửa sổ trò chuyện" },
@@ -90,6 +91,7 @@ export default function InvitationFriend() {
       if (data.status === 1) {
         setChangeInvitation(!changeInvitation);
         showToast("Giờ đây các bạn đã trở thành bạn bè.", "success");
+        await dispatch(getAllConversation()); 
         socket.emit('accept-friend-request', friendUpdate);
       }
     } catch (error) {
@@ -108,6 +110,7 @@ export default function InvitationFriend() {
           requestDate: data.requestDate
         };
         setInvitationList((prev) => [newInvitation, ...prev]);
+        await dispatch(getAllConversation()); 
       }
     };
 

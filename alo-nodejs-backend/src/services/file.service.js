@@ -21,7 +21,8 @@ const FILE_TYPE_MATCH = [
     "application/x-zip-compressed",
     "application/x-rar-compressed",
     "text/plain",
-    "video/mp4"
+    "video/mp4",
+    "application/x-compressed"
 ]
 
 const uploadFile = async(file) => {

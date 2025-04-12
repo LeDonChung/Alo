@@ -81,7 +81,6 @@ exports.acceptFriendRequest = async (req, res) => {
         const friend = await userService.getUserById(request.friendId);
 
         await conversationService.createConversation({
-            members: [user, friend],
             memberUserIds: [user.id, friend.id],
             createdBy: request.userId,
             isGroup: false,

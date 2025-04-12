@@ -34,9 +34,8 @@ const getMessagesByConversationId = async (conversationId) => {
 
 
         const messages = await client.scan(params).promise();
-        return {
-            messages: messages.Items
-        }
+        return messages.Items
+        
     } catch (err) {
         console.error(err);
         throw new Error(err);

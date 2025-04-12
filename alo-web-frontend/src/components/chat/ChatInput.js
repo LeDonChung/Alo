@@ -28,11 +28,10 @@ const ChatInput = ({ isSending }) => {
 
     await dispatch(sendMessage({ message, file })).then(async (res) => {
       dispatch(addMessage(res.payload.data));
-      message.sender = userLogin;
-      message.fileLink = res.payload.data.fileLink;
+      console.log("New message sent:", res.payload.data);
       socket.emit('send-message', {
         conversation: conversation,
-        message: message
+        message: res.payload.data
       });
       dispatch(setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' }));
     });
@@ -210,9 +209,7 @@ const ChatInput = ({ isSending }) => {
             <EmojiPicker onEmojiClick={handleEmojiClick} />
           </div>
         )}
-        {isSending ? (
-          <div className="w-6 h-6 border-t-2 border-b-2 border-blue-500 rounded-full animate-spin"></div>
-        ) : (
+        
           <button
             onClick={() => handlerSendMessage(inputMessage)}
             type="button"
@@ -222,7 +219,6 @@ const ChatInput = ({ isSending }) => {
               <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
             </svg>
           </button>
-        )}
       </form>
     </div>
   );
