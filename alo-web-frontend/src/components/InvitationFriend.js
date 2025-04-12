@@ -34,6 +34,7 @@ export default function InvitationFriend() {
 
   const [changeInvitation, setChangeInvitation] = useState(false);
 
+  const [loading, setLoading] = useState(false);
   useEffect(() => {
     const handleCancleFriendRequest = (data) => {
       if (data.senderId !== userLogin.id) {
@@ -49,15 +50,20 @@ export default function InvitationFriend() {
   }, []);
 
   useEffect(() => {
+
     const fetchFriendInvitation = async () => {
       try {
+        setLoading(true);
         const resp = await dispatch(getFriendsRequest());
         setInvitationList(resp.payload.data);
 
       } catch (error) {
         console.log(error);
       }
+      setLoading(false);
+
     };
+
 
     fetchFriendInvitation();
   }, [changeInvitation]);
@@ -125,7 +131,7 @@ export default function InvitationFriend() {
         {/* Loi moi ket ban */}
         <div className="mb-5">
           {
-            invitationList.length > 0 && (
+            invitationList && (
               <h2 className="text-lg font-semibold mb-4" onClick={() => setShowListInvitation(!showListInvitation)}>
                 Lời mời đã nhận ({invitationList.length}) <span>{showListInvitation ? "▼" : "▶"}</span>
               </h2>
@@ -134,8 +140,10 @@ export default function InvitationFriend() {
           {
             showListInvitation && (
               <>
-                {invitationList.length === 0 ? (
-                  <p className="text-center text-gray-500">Không có lời mời kết bạn nào.</p>
+                {(invitationList.length === 0 && !loading) ? (
+                  <div className="flex justify-center items-center w-full h-full">
+                    <span className="text-gray-500">Không có lời mời kết bạn nào</span>
+                  </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                     {invitationList.map((item) => (
@@ -173,6 +181,15 @@ export default function InvitationFriend() {
                 )}
               </>
             )
+
+
+          }
+
+          {loading && (
+            <div className="flex justify-center items-center">
+              <div className="bg-blue animate-spin rounded-full border-t-2 border-b-2 border-blue-500 w-4 h-4"></div>
+            </div>
+          ) 
           }
         </div>
 

@@ -95,7 +95,7 @@ const getFriendsRequest = createAsyncThunk('FriendSlice/getFriendsRequest', asyn
 
 const getFriendByPhone = createAsyncThunk('FriendSlice/getFriendByPhone', async (phoneNumber, { rejectWithValue }) => {
     try {
-        const response = await axiosInstance.get('http://localhost:5000/api/friend/get-friend-by-phone-number?phoneNumber=' + phoneNumber );
+        const response = await axiosInstance.get('api/friend/get-friend-by-phone-number?phoneNumber=' + phoneNumber );
         
         return response.data;
     } catch (error) {

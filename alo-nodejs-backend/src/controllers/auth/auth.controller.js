@@ -46,7 +46,7 @@ exports.login = async (req, res) => {
         });
     } else {
         console.log(`Error login for: ${req.body.phoneNumber}`);
-        return res.status(401).json({ message: 'Yêu cầu không hợp lệ.' });
+        return res.status(401).json({ message: 'Số điện thoại chưa được đăng ký.' });
     }
 };
 
@@ -146,7 +146,7 @@ exports.register = async (req, res) => {
 
 
 exports.generateOtp = async (req, res) => {
-    const { phoneNumber } = req.query;
+    let { phoneNumber } = req.query;
 
     // Kiểm tra số điện thoại đã có otp trong Redis chưa
     const existingOtp = await redis.get(phoneNumber);
@@ -164,6 +164,11 @@ exports.generateOtp = async (req, res) => {
 
     // Lưu OTP vào Redis với thời gian sống là 1 phút
     await redis.set(phoneNumber, otp, 'EX', 60);
+    // Nếu bắt đầu  là 0 thì -> +84
+
+    if (phoneNumber.startsWith('0')) {
+        phoneNumber = '+84' + phoneNumber.substring(1);
+    }
 
     // Gửi OTP qua SMS (giả sử bạn đã có hàm gửi SMS)
     // const smsSent = await smsService.sendOtp(phoneNumber, otp);
@@ -223,9 +228,17 @@ exports.changePassword = async (req, res) => {
         return res.status(401).json({ message: 'Tài khoản không tồn tại.' });
     }
 
+
+    
+
     // Kiểm tra mật khẩu cũ
     if (!bcrypt.compareSync(oldPassword, account.password)) {
         return res.status(401).json({ message: 'Mật khẩu cũ không đúng.' });
+    }
+
+    // Kiểm tra mật khẩu trùng
+    if (bcrypt.compareSync(newPassword, account.password)) {
+        return res.status(401).json({ message: 'Mật khẩu mới trùng với mật khẩu cũ.' });
     }
 
     const hashedPassword = await bcrypt.hashSync(newPassword, 10);

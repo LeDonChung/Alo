@@ -38,15 +38,15 @@ export const LoginPage = () => {
         await dispatch(login(userLogin)).unwrap().then(async (response) => {
             showToast('Đăng nhập thành công', 'success');
             await dispatch(getProfile()).unwrap().then((response) => {
-
+                navigate('/me');
             }).catch((error) => {
                 console.log("❌ Lỗi lấy thông tin người dùng:", error);
             });
-            navigate('/me');
+            
         }).catch((error) => {
             console.log("❌ Lỗi đăng nhập:", error);
 
-            showToast('Tài khoản hoặc mật khẩu không chính xác', error);
+            showToast(error.message, 'error');
         });
         setIsLoading(false);
     }

@@ -114,7 +114,7 @@ io.on("connection", (socket) => {
         socket.to(conversation.id).emit('receive-message', message);
     });
 
-    // Không gộp các sự kiện bạn yêu cầu
+    
     socket.on('send-friend-request', async (data) => {
         const receiveId = data.userId === data.senderId ? data.friendId : data.userId;
         const socketIds = await findSocketIdsByUserId(receiveId);

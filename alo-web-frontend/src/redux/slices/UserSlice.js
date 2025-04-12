@@ -22,7 +22,7 @@ const logout = createAsyncThunk('UserSlice/logout', async (_, { rejectWithValue 
             Authorization: `Bearer ${localStorage.getItem('refreshToken')}`
         };
 
-        const response = await axios.post('http://localhost:5000/api/auth/logout', {}, { headers });
+        const response = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/logout`, {}, { headers });
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || error.message);

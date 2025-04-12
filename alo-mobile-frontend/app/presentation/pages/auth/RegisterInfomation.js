@@ -213,9 +213,6 @@ export const RegisterInformationScreen = ({ navigation }) => {
         <TouchableOpacity onPress={() => navigation.navigate("login")}>
           <Text style={styles.link}>Đăng nhập</Text>
         </TouchableOpacity>
-        <TouchableOpacity>
-          <Text style={styles.link}>Quên mật khẩu</Text>
-        </TouchableOpacity>
       </View>
     </SafeAreaView>
   );

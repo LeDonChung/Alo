@@ -28,14 +28,14 @@ export const Navigation = () => {
             showToast("Phiên đăng nhập đã hết.", "error");
             handleLogout();
         };
-    
+
         socket.on("logout-changed-password", handleLogoutChangedPassword);
-    
+
         return () => {
-            socket.off("logout-changed-password", handleLogoutChangedPassword); 
+            socket.off("logout-changed-password", handleLogoutChangedPassword);
         };
     }, []);
-    
+
     const init = async () => {
         console.log("HIIII")
         if (!userLogin) {
@@ -221,21 +221,23 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
             newPassword: newPassword,
         };
 
-        const resp = await dispatch(changePassword(data));
-        const message = resp.payload?.message;
-        if (message && message === "Mật khẩu cũ không đúng.") {
-            showToast("Mật khẩu cũ không đúng", "error");
+        try {
+            await dispatch(changePassword(data)).unwrap().then((res) => {
+                showToast("Đổi mật khẩu thành công", "success");
+                setIsLoading(false);
+                setOldPassword("");
+                setNewPassword("");
+                setConfirmPassword("");
+                setShowChangePasswordModal(false);
+                socket.emit("request-logout-changed-password", userLogin?.id);
+            })
+        } catch (e) {
+            console.log(e.message);
+            showToast(e.message, "error");
             inputOldPasswordRef.current.focus();
             setIsLoading(false);
-        } else {
-
-            showToast("Đổi mật khẩu thành công", "success");
+        } finally {
             setIsLoading(false);
-            setOldPassword("");
-            setNewPassword("");
-            setConfirmPassword("");
-            setShowChangePasswordModal(false);
-            socket.emit("request-logout-changed-password", userLogin?.id);
         }
     }
 
