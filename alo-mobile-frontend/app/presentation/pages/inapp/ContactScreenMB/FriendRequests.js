@@ -5,8 +5,7 @@ import { ContactStyles } from "../../../styles/ContactStyle";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { useDispatch, useSelector } from "react-redux";
 import { getFriendsRequest, removeSentRequest, setFriendRequests } from "../../../redux/slices/FriendSlice";
-import socket from "../../../../utils/socket";
-import { ActivityIndicator } from "react-native-paper";
+import { RefreshControl } from "react-native-gesture-handler";
 
 const FriendRequests = ({
   handleAcceptFriend,
@@ -18,9 +17,21 @@ const FriendRequests = ({
   const [activeTab, setActiveTab] = useState("received");
   const sentRequests = useSelector((state) => state.friend.sentRequests || []);
   const userLogin = useSelector((state) => state.user.userLogin);
+  const [refreshing, setRefreshing] = useState(false);
 
+  const dispatch = useDispatch();
+  const onRefresh = async () => {
+    console.log("onRefresh");
+    setRefreshing(true);
+    try {
+      // Gọi API hoặc Redux để reload lại danh sách hội thoại
+      await dispatch(getFriendsRequest());
+    } catch (error) {
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const renderReceivedItem = ({ item }) => {
-    if (!item || !item.friendId) return null;
     return (
       <View style={FriendRequestStyles.contactItem}>
         <Image
@@ -46,16 +57,16 @@ const FriendRequests = ({
             >
               {
                 // isAccepted ? (
-                  // <ActivityIndicator size="small" color="#fff" />
+                // <ActivityIndicator size="small" color="#fff" />
                 // ):(
-                  <Text style={{ color: "blue", fontWeight: "bold" }}>Đồng ý</Text>
+                <Text style={{ color: "blue", fontWeight: "bold" }}>Đồng ý</Text>
                 // )
               }
             </TouchableOpacity>
           </View>
         </View>
       </View>
-    ); 
+    );
   };
 
   const renderSentItem = ({ item }) => {
@@ -123,15 +134,24 @@ const FriendRequests = ({
         </TouchableOpacity>
       </View>
       {activeTab === "received" ? (
-        friendRequests.length === 0 ? (
-          <Text style={ContactStyles.noDataText}>Không có lời mời kết bạn nào</Text>
-        ) : (
-          <FlatList data={friendRequests} keyExtractor={(item) => (item.userId + item.friendId)} renderItem={renderReceivedItem} />
-        )
-      ) : sentRequests.length === 0 ? (
-        <Text style={ContactStyles.noDataText}>Bạn chưa gửi lời mời nào</Text>
+        <FlatList
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListEmptyComponent={
+            <Text style={ContactStyles.noDataText}>Không có lời mời kết bạn nào</Text>
+          }
+          data={friendRequests} keyExtractor={(item) => (item.userId + item.friendId)} renderItem={renderReceivedItem} />
       ) : (
-        <FlatList data={sentRequests} keyExtractor={(item) => (item.userId + item.friendId)} renderItem={renderSentItem} />
+
+        <FlatList
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+          }
+          ListEmptyComponent={
+            <Text style={ContactStyles.noDataText}>Bạn chưa gửi lời mời nào</Text>
+          }
+          data={sentRequests} keyExtractor={(item) => (item.userId + item.friendId)} renderItem={renderSentItem} />
       )}
     </SafeAreaView>
   );
