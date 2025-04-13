@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import { View, Text, Image, TouchableOpacity, Pressable } from 'react-native';
 import { Video } from 'expo-av';
 
-const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime }) => {
+const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage }) => {
   const getFileExtension = (filename = '') => {
     const parts = filename.split('.');
     return parts[parts.length - 1].toLowerCase();
@@ -46,92 +46,104 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
   const fileExtension = fileLink ? getFileExtension(fileLink) : null;
 
   return (
-    <View style={{
-      flexDirection: 'row', alignItems: 'flex-start', marginVertical: 5, paddingHorizontal: 10, justifyContent: isSent ? 'flex-end' : 'flex-start',
-      marginLeft: (!isSent && !showAvatar()) ? 45 : 0
+    <Pressable onPress={() => {
+      setIsShowMenuInMessage(false);
+      setSelectedMessage(null);
     }}>
-      {!isSent && showAvatar() && (
-        <TouchableOpacity>
-          <Image
-            source={{ uri: friend.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg' }}
-            style={{ width: 40, height: 40, borderRadius: 20, marginRight: 5 }}
-          />
-        </TouchableOpacity>
-      )}
-      <View style={{ borderRadius: 10, maxWidth: '90%', flexDirection: 'column' }}>
-        {messageType === 'text' && item.content && (
-          <TouchableOpacity style={{ backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
-            <Text>{item.content}</Text>
-          </TouchableOpacity>
-        )}
+      <View style={{
+        flexDirection: 'row', alignItems: 'flex-start', marginVertical: 5, paddingHorizontal: 10, justifyContent: isSent ? 'flex-end' : 'flex-start',
+        marginLeft: (!isSent && !showAvatar()) ? 45 : 0
+      }}
 
-        {(messageType === 'image' && fileExtension === 'mp4' && item.fileLink) && (
-          <TouchableOpacity style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}>
-            <Video
-              source={{ uri: fileLink }}
-              style={{ width: '100%', height: '100%' }}
-              useNativeControls
-              resizeMode="cover"
-              isLooping={false}
-              shouldPlay={false}
-            />
-          </TouchableOpacity>
-        )}
-
-        {(messageType === 'image' && fileExtension !== 'mp4' && item.fileLink) && (
-          <TouchableOpacity onPress={() => {
-            setSelectedImage([{ uri: item.fileLink }]);
-            setIsImageViewVisible(true);
-          }}
-            style={{ borderRadius: 10 }}
-          >
+      >
+        {!isSent && showAvatar() && (
+          <View >
             <Image
-              source={{ uri: item.fileLink }}
-              style={{ width: 260, height: 160, borderRadius: 10 }}
-              resizeMode="contain"
+              source={{ uri: friend.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg' }}
+              style={{ width: 40, height: 40, borderRadius: 20, marginRight: 5 }}
             />
-          </TouchableOpacity>
+          </View>
         )}
+        <TouchableOpacity style={{ borderRadius: 10, maxWidth: '90%', flexDirection: 'column' }} onLongPress={() => {
+          console.log("hi")
+          setIsShowMenuInMessage(true);
+          setSelectedMessage(item);
+        }}>
+          {messageType === 'text' && item.content && (
+            <View style={{ backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
+              <Text>{item.content}</Text>
+            </View>
+          )}
 
-        {(messageType === 'sticker' && item.fileLink) && (
-          <TouchableOpacity onPress={() => {
-            setSelectedImage([{ uri: item.fileLink }]);
-            setIsImageViewVisible(true);
-          }}>
-            <Image
-              source={{ uri: item.fileLink }}
-              style={{ width: '100%', height: undefined, borderRadius: 10, cache: 'reload' }}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
-        )}
-        {messageType === 'file' && fileExtension === 'mp4' ? (
-          <TouchableOpacity style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}>
-            <Video
-              source={{ uri: fileLink }}
-              style={{ width: '100%', height: '100%' }}
-              useNativeControls
-              resizeMode="cover"
-              isLooping={false}
-              shouldPlay={false}
-            />
-          </TouchableOpacity>
-        ) : messageType === 'file' ? (
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
-            {getFileIcon(fileExtension)}
-            <Text style={{ marginLeft: 5, color: 'gray' }}>
-              {fileLink ? extractOriginalName(fileLink) : ''}
+          {(messageType === 'image' && fileExtension === 'mp4' && item.fileLink) && (
+            <View style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}>
+              <Video
+                source={{ uri: fileLink }}
+                style={{ width: '100%', height: '100%' }}
+                useNativeControls
+                resizeMode="cover"
+                isLooping={false}
+                shouldPlay={false}
+              />
+            </View>
+          )}
+
+          {(messageType === 'image' && fileExtension !== 'mp4' && item.fileLink) && (
+            <View onPress={() => {
+              setSelectedImage([{ uri: item.fileLink }]);
+              setIsImageViewVisible(true);
+            }}
+              style={{ borderRadius: 10 }}
+            >
+              <Image
+                source={{ uri: item.fileLink }}
+                style={{ width: 260, height: 160, borderRadius: 10 }}
+                resizeMode="contain"
+              />
+            </View>
+          )}
+
+          {(messageType === 'sticker' && item.fileLink) && (
+            <View onPress={() => {
+              setSelectedImage([{ uri: item.fileLink }]);
+              setIsImageViewVisible(true);
+            }}>
+              <Image
+                source={{ uri: item.fileLink }}
+                style={{ width: '100%', height: undefined, borderRadius: 10, cache: 'reload' }}
+                resizeMode="cover"
+              />
+            </View>
+          )}
+          {messageType === 'file' && fileExtension === 'mp4' ? (
+            <View style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}>
+              <Video
+                source={{ uri: fileLink }}
+                style={{ width: '100%', height: '100%' }}
+                useNativeControls
+                resizeMode="cover"
+                isLooping={false}
+                shouldPlay={false}
+              />
+            </View>
+          ) : messageType === 'file' ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
+              {getFileIcon(fileExtension)}
+              <Text style={{ marginLeft: 5, color: 'gray' }}>
+                {fileLink ? extractOriginalName(fileLink) : ''}
+              </Text>
+            </View>
+          ) : null}
+
+          {showTime() && (
+            <Text style={{ fontSize: 10, color: 'gray', textAlign: 'right', marginTop: 5, marginRight: !isSent ? 'auto' : 0 }}>
+              {new Date(item.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
             </Text>
-          </TouchableOpacity>
-        ) : null}
-
-        {showTime() && (
-          <Text style={{ fontSize: 10, color: 'gray', textAlign: 'right', marginTop: 5, marginRight: !isSent ? 'auto' : 0 }}>
-            {new Date(item.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-          </Text>
-        )}
+          )}
+        </TouchableOpacity>
       </View>
-    </View>
+      
+    </Pressable>
   );
 };
 

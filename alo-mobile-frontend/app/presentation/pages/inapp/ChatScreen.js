@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { View } from 'react-native';
+import { Modal, Pressable, View } from 'react-native';
 import { axiosInstance } from '../../../api/APIClient';
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
@@ -13,6 +13,7 @@ import ImageViewerComponent from '../../components/chat/ImageViewComponent';
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
 import StickerPicker from '../../components/chat/StickerPicker';
 import { ActivityIndicator } from 'react-native-paper';
+import { MenuComponent } from '../../components/chat/MenuConponent';
 
 
 export const ChatScreen = ({ route, navigation }) => {
@@ -148,6 +149,9 @@ export const ChatScreen = ({ route, navigation }) => {
     return nextMessage.senderId !== messageSort[index].senderId;
   };
 
+  const [isShowMenuInMessage, setIsShowMenuInMessage] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState(null);
+
   const showTime = (index) => {
     if (index === messageSort.length - 1) return false;
 
@@ -158,7 +162,8 @@ export const ChatScreen = ({ route, navigation }) => {
   };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#F3F3F3' }}>
+
+    <View style={{ flex: 1, backgroundColor: '#F3F3F3', position: 'relative' }}>
       <HeaderComponent
         friend={friend}
         isFriendOnline={isFriendOnline}
@@ -186,6 +191,8 @@ export const ChatScreen = ({ route, navigation }) => {
                 setIsImageViewVisible={setIsImageViewVisible}
                 showAvatar={() => showAvatar(index)}
                 showTime={() => showTime(index)}
+                setIsShowMenuInMessage={setIsShowMenuInMessage}
+                setSelectedMessage={setSelectedMessage}
               />
             )}
             keyExtractor={(item, index) => item.id?.toString() || item.timestamp?.toString() || index.toString()}
@@ -210,6 +217,24 @@ export const ChatScreen = ({ route, navigation }) => {
         <StickerPicker onStickerSelect={handleStickerSelect} />
       )}
 
+      {
+        isShowMenuInMessage && (
+          <Modal
+            visible={isShowMenuInMessage}
+            transparent={true}
+            animationType="none"
+          >
+            <Pressable
+              style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' }}
+              onPress={() => setIsShowMenuInMessage(false)}
+            >
+              <MenuComponent
+                message={selectedMessage}
+              />
+            </Pressable>
+          </Modal>
+        )
+      }
     </View>
   );
 };
