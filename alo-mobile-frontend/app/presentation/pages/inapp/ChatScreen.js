@@ -180,8 +180,6 @@ export const ChatScreen = ({ route, navigation }) => {
             renderItem={({ item, index }) => (
               <MessageItem
                 item={item}
-                index={index}
-                messageSort={messageSort}
                 userLogin={userLogin}
                 friend={friend}
                 setSelectedImage={setSelectedImage}
