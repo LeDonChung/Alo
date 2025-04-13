@@ -28,14 +28,15 @@ export const Navigation = () => {
             showToast("Phiên đăng nhập đã hết.", "error");
             handleLogout();
         };
-    
+
         socket.on("logout-changed-password", handleLogoutChangedPassword);
-    
+
         return () => {
-            socket.off("logout-changed-password", handleLogoutChangedPassword); 
+            socket.off("logout-changed-password", handleLogoutChangedPassword);
         };
     }, []);
-    
+
+
     const init = async () => {
         console.log("HIIII")
         if (!userLogin) {
@@ -87,7 +88,7 @@ export const Navigation = () => {
         <>
             {/* Sidebar Navigation */}
             <div className="w-20 bg-blue-600 text-white flex flex-col items-center py-4 px-4 relative">
-                <div className="cursor-pointer">
+                <div className="cursor-pointer"  onClick={() => setShowProfileModal(true)}>
                     <img src={userLogin?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
                         className="rounded-full w-12 h-12 bg-cover" />
                 </div>
@@ -123,7 +124,7 @@ export const Navigation = () => {
                                 className="flex flex-row items-center cursor-pointer hover:bg-gray-200 px-2"
                                 onClick={() => { setShowChangePasswordModal(true); setShowSettings(false); }}
                             >
-                                <i className="fas fa-user"></i>
+                                <i className="fas fa-lock"></i>
                                 <p className="p-2"> Đổi mật khẩu </p>
                             </div>
                             <div className="flex flex-row items-center cursor-pointer hover:bg-gray-200 px-2" onClick={async () => {
@@ -221,21 +222,23 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
             newPassword: newPassword,
         };
 
-        const resp = await dispatch(changePassword(data));
-        const message = resp.payload?.message;
-        if (message && message === "Mật khẩu cũ không đúng.") {
-            showToast("Mật khẩu cũ không đúng", "error");
+        try {
+            await dispatch(changePassword(data)).unwrap().then((res) => {
+                showToast("Đổi mật khẩu thành công", "success");
+                setIsLoading(false);
+                setOldPassword("");
+                setNewPassword("");
+                setConfirmPassword("");
+                setShowChangePasswordModal(false);
+                socket.emit("request-logout-changed-password", userLogin?.id);
+            })
+        } catch (e) {
+            console.log(e.message);
+            showToast(e.message, "error");
             inputOldPasswordRef.current.focus();
             setIsLoading(false);
-        } else {
-
-            showToast("Đổi mật khẩu thành công", "success");
+        } finally {
             setIsLoading(false);
-            setOldPassword("");
-            setNewPassword("");
-            setConfirmPassword("");
-            setShowChangePasswordModal(false);
-            socket.emit("request-logout-changed-password", userLogin?.id);
         }
     }
 

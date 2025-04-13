@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, TextInput, TouchableOpacity } from 'react-native';
+import { View, TextInput, TouchableOpacity, Text } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
-
+import IconMI from 'react-native-vector-icons/MaterialIcons';
 const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isStickerPickerVisible, setIsStickerPickerVisible }) => {
   return (
     <View style={{ backgroundColor: 'white', padding: 10, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderColor: '#EDEDED' }}>
@@ -20,7 +20,7 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
 
       {inputMessage.content.trim() ? (
         <TouchableOpacity onPress={handlerSendMessage} style={{ paddingHorizontal: 10 }}>
-          <Text style={{ color: '#007AFF', fontWeight: 'bold' }}>GỬI</Text>
+          <IconMI name="send" size={20} color="blue" />
         </TouchableOpacity>
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>

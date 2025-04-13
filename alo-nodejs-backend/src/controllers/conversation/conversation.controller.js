@@ -5,17 +5,42 @@ const conversationService = require('../../services/conversation.service');
 
 exports.getConversationsByUserId = async (req, res) => {
     try {
-        // Lấy Authorization từ header
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1];
-        // Lấy userId từ token
         const userId = userService.getUserIdFromToken(token);
 
         const conversations = await conversationService.getConversationsByUserId(userId);
 
+        const userCache = new Map();
+
+        const updatedConversations = await Promise.all(
+            conversations.map(async (conversation) => {
+                const memberUserIds = conversation.memberUserIds;
+
+                const members = [];
+                for (const memberUserId of memberUserIds) {
+                    let memberUser;
+
+                    if (userCache.has(memberUserId)) {
+                        memberUser = userCache.get(memberUserId);
+                    } else {
+                        memberUser = await userService.getUserById(memberUserId);
+                        userCache.set(memberUserId, memberUser);
+                    }
+
+                    members.push(memberUser);
+                }
+
+                return {
+                    ...conversation,
+                    members
+                };
+            })
+        );
+
         return res.json({
             status: 200,
-            data: conversations,
+            data: updatedConversations,
             message: "Lấy danh sách cuộc trò chuyện thành công."
         });
     } catch (err) {
@@ -27,6 +52,8 @@ exports.getConversationsByUserId = async (req, res) => {
         });
     }
 };
+
+
 
 
 exports.getConversationById = async (req, res) => {

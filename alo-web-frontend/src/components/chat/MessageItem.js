@@ -86,8 +86,21 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar }) => {
     document.body.removeChild(link);
   };
 
+  const [reaction, setReaction] = useState([
+    { type: 'like', icon: '👍' },
+    { type: 'love', icon: '❤️' },
+    { type: 'laugh', icon: '😆' },
+    { type: 'wow', icon: '😮' },
+    { type: 'sad', icon: '😭' },
+    { type: 'angry', icon: '😠' },
+  ]);
+
+  const [showReactions, setShowReactions] = useState(false);
   return (
-    <div className={`flex ${isUserMessage ? 'justify-end' : 'justify-start'} mt-4`} onContextMenu={handleContextMenu}>
+    <div
+      className={`flex ${isUserMessage ? 'justify-end' : 'justify-start'} mt-4 group`}
+      onContextMenu={handleContextMenu}
+    >
       {/* Context Menu */}
       {contextMenu.visible && contextMenu.messageId === message.id && (
         <div
@@ -102,6 +115,11 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar }) => {
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => console.log(message)}>Trả lời</li>
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Chia sẻ</li>
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Copy tin nhắn</li>
+            {
+              message.messageType === 'image' && (
+                <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Lưu về máy</li>
+              )
+            }
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Ghim tin nhắn</li>
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Xem chi tiết</li>
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Thu hồi</li>
@@ -123,7 +141,14 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar }) => {
         </div>
       )}
 
-      <div className={`flex flex-col ${isUserMessage ? "items-end" : "items-start"} ${message.messageType !== 'image' && 'p-3'} rounded-lg shadow-md ${isUserMessage && 'bg-blue-100'}`}>
+      {/* Nội dung tin nhắn */}
+      <div
+        className={`flex flex-col relative ${isUserMessage ? "items-end" : "items-start"} ${message.messageType !== 'image' && 'p-3'} rounded-lg shadow-md ${isUserMessage && 'bg-blue-100'}`}
+      >
+        {(showAvatar && !isUserMessage) && (
+          <p className='text-sm text-gray-500 font-medium max-w-xs'>{message.sender?.fullName}</p>
+        )}
+
         {message.messageType === 'text' && (
           <p className="text-sm text-gray-800 max-w-xs">{message.content}</p>
         )}
@@ -182,9 +207,68 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar }) => {
             {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
           </div>
         )}
+
+        <div
+          className="absolute bottom-[-10px] right-[-10px] group/reaction hidden group-hover:flex items-center justify-center bg-white rounded-full shadow-lg cursor-pointer transition duration-200"
+          onMouseEnter={() => setShowReactions(true)} 
+          onMouseLeave={() => setShowReactions(false)}
+        >
+          <div className="relative">
+            {/* Nút Like */}
+            <div className="flex items-center justify-center p-1 bg-white rounded-full shadow cursor-pointer transition duration-200">
+              <img
+                src="https://res-zalo.zadn.vn/upload/media/2019/1/25/iconlike_1548389696575_103596.png"
+                width={15}
+                height={15}
+                alt="like"
+              />
+            </div>
+
+            {/* Hover Bridge - Giữ hover giữa Like và Reaction */}
+            <div
+              className="absolute"
+              style={{
+                top: isUserMessage ? '50%' : 'auto',
+                bottom: isUserMessage ? 'auto' : '100%',
+                left: isUserMessage ? 'auto' : '50%',
+                right: isUserMessage ? '100%' : 'auto',
+                transform: isUserMessage ? 'translateY(-50%)' : 'translateX(-50%)',
+                width: '30px',
+                height: '20px',
+                zIndex: 5,
+              }}
+            ></div>
+
+            {/* Reactions */}
+            {showReactions && (
+              <div
+                className={`absolute ${isUserMessage
+                  ? 'right-full mr-2 top-1/2 -translate-y-1/2'
+                  : 'bottom-full left-1/2 -translate-x-1/2 mb-2'
+                  } flex items-center justify-center bg-white p-2 rounded-full shadow-lg z-10 w-fit`}
+              >
+                {reaction.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-200 cursor-pointer"
+                    onClick={() => console.log(item.type)}
+                  >
+                    <span className="text-lg">{item.icon}</span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+
+
+
+
+
       </div>
     </div>
   );
+
 };
 
 export default MessageItem;

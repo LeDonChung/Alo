@@ -1,8 +1,7 @@
 import axios, { AxiosInstance } from "axios";
 
 const axiosInstance = axios.create({
-    baseURL: "http://localhost:5000",
-    timeout: 10000,
+    baseURL: `${process.env.REACT_APP_API_URL}`,
     headers: {
         'Content-Type': 'application/json',
     }
@@ -63,8 +62,14 @@ axiosInstance.interceptors.response.use(
             isRefreshing = true;
 
             try {
-                const res = await axios.post("http://localhost:5000/api/auth/refresh", {
-                    token: localStorage.getItem('refreshToken')
+                const refreshToken = localStorage.getItem('refreshToken');
+                if(!refreshToken) {
+                    localStorage.removeItem('accessToken');
+                    localStorage.removeItem('refreshToken');
+                    return Promise.reject(error);
+                }
+                const res = await axios.post(`${process.env.REACT_APP_API_URL}/api/auth/refresh`, {
+                    token: refreshToken
                 });
 
                 console.log('Token mới:', res.data.data);
@@ -92,6 +97,7 @@ axiosInstance.interceptors.response.use(
         if (error.response?.status === 403) {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('refreshToken');
+            
         }
 
         return Promise.reject(error);

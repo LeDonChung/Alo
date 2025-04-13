@@ -22,7 +22,7 @@ exports.createMessage = async (req, res) => {
 
         // Khởi tạo request
         const request = {
-            id: uuidv4(),
+            id: uuidv4(), 
             senderId,
             conversationId,
             content,
@@ -51,7 +51,7 @@ exports.createMessage = async (req, res) => {
             });
         }
 
-        if(req.body.messageParent) {
+        if (req.body.messageParent) {
             // Kiểm tra messageParent có tồn tại
             const messageParent = await messageService.getMessageById(req.body.messageParent.id);
             if (!messageParent) {
@@ -74,9 +74,14 @@ exports.createMessage = async (req, res) => {
             });
         }
 
+        // Tìm người gửi
+        const sender = await userService.getUserById(senderId);
+        message.sender = sender;
+
         // Cập nhật tin nhắn cuối cùng của cuộc trò chuyện
         await conversationService.updateLastMessage(conversation.id, message);
 
+        console.log('Tin nhắn đã được tạo:', message);
         return res.status(200).json({
             status: 200,
             data: message,
@@ -95,22 +100,31 @@ exports.createMessage = async (req, res) => {
 
 exports.getMessagesByConversationId = async (req, res) => {
     try {
-
         const conversationId = req.params.conversationId;
-
         const messages = await messageService.getMessagesByConversationId(conversationId);
+        let senders = {}; 
 
-        let senders = {};
-        for (let i = 0; i < messages.length; i++) {
-            const senderId = messages[i].senderId;
+        const senderPromises = messages.map(async (message) => {
+            const senderId = message.senderId;
 
             if (!senders[senderId]) {
-                const sender = await userService.getUserById(senderId);
-                senders[senderId] = sender;
+                try {
+                    const sender = await userService.getUserById(senderId);
+                    if (!sender) {
+                        senders[senderId] = {}; 
+                    } else {
+                        senders[senderId] = sender;
+                    }
+                } catch (err) {
+                    senders[senderId] = {}
+                }
             }
 
-            messages[i].sender = senders[senderId];
-        }
+            message.sender = senders[senderId];
+        });
+
+        await Promise.all(senderPromises);
+
         return res.json({
             status: 200,
             data: messages,
@@ -125,6 +139,7 @@ exports.getMessagesByConversationId = async (req, res) => {
         });
     }
 };
+
 
 // cập nhật trạng thái tin nhắn
 exports.updateMessageStatus = async (req, res) => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Button, View, Text, FlatList, Image, TouchableOpacity, TextInput, } from "react-native";
+import { Button, View, Text, FlatList, Image, TouchableOpacity, TextInput, RefreshControl, ActivityIndicator, } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { GlobalStyles } from "../../styles/GlobalStyles";
 import { useDispatch, useSelector } from "react-redux";
@@ -16,7 +16,18 @@ export const HomeScreen = ({ navigation }) => {
   const userOnlines = useSelector(state => state.user.userOnlines);
 
   const conversations = useSelector(state => state.conversation.conversations);
+  const [refreshing, setRefreshing] = useState(false);
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+
+      await dispatch(getAllConversation());
+    } catch (error) {
+    } finally {
+      setRefreshing(false);
+    }
+  };
   const init = async () => {
     if (!userLogin) {
       const user = JSON.parse(await SecureStore.getItemAsync("userLogin"));
@@ -129,11 +140,19 @@ export const HomeScreen = ({ navigation }) => {
 
         {/* Chat List */}
         {
-          conversations.length > 0 && userLogin && (
+          userLogin && (
             <FlatList
+              refreshControl={
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+              }
               data={conversations}
               renderItem={renderItem}
               keyExtractor={(item) => item.id}
+              ListEmptyComponent={
+                <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>
+                  <ActivityIndicator size="large" color="#007AFF" />
+                </View>
+              }
             />
           )
         }

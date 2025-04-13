@@ -50,7 +50,7 @@ io.on("connection", (socket) => {
     socket.on('request-logout-changed-password', async (userId) => {
         // Tìm toàn bộ socketId của userId khác với socket.id hiện tại
         const sessions = await redis.smembers(`socket:${userId}`);
-        const updated = sessions.filter(session => JSON.parse(session).socketId !== socket.id);
+        const updated = sessions;
 
         // Thông báo logout cho các socketId khác
         updated.forEach(session => {
@@ -114,7 +114,7 @@ io.on("connection", (socket) => {
         socket.to(conversation.id).emit('receive-message', message);
     });
 
-    // Không gộp các sự kiện bạn yêu cầu
+    
     socket.on('send-friend-request', async (data) => {
         const receiveId = data.userId === data.senderId ? data.friendId : data.userId;
         const socketIds = await findSocketIdsByUserId(receiveId);

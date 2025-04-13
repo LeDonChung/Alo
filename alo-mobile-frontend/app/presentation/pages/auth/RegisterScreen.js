@@ -55,10 +55,10 @@ export const RegisterScreen = ({ navigation }) => {
 
 
             <View style={styles.footer}>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate("login")}>
                     <Text style={styles.link}>Đăng nhập</Text>
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.navigate("forgetPassword")}>
                     <Text style={styles.link}>Quên mật khẩu</Text>
                 </TouchableOpacity>
             </View>

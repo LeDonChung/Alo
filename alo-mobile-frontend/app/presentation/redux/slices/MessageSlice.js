@@ -68,7 +68,7 @@ const MessageSlice = createSlice({
             state.messages = [];
         });
         builder.addCase(getMessagesByConversationId.fulfilled, (state, action) => {
-            state.messages = action.payload.data.messages;
+            state.messages = action.payload.data;
             state.isLoadMessage = false;
         });
         builder.addCase(getMessagesByConversationId.rejected, (state, action) => {

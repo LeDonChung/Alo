@@ -19,12 +19,13 @@ import {
 import { showToast } from "../../../../utils/AppUtils";
 import FriendRequests from "./FriendRequests";
 import socket from "../../../../utils/socket";
+import { RefreshControl } from "react-native-gesture-handler";
 
 const ContactScreen = ({ navigation }) => {
   const dispatch = useDispatch();
   const [activeTab, setActiveTab] = useState("Bạn bè");
   const [selectedTab, setSelectedTab] = useState("all");
-  const [subScreen, setSubScreen] = useState(null);
+  const [subScreen, setSubScreen] = useState('allFriend');
   const [chatUser, setChatUser] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [contentRequest, setContentRequest] = useState("Kết bạn với mình nhé!");
@@ -47,11 +48,11 @@ const ContactScreen = ({ navigation }) => {
     init();
   }, []);
 
-  const callRenderFriends = async() => {
+  const callRenderFriends = async () => {
     await dispatch(getFriends());
   }
 
-  const callRenderFriendRequests = async() => {
+  const callRenderFriendRequests = async () => {
     await dispatch(getFriendsRequest());
   }
 
@@ -87,7 +88,7 @@ const ContactScreen = ({ navigation }) => {
       await dispatch(acceptFriendRequest(request)).unwrap().then((res) => {
 
         console.log("RES", res);
-        
+
         //Cập nhật lại danh sách kết bạn: senderId là userLogin.id, friendId(userId hoặc friendId)
         const friendId = [item.userId, item.friendId].filter((x) => x !== userLogin.id)[0];
 
@@ -117,17 +118,22 @@ const ContactScreen = ({ navigation }) => {
       showToast("error", "top", "Lỗi", "Lỗi khi từ chối lời mời");
     }
   };
-  const renderFriends = () => {
+  const renderFriends = (refeshing, onRefeshing) => {
     const filteredFriends = friends.map((f) => f.friendInfo);
     return (
       isLoading ? (
         <ActivityIndicator style={{ marginTop: 20 }} size="small" color="blue" />
       ) : (
 
-        filteredFriends && filteredFriends.length > 0 ? (
+        filteredFriends && (
           <FlatList
+            style={{ height: "100%" }}
             data={filteredFriends}
-            keyExtractor={(item) => item.friendInfo}
+
+            refreshControl={
+              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+            }
+            keyExtractor={(item) => (item.friendId + item.userId)}
             renderItem={({ item }) => (
               <TouchableOpacity
                 style={[ContactStyles.contactItem, { paddingVertical: 15 }]}
@@ -146,9 +152,10 @@ const ContactScreen = ({ navigation }) => {
                 </View>
               </TouchableOpacity>
             )}
+            ListEmptyComponent={
+              <Text style={{ textAlign: "center", marginTop: 20 }}>Không có bạn bè nào</Text>
+            }
           />
-        ) : (
-          <Text style={{ textAlign: "center", marginTop: 20 }}>Không có bạn bè nào</Text>
         )
 
       )
@@ -157,16 +164,30 @@ const ContactScreen = ({ navigation }) => {
   };
 
   const handleGoBack = () => {
-    setSubScreen(null);
+    setSubScreen('allFriend');
     setChatUser(null);
   };
 
+  console.log("subScreen:", subScreen);
+  console.log("setSubScreen:", setSubScreen);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await dispatch(getFriends());
+    } catch (error) {
+    } finally {
+      setRefreshing(false);
+    }
+  };
   return (
     <View style={ContactStyles.container}>
       {subScreen === "friendrequests" ? (
         <FriendRequests
           handleGoBack={handleGoBack}
-          navigation={navigation}
           handleAcceptFriend={handleAcceptFriend}
           handleRejectFriend={handleRejectFriend}
           setSubScreen={setSubScreen}
@@ -179,7 +200,7 @@ const ContactScreen = ({ navigation }) => {
         renderBirthdays()
       ) : subScreen === "createGroup" ? (
         renderCreateGroup()
-      ) : (
+      ) : subScreen === "allFriend" && (
         <>
           <View style={ContactStyles.headerButtons}>
             {["Bạn bè", "Nhóm"].map((label) => (
@@ -212,7 +233,7 @@ const ContactScreen = ({ navigation }) => {
                   <Text style={[ContactStyles.tabText, selectedTab === "recent" && ContactStyles.tabActive]}>Mới truy cập</Text>
                 </TouchableOpacity>
               </View>
-              {renderFriends()}
+              {renderFriends(refreshing, onRefresh)}
             </View>
           )}
           {activeTab === "Nhóm" && (

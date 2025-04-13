@@ -6,14 +6,14 @@ import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
 import { getMessagesByConversationId, sendMessage, setMessages } from '../../redux/slices/MessageSlice';
 import HeaderComponent from '../../components/chat/HeaderComponent';
-import InputComponent  from '../../components/chat/InputComponent';
-import  MessageItem  from '../../components/chat/MessageItem';
-import ImageViewerComponent  from '../../components/chat/ImageViewComponent';
+import InputComponent from '../../components/chat/InputComponent';
+import MessageItem from '../../components/chat/MessageItem';
+import ImageViewerComponent from '../../components/chat/ImageViewComponent';
 
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
 import StickerPicker from '../../components/chat/StickerPicker';
+import { ActivityIndicator } from 'react-native-paper';
 
-import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export const ChatScreen = ({ route, navigation }) => {
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
@@ -62,10 +62,9 @@ export const ChatScreen = ({ route, navigation }) => {
 
     await dispatch(sendMessage({ message, file })).then((res) => {
       dispatch(setMessages([...messages, res.payload.data]));
-      message.sender = userLogin;
       socket.emit('send-message', {
         conversation: conversation,
-        message: message
+        message: res.payload.data
       });
       setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
     });
@@ -78,7 +77,7 @@ export const ChatScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     if (inputMessage.messageType === 'sticker') {
-      handlerSendMessage(inputMessage); 
+      handlerSendMessage(inputMessage);
     }
   }, [inputMessage]);
 
@@ -88,14 +87,6 @@ export const ChatScreen = ({ route, navigation }) => {
     });
   }, [messages, dispatch]);
 
-  useEffect(() => {
-    console.log("conversationId", conversation);
-    console.log("friend", friend.id);
-    console.log("userOnlines", userOnlines);
-    console.log("userLogin", userLogin);
-    console.log("isFriendOnline", isFriendOnline(friend.id));
-    console.log("messages", messages);
-  }, [conversation, friend, userOnlines]);
 
   useEffect(() => {
     socket.on("users-online", ({ userIds }) => {
@@ -135,6 +126,10 @@ export const ChatScreen = ({ route, navigation }) => {
       const friend = conversation.memberUserIds.find((member) => member !== userLogin.id);
       handleGetLastLogout(friend);
     }
+
+    return () => {
+      socket.emit("leave_conversation", conversation.id);
+    };
   }, [conversation, userLogin.id]);
 
   const [messageSort, setMessageSort] = useState([]);
@@ -174,25 +169,31 @@ export const ChatScreen = ({ route, navigation }) => {
         conversation={conversation}
         userLogin={userLogin}
       />
-      <FlatList
-        data={messageSort}
-        renderItem={({ item, index }) => (
-          <MessageItem
-            item={item}
-            index={index}
-            messageSort={messageSort}
-            userLogin={userLogin}
-            friend={friend}
-            setSelectedImage={setSelectedImage}
-            setIsImageViewVisible={setIsImageViewVisible}
-            showAvatar={() => showAvatar(index)}
-            showTime={() => showTime(index)}
+      {
+        isLoadMessage ? (
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <ActivityIndicator size="large" color="#0000ff" />
+          </View>
+        ) : (
+          <FlatList
+            data={messageSort}
+            renderItem={({ item, index }) => (
+              <MessageItem
+                item={item}
+                userLogin={userLogin}
+                friend={friend}
+                setSelectedImage={setSelectedImage}
+                setIsImageViewVisible={setIsImageViewVisible}
+                showAvatar={() => showAvatar(index)}
+                showTime={() => showTime(index)}
+              />
+            )}
+            keyExtractor={(item, index) => item.id?.toString() || item.timestamp?.toString() || index.toString()}
+            contentContainerStyle={{ paddingVertical: 10 }}
+            inverted
           />
-        )}
-        keyExtractor={(item, index) => item.id?.toString() || item.timestamp?.toString() || index.toString()}
-        contentContainerStyle={{ paddingVertical: 10 }}
-        inverted
-      />
+        )
+      }
       <ImageViewerComponent
         isImageViewVisible={isImageViewVisible}
         selectedImage={selectedImage}
@@ -208,7 +209,7 @@ export const ChatScreen = ({ route, navigation }) => {
       {isStickerPickerVisible && (
         <StickerPicker onStickerSelect={handleStickerSelect} />
       )}
-      
+
     </View>
   );
 };

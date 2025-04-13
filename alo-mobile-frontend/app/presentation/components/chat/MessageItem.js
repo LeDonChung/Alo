@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, Image, TouchableOpacity } from 'react-native';
 import { Video } from 'expo-av';
 
-const MessageItem = ({ item, index, messageSort, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime }) => {
+const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime }) => {
   const getFileExtension = (filename = '') => {
     const parts = filename.split('.');
     return parts[parts.length - 1].toLowerCase();
@@ -58,7 +58,7 @@ const MessageItem = ({ item, index, messageSort, userLogin, friend, setSelectedI
           />
         </TouchableOpacity>
       )}
-      <View style={{ borderRadius: 10, maxWidth: '70%', flexDirection: 'column' }}>
+      <View style={{ borderRadius: 10, maxWidth: '90%', flexDirection: 'column' }}>
         {messageType === 'text' && item.content && (
           <TouchableOpacity style={{ backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
             <Text>{item.content}</Text>
@@ -82,10 +82,12 @@ const MessageItem = ({ item, index, messageSort, userLogin, friend, setSelectedI
           <TouchableOpacity onPress={() => {
             setSelectedImage([{ uri: item.fileLink }]);
             setIsImageViewVisible(true);
-          }}>
+          }}
+            style={{ borderRadius: 10 }}
+          >
             <Image
               source={{ uri: item.fileLink }}
-              style={{ width: 200, height: 160, borderRadius: 10 }}
+              style={{ width: 260, height: 160, borderRadius: 10 }}
               resizeMode="contain"
             />
           </TouchableOpacity>
@@ -98,8 +100,8 @@ const MessageItem = ({ item, index, messageSort, userLogin, friend, setSelectedI
           }}>
             <Image
               source={{ uri: item.fileLink }}
-              style={{ width: 200, height: 160, borderRadius: 10,cache: 'reload' }}
-              resizeMode="contain"
+              style={{ width: '100%', height: undefined, borderRadius: 10, cache: 'reload' }}
+              resizeMode="cover"
             />
           </TouchableOpacity>
         )}

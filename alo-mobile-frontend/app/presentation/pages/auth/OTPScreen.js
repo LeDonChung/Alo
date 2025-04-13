@@ -13,7 +13,7 @@ export const OTPScreen = ({ navigation }) => {
     const [isEdit, setIsEdit] = useState(false);
     const [otp, setOtp] = useState("");
     const [timer, setTimer] = useState(59);
-    const [isCounting, setIsCounting] = useState(true);
+    const [isCounting, setIsCounting] = useState(false);
     const userRegister = useSelector(state => state.register.userRegister)
     const dispatch = useDispatch();
 
@@ -42,10 +42,12 @@ export const OTPScreen = ({ navigation }) => {
 
             const phoneNumber = userRegister.phoneNumber.startsWith('0') ? `+84${userRegister.phoneNumber.slice(1)}` : userRegister.phoneNumber;
             try {
-                const response = await dispatch(generateOtp(phoneNumber)).unwrap();
-                setTimer(59); 
-                setIsCounting(true);
-                showToast("success", "top", "OTP Đã Gửi", "Vui lòng kiểm tra tin nhắn của bạn.");
+                const response = await dispatch(generateOtp(phoneNumber)).unwrap().then((res) => {
+                    setTimer(59);
+                    setIsCounting(true);
+                    showToast("success", "top", "OTP Đã Gửi", "Vui lòng kiểm tra tin nhắn của bạn.");
+                })
+
             } catch (error) {
                 // console.error("Error generating OTP:", error);
                 showToast("error", "top", "Thông báo", error.message || 'Có lỗi xảy ra khi gửi OTP');
@@ -57,7 +59,7 @@ export const OTPScreen = ({ navigation }) => {
     const handleContinue = async () => {
         if (!otp) {
             showToast("error", "top", "Thông báo", "Vui lòng nhập OTP.");
-            return; 
+            return;
         }
 
         const phoneNumber = userRegister.phoneNumber.startsWith('0') ? `+84${userRegister.phoneNumber.slice(1)}` : userRegister.phoneNumber;
@@ -65,7 +67,7 @@ export const OTPScreen = ({ navigation }) => {
             const response = await dispatch(verifyOtp({ phoneNumber, otp })).unwrap();
             showToast("success", "top", "Thông báo", response.message || 'Có lỗi xảy ra khi gửi OTP');
             navigation.navigate("registerInformation");
-        } catch (error) { 
+        } catch (error) {
             // console.error("Error verifying OTP:", error);
             showToast("error", "top", "Thông báo", error.message || 'Có lỗi xảy ra khi gửi OTP');
         }
@@ -112,10 +114,14 @@ export const OTPScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.footer}>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => {
+                    navigation.goBack()
+                }}>
                     <Text style={styles.link}>Quay lại</Text>
                 </TouchableOpacity>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => {
+                    navigation,navigate("login")
+                }}>
                     <Text style={styles.link}>Đăng nhập</Text>
                 </TouchableOpacity>
             </View>

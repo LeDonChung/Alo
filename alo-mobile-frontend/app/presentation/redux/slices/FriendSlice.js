@@ -200,7 +200,6 @@ const FriendSlice = createSlice({
             state.friendRequests = action.payload.data;
         });
         builder.addCase(getFriendsRequest.rejected, (state, action) => {
-            console.log("Error in getFriendsRequest:", action.payload);
             state.friendRequests = [];
         });
         builder.addCase(cancelFriend.pending, (state) => {

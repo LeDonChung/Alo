@@ -67,9 +67,9 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
       ref={chatContainerRef} // Thêm style để scroll
     >
       {messages.map((message, index) => {
-        const isUserMessage = message.senderId === userLogin.id;
-        const isLastMessage = index === messages.length - 1 || messages[index + 1].senderId !== message.senderId;
-        const showAvatar = index === 0 || messages[index - 1].senderId !== message.senderId;
+        const isUserMessage = message.sender.id === userLogin.id;
+        const isLastMessage = index === messages.length - 1 || messages[index + 1].sender.id  !== message.sender.id;
+        const showAvatar = index === 0 || messages[index - 1].sender.id  !== message.sender.id ;
 
         return (
           <MessageItem

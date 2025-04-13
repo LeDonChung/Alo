@@ -7,7 +7,8 @@ exports.sendFriendRequest = async (req, res) => {
             userId: req.body.userId,
             friendId: req.body.friendId,
             contentRequest: req.body.contentRequest,
-            status: 0, // 0: pending, 1: accepted, 2: reject
+            status: 0, // 0: pending, 1: accepted, 2: reject,
+            requestDate: Date.now(),
         }
         // Kiểm tra friendId có tồn tại không
         const user = await userService.getUserById(request.friendId);
@@ -81,7 +82,6 @@ exports.acceptFriendRequest = async (req, res) => {
         const friend = await userService.getUserById(request.friendId);
 
         await conversationService.createConversation({
-            members: [user, friend],
             memberUserIds: [user.id, friend.id],
             createdBy: request.userId,
             isGroup: false,
