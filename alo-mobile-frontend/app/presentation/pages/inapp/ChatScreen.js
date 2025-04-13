@@ -28,11 +28,12 @@ export const ChatScreen = ({ route, navigation }) => {
     content: '',
   });
   const [lastLogout, setLastLogout] = useState(null);
-  const { conversation, friend } = route.params;
+  const { friend } = route.params;
   const userLogin = useSelector(state => state.user.userLogin);
   const userOnlines = useSelector(state => state.user.userOnlines);
   const dispatch = useDispatch();
 
+  const conversation = useSelector(state => state.conversation.conversation);
   useEffect(() => {
     navigation.getParent()?.setOptions({
       tabBarStyle: {
@@ -161,6 +162,22 @@ export const ChatScreen = ({ route, navigation }) => {
     return nextMessage.senderId !== messageSort[index].senderId;
   };
 
+
+  const [highlightedId, setHighlightedId] = useState(null);
+  const flatListRef = useRef(null);
+  const scrollToMessage = (messageId) => {
+    const index = messageSort.findIndex(msg => msg.id === messageId);
+    if (index !== -1 && flatListRef.current) {
+      flatListRef.current.scrollToIndex({ index, animated: true });
+
+      setHighlightedId(messageId);
+
+      setTimeout(() => {
+        setHighlightedId(null);
+      }, 3000);
+
+    }
+  };
   return (
 
     <View style={{ flex: 1, backgroundColor: '#F3F3F3', position: 'relative' }}>
@@ -173,6 +190,7 @@ export const ChatScreen = ({ route, navigation }) => {
         socket={socket}
         conversation={conversation}
         userLogin={userLogin}
+        scrollToMessage={scrollToMessage}
       />
       {
         isLoadMessage ? (
@@ -181,6 +199,7 @@ export const ChatScreen = ({ route, navigation }) => {
           </View>
         ) : (
           <FlatList
+            ref={flatListRef}
             data={messageSort}
             renderItem={({ item, index }) => (
               <MessageItem
@@ -193,6 +212,7 @@ export const ChatScreen = ({ route, navigation }) => {
                 showTime={() => showTime(index)}
                 setIsShowMenuInMessage={setIsShowMenuInMessage}
                 setSelectedMessage={setSelectedMessage}
+                isHighlighted={highlightedId === item.id}
               />
             )}
             keyExtractor={(item, index) => item.id?.toString() || item.timestamp?.toString() || index.toString()}
@@ -230,6 +250,7 @@ export const ChatScreen = ({ route, navigation }) => {
             >
               <MenuComponent
                 message={selectedMessage}
+                showMenuComponent={setIsShowMenuInMessage}
               />
             </Pressable>
           </Modal>

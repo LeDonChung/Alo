@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, Text, Image, TouchableOpacity, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, Pressable, Image } from 'react-native';
 import { Video } from 'expo-av';
 
-const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage }) => {
+const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted }) => {
   const getFileExtension = (filename = '') => {
     const parts = filename.split('.');
     return parts[parts.length - 1].toLowerCase();
@@ -46,10 +46,7 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
   const fileExtension = fileLink ? getFileExtension(fileLink) : null;
 
   return (
-    <Pressable onPress={() => {
-      setIsShowMenuInMessage(false);
-      setSelectedMessage(null);
-    }}>
+    <Pressable>
       <View style={{
         flexDirection: 'row', alignItems: 'flex-start', marginVertical: 5, paddingHorizontal: 10, justifyContent: isSent ? 'flex-end' : 'flex-start',
         marginLeft: (!isSent && !showAvatar()) ? 45 : 0
@@ -64,8 +61,7 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
             />
           </View>
         )}
-        <TouchableOpacity style={{ borderRadius: 10, maxWidth: '90%', flexDirection: 'column' }} onLongPress={() => {
-          console.log("hi")
+        <TouchableOpacity style={[{ borderRadius: 10, maxWidth: '90%', flexDirection: 'column' }, isHighlighted && styles.highlightedMessage]} onLongPress={() => {
           setIsShowMenuInMessage(true);
           setSelectedMessage(item);
         }}>
@@ -76,7 +72,10 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
           )}
 
           {(messageType === 'image' && fileExtension === 'mp4' && item.fileLink) && (
-            <View style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}>
+            <TouchableOpacity style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }} onLongPress={() => {
+              setIsShowMenuInMessage(true);
+              setSelectedMessage(item);
+            }}>
               <Video
                 source={{ uri: fileLink }}
                 style={{ width: '100%', height: '100%' }}
@@ -85,22 +84,26 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
                 isLooping={false}
                 shouldPlay={false}
               />
-            </View>
+            </TouchableOpacity>
           )}
 
           {(messageType === 'image' && fileExtension !== 'mp4' && item.fileLink) && (
-            <View onPress={() => {
+            <TouchableOpacity onPress={() => {
               setSelectedImage([{ uri: item.fileLink }]);
               setIsImageViewVisible(true);
             }}
               style={{ borderRadius: 10 }}
+              onLongPress={() => {
+                setIsShowMenuInMessage(true);
+                setSelectedMessage(item);
+              }}
             >
               <Image
                 source={{ uri: item.fileLink }}
                 style={{ width: 260, height: 160, borderRadius: 10 }}
                 resizeMode="contain"
               />
-            </View>
+            </TouchableOpacity>
           )}
 
           {(messageType === 'sticker' && item.fileLink) && (
@@ -110,13 +113,16 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
             }}>
               <Image
                 source={{ uri: item.fileLink }}
-                style={{ width: '100%', height: undefined, borderRadius: 10, cache: 'reload' }}
+                style={{ width: 120, height: 120, borderRadius: 10, cache: 'reload' }}
                 resizeMode="cover"
               />
             </View>
           )}
           {messageType === 'file' && fileExtension === 'mp4' ? (
-            <View style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}>
+            <TouchableOpacity style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }} onLongPress={() => {
+              setIsShowMenuInMessage(true);
+              setSelectedMessage(item);
+            }}>
               <Video
                 source={{ uri: fileLink }}
                 style={{ width: '100%', height: '100%' }}
@@ -125,14 +131,17 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
                 isLooping={false}
                 shouldPlay={false}
               />
-            </View>
+            </TouchableOpacity>
           ) : messageType === 'file' ? (
-            <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
+            <TouchableOpacity onLongPress={() => {
+              setIsShowMenuInMessage(true);
+              setSelectedMessage(item);
+            }} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
               {getFileIcon(fileExtension)}
               <Text style={{ marginLeft: 5, color: 'gray' }}>
                 {fileLink ? extractOriginalName(fileLink) : ''}
               </Text>
-            </View>
+            </TouchableOpacity>
           ) : null}
 
           {showTime() && (
@@ -142,9 +151,16 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
           )}
         </TouchableOpacity>
       </View>
-      
+
     </Pressable>
   );
 };
 
+const styles = {
+  highlightedMessage: {
+    backgroundColor: '#ffffcc',
+    borderColor: '#f5c542',
+    borderWidth: 1,
+  }
+}
 export default MessageItem;

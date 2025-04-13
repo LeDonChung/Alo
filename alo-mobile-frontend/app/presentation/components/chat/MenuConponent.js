@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, ToastAndroid } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
-export const MenuComponent = ({ message }) => {
+import { useDispatch } from 'react-redux';
+import { createPin } from '../../redux/slices/ConversationSlice';
+import { showToast } from '../../../utils/AppUtils';
+export const MenuComponent = ({ message, showMenuComponent }) => {
+    const dispatch = useDispatch();
     const [reaction, setReaction] = useState([
         { type: 'like', icon: '👍' },
         { type: 'love', icon: '❤️' },
@@ -10,55 +14,67 @@ export const MenuComponent = ({ message }) => {
         { type: 'sad', icon: '😭' },
         { type: 'angry', icon: '😠' },
     ]);
-    console.log(message);
+
+    const handlerClickPin = async (message) => {
+        try {
+            showMenuComponent(false)
+            await dispatch(createPin({ conversationId: message.conversationId, messageId: message.id })).unwrap().then((res) => {
+                showToast('info', 'bottom', "Thông báo", "Đã ghim tin nhắn này.", 2000);
+            })
+        } catch (error) {
+            showToast('error', 'bottom', "Thông báo", error.message || "Ghim tin nhắn không thành công.", 2000);
+        }
+    };
     return (
         <ScrollView contentContainerStyle={styles.container}>
             {/* Emoji Bar */}
             <View style={styles.emojiBar}>
                 {
                     reaction.map((item, index) => (
-                        <View key={index} style={styles.emoji}>
+                        <TouchableOpacity key={index} style={styles.emoji}>
                             <Text style={styles.emoji}>{item.icon}</Text>
-                        </View>
+                        </TouchableOpacity>
                     ))
                 }
             </View>
             {/* Action Grid */}
             <View style={styles.actionGrid}>
-                <View style={styles.actionItem}>
+                <TouchableOpacity style={styles.actionItem}>
                     <Icon name="reply" size={24} color="#6B21A8" />
                     <Text>Trả lời</Text>
-                </View>
-                <View style={styles.actionItem}>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionItem}>
                     <Icon name="share" size={24} color="#2563EB" />
                     <Text>Chuyển tiếp</Text>
-                </View>
-                <View style={styles.actionItem}>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionItem}>
                     <Icon name="copy" size={24} color="#2563EB" />
                     <Text>Sao chép</Text>
-                </View>
-                <View style={styles.actionItem}>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionItem} onPress={() => {
+                    handlerClickPin(message);
+                }}>
                     <Icon name="thumbtack" size={24} color="#EA580C" />
                     <Text>Ghim</Text>
-                </View>
-                <View style={styles.actionItem}>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionItem}>
                     <Icon name="thumbtack" size={24} color="#EA580C" />
                     <Text>Thu hồi</Text>
-                </View>
-                <View style={styles.actionItem}>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionItem}>
                     <Icon name="info-circle" size={24} color="#6B7280" />
                     <Text>Chi tiết</Text>
-                </View>
-                <View style={styles.actionItem}>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionItem}>
                     <Icon name="trash" size={24} color="#DC2626" />
                     <Text>Xóa</Text>
-                </View>
+                </TouchableOpacity>
                 {
                     message.messageType === 'file' && (
-                        <View style={styles.actionItem}>
+                        <TouchableOpacity style={styles.actionItem}>
                             <Icon name="trash" size={24} color="#DC2626" />
                             <Text>Tải xuống</Text>
-                        </View>
+                        </TouchableOpacity>
                     )
                 }
             </View>
@@ -70,7 +86,7 @@ const styles = StyleSheet.create({
     container: {
         padding: 16,
         justifyContent: 'center',
-        marginVertical: 'auto'        
+        marginVertical: 'auto'
     },
     emojiBar: {
         flexDirection: 'row',
@@ -85,7 +101,7 @@ const styles = StyleSheet.create({
         width: 24,
         height: 24,
         fontSize: 20,
-        
+
     },
     actionGrid: {
         flexDirection: 'row',

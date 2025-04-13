@@ -9,6 +9,7 @@ class Conversation {
         this.isGroup = isGroup;
         this.isCalling = isCalling;
         this.lastMessage = lastMessage;
+        this.pins = [];
     }
 }
 
