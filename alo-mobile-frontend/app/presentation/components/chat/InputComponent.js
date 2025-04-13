@@ -1,10 +1,48 @@
-import React from 'react';
+import React, { useState} from 'react';
 import { View, TextInput, TouchableOpacity, Text } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import IconMI from 'react-native-vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
+import * as DocumentPicker from 'expo-document-picker';
+import * as Permissions from 'expo-permissions';
+import OptionModal from './OptionModal';
 
-const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isStickerPickerVisible, setIsStickerPickerVisible }) => {
+const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isStickerPickerVisible, setIsStickerPickerVisible, handleSendFile }) => {
+  const [isOptionModalVisible, setOptionModalVisible] = useState(false);
+  const handleOptionSelect = (options) => {
+    setOptionModalVisible(false);
+    if(options === "Tài liệu") {
+      openFilePicker();
+    }
+  }
+  const allowedExtensions = ['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', 'mp4'];
+  const openFilePicker = async () => {
+    const result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
+    console.log('result', result);
+  
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const asset = result.assets[0];
+      const fileExtension = asset.uri.split('.').pop().toLowerCase();
+  
+      if (!allowedExtensions.includes(fileExtension)) {
+        alert('Chỉ chấp nhận các loại tệp: pdf, doc, docx, txt, xls, xlsx, ppt, pptx, zip, rar, mp4');
+        return;
+      }
+  
+      const file = {
+        uri: asset.uri,
+        name: asset.name,
+        type: asset.mimeType || 'application/octet-stream',
+      };
+  
+      console.log('file', file);
+  
+      await handleSendFile(file);
+    }
+  
+    setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
+  };
+  
   const openImageLibrary = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -60,7 +98,7 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
         </TouchableOpacity>
       ) : (
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TouchableOpacity style={{ marginHorizontal: 10 }}>
+          <TouchableOpacity onPress={() => setOptionModalVisible(true)} style={{ marginHorizontal: 10 }}>
             <Icon name="ellipsis-h" size={20} color="gray" />
           </TouchableOpacity>
           <TouchableOpacity style={{ marginHorizontal: 10 }}>
@@ -71,6 +109,11 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
           </TouchableOpacity>
         </View>
       )}
+      <OptionModal
+        visible={isOptionModalVisible}
+        onClose={() => setOptionModalVisible(false)}
+        onSelect={handleOptionSelect}
+      />
     </View>
   );
 };

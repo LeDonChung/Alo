@@ -13,7 +13,11 @@ const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ messag
     try {
         const formData = new FormData();
         if (file) {
-            formData.append("file", file);
+            formData.append("file", {
+                uri: file.uri,
+                name: file.name,
+                type: file.type
+              });
         }
 
         for (const key in message) {

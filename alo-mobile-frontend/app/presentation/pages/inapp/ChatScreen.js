@@ -99,6 +99,32 @@ export const ChatScreen = ({ route, navigation }) => {
     setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
   }
 
+  const handleSendFile = async (file) => {
+    console.log('file chat', file.uri);
+    const message = {
+      senderId: userLogin.id,
+      conversationId: conversation.id,
+      content: '',
+      messageType: 'file',
+      fileLink: file.uri,
+      timestamp: Date.now(),
+      seen: []
+    };
+   
+    await dispatch(sendMessage({ message, file })).then((res) => {
+      const sentMessage = {
+        ...res.payload.data,
+        sender: userLogin
+      }
+      dispatch(setMessages([...messages, sentMessage]));
+      socket.emit('send-message', {
+        conversation: conversation,
+        message: sentMessage
+      });
+    });
+    setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
+  };
+
   const handleStickerSelect = async (stickerUrl) => {
     dispatch(setInputMessage({ ...inputMessage, fileLink: stickerUrl, messageType: 'sticker' }))
     setShowStickerPicker(false);
@@ -234,6 +260,7 @@ export const ChatScreen = ({ route, navigation }) => {
         inputMessage={inputMessage}
         setInputMessage={setInputMessage}
         handlerSendMessage={handleSendImage}
+        handleSendFile={handleSendFile}
       />
       {isStickerPickerVisible && (
         <StickerPicker onStickerSelect={handleStickerSelect} />
