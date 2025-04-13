@@ -1,6 +1,11 @@
-import React from 'react';
-import { View, Text, Image, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, TouchableOpacity, Modal } from 'react-native';
 import { Video } from 'expo-av';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import AntDesign from 'react-native-vector-icons/AntDesign';
+import Entypo from 'react-native-vector-icons/Entypo';
+import OptionModalDetailMessage from './OptionModalDetailMessage';
 
 const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime }) => {
   const getFileExtension = (filename = '') => {
@@ -45,6 +50,30 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
   const fileLink = item.fileLink;
   const fileExtension = fileLink ? getFileExtension(fileLink) : null;
 
+  const options = [
+    { label: 'Trả lời', icon: 'reply' },
+    { label: 'Chuyển tiếp', icon: 'share' },
+    { label: 'Lưu cloud', icon: 'cloud' },
+    { label: 'Sao chép', icon: 'copy' },
+    { label: 'Ghim', icon: 'pin' },
+    { label: 'Nhắc hẹn', icon: 'stopwatch' },
+    { label: 'Chọn nhiều', icon: 'chat' },
+    { label: 'Chi tiết', icon: 'info-with-circle' },
+    { label: 'Xóa', icon: 'trash' },
+  ];
+  const [isOptionVisible, setIsOptionVisible] = useState(false);
+  const [selectedMessage, setSelectedMessage] = useState(null);
+
+  const handleLongPress = (message) => {
+    setSelectedMessage(message);
+    setIsOptionVisible(true);
+  };
+
+  const handleOptionSelect = (option) => {
+    setIsOptionVisible(false);
+    console.log('Option selected:', option, 'for message', selectedMessage?.id);
+  };
+
   return (
     <View style={{
       flexDirection: 'row', alignItems: 'flex-start', marginVertical: 5, paddingHorizontal: 10, justifyContent: isSent ? 'flex-end' : 'flex-start',
@@ -60,13 +89,13 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
       )}
       <View style={{ borderRadius: 10, maxWidth: '90%', flexDirection: 'column' }}>
         {messageType === 'text' && item.content && (
-          <TouchableOpacity style={{ backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
+          <TouchableOpacity onLongPress={() => handleLongPress(item)} style={{ backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
             <Text>{item.content}</Text>
           </TouchableOpacity>
         )}
 
         {(messageType === 'image' && fileExtension === 'mp4' && item.fileLink) && (
-          <TouchableOpacity style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}>
+          <TouchableOpacity onLongPress={() => handleLongPress(item)} style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}>
             <Video
               source={{ uri: fileLink }}
               style={{ width: '100%', height: '100%' }}
@@ -83,6 +112,7 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
             setSelectedImage([{ uri: item.fileLink }]);
             setIsImageViewVisible(true);
           }}
+          onLongPress={() => handleLongPress(item)}
             style={{ borderRadius: 10 }}
           >
             <Image
@@ -97,7 +127,7 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
           <TouchableOpacity onPress={() => {
             setSelectedImage([{ uri: item.fileLink }]);
             setIsImageViewVisible(true);
-          }}>
+          }} onLongPress={() => handleLongPress(item)}>
             <Image
               source={{ uri: item.fileLink }}
               style={{ width: '100%', height: undefined, borderRadius: 10, cache: 'reload' }}
@@ -106,7 +136,7 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
           </TouchableOpacity>
         )}
         {messageType === 'file' && fileExtension === 'mp4' ? (
-          <TouchableOpacity style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}>
+          <TouchableOpacity onLongPress={() => handleLongPress(item)} style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}>
             <Video
               source={{ uri: fileLink }}
               style={{ width: '100%', height: '100%' }}
@@ -117,7 +147,7 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
             />
           </TouchableOpacity>
         ) : messageType === 'file' ? (
-          <TouchableOpacity style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
+          <TouchableOpacity onLongPress={() => handleLongPress(item)} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
             {getFileIcon(fileExtension)}
             <Text style={{ marginLeft: 5, color: 'gray' }}>
               {fileLink ? extractOriginalName(fileLink) : ''}
@@ -130,6 +160,12 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
             {new Date(item.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
           </Text>
         )}
+        <OptionModalDetailMessage 
+          visible={isOptionVisible} 
+          onClose={() => setIsOptionVisible(false)} 
+          options={options} 
+          onOptionSelect={handleOptionSelect} 
+        />
       </View>
     </View>
   );
