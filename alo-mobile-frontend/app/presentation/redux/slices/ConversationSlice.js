@@ -63,6 +63,29 @@ const ConversationSlice = createSlice({
                 const index = state.conversations.findIndex(conversation => conversation.id === conversationId);
                 state.conversations[index] = conversation;
             }
+        },
+        addPinToConversation: (state, action) => {
+            let cons = state.conversation;
+            console.log(cons.pin)
+            console.log(action.payload) 
+
+            if (cons) { 
+                cons.pineds.unshift(action.payload);
+
+                if (cons.pineds.length > 5) {
+                    cons.pineds.pop(); 
+                }
+            }
+ 
+            state.conversation = {...cons}; 
+        },
+        removePinToConversation: (state, action) => {
+            console.log("REMOVE PIN") 
+            let cons = state.conversation;
+            if (cons) {
+                cons.pineds = cons.pineds.filter(pin => pin.messageId !== action.payload.messageId);
+            } 
+            state.conversation = {...cons};
         }
     },
     extraReducers: (builder) => {
@@ -110,21 +133,17 @@ const ConversationSlice = createSlice({
         builder.addCase(removePin.pending, (state) => {
         });
         builder.addCase(removePin.fulfilled, (state, action) => {
-            const conversationId = action.payload.conversationId;
-            const messageId = action.payload.messageId;
-            const conversation = state.conversations.find(conversation => conversation.id === conversationId);
-            if (conversation) {
-                conversation.pineds = conversation.pineds.filter(pin => pin.id !== messageId);
-            }
-
-            const index = state.conversations.findIndex(conversation => conversation.id === conversationId);
-            state.conversations[index] = conversation;
+            let cons = state.conversation;
+            if (cons) {
+                cons.pineds = cons.pineds.filter(pin => pin.messageId !== action.payload.data.messageId);
+            } 
+            state.conversation = {...cons};
         });
         builder.addCase(removePin.rejected, (state, action) => {
         });
     }
 });
 
-export const { setConversation, updateLastMessage } = ConversationSlice.actions;
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation } = ConversationSlice.actions;
 export { getAllConversation, getConversationById, createPin, removePin };
 export default ConversationSlice.reducer;

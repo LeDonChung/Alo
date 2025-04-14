@@ -7,11 +7,16 @@ import {
     LayoutAnimation,
     Platform,
     UIManager,
-    Image
+    Image,
+    Modal,
+    Pressable
 } from 'react-native';
 import Icon from 'react-native-vector-icons/AntDesign';
 import IconF5 from 'react-native-vector-icons/FontAwesome5';
-export const PinComponent = ({ conversation, pins, scrollToMessage }) => {
+export const PinComponent = ({ conversation, pins, scrollToMessage, onDeletePin }) => {
+    const [modalVisible, setModalVisible] = useState(false);
+    const [selectedPin, setSelectedPin] = useState(null);
+
     const [expanded, setExpanded] = useState(false);
     const getFileExtension = (filename = '') => {
         const parts = filename.split('.');
@@ -41,12 +46,20 @@ export const PinComponent = ({ conversation, pins, scrollToMessage }) => {
     };
 
     const renderPinItem = (pinItem, index, showToggle = false) => (
-        <TouchableOpacity key={index} style={styles.pinWrapper} onPress={() => {scrollToMessage(pinItem.messageId); 
-            if(index !== 0) {
-                handleToggleExpand()
-            }
 
-        }}>
+        <TouchableOpacity key={index} style={styles.pinWrapper}
+            onLongPress={() => {
+                setSelectedPin(pinItem);
+                setModalVisible(true);
+            }}
+            onPress={() => {
+                scrollToMessage(pinItem.messageId);
+
+                if (index !== 0) {
+                    handleToggleExpand()
+                }
+
+            }}>
             <Icon name="message1" size={24} color="#1E90FF" style={styles.commentIcon} />
             <View style={styles.pinContent}>
 
@@ -132,10 +145,6 @@ export const PinComponent = ({ conversation, pins, scrollToMessage }) => {
             {
                 expanded &&
                 <View style={{ flexDirection: 'row', justifyContent: 'space-evenly', marginVertical: 20 }}>
-                    <TouchableOpacity style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }}>
-                        <IconF5 name="pencil-alt" size={20} color="#1E90FF" style={[styles.commentIcon, { marginRight: 10 }]} />
-                        <Text>Chỉnh sửa</Text>
-                    </TouchableOpacity>
                     <TouchableOpacity style={{ flexDirection: 'row', justifyContent: 'center', alignItems: 'center' }} onPress={handleToggleExpand}>
                         <Text>Thu gọn</Text>
                         <Icon name="up" size={20} color="#1E90FF" style={[styles.commentIcon, { marginLeft: 10, marginTop: 2 }]} />
@@ -143,11 +152,88 @@ export const PinComponent = ({ conversation, pins, scrollToMessage }) => {
                 </View>
 
             }
+            <Modal
+                visible={modalVisible}
+                transparent
+                animationType="fade"
+                onRequestClose={() => setModalVisible(false)}
+            >
+                <Pressable
+                    style={styles.modalOverlay}
+                    onPress={() => setModalVisible(false)}
+                >
+                    <Pressable
+                        style={styles.modalContainer}
+                        onPress={(e) => e.stopPropagation()}
+                    >
+                        <TouchableOpacity
+                            style={styles.modalButton}
+                            onPress={() => {
+                                if (selectedPin) {
+                                    scrollToMessage(selectedPin.message.messageId);
+                                }
+                                if (expanded) handleToggleExpand();
+                                setModalVisible(false);
+                            }}
+                        >
+                            <Text>Xem</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={styles.modalButton}
+                            onPress={() => {
+                                if (selectedPin && onDeletePin) {
+                                    onDeletePin(selectedPin);
+                                }
+                                if (expanded) handleToggleExpand();
+                                setModalVisible(false);
+                            }}
+                        >
+                            <Text style={{ color: 'red' }}>Xóa</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            style={[styles.modalButton, { marginTop: 10 }]}
+                            onPress={() => setModalVisible(false)}
+                        >
+                            <Text>Hủy</Text>
+                        </TouchableOpacity>
+                    </Pressable>
+                </Pressable>
+            </Modal>
+
+
         </View>
+
     );
 };
 
 const styles = StyleSheet.create({
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        backgroundColor: 'white',
+        padding: 20,
+        borderRadius: 12,
+        width: '80%',
+        alignItems: 'center',
+    },
+    modalTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        marginBottom: 20,
+    },
+    modalButton: {
+        padding: 10,
+        width: '100%',
+        alignItems: 'center',
+        borderBottomWidth: 0.5,
+        borderColor: '#ccc',
+    },
     pinWrapper: {
         flexDirection: 'row',
         alignItems: 'center',

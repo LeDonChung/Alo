@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, ToastAndroid } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { createPin } from '../../redux/slices/ConversationSlice';
 import { showToast } from '../../../utils/AppUtils';
+import socket from '../../../utils/socket';
 export const MenuComponent = ({ message, showMenuComponent }) => {
     const dispatch = useDispatch();
     const [reaction, setReaction] = useState([
@@ -15,10 +16,16 @@ export const MenuComponent = ({ message, showMenuComponent }) => {
         { type: 'angry', icon: '😠' },
     ]);
 
+    const conversation = useSelector(state => state.conversation.conversation);
     const handlerClickPin = async (message) => {
         try {
             showMenuComponent(false)
             await dispatch(createPin({ conversationId: message.conversationId, messageId: message.id })).unwrap().then((res) => {
+                console.log(res)
+                socket.emit('pin-message', {
+                    conversation: conversation,
+                    pin: res.data
+                });
                 showToast('info', 'bottom', "Thông báo", "Đã ghim tin nhắn này.", 2000);
             })
         } catch (error) {

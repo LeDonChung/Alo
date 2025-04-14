@@ -37,16 +37,15 @@ const ContactScreen = ({ navigation }) => {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const init = async () => {
-    setIsLoading(true);
-    await dispatch(getFriends());
-    await dispatch(getFriendsRequest())
-    setIsLoading(false);
-  }
+  // const init = async () => {
+  //   setIsLoading(true);
+    
+  //   setIsLoading(false);
+  // }
 
-  useEffect(() => {
-    init();
-  }, []);
+  // useEffect(() => {
+  //   init();
+  // }, []);
 
   const callRenderFriends = async () => {
     await dispatch(getFriends());

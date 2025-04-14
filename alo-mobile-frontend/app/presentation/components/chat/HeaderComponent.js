@@ -5,7 +5,7 @@ import AntDesign from 'react-native-vector-icons/AntDesign';
 import { useSelector } from 'react-redux';
 import { PinComponent } from './PinComponent';
 
-const HeaderComponent = ({ friend, isFriendOnline, getLastLoginMessage, lastLogout, navigation, socket, conversation, scrollToMessage }) => {
+const HeaderComponent = ({ friend, isFriendOnline, getLastLoginMessage, lastLogout, navigation, socket, conversation, scrollToMessage, onDeletePin }) => {
   const userLogin = useSelector(state => state.user.userLogin);
   return (
     <View>
@@ -29,12 +29,13 @@ const HeaderComponent = ({ friend, isFriendOnline, getLastLoginMessage, lastLogo
       </View>
       <View>
         {
-          conversation.pineds && (
+          (conversation.pineds && conversation.pineds.length) > 0 && (
             <PinComponent
               conversation={conversation}
               navigation={navigation}
               pins={conversation.pineds}
               scrollToMessage={scrollToMessage}
+              onDeletePin={onDeletePin}
             />
           )
         }

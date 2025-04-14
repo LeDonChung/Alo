@@ -14,7 +14,7 @@ import { FilterScreen } from "../pages/inapp/FilterScreen";
 import { AccountNavigation } from "./AccountNavigation";
 import { useDispatch, useSelector } from "react-redux";
 import socket from "../../utils/socket";
-import { updateLastMessage } from "../redux/slices/ConversationSlice";
+import { addPinToConversation, removePinToConversation, setConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
 import { cancelFriend, getFriendByPhoneNumber, getFriends, getFriendsRequest, setFriendRequests, unfriend } from "../redux/slices/FriendSlice";
 import { showToast } from "../../utils/AppUtils";
 import { FlatList } from "react-native-gesture-handler";
@@ -38,6 +38,13 @@ export const InAppNavigation = () => {
   const isPhoneNumber = (input) => /^(0|\+84)(3[2-9]|5[2689]|7[0-9]|8[1-9]|9[0-9])\d{7}$/.test(input);
   const [showBackIcon, setShowBackIcon] = useState(false);
 
+  const init = async () => {
+    await dispatch(getFriends());
+    await dispatch(getFriendsRequest())
+  }
+  useEffect(() => {
+    init();
+  }, []);
   const handleSearch = async () => {
     if (!search) return;
 
@@ -187,20 +194,43 @@ export const InAppNavigation = () => {
     await dispatch(getFriendsRequest());
   }
 
+  // ================ HANDLE SOCKET CONVERSATION REQUEST ===============
+  useEffect(() => {
+    const handleReceivePinMessage = (data) => {
+      console.log("Received pin message:", data);
+      const { conversation, pin } = data;
+      console.log("Received pin message:", conversation, pin);
+
+      dispatch(addPinToConversation(pin));
+      showToast("info", "top", "Thông báo", "Đã có ghim mới.");
+    }
+    socket.on("receive-pin-message", handleReceivePinMessage);
+
+    return () => {
+      socket.off("receive-pin-message", handleReceivePinMessage);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handleUnPinMessage = (data) => {
+      const { conversation, pin } = data;
+      console.log("Received unpin message:", conversation, pin);
+      dispatch(removePinToConversation(pin));
+    } 
+    socket.on("receive-unpin-message", handleUnPinMessage);
+
+    return () => {
+      socket.off("receive-unpin-message", handleUnPinMessage);
+    }
+  }, []);
+
+  // =============== HANDLE SOCKET FRIEND REQUEST ===============
   useEffect(() => {
     const handlerReceiveFriendRequest = (data) => {
-      const newRequest = {
-        userId: data.senderId === userLogin.id ? data.friendId : data.senderId,
-        friendId: data.userId,
-        fullName: data.fullName,
-        avatarLink: data.avatarLink,
-        contentRequest: data.contentRequest,
-        requestDate: `${new Date().getDate().toString().padStart(2, "0")}/${(new Date().getMonth() + 1).toString().padStart(2, "0")}/${new Date().getFullYear()}`,
-      };
-
-      dispatch(setFriendRequests([...friendRequests, newRequest]));
+      dispatch(setFriendRequests([...friendRequests, data]));
       // Thêm lời mời kết bạn mới vào danh sách
       showToast("info", "top", "Thông báo", "Bạn nhận được lời mời kết bạn mới!");
+      console.log("END")
     }
     socket.on("receive-friend-request", handlerReceiveFriendRequest);
     return () => {
@@ -208,6 +238,8 @@ export const InAppNavigation = () => {
     };
 
   }, [])
+
+
 
   useEffect(() => {
     socket.on("receive-accept-friend", callRenderFriends);

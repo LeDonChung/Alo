@@ -147,8 +147,10 @@ export const HomeScreen = ({ navigation }) => {
           userLogin && (
             <FlatList
               refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-              }
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} 
+                colors={['transparent']} 
+                tintColor="transparent" 
+              />}
               data={conversations}
               renderItem={(item) => renderItem({ item: item.item, handlerChoostConversation })}
               keyExtractor={(item) => item.id}
