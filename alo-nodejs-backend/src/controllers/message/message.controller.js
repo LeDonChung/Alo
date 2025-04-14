@@ -253,7 +253,76 @@ exports.updateMessageReaction = async (req, res) => {
         });
     }
 };
+exports.removeAllReaction = async (req, res) => {
+    try {
+        const { messageId } = req.params;
 
+        // Lấy Authorization từ header
+        const authHeader = req.headers['authorization'];
+        if (!authHeader) {
+            return res.status(401).json({
+                status: 401,
+                message: "Thiếu token xác thực.",
+                data: null
+            });
+        }
+
+        const token = authHeader.split(' ')[1];
+        const userId = userService.getUserIdFromToken(token);
+        if (!userId) {
+            return res.status(401).json({
+                status: 401,
+                message: "Token không hợp lệ.",
+                data: null
+            });
+        }
+
+        const message = await messageService.getMessageById(messageId);
+        if (!message) {
+            return res.status(404).json({
+                status: 404,
+                message: "Không tìm thấy tin nhắn.",
+                data: null
+            });
+        }
+
+        const reaction = message.reaction || {};
+
+        // Xóa tất cả reaction của người dùng
+        for (const type in reaction) {
+            const index = reaction[type].users.indexOf(userId);
+            if (index > -1) {
+                reaction[type].users.splice(index, 1);
+                reaction[type].quantity--;
+                // Nếu hết người dùng thì xóa luôn reaction type
+                if (reaction[type].quantity === 0) {
+                    delete reaction[type];
+                }
+            }
+        }
+
+        console.log('Reaction cập nhật:', reaction);
+
+        // Cập nhật reaction trong DB
+        await messageService.updateMessageReaction(messageId, message.timestamp, reaction);
+
+        // Trả về kết quả
+        message.reaction = reaction;
+        return res.status(200).json({
+            status: 200,
+            data: message,
+            message: "Xóa tất cả reaction tin nhắn thành công."
+        });
+
+    } catch (err) {
+        console.error('Lỗi cập nhật reaction:', err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
 
 // Cập nhật người đã xem tin nhắn
 exports.updateSeenMessage = async (req, res) => {

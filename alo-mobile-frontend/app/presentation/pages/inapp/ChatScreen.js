@@ -4,7 +4,7 @@ import { Modal, Pressable, View } from 'react-native';
 import { axiosInstance } from '../../../api/APIClient';
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
-import { getMessagesByConversationId, sendMessage, setMessages } from '../../redux/slices/MessageSlice';
+import { getMessagesByConversationId, handlerUpdateReaction, removeAllReaction, sendMessage, setMessages } from '../../redux/slices/MessageSlice';
 import HeaderComponent from '../../components/chat/HeaderComponent';
 import InputComponent from '../../components/chat/InputComponent';
 import MessageItem from '../../components/chat/MessageItem';
@@ -227,6 +227,51 @@ export const ChatScreen = ({ route, navigation }) => {
       showToast('error', 'bottom', "Thông báo", error.message)
     }
   }
+  const handlerRemoveAllAction = (message) => {
+    try {
+      const updatedReaction = {};
+
+      Object.entries(message.reaction || {}).forEach(([type, data]) => {
+        // Clone users để tránh mutate
+        const filteredUsers = data.users.filter(userId => userId !== userLogin.id);
+        const quantity = filteredUsers.length;
+
+        // Nếu sau khi lọc vẫn còn user khác => giữ lại reaction
+        if (quantity > 0) {
+          updatedReaction[type] = {
+            quantity,
+            users: filteredUsers
+          };
+        }
+      });
+
+      console.log("Reaction after removing all of mine:", updatedReaction);
+
+      dispatch(handlerUpdateReaction({
+        messageId: message.id,
+        updatedReaction
+      }));
+
+      // Gửi lên server nếu cần
+      dispatch(removeAllReaction({
+        messageId: message.id,
+      }))
+        .unwrap()
+        .then(res => {
+          socket.emit('update-reaction', {
+            conversation,
+            message: res.data
+          });
+        })
+        .catch(err => {
+          console.error("Error while removing all reactions:", err);
+        });
+
+    } catch (error) {
+      console.error("Error in handlerRemoveAllAction:", error);
+    }
+  };
+
   return (
 
     <View style={{ flex: 1, backgroundColor: '#F3F3F3', position: 'relative' }}>
@@ -263,6 +308,7 @@ export const ChatScreen = ({ route, navigation }) => {
                 setIsShowMenuInMessage={setIsShowMenuInMessage}
                 setSelectedMessage={setSelectedMessage}
                 isHighlighted={highlightedId === item.id}
+                handlerRemoveAllAction={handlerRemoveAllAction}
               />
             )}
             keyExtractor={(item, index) => item.id?.toString() || item.timestamp?.toString() || index.toString()}
