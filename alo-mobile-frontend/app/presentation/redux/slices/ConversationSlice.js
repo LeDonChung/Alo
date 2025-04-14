@@ -80,7 +80,6 @@ const ConversationSlice = createSlice({
             state.conversation = {...cons}; 
         },
         removePinToConversation: (state, action) => {
-            console.log("REMOVE PIN") 
             let cons = state.conversation;
             if (cons) {
                 cons.pineds = cons.pineds.filter(pin => pin.messageId !== action.payload.messageId);

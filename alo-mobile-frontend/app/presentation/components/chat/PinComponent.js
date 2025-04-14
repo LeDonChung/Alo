@@ -54,10 +54,8 @@ export const PinComponent = ({ conversation, pins, scrollToMessage, onDeletePin 
             }}
             onPress={() => {
                 scrollToMessage(pinItem.messageId);
-
-                if (index !== 0) {
-                    handleToggleExpand()
-                }
+                setSelectedPin(pinItem);
+                handleToggleExpand()
 
             }}>
             <Icon name="message1" size={24} color="#1E90FF" style={styles.commentIcon} />

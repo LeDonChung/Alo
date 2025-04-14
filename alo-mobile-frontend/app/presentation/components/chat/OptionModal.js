@@ -5,15 +5,8 @@ import IconMI from 'react-native-vector-icons/MaterialIcons';
 import IconEntypo from 'react-native-vector-icons/Entypo';
 
 const options = [
-  { label: 'Vị trí', icon: <IconEntypo name="location-pin" size={20} color="#333" /> },
   { label: 'Tài liệu', icon: <IconFA name="file-alt" size={20} color="#333" /> },
-  { label: 'Nhắc hẹn', icon: <IconMI name="alarm" size={20} color="#333" /> },
-  { label: 'Tin nhắn nhanh', icon: <IconMI name="message" size={20} color="#333" /> },
-  { label: 'Danh thiếp', icon: <IconFA name="address-card" size={20} color="#333" /> },
-  { label: 'Cloud', icon: <IconFA name="cloud" size={20} color="#333" /> },
-  { label: 'Kiểu chữ', icon: <IconFA name="font" size={20} color="#333" /> },
-  { label: 'Vẽ hình', icon: <IconFA name="paint-brush" size={20} color="#333" /> },
-];
+]; 
 
 const OptionModal = ({ visible, onClose, onSelect }) => {
   return (

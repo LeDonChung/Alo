@@ -51,84 +51,54 @@ export const ChatScreen = ({ route, navigation }) => {
     return userOnlines.includes(userId);
   };
 
-  const handlerSendMessage = async () => {
+  const handlerSendMessage = async (customInputMessage = null) => {
+    const messageData = customInputMessage || inputMessage;
+    const { content, messageType, file } = messageData;
+
+    // Lấy fileLink nếu có
+    const fileLink = messageData.fileLink || (file ? file.uri : '');
+
     const message = {
       senderId: userLogin.id,
       conversationId: conversation.id,
-      content: inputMessage.content,
-      messageType: inputMessage.messageType,
-      fileLink: inputMessage.fileLink,
+      content,
+      messageType,
+      fileLink,
       timestamp: Date.now(),
       seen: []
     };
 
-    const file = inputMessage.file;
+    try {
+      const response = await dispatch(sendMessage({ message, file })).then((res) => {
+        const sentMessage = {
+          ...res.payload.data,
+          sender: userLogin
+        };
 
-    console.log('file', file);
+        dispatch(setMessages([...messages, sentMessage]));
+        socket.emit('send-message', {
+          conversation,
+          message: sentMessage
+        });
 
-    await dispatch(sendMessage({ message, file })).then((res) => {
-      dispatch(setMessages([...messages, res.payload.data]));
-      socket.emit('send-message', {
-        conversation: conversation,
-        message: res.payload.data
-      });
-      setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
-    });
+      })
+
+
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
+    setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
+
   };
+
 
   const handleSendImage = async (newMessage) => {
-    const message = {
-      senderId: userLogin.id,
-      conversationId: conversation.id,
-      content: newMessage.content,
-      messageType: newMessage.messageType,
-      fileLink: newMessage.fileLink,
-      timestamp: Date.now(),
-      seen: []
-    };
-    const file = newMessage.file;
-
-    await dispatch(sendMessage({ message, file })).then((res) => {
-      const sentMessage = {
-        ...res.payload.data,
-        sender: userLogin
-      }
-      dispatch(setMessages([...messages, sentMessage]));
-      socket.emit('send-message', {
-        conversation: conversation,
-        message: sentMessage
-      });
-    }
-    );
-    setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
-  }
-
-  const handleSendFile = async (file) => {
-    console.log('file chat', file.uri);
-    const message = {
-      senderId: userLogin.id,
-      conversationId: conversation.id,
-      content: '',
-      messageType: 'file',
-      fileLink: file.uri,
-      timestamp: Date.now(),
-      seen: []
-    };
-   
-    await dispatch(sendMessage({ message, file })).then((res) => {
-      const sentMessage = {
-        ...res.payload.data,
-        sender: userLogin
-      }
-      dispatch(setMessages([...messages, sentMessage]));
-      socket.emit('send-message', {
-        conversation: conversation,
-        message: sentMessage
-      });
-    });
-    setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
+    handlerSendMessage(newMessage);
   };
-
+  const handleSendFile = async (newMessage) => {
+    console.log("newMessage", newMessage);
+    handlerSendMessage(newMessage);
+  };
   const handleStickerSelect = async (stickerUrl) => {
     dispatch(setInputMessage({ ...inputMessage, fileLink: stickerUrl, messageType: 'sticker' }))
     setShowStickerPicker(false);
@@ -136,7 +106,9 @@ export const ChatScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     if (inputMessage.messageType === 'sticker') {
-      handlerSendMessage(inputMessage);
+      if (inputMessage.fileLink) {
+        handlerSendMessage();
+      }
     }
   }, [inputMessage]);
 
@@ -246,7 +218,7 @@ export const ChatScreen = ({ route, navigation }) => {
         socket.emit("unpin-pin", {
           conversation: conversation,
           pin: res.payload.data
-        }); 
+        });
         showToast('success', 'bottom', "Thông báo", res.payload.message)
 
       })
@@ -309,8 +281,9 @@ export const ChatScreen = ({ route, navigation }) => {
         isStickerPickerVisible={isStickerPickerVisible}
         inputMessage={inputMessage}
         setInputMessage={setInputMessage}
-        handlerSendMessage={handleSendImage}
+        handlerSendMessage={handlerSendMessage}
         handleSendFile={handleSendFile}
+        handlerSendImage={handleSendImage}
       />
       {isStickerPickerVisible && (
         <StickerPicker onStickerSelect={handleStickerSelect} />

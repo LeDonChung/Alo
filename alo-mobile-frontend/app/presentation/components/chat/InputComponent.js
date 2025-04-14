@@ -1,4 +1,4 @@
-import React, { useState} from 'react';
+import React, { useState } from 'react';
 import { View, TextInput, TouchableOpacity, Text } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import IconMI from 'react-native-vector-icons/MaterialIcons';
@@ -7,11 +7,11 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as Permissions from 'expo-permissions';
 import OptionModal from './OptionModal';
 
-const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isStickerPickerVisible, setIsStickerPickerVisible, handleSendFile }) => {
+const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isStickerPickerVisible, setIsStickerPickerVisible, handleSendFile, handlerSendImage }) => {
   const [isOptionModalVisible, setOptionModalVisible] = useState(false);
   const handleOptionSelect = (options) => {
     setOptionModalVisible(false);
-    if(options === "Tài liệu") {
+    if (options === "Tài liệu") {
       openFilePicker();
     }
   }
@@ -19,30 +19,34 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
   const openFilePicker = async () => {
     const result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
     console.log('result', result);
-  
+
     if (!result.canceled && result.assets && result.assets.length > 0) {
       const asset = result.assets[0];
       const fileExtension = asset.uri.split('.').pop().toLowerCase();
-  
+
       if (!allowedExtensions.includes(fileExtension)) {
         alert('Chỉ chấp nhận các loại tệp: pdf, doc, docx, txt, xls, xlsx, ppt, pptx, zip, rar, mp4');
         return;
       }
-  
+
       const file = {
         uri: asset.uri,
         name: asset.name,
         type: asset.mimeType || 'application/octet-stream',
       };
-  
+      const newMessage = {
+        content: '',
+        messageType: 'file',
+        file: file,
+      };
       console.log('file', file);
-  
-      await handleSendFile(file);
+
+      await handleSendFile(newMessage);
     }
-  
+
     setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
   };
-  
+
   const openImageLibrary = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
@@ -71,16 +75,16 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
           file: file,
           fileLink: imageUrl,
         };
-        await handlerSendMessage(newMessage);
+        await handlerSendImage(newMessage);
       }
       setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
     }
   }
-  
+
   return (
     <View style={{ backgroundColor: 'white', padding: 10, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderColor: '#EDEDED' }}>
       <TouchableOpacity
-      onPress={() => setIsStickerPickerVisible(!isStickerPickerVisible)}
+        onPress={() => setIsStickerPickerVisible(!isStickerPickerVisible)}
       >
         <Icon name="smile" size={20} color="gray" />
       </TouchableOpacity>
@@ -93,7 +97,9 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
       />
 
       {inputMessage.content.trim() ? (
-        <TouchableOpacity onPress={handlerSendMessage} style={{ paddingHorizontal: 10 }}>
+        <TouchableOpacity onPress={() => {
+          handlerSendMessage(inputMessage);
+        }} style={{ paddingHorizontal: 10 }}>
           <IconMI name="send" size={20} color="blue" />
         </TouchableOpacity>
       ) : (
@@ -104,7 +110,7 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
           <TouchableOpacity style={{ marginHorizontal: 10 }}>
             <Icon name="microphone" size={20} color="gray" />
           </TouchableOpacity>
-          <TouchableOpacity onPress={openImageLibrary}  style={{ marginHorizontal: 10 }}>
+          <TouchableOpacity onPress={openImageLibrary} style={{ marginHorizontal: 10 }}>
             <Icon name="image" size={20} color="gray" />
           </TouchableOpacity>
         </View>
