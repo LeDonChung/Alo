@@ -179,7 +179,7 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
 
 
           {item.reaction && (
-            <ReactionListComponent data={item.reaction} isSent={isSent}/>
+            <ReactionListComponent message={item} isSent={isSent}/>
           )}
 
         </TouchableOpacity>

@@ -17,7 +17,7 @@ const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ messag
                 uri: file.uri,
                 name: file.name,
                 type: file.type
-              });
+            });
         }
 
         for (const key in message) {
@@ -25,7 +25,7 @@ const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ messag
         }
 
         const response = await axiosInstance.post('/api/message/create-message', formData, {
-            headers: { 
+            headers: {
                 "Content-Type": "multipart/form-data"
             }
         });
@@ -44,6 +44,17 @@ const getMessagesByConversationId = createAsyncThunk('MessageSlice/getMessagesBy
     }
 });
 
+const updateReaction = createAsyncThunk('MessageSlice/updateReaction', async ({ messageId, type }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.put(`/api/message/${messageId}/reaction`, {
+            type: type
+        });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
+
 const MessageSlice = createSlice({
     name: 'MessageSlice',
     initialState: initialState,
@@ -53,6 +64,13 @@ const MessageSlice = createSlice({
         },
         increaseLimit: (state, action) => {
             state.limit += action.payload;
+        },
+        handlerUpdateReaction: (state, action) => {
+            const { messageId, updatedReaction } = action.payload;
+            const index = state.messages.findIndex(message => message.id === messageId);
+            if (index !== -1) {
+                state.messages[index].reaction = updatedReaction;
+            }
         }
     },
     extraReducers: (builder) => {
@@ -78,9 +96,20 @@ const MessageSlice = createSlice({
         builder.addCase(getMessagesByConversationId.rejected, (state, action) => {
             state.isLoadMessage = false
         });
+
+        builder.addCase(updateReaction.pending, (state) => {
+        });
+
+        builder.addCase(updateReaction.fulfilled, (state, action) => {
+            
+        });
+
+
+        builder.addCase(updateReaction.rejected, (state, action) => {
+        });
     }
 });
 
-export const { setMessages, increaseLimit } = MessageSlice.actions;
-export { sendMessage, getMessagesByConversationId };
+export const { setMessages, increaseLimit, handlerUpdateReaction } = MessageSlice.actions;
+export { sendMessage, getMessagesByConversationId, updateReaction };
 export default MessageSlice.reducer;

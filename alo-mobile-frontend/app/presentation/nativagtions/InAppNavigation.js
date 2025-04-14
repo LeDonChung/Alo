@@ -19,6 +19,7 @@ import { cancelFriend, getFriendByPhoneNumber, getFriends, getFriendsRequest, se
 import { showToast } from "../../utils/AppUtils";
 import { FlatList } from "react-native-gesture-handler";
 import { ContactStyles } from "../styles/ContactStyle";
+import { handlerUpdateReaction, updateReaction } from "../redux/slices/MessageSlice";
 
 const Tab = createBottomTabNavigator();
 
@@ -90,7 +91,7 @@ export const InAppNavigation = () => {
     setIsSearching(false);
   };
 
-  
+
 
   const handleCancelFriendRequest = async (friendId) => {
     const request = { userId: userLogin.id, friendId };
@@ -186,11 +187,11 @@ export const InAppNavigation = () => {
 
 
   const friendRequests = useSelector((state) => state.friend.friendRequests);
-  const callRenderFriends = async() => {
+  const callRenderFriends = async () => {
     await dispatch(getFriends());
   }
 
-  const callRenderFriendRequests = async() => {
+  const callRenderFriendRequests = async () => {
     await dispatch(getFriendsRequest());
   }
 
@@ -216,13 +217,28 @@ export const InAppNavigation = () => {
       const { conversation, pin } = data;
       console.log("Received unpin message:", conversation, pin);
       dispatch(removePinToConversation(pin));
-    } 
+    }
     socket.on("receive-unpin-message", handleUnPinMessage);
 
     return () => {
       socket.off("receive-unpin-message", handleUnPinMessage);
     }
   }, []);
+
+  useEffect(() => {
+    const handlerReceiveReaction = (data) => {
+      dispatch(handlerUpdateReaction({
+        messageId: data.id,
+        updatedReaction: data.reaction
+      }))
+      console.log("Received reaction:", data);
+      
+    }
+    socket.on("receice-update-reaction", handlerReceiveReaction);
+    return () => {
+      socket.off("receice-update-reaction", handlerReceiveReaction);
+    }
+  })
 
   // =============== HANDLE SOCKET FRIEND REQUEST ===============
   useEffect(() => {

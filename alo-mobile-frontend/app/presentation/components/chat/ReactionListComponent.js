@@ -2,11 +2,13 @@ import { useState } from "react";
 import { Button, FlatList, Modal, Text, TouchableOpacity, View, ScrollView, Image } from "react-native";
 import { useSelector } from "react-redux";
 import { Pressable, TouchableWithoutFeedback } from "react-native";
+import { ReactionBar } from "./ReactionBar";
+import IconI from "react-native-vector-icons/Ionicons";
 
-export const ReactionListComponent = ({ data, isSent }) => {
+export const ReactionListComponent = ({ message, isSent }) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedTab, setSelectedTab] = useState(null); // null = all
-
+    const data = message.reaction || {};
     const reactionTypes = [
         { type: 'like', icon: '👍' },
         { type: 'love', icon: '❤️' },
@@ -17,10 +19,12 @@ export const ReactionListComponent = ({ data, isSent }) => {
     ];
 
     const conversation = useSelector(state => state.conversation.conversation);
+
     const getMember = (userId) => {
         let member = conversation.members.find(m => m.id === userId);
-        return member
-    }
+        return member;
+    };
+
     const emojiMap = reactionTypes.reduce((map, r) => {
         map[r.type] = r.icon;
         return map;
@@ -37,7 +41,7 @@ export const ReactionListComponent = ({ data, isSent }) => {
 
     const getUserReactions = (reactionObj) => {
         const userMap = {};
-        if (!reactionObj) return [];
+        if (!reactionObj || typeof reactionObj !== 'object') return [];
 
         Object.entries(reactionObj).forEach(([type, { users }]) => {
             users.forEach((userId) => {
@@ -45,7 +49,7 @@ export const ReactionListComponent = ({ data, isSent }) => {
                     userMap[userId] = {
                         id: userId,
                         emojis: [],
-                        rawTypes: []
+                        rawTypes: [],
                     };
                 }
                 userMap[userId].emojis.push(emojiMap[type] || '❓');
@@ -61,6 +65,11 @@ export const ReactionListComponent = ({ data, isSent }) => {
     );
 
     const extractedReactions = extractReactions(data);
+
+    // Sắp xếp reactions và chỉ lấy 3 reactions nhiều nhất
+    const topReactions = extractedReactions
+        .sort((a, b) => b.count - a.count)  // Sắp xếp theo số lượng reactions (từ cao đến thấp)
+        .slice(0, 3);  // Chỉ lấy 3 reactions đầu tiên
 
     return (
         <>
@@ -81,7 +90,7 @@ export const ReactionListComponent = ({ data, isSent }) => {
                     backgroundColor: '#fff',
                     borderRadius: 12,
                 }}>
-                {extractedReactions.map(({ emoji, count }) => (
+                {topReactions.map(({ emoji, count }) => (
                     <View key={emoji} style={{
                         flexDirection: 'row',
                         alignItems: 'center',
@@ -99,6 +108,14 @@ export const ReactionListComponent = ({ data, isSent }) => {
             <Modal visible={modalVisible} transparent animationType="slide">
                 <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
                     <View style={{ flex: 1, justifyContent: 'flex-end', backgroundColor: 'rgba(0,0,0,0.3)' }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                            <View style={{ width: '75%', marginRight: 10 }}>
+                                <ReactionBar message={message} onClose={() => setModalVisible(false)} />
+                            </View>
+                            <TouchableOpacity style={{ padding: 8, backgroundColor: '#fff', borderRadius: 100, marginBottom: 15 }}>
+                                <IconI name="heart-dislike-outline" size={30} color="#000" />
+                            </TouchableOpacity>
+                        </View>
                         <View style={{ backgroundColor: 'white', padding: 16, borderTopLeftRadius: 16, borderTopRightRadius: 16, maxHeight: '70%' }}>
                             {/* Tabs emoji */}
                             <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 10 }}>
@@ -112,9 +129,7 @@ export const ReactionListComponent = ({ data, isSent }) => {
                                         borderBottomColor: '#000',
                                     }}>
                                     <Text style={{ fontWeight: selectedTab === null ? 'bold' : 'normal' }}>
-                                        Tất cả {
-                                            extractedReactions.reduce((total, { count }) => total + count, 0)
-                                        }
+                                        Tất cả {extractedReactions.reduce((total, { count }) => total + count, 0)}
                                     </Text>
                                 </TouchableOpacity>
 
@@ -168,6 +183,7 @@ export const ReactionListComponent = ({ data, isSent }) => {
                     </View>
                 </TouchableWithoutFeedback>
             </Modal>
+
         </>
     );
 };

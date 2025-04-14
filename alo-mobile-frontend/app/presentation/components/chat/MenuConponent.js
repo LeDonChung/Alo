@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createPin } from '../../redux/slices/ConversationSlice';
 import { showToast } from '../../../utils/AppUtils';
 import socket from '../../../utils/socket';
+import { ReactionBar } from './ReactionBar';
 export const MenuComponent = ({ message, showMenuComponent }) => {
     const dispatch = useDispatch();
     const [reaction, setReaction] = useState([
@@ -15,13 +16,12 @@ export const MenuComponent = ({ message, showMenuComponent }) => {
         { type: 'sad', icon: '😭' },
         { type: 'angry', icon: '😠' },
     ]);
-
+    
     const conversation = useSelector(state => state.conversation.conversation);
     const handlerClickPin = async (message) => {
         try {
             showMenuComponent(false)
             await dispatch(createPin({ conversationId: message.conversationId, messageId: message.id })).unwrap().then((res) => {
-                console.log(res)
                 socket.emit('pin-message', {
                     conversation: conversation,
                     pin: res.data
@@ -35,15 +35,7 @@ export const MenuComponent = ({ message, showMenuComponent }) => {
     return (
         <ScrollView contentContainerStyle={styles.container}>
             {/* Emoji Bar */}
-            <View style={styles.emojiBar}>
-                {
-                    reaction.map((item, index) => (
-                        <TouchableOpacity key={index} style={styles.emoji}>
-                            <Text style={styles.emoji}>{item.icon}</Text>
-                        </TouchableOpacity>
-                    ))
-                }
-            </View>
+            <ReactionBar message={message} onClose={() => showMenuComponent(false)}/>
             {/* Action Grid */}
             <View style={styles.actionGrid}>
                 <TouchableOpacity style={styles.actionItem}>
@@ -98,7 +90,7 @@ const styles = StyleSheet.create({
     emojiBar: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        backgroundColor: '#E5E7EB',
+        backgroundColor: '#fff',
         borderRadius: 9999,
         padding: 8,
         marginBottom: 16,
