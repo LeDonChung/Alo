@@ -125,7 +125,11 @@ const FriendSlice = createSlice({
         },
         setFriends: (state, action) => {
             state.friends = action.payload;
-        }
+        },
+        setSentRequests: (state, action) => {
+            state.sentRequests = action.payload;
+          },
+        
     },
     extraReducers: (builder) => {
         builder.addCase(getFriends.pending, (state) => {
@@ -216,6 +220,6 @@ const FriendSlice = createSlice({
 
     }
 });
-export const { clearError, addSentRequest, removeSentRequest, clearSentRequests, setFriendRequests, setFriends } = FriendSlice.actions;
+export const { clearError, addSentRequest, removeSentRequest, clearSentRequests, setFriendRequests, setFriends, setSentRequests } = FriendSlice.actions;
 export { getFriends, unfriend, blockFriend, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriendByPhoneNumber, getFriendsRequest, cancelFriend };
 export default FriendSlice.reducer;
