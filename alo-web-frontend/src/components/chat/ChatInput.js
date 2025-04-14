@@ -20,7 +20,6 @@ const ChatInput = ({ isSending, getFriend }) => {
   const messages = useSelector((state) => state.message.messages);
   const messageParent = useSelector((state) => state.message.messageParent);
   const [images, setImages] = useState([]); // Lưu hình ảnh từ URL
-
   const handlePaste = async (event) => {
     dispatch(setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' }));
     const clipboardData = event.clipboardData || window.clipboardData;
@@ -92,6 +91,7 @@ const ChatInput = ({ isSending, getFriend }) => {
 
   const inputMessage = useSelector((state) => state.message.inputMessage);
   const dispatch = useDispatch();
+  const inputRef = useRef(null);
   const handleEmojiClick = (emojiData, event) => {
     dispatch(setInputMessage({ ...inputMessage, content: inputMessage.content + emojiData.emoji }));
   };
@@ -192,6 +192,10 @@ const ChatInput = ({ isSending, getFriend }) => {
     dispatch(setInputMessage({ ...inputMessage, messageType: 'text', content: '' }));
   };
 
+  if(messageParent) {
+    inputRef.current.focus();
+  }
+
   return (
     <div className="bg-white p-4 border-t border-gray-200 overflow-y-auto max-h-[2000px] scrollable">
 
@@ -274,7 +278,7 @@ const ChatInput = ({ isSending, getFriend }) => {
 
       {/* Show message parent */}
       {messageParent && (
-        <div className="flex items-center space-x-2 mt-2 bg-gray-200 rounded-lg p-2 my-3">
+        <div className="flex items-center space-x-2 mt-2 bg-gray-100 rounded-lg p-2 my-3">
           {messageParent.messageType === 'image' && (
             <img
               src={messageParent.fileLink}
@@ -340,6 +344,7 @@ const ChatInput = ({ isSending, getFriend }) => {
           onChange={(e) => dispatch(setInputMessage({ ...inputMessage, content: e.target.value }))}
           placeholder="Nhập tin nhắn..."
           className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-0"
+          ref={inputRef}
         />
 
         {/* Nút mở Emoji Picker */}

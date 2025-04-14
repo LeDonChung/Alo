@@ -36,10 +36,7 @@ exports.createMessage = async (req, res) => {
 
         if((messageType === 'image' && fileLink) || messageType === 'sticker'){
             request.fileLink = fileLink;
-        } else {
-            request.fileLink = await fileService.uploadFile(req.file);
-        }
-        
+        } 
         
         if ((!fileLink || fileLink === '') && ['image', 'file'].includes(messageType)) {
             request.fileLink = await fileService.uploadFile(req.file);
