@@ -5,7 +5,7 @@ import { GlobalStyles } from "../../styles/GlobalStyles";
 import { useDispatch, useSelector } from "react-redux";
 import Icon from "react-native-vector-icons/FontAwesome5";
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice'
-import { getAllConversation } from '../../redux/slices/ConversationSlice'
+import { getAllConversation, setConversation } from '../../redux/slices/ConversationSlice'
 import socket from "../../../utils/socket";
 import * as SecureStore from 'expo-secure-store';
 export const HomeScreen = ({ navigation }) => {
@@ -33,7 +33,6 @@ export const HomeScreen = ({ navigation }) => {
       const user = JSON.parse(await SecureStore.getItemAsync("userLogin"));
       const accessToken = await SecureStore.getItemAsync("accessToken");
       if (user && accessToken) {
-        console.log("SAVE")
         dispatch(setUserLogin(user));
       }
     }
@@ -48,9 +47,11 @@ export const HomeScreen = ({ navigation }) => {
     })
   }, []);
 
-  console.log("userOnlines: ", userOnlines);
 
-  const renderItem = ({ item }) => {
+  const handlerChoostConversation = async (conversation) => {
+    await dispatch(setConversation(conversation));
+  }
+  const renderItem = ({ item, handlerChoostConversation }) => {
     const friend = item.members.find(member => member.id !== userLogin.id);
 
     const getLastMessage = () => {
@@ -101,12 +102,15 @@ export const HomeScreen = ({ navigation }) => {
       }
     };
 
+
     return (
       <TouchableOpacity
         onPress={() => {
-          navigation.navigate("chat", { conversation: item, friend: friend });
-          // socket.emit('join_conversation', item.id);
-        }}
+          handlerChoostConversation(item);
+          navigation.navigate("chat", {
+            friend: friend,
+          })
+          }}
         style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: '#EDEDED' }}
       >
         <Image
@@ -143,10 +147,12 @@ export const HomeScreen = ({ navigation }) => {
           userLogin && (
             <FlatList
               refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-              }
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} 
+                colors={['transparent']} 
+                tintColor="transparent" 
+              />}
               data={conversations}
-              renderItem={renderItem}
+              renderItem={(item) => renderItem({ item: item.item, handlerChoostConversation })}
               keyExtractor={(item) => item.id}
               ListEmptyComponent={
                 <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 20 }}>

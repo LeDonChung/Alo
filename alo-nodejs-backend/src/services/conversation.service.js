@@ -94,10 +94,33 @@ const updateLastMessage = async (conversationId, message) => {
     }
 }
 
+const updatePineds = async (conversationId, pineds) => {
+    try {
+        const params = {
+            TableName: 'Conversations',
+            Key: {
+                id: conversationId
+            },
+            UpdateExpression: 'set pineds = :pineds',
+            ExpressionAttributeValues: {
+                ':pineds': pineds
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+        console.log(params);
+        const res = await client.update(params).promise();
+        return res.Attributes;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
+
 module.exports = {
     createConversation,
     getConversationsByUserId,
     getConversationByMembers,
     getConversationById,
-    updateLastMessage
+    updateLastMessage,
+    updatePineds
 };

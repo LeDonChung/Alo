@@ -114,7 +114,7 @@ io.on("connection", (socket) => {
         socket.to(conversation.id).emit('receive-message', message);
     });
 
-    
+
     socket.on('send-friend-request', async (data) => {
         const receiveId = data.userId === data.senderId ? data.friendId : data.userId;
         const socketIds = await findSocketIdsByUserId(receiveId);
@@ -169,6 +169,33 @@ io.on("connection", (socket) => {
         io.emit('users-online', { userIds });
     });
 
+    socket.on('pin-message', async (data) => {
+        const members = data.conversation.memberUserIds;
+        
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            // Lọc bỏ socket.id hiện tại
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                console.log("Đang ghim tin nhắn cho socket id:", id);
+                console.log("Ghim tin nhắn cho user:", userId);
+                io.to(id).emit('receive-pin-message', data);
+            });
+        }
+    });
+
+    socket.on('unpin-message', async (data) => {
+        const members = data.conversation.memberUserIds;
+        
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            // Lọc bỏ socket.id hiện tại
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-unpin-message', data);
+            });
+        }
+    })
     // =====================
     // Helper functions
     // =====================
