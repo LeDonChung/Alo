@@ -5,25 +5,54 @@ import { useDispatch, useSelector } from 'react-redux';
 import { addMessage, sendMessage, setInputMessage, setMessageParent, setMessages } from '../../redux/slices/MessageSlice';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faQuoteRight, faXmark } from "@fortawesome/free-solid-svg-icons";
+import LightGallery from 'lightgallery/react';
+import 'lightgallery/css/lightgallery.css';
+import 'lightgallery/css/lg-zoom.css';
+import 'lightgallery/css/lg-thumbnail.css';
+import lgZoom from 'lightgallery/plugins/zoom';
+import lgThumbnail from 'lightgallery/plugins/thumbnail';
 import socket from '../../utils/socket';
 
 const ChatInput = ({ isSending, getFriend }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-
   const conversation = useSelector((state) => state.conversation.conversation);
   const userLogin = useSelector((state) => state.user.userLogin);
-
   const messages = useSelector((state) => state.message.messages);
-
   const messageParent = useSelector((state) => state.message.messageParent);
+  const [images, setImages] = useState([]); // Lưu hình ảnh từ URL
+
+  const handlePaste = async (event) => {
+    dispatch(setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' }));
+    const clipboardData = event.clipboardData || window.clipboardData;
+    const pastedData = clipboardData.getData("text"); // Lấy dữ liệu dạng text từ clipboard
+
+    // Kiểm tra nếu dữ liệu dán là URL và có đuôi định dạng hình ảnh
+    const imageFormats = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
+    const isImageURL = imageFormats.some((format) =>
+      pastedData.toLowerCase().endsWith(format)
+    );
+
+    if (isImageURL) {
+      setImages(prevImages => [...prevImages, pastedData]); // Lưu URL hình ảnh
+    } else {
+      console.log('Pasted data is not an image URL:', pastedData);
+    }
+  };
+
+  const handlerSendImagesCopy = async () => {
+    for (const image of images) {
+      const newMessage = { ...inputMessage, messageType: 'image', fileLink: image };      
+      await handlerSendMessage(newMessage);
+      setImages(images.filter(img => img !== image)); // Xóa hình ảnh đã gửi
+    }
+    setImages([]); // Reset sau khi gửi xong
+  }
 
 
   const handlerSendMessage = async (messageNew) => {
     // const messageParentParse = messageParent ? JSON.parse(messageParent) : null;
     console.log('messageParent', messageParent);
     // console.log('messageParentParse', messageParentParse);
-
-
     const message = {
       senderId: userLogin.id,
       conversationId: conversation.id,
@@ -306,7 +335,8 @@ const ChatInput = ({ isSending, getFriend }) => {
       <form className="flex items-center space-x-2">
         <input
           type="text"
-          value={inputMessage.content}
+          onPaste={(e) => handlePaste(e)}
+          value={images && images.length > 0 ? '' : inputMessage.content}
           onChange={(e) => dispatch(setInputMessage({ ...inputMessage, content: e.target.value }))}
           placeholder="Nhập tin nhắn..."
           className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-0"
@@ -328,16 +358,52 @@ const ChatInput = ({ isSending, getFriend }) => {
           </div>
         )}
 
-        <button
-          onClick={() => handlerSendMessage(inputMessage)}
-          type="button"
-          className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"
-        >
-          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
-          </svg>
-        </button>
+        {
+          !images || images?.length === 0 ? (
+            <button
+              onClick={() => handlerSendMessage(inputMessage)}
+              type="button"
+              className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              onClick={() => handlerSendImagesCopy()}
+              type="button"
+              className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"
+            >
+              <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
+              </svg>
+            </button>
+          )
+        }
       </form>
+
+      {images && images.length > 0 && (
+        <>
+          <button className='text-red-700 my-3' onClick={() => setImages([])}>
+            Xóa tất cả
+          </button>
+
+          <div className="flex flex-wrap mt-2 space-x-2 space-y-2 h-[120px] overflow-x-auto">
+
+            {images.map((image, index) => (
+              <div key={index} className="relative w-24 h-24 border-[1px] rounded-lg">
+                <LightGallery plugins={[lgZoom, lgThumbnail]} mode="lg-fade">
+                  <a key={index} href={image} data-lg-size="1280-720">
+                    <img src={image} alt="Hình ảnh" className='w-24 h-24 cursor-pointer object-cover' />
+                  </a>
+                </LightGallery>
+              </div>
+            ))}
+          </div>
+        </>
+
+      )}
     </div>
   );
 };

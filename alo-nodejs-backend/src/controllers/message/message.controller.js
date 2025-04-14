@@ -20,7 +20,7 @@ exports.createMessage = async (req, res) => {
                 message: "Cuộc trò chuyện không tồn tại.",
                 data: null
             });
-        }
+        } 
 
         // Khởi tạo request
         const request = {
@@ -34,14 +34,15 @@ exports.createMessage = async (req, res) => {
             status: 0
         };
 
-        // Nếu là image/file thì upload và thêm link
-        if (['image', 'file'].includes(messageType)) {
+        if((messageType === 'image' && fileLink) || messageType === 'sticker'){
+            request.fileLink = fileLink;
+        } else {
             request.fileLink = await fileService.uploadFile(req.file);
         }
-
-        // Nếu là sticker thì lấy fileLink
-        if (messageType === 'sticker') {
-            request.fileLink = fileLink;
+        
+        
+        if ((!fileLink || fileLink === '') && ['image', 'file'].includes(messageType)) {
+            request.fileLink = await fileService.uploadFile(req.file);
         }
 
         const allowedTypes = ['text', 'sticker', 'image', 'file'];

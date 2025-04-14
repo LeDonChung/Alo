@@ -106,6 +106,24 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
     setShowReactions(false);
   }
 
+  const handleCopy = () => {
+    let content = "";
+    if(message.messageType === 'text'){
+      content = message.content;
+    }else if(message.messageType === 'image'){
+      content = message.fileLink;
+    }
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(content).then(() => {
+        console.log('Nội dung đã được sao chép vào clipboard!');
+      }).catch(err => {
+        console.error('Lỗi khi sao chép nội dung: ', err);
+      });
+    }
+    setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
+  }
+
   return (
     <div
       className={`flex ${isUserMessage ? 'justify-end' : 'justify-start'} mt-4 group`}
@@ -124,7 +142,11 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
           <ul className="text-sm text-gray-700">
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleAnwer()}>Trả lời</li>
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Chia sẻ</li>
-            <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Copy tin nhắn</li>
+            {
+              message.messageType !== 'file' && message.messageType !== 'sticker' && (
+                <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleCopy()}>Copy tin nhắn</li>
+              )
+            }
             {
               message.messageType === 'image' && (
                 <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Lưu về máy</li>
@@ -154,16 +176,16 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
       {/* Nội dung tin nhắn */}
       <div
         className={`flex flex-col relative 
-          ${isUserMessage ? "items-end" : "items-start"} 
+          items-start 
           ${message.messageType !== 'image' && 'p-3'} rounded-lg shadow-md 
           ${isUserMessage && 'bg-blue-100'} ${isHighlighted && 'border-2 border-yellow-500 animate-flash'} `}
       >
         {(showAvatar && !isUserMessage) && (
-          <p className='text-sm text-gray-500 font-medium max-w-xs'>{message.sender?.fullName}</p>
+          <p className='text-sm text-gray-500 font-medium max-w-xs mb-3'>{message.sender?.fullName}</p>
         )}
 
         {message.messageParent && (
-          <div className={`flex items-center space-x-2 mb-2 ${isUserMessage ? 'bg-blue-200' : 'bg-gray-100'} p-2 rounded-md`} onClick={onClickParent}>
+          <div className={`flex items-center space-x-2 mb-2 ${isUserMessage ? 'bg-blue-200' : 'bg-gray-200'} p-2 rounded-md`} onClick={onClickParent}>
             {message.messageParent.messageType === 'image' && (
               <img
                 src={message.messageParent.fileLink}
