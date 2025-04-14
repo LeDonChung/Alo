@@ -42,6 +42,14 @@ const ChatWindow = () => {
     return friend;
   };
 
+  // Hàm lấy tên hội thoại cho header
+  const getConversationName = () => {
+    if (!conversation) return "Không xác định";
+    return conversation.isGroup
+      ? conversation.name || "Nhóm chat"
+      : getFriend(conversation)?.fullName || "Không xác định";
+  };
+
   const handleGetLastLogout = async (userId) => {
     await axiosInstance.get(`/api/user/get-profile/${userId}`).then((res) => {
       setLastLogout(res.data.data.lastLogout);
@@ -101,7 +109,7 @@ const ChatWindow = () => {
         <ChatHeader
           conversation={conversation}
           userLogin={userLogin}
-          lastLogout={lastLogout}
+          lastLogout={conversation.isGroup ? null : lastLogout} // Không hiển thị lastLogout cho nhóm
           getFriend={getFriend}
           getLastLoginMessage={getLastLoginMessage}
           isFriendOnline={isFriendOnline}

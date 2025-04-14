@@ -7,6 +7,7 @@ const createConversation = async (data) => {
             TableName: 'Conversations',
             Item: {
                 id: uuidv4(),
+                name: data.name,
                 members: data.members,
                 createdBy: data.createdBy,
                 isGroup: data.isGroup,

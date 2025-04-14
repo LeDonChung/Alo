@@ -25,6 +25,15 @@ const getConversationById = createAsyncThunk('ConversationSlice/getConversationB
     }
 });
 
+const createConversation = createAsyncThunk('ConversationSlice/createConversation', async (groupData, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/conversation/create-conversation', groupData);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
@@ -65,9 +74,18 @@ const ConversationSlice = createSlice({
         builder.addCase(getConversationById.rejected, (state, action) => {
             state.conversation = [];
         });
+        builder.addCase(createConversation.pending, (state) => {
+            state.conversation = null;
+        });
+        builder.addCase(createConversation.fulfilled, (state, action) => {
+            state.conversations.push(action.payload.data); // Thêm nhóm mới vào danh sách hội thoại
+        });
+        builder.addCase(createConversation.rejected, (state, action) => {
+            state.conversation = null;
+        });
     }
 });
 
 export const { setConversation, updateLastMessage } = ConversationSlice.actions;
-export { getAllConversation, getConversationById };
+export { getAllConversation, getConversationById, createConversation };
 export default ConversationSlice.reducer;

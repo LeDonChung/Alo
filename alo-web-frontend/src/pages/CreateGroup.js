@@ -1,16 +1,18 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getFriends } from "../redux/slices/FriendSlice"; 
+import { getFriends } from "../redux/slices/FriendSlice";
 import FriendsOfUser from "../components/FriendsOfUser";
 import { text } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleXmark } from "@fortawesome/free-solid-svg-icons";
 import { SearchByPhone } from "../components/SearchByPhone";
 import { removeVietnameseTones } from "../utils/AppUtils";
+import { createConversation } from "../redux/slices/ConversationSlice";
 
 export default function CreateGroupPage({ isOpenGroup, onClose }) {
     const dispatch = useDispatch();
     const friends = useSelector((state) => state.friend.friends);
+    const userLogin = useSelector((state) => state.user.userLogin);
     const [selected, setSelected] = useState([]);
     const [groupName, setGroupName] = useState("");
     const [textSearch, setTextSearch] = useState(""); // Quản lý textSearch trong CreateGroupPage
@@ -26,8 +28,8 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                 console.log("Error fetching friends:", error);
             }
         };
-        fetchFriends(); 
-    }, [dispatch]); 
+        fetchFriends();
+    }, [dispatch]);
 
     //Cập nhật DS bạn bè từ redux
     useEffect(() => {
@@ -58,6 +60,39 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
         );
     };
 
+    // Xử lý khi nhấn nút "Tạo Nhóm"
+    const handleCreateGroup = async () => {
+        if (!groupName || selected.length === 0) {
+            alert("Vui lòng nhập tên nhóm và chọn ít nhất một thành viên!");
+            return;
+        }
+
+        const memberUserIds = [userLogin.id, ...selected]; // Bao gồm cả người tạo nhóm (userLogin.id)
+        const members = memberUserIds.map(id => ({
+            id,
+            fullName: friends.find(f => f.friendId === id)?.friendInfo.fullName || userLogin.fullName,
+        }));
+
+        const groupData = {
+            name: groupName,
+            members, // Danh sách thành viên (có id và fullName)
+            memberUserIds, // Danh sách ID thành viên
+            createdBy: userLogin.id,
+            isGroup: true,
+            isCalling: false,
+        };
+
+        try {
+            await dispatch(createConversation(groupData)).unwrap(); // Gọi action tạo nhóm
+            onClose(); // Đóng modal sau khi tạo thành công
+            setSelected([]); // Reset danh sách đã chọn
+            setGroupName(""); // Reset tên nhóm
+        } catch (error) {
+            console.error("Error creating group:", error);
+            alert("Có lỗi xảy ra khi tạo nhóm!");
+        }
+    };
+
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white rounded-lg shadow-lg w-[400px] max-h-[90vh] overflow-auto relative p-4">
@@ -69,21 +104,21 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                 </button>
 
                 <h2 className="text-lg font-semibold mb-2 text-center">Tạo nhóm</h2>
-                <div className="flex items-center justify-between border-b border-gray-300 mb-4">    
-                <button className="flex items-center p-5 hover:bg-gray-100">
-                    <img
-                        src="./icon/ic_create_group.png"
-                        alt="Avatar"
-                        className="w-[30px] h-[30px]"
+                <div className="flex items-center justify-between border-b border-gray-300 mb-4">
+                    <button className="flex items-center p-5 hover:bg-gray-100">
+                        <img
+                            src="./icon/ic_create_group.png"
+                            alt="Avatar"
+                            className="w-[30px] h-[30px]"
+                        />
+                    </button>
+                    <input
+                        type="text"
+                        placeholder="Nhập tên nhóm..."
+                        value={groupName}
+                        onChange={(e) => setGroupName(e.target.value)}
+                        className="border p-2 rounded w-full mb-4"
                     />
-                </button>
-                <input
-                    type="text"
-                    placeholder="Nhập tên nhóm..."
-                    value={groupName}
-                    onChange={(e) => setGroupName(e.target.value)}
-                    className="border p-2 rounded w-full mb-4"
-                />
                 </div>
                 <input
                     className="border p-2 rounded w-full mb-4"
@@ -94,13 +129,13 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                 />
                 {textSearch && (
                     <FontAwesomeIcon
-                    icon={faCircleXmark}
-                    className="text-gray-500 absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
-                    size="lg"
-                    onClick={() => setTextSearch("")}
+                        icon={faCircleXmark}
+                        className="text-gray-500 absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
+                        size="lg"
+                        onClick={() => setTextSearch("")}
                     />
-                    )}
-                
+                )}
+
 
                 {/* Danh sách bạn bè */}
                 <div className="flex flex-col overflow-auto max-h-[300px]">
@@ -112,7 +147,7 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                                 key={friend.friendId}
                                 className="flex items-center p-3 hover:bg-gray-100"
                                 onClick={() => toggleSelect(friend.friendId)}
-                            >   
+                            >
                                 <img
                                     src={friend.friendInfo.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
                                     alt={friend.friendInfo.fullName}
@@ -130,10 +165,10 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                 </div>
 
                 <button
-                    className={`p-2 rounded text-white w-full mt-4 ${
-                        selected.length ? "bg-blue-500" : "bg-gray-300 cursor-not-allowed"
-                    }`}
-                    disabled={!selected.length}
+                    className={`p-2 rounded text-white w-full mt-4 ${selected.length && groupName ? "bg-blue-500" : "bg-gray-300 cursor-not-allowed"
+                        }`}
+                    disabled={!selected.length || !groupName}
+                    onClick={handleCreateGroup} // Thêm sự kiện onClick
                 >
                     Tạo nhóm
                 </button>

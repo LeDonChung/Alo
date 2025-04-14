@@ -39,6 +39,18 @@ export default function HomePage() {
     }, [isOpenAdd]);
 
     const selectedConversation = useSelector(state => state.conversation.conversation);
+    useEffect(() => {
+        const fetchConversations = async () => {
+            try {
+                await dispatch(getAllConversation()).unwrap();
+            } catch (error) {
+                console.error("Error fetching conversations:", error);
+            }
+        };
+        if (userLogin) {
+            fetchConversations();
+        }
+    }, [dispatch, userLogin]);
 
     return (
         <div className="flex h-screen">

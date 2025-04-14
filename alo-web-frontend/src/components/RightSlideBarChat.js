@@ -253,20 +253,45 @@ const RightSlidebar = ({
   const [isSetting, setIsSetting] = useState(true);
   const [searchImage, setSearchImage] = useState(false);
   console.log("photosGroupByDate", photosGroupByDate)
+
+  // Hàm lấy tên hội thoại (nhóm hoặc bạn bè)
+  const getConversationName = () => {
+    if (!conversation) return "Không xác định";
+    return conversation.isGroup
+      ? conversation.name || "Nhóm chat"
+      : getFriend(conversation)?.fullName || "Không xác định";
+  };
+
+  // Hàm lấy avatar hội thoại (nhóm hoặc bạn bè)
+  const getConversationAvatar = () => {
+    if (!conversation) return 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg';
+    return conversation.isGroup
+      ? (conversation.avatar || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg')
+      : (getFriend(conversation)?.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg');
+  };
+  
+
   return (
     isSetting ? (
       <div className=" w-1/4 bg-white border-l border-gray-200 p-4 overflow-y-auto max-h-[2000px] scrollable">
         <div className="space-y-4">
           {/* Phần Thông tin hội thoại */}
           <div className="border-b border-gray-200 pb-4">
-            <h3 className="font-semibold text-center mb-2">Thông tin hội thoại</h3>
+            <h3 className="font-semibold text-center mb-2">
+              {conversation.isGroup ? 'Thông tin nhóm' : 'Thông tin hội thoại'}
+            </h3>
             <div className="flex flex-col items-center">
               <img
-                src={getFriend(conversation).avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'} // Thay bằng avatar thật
-                alt="Avatar"
+                src={getConversationAvatar()}
+                alt={conversation.isGroup ? 'Group Avatar' : 'User Avatar'}
                 className="w-20 h-20 rounded-full mb-2"
               />
-              <p className="font-semibold text-lg">{getFriend(conversation).fullName}</p>
+              <p className="font-semibold text-lg">{getConversationName()}</p>
+              {conversation.isGroup && (
+                <p className="text-sm text-gray-500">
+                  {conversation.memberUserIds?.length || 0} thành viên
+                </p>
+              )}
               <p className="font-semibold"></p>
               <div className="flex space-x-4 mt-4">
                 <button className="flex flex-col items-center text-gray-600 hover:text-blue-500">
@@ -425,7 +450,7 @@ const RightSlidebar = ({
                           {group.messages.map((message, index) => (
                             <a key={index} href={message.fileLink}>
                               <img src={message.fileLink} alt="Hình ảnh" className='w-full h-[5rem] cursor-pointer object-cover border rounded-sm' />
-                            </a> 
+                            </a>
                           ))}
                         </LightGallery>
                       </div>

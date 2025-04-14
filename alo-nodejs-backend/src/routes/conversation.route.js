@@ -11,5 +11,7 @@ router.get('/get-conversation',
 router.get('/get-conversation/:id',
     middleware.authenticateToken,
     conversationController.getConversationById);
+
+router.post('/create-conversation', middleware.authenticateToken, conversationController.createConversation);
     
 module.exports = router;

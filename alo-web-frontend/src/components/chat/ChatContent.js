@@ -3,6 +3,7 @@ import MessageItem from './MessageItem';
 import { useDispatch } from 'react-redux';
 
 const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFriend, loadMoreMessages }) => {
+
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const [isScrolledToTop, setIsScrolledToTop] = useState(false);
@@ -25,6 +26,13 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
         setIsScrolledToTop(false);
       }
     }
+  };
+  
+  const getConversationName = () => {
+    if (!conversation) return "Không xác định";
+    return conversation.isGroup
+      ? conversation.name || "Nhóm chat"
+      : getFriend(conversation)?.fullName || "Không xác định";
   };
 
   useEffect(() => {
@@ -57,7 +65,9 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
   if (messages.length === 0) {
     return (
       <div className="text-center text-gray-500">
-        <p>Nhập tin nhắn để bắt đầu trò chuyện với {getFriend(conversation).fullName}</p>
+        {/* <p>Nhập tin nhắn để bắt đầu trò chuyện với {getFriend(conversation).fullName}</p> */}
+        <p>Nhập tin nhắn để bắt đầu trò chuyện với {getConversationName()}</p>
+
       </div>
     );
   }
