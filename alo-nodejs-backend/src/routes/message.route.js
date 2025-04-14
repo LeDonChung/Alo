@@ -51,4 +51,11 @@ router.put(
     messageController.updateSeenMessage
 )
 
+
+router.post(
+    '/:messageId/send-continue',
+    middleware.authenticateToken,
+    messageController.forwardMessage
+);
+
 module.exports = router;
