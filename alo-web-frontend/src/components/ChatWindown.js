@@ -97,6 +97,7 @@ const ChatWindow = () => {
 
         <ChatInput
           isSending={isSending}
+          getFriend={getFriend}
         />
       </div>
 

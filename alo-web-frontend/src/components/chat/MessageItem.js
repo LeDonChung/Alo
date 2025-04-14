@@ -6,9 +6,12 @@ import 'lightgallery/css/lg-thumbnail.css';
 import lgZoom from 'lightgallery/plugins/zoom';
 import lgThumbnail from 'lightgallery/plugins/thumbnail';
 import lgVideo from "lightgallery/plugins/video";
+import { useDispatch } from 'react-redux';
+import { setMessageParent } from '../../redux/slices/MessageSlice';
 
-const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar }) => {
+const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClickParent, isHighlighted }) => {
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, messageId: null });
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const handleClick = () => {
@@ -96,6 +99,31 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar }) => {
   ]);
 
   const [showReactions, setShowReactions] = useState(false);
+
+  const handleAnwer = () => {
+    dispatch(setMessageParent(message));
+    setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
+    setShowReactions(false);
+  }
+
+  const handleCopy = () => {
+    let content = "";
+    if(message.messageType === 'text'){
+      content = message.content;
+    }else if(message.messageType === 'image'){
+      content = message.fileLink;
+    }
+
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(content).then(() => {
+        console.log('Nội dung đã được sao chép vào clipboard!');
+      }).catch(err => {
+        console.error('Lỗi khi sao chép nội dung: ', err);
+      });
+    }
+    setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
+  }
+
   return (
     <div
       className={`flex ${isUserMessage ? 'justify-end' : 'justify-start'} mt-4 group`}
@@ -112,9 +140,13 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar }) => {
           onClick={(e) => e.stopPropagation()}
         >
           <ul className="text-sm text-gray-700">
-            <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => console.log(message)}>Trả lời</li>
+            <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleAnwer()}>Trả lời</li>
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Chia sẻ</li>
-            <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Copy tin nhắn</li>
+            {
+              message.messageType !== 'file' && message.messageType !== 'sticker' && (
+                <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleCopy()}>Copy tin nhắn</li>
+              )
+            }
             {
               message.messageType === 'image' && (
                 <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Lưu về máy</li>
@@ -143,10 +175,60 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar }) => {
 
       {/* Nội dung tin nhắn */}
       <div
-        className={`flex flex-col relative ${isUserMessage ? "items-end" : "items-start"} ${message.messageType !== 'image' && 'p-3'} rounded-lg shadow-md ${isUserMessage && 'bg-blue-100'}`}
+        className={`flex flex-col relative 
+          items-start 
+          ${message.messageType !== 'image' && 'p-3'} rounded-lg shadow-md 
+          ${isUserMessage && 'bg-blue-100'} ${isHighlighted && 'border-2 border-yellow-500 animate-flash'} `}
       >
         {(showAvatar && !isUserMessage) && (
-          <p className='text-sm text-gray-500 font-medium max-w-xs'>{message.sender?.fullName}</p>
+          <p className='text-sm text-gray-500 font-medium max-w-xs mb-3'>{message.sender?.fullName}</p>
+        )}
+
+        {message.messageParent && (
+          <div className={`flex items-center space-x-2 mb-2 ${isUserMessage ? 'bg-blue-200' : 'bg-gray-200'} p-2 rounded-md`} onClick={onClickParent}>
+            {message.messageParent.messageType === 'image' && (
+              <img
+                src={message.messageParent.fileLink}
+                alt=""
+                className="w-11 h-11 object-cover rounded-lg mx-2"
+              />
+            )}
+            {message.messageParent.messageType === 'sticker' && (
+              <img
+                src={message.messageParent.fileLink}
+                alt=""
+                className="w-11 h-11 object-cover rounded-lg mx-2"
+              />
+            )}
+            {message.messageParent.messageType === 'file' && (
+              message.messageParent.fileLink.includes('.mp4') ? (
+                <video
+                  src={message.messageParent.fileLink}
+                  className="w-11 h-11 object-cover rounded-lg mx-2"
+                  controls
+                />
+              ) : (
+                <div>
+                  {getFileIcon(getFileExtension(message.messageParent.fileLink))}
+                </div>
+              )
+            )}
+            <div>
+              <p className="text-sm text-gray-800 max-w-xs font-semibold">{message.messageParent.sender.fullName}</p>
+              <div className="text-gray-500 font-normal">
+                {message.messageParent.messageType === 'text' && <p>{message.messageParent.content}</p>}
+                {message.messageParent.messageType === 'image' && (
+                  <p className="">[Hình ảnh]</p>
+                )}
+                {message.messageParent.messageType === 'file' && (
+                  <p className="">[File] {extractOriginalName(message.messageParent.fileLink)}</p>
+                )}
+                {message.messageParent.messageType === 'sticker' && (
+                  <p className="">[Sticker]</p>
+                )}
+              </div>
+            </div>
+          </div>
         )}
 
         {message.messageType === 'text' && (
@@ -210,7 +292,7 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar }) => {
 
         <div
           className="absolute bottom-[-10px] right-[-10px] group/reaction hidden group-hover:flex items-center justify-center bg-white rounded-full shadow-lg cursor-pointer transition duration-200"
-          onMouseEnter={() => setShowReactions(true)} 
+          onMouseEnter={() => setShowReactions(true)}
           onMouseLeave={() => setShowReactions(false)}
         >
           <div className="relative">

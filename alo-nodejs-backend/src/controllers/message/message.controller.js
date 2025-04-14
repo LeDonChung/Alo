@@ -8,6 +8,8 @@ const fileService = require('../../services/file.service');
 
 exports.createMessage = async (req, res) => {
     try {
+        console.log('Request body:', req.body);
+        
         const { senderId, conversationId, content, messageType, fileLink } = req.body;
 
         // Kiểm tra conversation có tồn tại
@@ -18,7 +20,7 @@ exports.createMessage = async (req, res) => {
                 message: "Cuộc trò chuyện không tồn tại.",
                 data: null
             });
-        }
+        } 
 
         // Khởi tạo request
         const request = {
@@ -32,14 +34,15 @@ exports.createMessage = async (req, res) => {
             status: 0
         };
 
-        // Nếu là image/file thì upload và thêm link
-        if (['image', 'file'].includes(messageType)) {
+        if((messageType === 'image' && fileLink) || messageType === 'sticker'){
+            request.fileLink = fileLink;
+        } else {
             request.fileLink = await fileService.uploadFile(req.file);
         }
-
-        // Nếu là sticker thì lấy fileLink
-        if (messageType === 'sticker') {
-            request.fileLink = fileLink;
+        
+        
+        if ((!fileLink || fileLink === '') && ['image', 'file'].includes(messageType)) {
+            request.fileLink = await fileService.uploadFile(req.file);
         }
 
         const allowedTypes = ['text', 'sticker', 'image', 'file'];
@@ -50,19 +53,28 @@ exports.createMessage = async (req, res) => {
                 data: null
             });
         }
-
+        
         if (req.body.messageParent) {
             // Kiểm tra messageParent có tồn tại
-            const messageParent = await messageService.getMessageById(req.body.messageParent.id);
-            if (!messageParent) {
+            const messageParentExists = await messageService.getMessageById(req.body.messageParent);
+            if (!messageParentExists) {
                 return res.status(400).json({
                     status: 400,
                     message: "Tin nhắn rep không tồn tại.",
                     data: null
-                })
+                });
             }
-
-            request.messageParent = messageParent;
+            
+            const sender = await userService.getUserById(messageParentExists.senderId);
+            if (!sender) {
+                return res.status(400).json({
+                    status: 400,
+                    message: "Người gửi không tồn tại.",
+                    data: null
+                });
+            }
+            messageParentExists.sender = sender;
+            request.messageParent = messageParentExists;
         }
         // Tạo tin nhắn
         const message = await messageService.createMessage(request);
