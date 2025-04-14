@@ -1,12 +1,21 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, Pressable, Image } from 'react-native';
+import React, { useState } from 'react';
+import { View, Text, Image, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { Video } from 'expo-av';
+import Ionicons from 'react-native-vector-icons/Ionicons';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
+import AntDesign from 'react-native-vector-icons/AntDesign';
+import Entypo from 'react-native-vector-icons/Entypo';
+import OptionModalDetailMessage from './OptionModalDetailMessage';
 
 const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted }) => {
-  const getFileExtension = (filename = '') => {
-    const parts = filename.split('.');
-    return parts[parts.length - 1].toLowerCase();
-  };
+  const [isOptionVisible, setIsOptionVisible] = useState(false);
+  const [selectedMsg, setSelectedMsg] = useState(null);
+
+  const isSent = item.senderId === userLogin.id;
+  const messageType = item.messageType;
+  const fileLink = item.fileLink;
+
+  const getFileExtension = (filename = '') => filename.split('.').pop().toLowerCase();
 
   const extractOriginalName = (fileUrl) => {
     const fileNameEncoded = fileUrl.split("/").pop();
@@ -17,7 +26,6 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
 
   const getFileIcon = (extension) => {
     const iconSize = { width: 24, height: 24 };
-
     switch (extension) {
       case 'pdf':
         return <Image source={require('../../../../assets/icon/ic_ppt.png')} style={iconSize} />;
@@ -40,42 +48,59 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
     }
   };
 
-  const isSent = item.senderId === userLogin.id;
-  const messageType = item.messageType;
-  const fileLink = item.fileLink;
   const fileExtension = fileLink ? getFileExtension(fileLink) : null;
 
-  return (
-    <Pressable>
-      <View style={{
-        flexDirection: 'row', alignItems: 'flex-start', marginVertical: 5, paddingHorizontal: 10, justifyContent: isSent ? 'flex-end' : 'flex-start',
-        marginLeft: (!isSent && !showAvatar()) ? 45 : 0
-      }}
+  const handleLongPress = (message) => {
+    setSelectedMsg(message);
+    setIsOptionVisible(true);
+  };
 
-      >
-        {!isSent && showAvatar() && (
-          <View >
-            <Image
-              source={{ uri: friend.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg' }}
-              style={{ width: 40, height: 40, borderRadius: 20, marginRight: 5 }}
-            />
-          </View>
-        )}
-        <TouchableOpacity style={[{ borderRadius: 10, maxWidth: '90%', flexDirection: 'column' }, isHighlighted && styles.highlightedMessage]} onLongPress={() => {
+  const handleOptionSelect = (option) => {
+    setIsOptionVisible(false);
+    console.log('Option selected:', option, 'for message', selectedMsg?.id);
+  };
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        marginVertical: 5,
+        paddingHorizontal: 10,
+        justifyContent: isSent ? 'flex-end' : 'flex-start',
+        marginLeft: (!isSent && !showAvatar()) ? 45 : 0,
+      }}
+    >
+      {!isSent && showAvatar() && (
+        <TouchableOpacity>
+          <Image
+            source={{ uri: friend.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg' }}
+            style={{ width: 40, height: 40, borderRadius: 20, marginRight: 5 }}
+          />
+        </TouchableOpacity>
+      )}
+
+      <TouchableOpacity
+        style={[{ borderRadius: 10, maxWidth: '90%', flexDirection: 'column' }, isHighlighted && { backgroundColor: '#fef08a' }]}
+        onLongPress={() => {
           setIsShowMenuInMessage(true);
           setSelectedMessage(item);
-        }}>
-          {messageType === 'text' && item.content && (
-            <View style={{ backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
-              <Text>{item.content}</Text>
-            </View>
-          )}
+        }}
+      >
+        {/* Text Message */}
+        {messageType === 'text' && item.content && (
+          <View style={{ backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
+            <Text>{item.content}</Text>
+          </View>
+        )}
 
-          {(messageType === 'image' && fileExtension === 'mp4' && item.fileLink) && (
-            <TouchableOpacity style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }} onLongPress={() => {
-              setIsShowMenuInMessage(true);
-              setSelectedMessage(item);
-            }}>
+        {/* Image or Video */}
+        {messageType === 'image' && item.fileLink && (
+          fileExtension === 'mp4' ? (
+            <TouchableOpacity
+              onLongPress={() => handleLongPress(item)}
+              style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}
+            >
               <Video
                 source={{ uri: fileLink }}
                 style={{ width: '100%', height: '100%' }}
@@ -85,18 +110,13 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
                 shouldPlay={false}
               />
             </TouchableOpacity>
-          )}
-
-          {(messageType === 'image' && fileExtension !== 'mp4' && item.fileLink) && (
-            <TouchableOpacity onPress={() => {
-              setSelectedImage([{ uri: item.fileLink }]);
-              setIsImageViewVisible(true);
-            }}
-              style={{ borderRadius: 10 }}
-              onLongPress={() => {
-                setIsShowMenuInMessage(true);
-                setSelectedMessage(item);
+          ) : (
+            <TouchableOpacity
+              onPress={() => {
+                setSelectedImage([{ uri: item.fileLink }]);
+                setIsImageViewVisible(true);
               }}
+              onLongPress={() => handleLongPress(item)}
             >
               <Image
                 source={{ uri: item.fileLink }}
@@ -104,25 +124,33 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
                 resizeMode="contain"
               />
             </TouchableOpacity>
-          )}
+          )
+        )}
 
-          {(messageType === 'sticker' && item.fileLink) && (
-            <View onPress={() => {
+        {/* Sticker */}
+        {messageType === 'sticker' && item.fileLink && (
+          <TouchableOpacity
+            onPress={() => {
               setSelectedImage([{ uri: item.fileLink }]);
               setIsImageViewVisible(true);
-            }}>
-              <Image
-                source={{ uri: item.fileLink }}
-                style={{ width: 120, height: 120, borderRadius: 10, cache: 'reload' }}
-                resizeMode="cover"
-              />
-            </View>
-          )}
-          {messageType === 'file' && fileExtension === 'mp4' ? (
-            <TouchableOpacity style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }} onLongPress={() => {
-              setIsShowMenuInMessage(true);
-              setSelectedMessage(item);
-            }}>
+            }}
+            onLongPress={() => handleLongPress(item)}
+          >
+            <Image
+              source={{ uri: item.fileLink }}
+              style={{ width: 120, height: 120, borderRadius: 10 }}
+              resizeMode="cover"
+            />
+          </TouchableOpacity>
+        )}
+
+        {/* File (Document or MP4) */}
+        {messageType === 'file' && (
+          fileExtension === 'mp4' ? (
+            <TouchableOpacity
+              onLongPress={() => handleLongPress(item)}
+              style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}
+            >
               <Video
                 source={{ uri: fileLink }}
                 style={{ width: '100%', height: '100%' }}
@@ -132,35 +160,56 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
                 shouldPlay={false}
               />
             </TouchableOpacity>
-          ) : messageType === 'file' ? (
-            <TouchableOpacity onLongPress={() => {
-              setIsShowMenuInMessage(true);
-              setSelectedMessage(item);
-            }} style={{ flexDirection: 'row', alignItems: 'center', marginTop: 5, backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
+          ) : (
+            <TouchableOpacity
+              onLongPress={() => handleLongPress(item)}
+              style={{
+                flexDirection: 'row',
+                alignItems: 'center',
+                marginTop: 5,
+                backgroundColor: isSent ? '#dbeafe' : 'white',
+                padding: 10,
+                borderRadius: 10,
+              }}
+            >
               {getFileIcon(fileExtension)}
               <Text style={{ marginLeft: 5, color: 'gray' }}>
                 {fileLink ? extractOriginalName(fileLink) : ''}
               </Text>
             </TouchableOpacity>
-          ) : null}
+          )
+        )}
 
-          {showTime() && (
-            <Text style={{ fontSize: 10, color: 'gray', textAlign: 'right', marginTop: 5, marginRight: !isSent ? 'auto' : 0 }}>
-              {new Date(item.timestamp).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}
-            </Text>
-          )}
-        </TouchableOpacity>
-      </View>
+        {/* Time */}
+        {showTime() && (
+          <Text style={{ fontSize: 10, color: 'gray', textAlign: 'right', marginTop: 5, marginRight: !isSent ? 'auto' : 0 }}>
+            {new Date(item.timestamp).toLocaleTimeString('vi-VN', {
+              hour: '2-digit',
+              minute: '2-digit',
+            })}
+          </Text>
+        )}
+      </TouchableOpacity>
 
-    </Pressable>
+      {/* Option Modal */}
+      <OptionModalDetailMessage
+        visible={isOptionVisible}
+        onClose={() => setIsOptionVisible(false)}
+        options={[
+          { label: 'Trả lời', icon: 'reply' },
+          { label: 'Chuyển tiếp', icon: 'share' },
+          { label: 'Lưu cloud', icon: 'cloud' },
+          { label: 'Sao chép', icon: 'copy' },
+          { label: 'Ghim', icon: 'pin' },
+          { label: 'Nhắc hẹn', icon: 'stopwatch' },
+          { label: 'Chọn nhiều', icon: 'chat' },
+          { label: 'Chi tiết', icon: 'info-with-circle' },
+          { label: 'Xóa', icon: 'trash' },
+        ]}
+        onOptionSelect={handleOptionSelect}
+      />
+    </View>
   );
 };
 
-const styles = {
-  highlightedMessage: {
-    backgroundColor: '#ffffcc',
-    borderColor: '#f5c542',
-    borderWidth: 1,
-  }
-}
 export default MessageItem;

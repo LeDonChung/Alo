@@ -64,6 +64,8 @@ export const ChatScreen = ({ route, navigation }) => {
 
     const file = inputMessage.file;
 
+    console.log('file', file);
+
     await dispatch(sendMessage({ message, file })).then((res) => {
       dispatch(setMessages([...messages, res.payload.data]));
       socket.emit('send-message', {
@@ -72,6 +74,59 @@ export const ChatScreen = ({ route, navigation }) => {
       });
       setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
     });
+  };
+
+  const handleSendImage = async (newMessage) => {
+    const message = {
+      senderId: userLogin.id,
+      conversationId: conversation.id,
+      content: newMessage.content,
+      messageType: newMessage.messageType,
+      fileLink: newMessage.fileLink,
+      timestamp: Date.now(),
+      seen: []
+    };
+    const file = newMessage.file;
+
+    await dispatch(sendMessage({ message, file })).then((res) => {
+      const sentMessage = {
+        ...res.payload.data,
+        sender: userLogin
+      }
+      dispatch(setMessages([...messages, sentMessage]));
+      socket.emit('send-message', {
+        conversation: conversation,
+        message: sentMessage
+      });
+    }
+    );
+    setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
+  }
+
+  const handleSendFile = async (file) => {
+    console.log('file chat', file.uri);
+    const message = {
+      senderId: userLogin.id,
+      conversationId: conversation.id,
+      content: '',
+      messageType: 'file',
+      fileLink: file.uri,
+      timestamp: Date.now(),
+      seen: []
+    };
+   
+    await dispatch(sendMessage({ message, file })).then((res) => {
+      const sentMessage = {
+        ...res.payload.data,
+        sender: userLogin
+      }
+      dispatch(setMessages([...messages, sentMessage]));
+      socket.emit('send-message', {
+        conversation: conversation,
+        message: sentMessage
+      });
+    });
+    setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
   };
 
   const handleStickerSelect = async (stickerUrl) => {
@@ -254,7 +309,8 @@ export const ChatScreen = ({ route, navigation }) => {
         isStickerPickerVisible={isStickerPickerVisible}
         inputMessage={inputMessage}
         setInputMessage={setInputMessage}
-        handlerSendMessage={handlerSendMessage}
+        handlerSendMessage={handleSendImage}
+        handleSendFile={handleSendFile}
       />
       {isStickerPickerVisible && (
         <StickerPicker onStickerSelect={handleStickerSelect} />
