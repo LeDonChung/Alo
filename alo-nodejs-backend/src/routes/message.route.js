@@ -44,6 +44,12 @@ router.put(
     messageController.updateMessageReaction
 )
 
+router.delete(
+    '/:messageId/reaction',
+    middleware.authenticateToken,
+    messageController.removeAllReaction
+)
+
 // Cập nhật người đã xem tin nhắn
 router.put(
     '/:messageId/seen',

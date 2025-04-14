@@ -5,7 +5,7 @@ import { Pressable, TouchableWithoutFeedback } from "react-native";
 import { ReactionBar } from "./ReactionBar";
 import IconI from "react-native-vector-icons/Ionicons";
 
-export const ReactionListComponent = ({ message, isSent }) => {
+export const ReactionListComponent = ({ message, isSent, handlerRemoveAllAction }) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedTab, setSelectedTab] = useState(null); // null = all
     const data = message.reaction || {};
@@ -112,7 +112,11 @@ export const ReactionListComponent = ({ message, isSent }) => {
                             <View style={{ width: '75%', marginRight: 10 }}>
                                 <ReactionBar message={message} onClose={() => setModalVisible(false)} />
                             </View>
-                            <TouchableOpacity style={{ padding: 8, backgroundColor: '#fff', borderRadius: 100, marginBottom: 15 }}>
+                            <TouchableOpacity style={{ padding: 8, backgroundColor: '#fff', borderRadius: 100, marginBottom: 15 }} onPress={() => {
+                                setModalVisible(false);
+                                setSelectedTab(null);
+                                handlerRemoveAllAction(message);
+                            }}>
                                 <IconI name="heart-dislike-outline" size={30} color="#000" />
                             </TouchableOpacity>
                         </View>

@@ -46,7 +46,6 @@ export const ReactionBar = ({ message, onClose }) => {
     const dispatch = useDispatch();
     const handlerSendReaction = async (type) => {
         try {
-            // Deep clone để tránh thao tác lên object readonly
             const updatedReaction = {};
             Object.entries(message.reaction || {}).forEach(([key, value]) => {
                 updatedReaction[key] = {

@@ -3,7 +3,7 @@ import { View, Text, Image, TouchableOpacity, Modal, Pressable } from 'react-nat
 import { Video } from 'expo-av';
 import { ReactionListComponent } from './ReactionListComponent';
 
-const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted }) => {
+const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted, handlerRemoveAllAction }) => {
   
   const isSent = item.senderId === userLogin.id;
   const messageType = item.messageType;
@@ -178,8 +178,8 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
 
 
 
-          {item.reaction && (
-            <ReactionListComponent message={item} isSent={isSent}/>
+          {item.reaction && Object.keys(item.reaction).length > 0 && (
+            <ReactionListComponent message={item} isSent={isSent} handlerRemoveAllAction={handlerRemoveAllAction}/>
           )}
 
         </TouchableOpacity>

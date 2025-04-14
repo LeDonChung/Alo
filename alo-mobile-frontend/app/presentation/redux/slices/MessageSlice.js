@@ -55,6 +55,15 @@ const updateReaction = createAsyncThunk('MessageSlice/updateReaction', async ({ 
     }
 })
 
+const removeAllReaction = createAsyncThunk('MessageSlice/removeAllReaction', async ({ messageId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.delete(`/api/message/${messageId}/reaction`); 
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
+
 const MessageSlice = createSlice({
     name: 'MessageSlice',
     initialState: initialState,
@@ -68,8 +77,8 @@ const MessageSlice = createSlice({
         handlerUpdateReaction: (state, action) => {
             const { messageId, updatedReaction } = action.payload;
             const index = state.messages.findIndex(message => message.id === messageId);
-            if (index !== -1) {
-                state.messages[index].reaction = updatedReaction;
+            if (index !== -1) { 
+                state.messages[index].reaction = updatedReaction; 
             }
         }
     },
@@ -107,9 +116,20 @@ const MessageSlice = createSlice({
 
         builder.addCase(updateReaction.rejected, (state, action) => {
         });
+
+        builder.addCase(removeAllReaction.pending, (state) => {
+        });
+
+        builder.addCase(removeAllReaction.fulfilled, (state, action) => {
+            
+        });
+
+
+        builder.addCase(removeAllReaction.rejected, (state, action) => {
+        });
     }
 });
 
 export const { setMessages, increaseLimit, handlerUpdateReaction } = MessageSlice.actions;
-export { sendMessage, getMessagesByConversationId, updateReaction };
+export { sendMessage, getMessagesByConversationId, updateReaction, removeAllReaction };
 export default MessageSlice.reducer;
