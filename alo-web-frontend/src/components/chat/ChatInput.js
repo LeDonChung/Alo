@@ -2,10 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import EmojiPicker from 'emoji-picker-react';
 import StickerPicker from './StickerPicker';
 import { useDispatch, useSelector } from 'react-redux';
-import { addMessage, sendMessage, setInputMessage, setMessages } from '../../redux/slices/MessageSlice';
+import { addMessage, sendMessage, setInputMessage, setMessageParent, setMessages } from '../../redux/slices/MessageSlice';
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faQuoteRight, faXmark } from "@fortawesome/free-solid-svg-icons";
 import socket from '../../utils/socket';
 
-const ChatInput = ({ isSending }) => {
+const ChatInput = ({ isSending, getFriend }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   const conversation = useSelector((state) => state.conversation.conversation);
@@ -13,7 +15,15 @@ const ChatInput = ({ isSending }) => {
 
   const messages = useSelector((state) => state.message.messages);
 
+  const messageParent = useSelector((state) => state.message.messageParent);
+
+
   const handlerSendMessage = async (messageNew) => {
+    // const messageParentParse = messageParent ? JSON.parse(messageParent) : null;
+    console.log('messageParent', messageParent);
+    // console.log('messageParentParse', messageParentParse);
+
+
     const message = {
       senderId: userLogin.id,
       conversationId: conversation.id,
@@ -21,20 +31,34 @@ const ChatInput = ({ isSending }) => {
       messageType: messageNew.messageType,
       fileLink: messageNew.fileLink,
       timestamp: Date.now(),
-      seen: []
+      seen: [],
     };
+    if (messageParent) {
+      message.messageParent = messageParent.id;
+    }
 
     const file = messageNew.file;
+    console.log("messageNew", message);
 
-    await dispatch(sendMessage({ message, file })).then(async (res) => {
-      dispatch(addMessage(res.payload.data));
-      console.log("New message sent:", res.payload.data);
-      socket.emit('send-message', {
-        conversation: conversation,
-        message: res.payload.data
+    try {
+      await dispatch(sendMessage({ message, file })).then(async (res) => {
+        await dispatch(addMessage(res.payload.data));
+        console.log("New message sent:", res.payload.data);
+        socket.emit('send-message', {
+          conversation: conversation,
+          message: res.payload.data
+
+        });
+        // Reset messageParent after sending the message
+        dispatch(setMessageParent(null));
+        dispatch(setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' }));
       });
-      dispatch(setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' }));
-    });
+    } catch (error) {
+
+      console.error("Error sending message:", error);
+    }
+
+
   };
 
   const inputMessage = useSelector((state) => state.message.inputMessage);
@@ -47,7 +71,7 @@ const ChatInput = ({ isSending }) => {
 
   useEffect(() => {
     if (inputMessage.messageType === 'sticker') {
-      handlerSendMessage(inputMessage); 
+      handlerSendMessage(inputMessage);
     }
   }, [inputMessage]);
 
@@ -56,7 +80,40 @@ const ChatInput = ({ isSending }) => {
     setShowStickerPicker(false);
   };
 
+  const getFileExtension = (filename = '') => {
+    const parts = filename.split('.');
+    return parts[parts.length - 1].toLowerCase();
+  };
 
+  const extractOriginalName = (fileUrl) => {
+    const fileNameEncoded = fileUrl.split("/").pop();
+    const fileNameDecoded = decodeURIComponent(fileNameEncoded);
+    const parts = fileNameDecoded.split(" - ");
+    return parts[parts.length - 1];
+  };
+
+  const getFileIcon = (extension) => {
+    switch (extension) {
+      case 'pdf': return <img src='/icon/ic_pdf.png' alt='PDF' />;
+      case 'xls':
+      case 'xlsx': return <img src={'/icon/ic_excel.png'} alt='EXCEL' />;
+      case 'doc':
+      case 'docx': return <img src={'/icon/ic_work.png'} alt='WORD' />;
+      case 'ppt':
+      case 'pptx': return <img src={'/icon/ic_ppt.png'} alt='PPT' />;
+      case 'zip':
+      case 'rar': return <img src={'/icon/ic_zip.png'} alt='ZIP' />;
+      case 'txt': return <img src={'/icon/ic_txt.png'} alt='TXT' />;
+      case 'mp4': return <img src={'/icon/ic_video.png'} alt='VIDEO' />;
+      default:
+        return (
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" className="flex-shrink-0" xmlns="http://www.w3.org/2000/svg">
+            <rect x="3" y="3" width="18" height="18" rx="2" fill="#999" />
+            <text x="12" y="16" fill="#fff" fontSize="10" fontWeight="bold" textAnchor="middle">FILE</text>
+          </svg>
+        );
+    }
+  };
 
   const imageInputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -185,13 +242,74 @@ const ChatInput = ({ isSending }) => {
           </svg>
         </button>
       </div>
+
+      {/* Show message parent */}
+      {messageParent && (
+        <div className="flex items-center space-x-2 mt-2 bg-gray-200 rounded-lg p-2 my-3">
+          {messageParent.messageType === 'image' && (
+            <img
+              src={messageParent.fileLink}
+              alt=""
+              className="w-11 h-11 object-cover rounded-lg mx-2"
+            />
+          )}
+          {messageParent.messageType === 'sticker' && (
+            <img
+              src={messageParent.fileLink}
+              alt=""
+              className="w-11 h-11 object-cover rounded-lg mx-2"
+            />
+          )}
+          {messageParent.messageType === 'file' && (
+            messageParent.fileLink.includes('.mp4') ? (
+              <video
+                src={messageParent.fileLink}
+                className="w-11 h-11 object-cover rounded-lg mx-2"
+                controls
+              />
+            ) : (
+              <div>
+                {getFileIcon(getFileExtension(messageParent.fileLink))}
+              </div>
+            )
+          )}
+          <div className="flex-1 w-full items-center ml-2">
+            <div className="flex w-full items-center justify-between space-x-2">
+              <div className="flex items-center space-x-1">
+                <FontAwesomeIcon icon={faQuoteRight} className="text-gray-500" />
+                <span className="text-gray-700 font-normal">Trả lời </span>
+                {userLogin.id !== messageParent.senderId && (
+                  <span className="font-semibold">{messageParent.sender?.fullName}</span>
+                )}
+              </div>
+              <button type="button" className="rounded-full hover:bg-gray-300 w-8 h-8 items-center justify-center" onClick={() => dispatch(setMessageParent(null))} >
+                <FontAwesomeIcon icon={faXmark} className="text-gray-500" />
+              </button>
+            </div>
+
+            <div className="text-gray-700 font-normal">
+              {messageParent.messageType === 'text' && <span>{messageParent.content}</span>}
+              {messageParent.messageType === 'image' && (
+                <span className="">[Hình ảnh]</span>
+              )}
+              {messageParent.messageType === 'file' && (
+                <span className="">[File] {extractOriginalName(messageParent.fileLink)}</span>
+              )}
+              {messageParent.messageType === 'sticker' && (
+                <span className="">[Sticker]</span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
       <form className="flex items-center space-x-2">
         <input
           type="text"
           value={inputMessage.content}
           onChange={(e) => dispatch(setInputMessage({ ...inputMessage, content: e.target.value }))}
-          placeholder="Nhập tin nhắn..." 
-          className="flex-1 p-2 border rounded-lg"
+          placeholder="Nhập tin nhắn..."
+          className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-0"
         />
 
         {/* Nút mở Emoji Picker */}
@@ -209,16 +327,16 @@ const ChatInput = ({ isSending }) => {
             <EmojiPicker onEmojiClick={handleEmojiClick} />
           </div>
         )}
-        
-          <button
-            onClick={() => handlerSendMessage(inputMessage)}
-            type="button"
-            className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"
-          >
-            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
-            </svg>
-          </button>
+
+        <button
+          onClick={() => handlerSendMessage(inputMessage)}
+          type="button"
+          className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"
+        >
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+            <path d="M2 21l21-9L2 3v7l15 2-15 2v7z" />
+          </svg>
+        </button>
       </form>
     </div>
   );

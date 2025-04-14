@@ -8,6 +8,8 @@ const fileService = require('../../services/file.service');
 
 exports.createMessage = async (req, res) => {
     try {
+        console.log('Request body:', req.body);
+        
         const { senderId, conversationId, content, messageType, fileLink } = req.body;
 
         // Kiểm tra conversation có tồn tại
@@ -50,19 +52,28 @@ exports.createMessage = async (req, res) => {
                 data: null
             });
         }
-
+        
         if (req.body.messageParent) {
             // Kiểm tra messageParent có tồn tại
-            const messageParent = await messageService.getMessageById(req.body.messageParent.id);
-            if (!messageParent) {
+            const messageParentExists = await messageService.getMessageById(req.body.messageParent);
+            if (!messageParentExists) {
                 return res.status(400).json({
                     status: 400,
                     message: "Tin nhắn rep không tồn tại.",
                     data: null
-                })
+                });
             }
-
-            request.messageParent = messageParent;
+            
+            const sender = await userService.getUserById(messageParentExists.senderId);
+            if (!sender) {
+                return res.status(400).json({
+                    status: 400,
+                    message: "Người gửi không tồn tại.",
+                    data: null
+                });
+            }
+            messageParentExists.sender = sender;
+            request.messageParent = messageParentExists;
         }
         // Tạo tin nhắn
         const message = await messageService.createMessage(request);
