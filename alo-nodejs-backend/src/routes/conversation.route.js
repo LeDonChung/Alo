@@ -11,5 +11,11 @@ router.get('/get-conversation',
 router.get('/get-conversation/:id',
     middleware.authenticateToken,
     conversationController.getConversationById);
-    
+
+router.post('/:conversationId/pin/:messageId',
+    middleware.authenticateToken,
+    conversationController.createPin);
+router.delete('/:conversationId/pin/:messageId',
+    middleware.authenticateToken,
+    conversationController.deletePin);
 module.exports = router;

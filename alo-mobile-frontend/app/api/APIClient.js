@@ -7,7 +7,6 @@ import { navigate } from '../presentation/nativagtions/NavigationService'
 import { showToast } from "../utils/AppUtils";
 const axiosInstance = axios.create({
     baseURL: `${API_URL}`,
-    timeout: 10000,
     headers: {
         'Content-Type': 'application/json',
         'Access-Control-Allow-Origin': '*',

@@ -3,26 +3,44 @@ import { axiosInstance } from "../../../api/APIClient";
 import * as SecureStore from "expo-secure-store";
 
 const initialState = {
-  conversations: [],
-  conversation: null,
-  error: null,
+    conversations: [],
+    conversation: null,
+    error: null,
 };
 
 const getAllConversation = createAsyncThunk(
-  "ConversationSlice/getAllConversation",
-  async (_, { rejectWithValue }) => {
-    try {
-        const response = await axiosInstance.get('/api/conversation/get-conversation');
-        return response.data;
-    } catch (error) {
-        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    "ConversationSlice/getAllConversation",
+    async (_, { rejectWithValue }) => {
+        try {
+            const response = await axiosInstance.get('/api/conversation/get-conversation');
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+        }
     }
-  }
 );
 
 const getConversationById = createAsyncThunk('ConversationSlice/getConversationById', async (id, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.get('/api/conversation/get-conversation/' + id);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
+const createPin = createAsyncThunk('ConversationSlice/createPin', async ({ conversationId, messageId }, { rejectWithValue }) => {
+    try { 
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/pin/${messageId}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
+const removePin = createAsyncThunk('ConversationSlice/removePin', async ({ conversationId, messageId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.delete(`/api/conversation/${conversationId}/pin/${messageId}`);
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
@@ -45,6 +63,29 @@ const ConversationSlice = createSlice({
                 const index = state.conversations.findIndex(conversation => conversation.id === conversationId);
                 state.conversations[index] = conversation;
             }
+        },
+        addPinToConversation: (state, action) => {
+            let cons = state.conversation;
+            console.log(cons.pin)
+            console.log(action.payload) 
+
+            if (cons) { 
+                cons.pineds.unshift(action.payload);
+
+                if (cons.pineds.length > 5) {
+                    cons.pineds.pop(); 
+                }
+            }
+ 
+            state.conversation = {...cons}; 
+        },
+        removePinToConversation: (state, action) => {
+            console.log("REMOVE PIN") 
+            let cons = state.conversation;
+            if (cons) {
+                cons.pineds = cons.pineds.filter(pin => pin.messageId !== action.payload.messageId);
+            } 
+            state.conversation = {...cons};
         }
     },
     extraReducers: (builder) => {
@@ -69,9 +110,40 @@ const ConversationSlice = createSlice({
         builder.addCase(getConversationById.rejected, (state, action) => {
             state.conversation = [];
         });
+
+        builder.addCase(createPin.pending, (state) => {
+        });
+        builder.addCase(createPin.fulfilled, (state, action) => {
+            let cons = state.conversation;
+
+            if (cons) { 
+                cons.pineds.unshift(action.payload.data);
+
+                if (cons.pineds.length > 5) {
+                    cons.pineds.pop();
+                }
+            }
+ 
+            state.conversation = {...cons};   
+        });
+
+        builder.addCase(createPin.rejected, (state, action) => {
+        });
+
+        builder.addCase(removePin.pending, (state) => {
+        });
+        builder.addCase(removePin.fulfilled, (state, action) => {
+            let cons = state.conversation;
+            if (cons) {
+                cons.pineds = cons.pineds.filter(pin => pin.messageId !== action.payload.data.messageId);
+            } 
+            state.conversation = {...cons};
+        });
+        builder.addCase(removePin.rejected, (state, action) => {
+        });
     }
 });
 
-export const { setConversation, updateLastMessage } = ConversationSlice.actions;
-export { getAllConversation, getConversationById };
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation } = ConversationSlice.actions;
+export { getAllConversation, getConversationById, createPin, removePin };
 export default ConversationSlice.reducer;
