@@ -35,6 +35,14 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
       : getFriend(conversation)?.fullName || "Không xác định";
   };
 
+  // Lấy tên người gửi tin nhắn
+  const getSenderName = (message) => {
+    if (!conversation?.isGroup) return null; // Không hiển thị tên trong hội thoại cá nhân
+    if (message.senderId === userLogin.id) return "Bạn";
+    const sender = conversation.members?.find(member => member.id === message.senderId);
+    return sender?.fullName || "Thành viên";
+  };
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
@@ -80,6 +88,7 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
         const isUserMessage = message.senderId === userLogin.id;
         const isLastMessage = index === messages.length - 1 || messages[index + 1].senderId !== message.senderId;
         const showAvatar = index === 0 || messages[index - 1].senderId !== message.senderId;
+        const senderName = getSenderName(message);
 
         return (
           <MessageItem
@@ -89,6 +98,8 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
             isLastMessage={isLastMessage}
             showAvatar={showAvatar}
             userLogin={userLogin}
+            senderName={senderName}
+            isGroup={conversation.isGroup}
           />
         );
       })}

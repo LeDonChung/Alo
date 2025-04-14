@@ -7,7 +7,7 @@ import lgZoom from 'lightgallery/plugins/zoom';
 import lgThumbnail from 'lightgallery/plugins/thumbnail';
 import lgVideo from "lightgallery/plugins/video"; 
 
-const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, userLogin }) => {
+const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, userLogin, senderName, isGroup }) => {
   function getFileExtension(filename = '') {
     const parts = filename.split('.');
     return parts[parts.length - 1].toLowerCase();
@@ -107,6 +107,16 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, userLo
       )}
 
       <div className={`flex flex-col ${isUserMessage ? "items-end" : "items-start"} ${message.messageType !== 'image' && 'p-3'} rounded-lg shadow-md ${isUserMessage && 'bg-blue-100'}`}>
+        {/* Hiển thị tên thành viên nếu là nhóm chat */}
+        {isGroup && senderName && (
+          <p
+            className={`text-xs font-semibold ${
+              isUserMessage ? 'text-blue-800' : 'text-gray-800'
+            } mb-1`}
+          >
+            {senderName}
+          </p>
+        )}
         {message.messageType === 'text' && (
           <p className="text-sm text-gray-800 max-w-xs">{message.content}</p>
         )}
