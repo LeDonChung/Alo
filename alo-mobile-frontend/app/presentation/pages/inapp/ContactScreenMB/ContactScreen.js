@@ -8,18 +8,17 @@ import {
   sendFriendRequest,
   acceptFriendRequest,
   rejectFriendRequest,
-  unfriend,
-  blockFriend,
-  unblockFriend,
-  cancelFriend,
   getFriendsRequest,
   setFriendRequests,
   setFriends,
+  addFriend,
+  removeFriendRequest,
 } from "../../../redux/slices/FriendSlice";
 import { showToast } from "../../../../utils/AppUtils";
 import FriendRequests from "./FriendRequests";
 import socket from "../../../../utils/socket";
-import { RefreshControl } from "react-native-gesture-handler";
+import { FriendComponent } from "./FriendComponent";
+import { getAllConversation } from "../../../redux/slices/ConversationSlice";
 
 const ContactScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -27,25 +26,12 @@ const ContactScreen = ({ navigation }) => {
   const [selectedTab, setSelectedTab] = useState("all");
   const [subScreen, setSubScreen] = useState('allFriend');
   const [chatUser, setChatUser] = useState(null);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [contentRequest, setContentRequest] = useState("Kết bạn với mình nhé!");
-  const [selectedFriendId, setSelectedFriendId] = useState(null);
   const friendRequests = useSelector((state) => state.friend.friendRequests);
 
   const userLogin = useSelector((state) => state.user.userLogin);
   const friends = useSelector((state) => state.friend.friends);
 
   const [isLoading, setIsLoading] = useState(false);
-
-  // const init = async () => {
-  //   setIsLoading(true);
-    
-  //   setIsLoading(false);
-  // }
-
-  // useEffect(() => {
-  //   init();
-  // }, []);
 
   const callRenderFriends = async () => {
     await dispatch(getFriends());
@@ -55,132 +41,74 @@ const ContactScreen = ({ navigation }) => {
     await dispatch(getFriendsRequest());
   }
 
-  const handleSendFriendRequest = async () => {
-    if (!selectedFriendId || !userLogin.id) {
-      showToast("error", "top", "Lỗi", "Không tìm thấy người dùng để gửi lời mời");
-      setModalVisible(false);
-      return;
-    }
-    const request = {
-      userId: userLogin.id,
-      friendId: selectedFriendId,
-      senderId: userLogin.id,
-      fullName: userLogin.fullName,
-      avatarLink: userLogin.avatarLink,
-      contentRequest: contentRequest || "Kết bạn với mình nhé!",
-    };
-    try {
-      await dispatch(sendFriendRequest(request)).unwrap();
-      socket.emit("send-friend-request", request);
-      showToast("success", "top", "Thành công", "Gửi lời mời kết bạn thành công");
-      setModalVisible(false);
-    } catch (error) {
-      console.error("Lỗi khi gửi lời mời:", error);
-      showToast("error", "top", "Lỗi", error.message || "Lỗi khi gửi lời mời kết bạn");
-      setModalVisible(false);
-    }
-  };
-
-  const handleAcceptFriend = async (item) => {
-    try {
-      const request = { userId: item.userId, friendId: item.friendId };
-      await dispatch(acceptFriendRequest(request)).unwrap().then((res) => {
-
-        //Cập nhật lại danh sách kết bạn: senderId là userLogin.id, friendId(userId hoặc friendId)
-        const friendId = [item.userId, item.friendId].filter((x) => x !== userLogin.id)[0];
-
-        const updatedFriendRequests = friendRequests.filter((request) => request.userId !== item.userId && request.friendId !== item.friendId);
-        dispatch(setFriendRequests(updatedFriendRequests)); 
-
-        // Render lại danh sách bạn bè
-        callRenderFriends();
-
-        socket.emit("accept-friend-request", { userId: userLogin.id, friendId: friendId });
-        showToast("success", "top", "Thành công", "Giờ đây các bạn đã trở thành bạn bè.");
-      })
-    } catch (error) {
-      console.error("Lỗi khi chấp nhận lời mời:", error);
-      showToast("error", "top", "Lỗi", "Đã xảy ra lỗi khi chấp nhận lời mời.");
-    }
-  };
-
-  const handleRejectFriend = async (item) => {
-    const request = { userId: item.userId, friendId: item.friendId };
-    try {
-      await dispatch(rejectFriendRequest(request)).unwrap().then((res) => {
-        const updatedFriendRequests = friendRequests.filter((request) => request.userId !== item.userId && request.friendId !== item.friendId);
-        dispatch(setFriendRequests(updatedFriendRequests)); 
-      })
-      socket.emit("reject-friend-request", request);
-      showToast("info", "top", "Thông báo", "Đã từ chối lời mời kết bạn");
-    } catch (error) {
-      console.error("Lỗi khi từ chối:", error);
-      showToast("error", "top", "Lỗi", "Lỗi khi từ chối lời mời");
-    }
-  };
-  const renderFriends = (refeshing, onRefeshing) => {
-    const filteredFriends = friends.map((f) => f.friendInfo);
-    return (
-      isLoading ? (
-        <ActivityIndicator style={{ marginTop: 20 }} size="small" color="blue" />
-      ) : (
-
-        filteredFriends && (
-          <FlatList
-            style={{ height: "100%" }}
-            data={filteredFriends}
-
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-            }
-            keyExtractor={(item) => (item.friendId + item.userId)}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[ContactStyles.contactItem, { paddingVertical: 15 }]}
-              >
-                <Image source={{ uri: item.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" }} style={ContactStyles.avatar} />
-                <View style={{ flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "space-between" }}>
-                  <Text style={ContactStyles.contactName}>{item.fullName}</Text>
-                  <View style={{ flexDirection: "row" }}>
-                    <TouchableOpacity onPress={() => console.log(`Calling ${item.friendId}`)} style={{ marginRight: 10 }}>
-                      <Icon name="phone" size={20} color="#007AFF" />
-                    </TouchableOpacity>
-                    <TouchableOpacity onPress={() => console.log(`Video calling ${item.friendId}`)}>
-                      <Icon name="videocam" size={20} color="#007AFF" />
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            )}
-            ListEmptyComponent={
-              <Text style={{ textAlign: "center", marginTop: 20 }}>Không có bạn bè nào</Text>
-            }
-          />
-        )
-
-      )
-    )
-
-  };
 
   const handleGoBack = () => {
     setSubScreen('allFriend');
     setChatUser(null);
   };
+  console.log("Friends", friends);
 
-  console.log("subScreen:", subScreen);
-  console.log("setSubScreen:", setSubScreen);
-
-  const [refreshing, setRefreshing] = useState(false);
-
-
-  const onRefresh = async () => {
-    setRefreshing(true);
+  console.log("FriendRequests", friendRequests);
+  const friendsRequest = useSelector((state) => state.friend.friendRequests);
+  const handleAcceptFriend = async (item) => {
     try {
-      await dispatch(getFriends());
+      const friendId = [item.friendId, item.userId].filter((id) => id !== userLogin.id)[0];
+      const friendUpdate = {
+        userId: userLogin.id,
+        friendId: friendId
+      };
+
+      const res = await dispatch(acceptFriendRequest(friendUpdate)).unwrap();
+      if (res.data.status === 1) {
+        // Cập nhật danh sách lời mời
+        const updatedFriendsRequest = friendsRequest.filter(
+          (value) => !(item.friendId === value.friendId && item.userId === value.userId)
+        );
+        dispatch(setFriendRequests(updatedFriendsRequest));
+
+        // Cập nhật danh sách bạn bè (đảm bảo không bị ghi đè)
+        dispatch(addFriend({
+          ...friendUpdate,
+          friendInfo: {
+            id: item.senderId,
+            fullName: item.fullName,
+            avatarLink: item.avatarLink,
+          }
+        }));
+
+        showToast("info", "top", "Thông báo", "Giờ đây các bạn đã trở thành bạn bè.");
+
+        socket.emit('accept-friend-request', {
+          userId: friendUpdate.userId,
+          friendId: friendUpdate.friendId,
+          friendInfo: userLogin
+        });
+
+        await dispatch(getAllConversation());
+      }
+
     } catch (error) {
-    } finally {
-      setRefreshing(false);
+      console.log(error);
+      showToast("error", "top", "Lỗi", "Đã xảy ra lỗi khi chấp nhận lời mời.");
+    }
+  };
+
+  const handleRejectFriend = async (item) => {
+    try {
+      const friendId = [item.friendId, item.userId].filter((id) => id !== userLogin.id)[0];
+      const friendUpdate = {
+        userId: userLogin.id,
+        friendId: friendId
+      };
+
+      const res = await dispatch(rejectFriendRequest(friendUpdate)).unwrap();
+      if (res.data) {
+        dispatch(removeFriendRequest(res.data));
+        socket.emit('reject-friend-request', friendUpdate);
+      }
+
+    } catch (error) {
+      showToast("error", "top", "Lỗi", "Đã xảy ra lỗi khi chấp nhận lời mời.");
     }
   };
   return (
@@ -233,7 +161,13 @@ const ContactScreen = ({ navigation }) => {
                   <Text style={[ContactStyles.tabText, selectedTab === "recent" && ContactStyles.tabActive]}>Mới truy cập</Text>
                 </TouchableOpacity>
               </View>
-              {renderFriends(refreshing, onRefresh)}
+              {
+                isLoading ? (
+                  <ActivityIndicator style={{ marginTop: 20 }} size="small" color="blue" />
+                ) : (
+                  <FriendComponent />
+                )
+              }
             </View>
           )}
           {activeTab === "Nhóm" && (
@@ -246,31 +180,6 @@ const ContactScreen = ({ navigation }) => {
           )}
         </>
       )}
-      <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
-        <View style={modalStyles.modalOverlay}>
-          <View style={modalStyles.modalContainer}>
-            <View style={modalStyles.modalHeader}>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Icon name="arrow-left" size={20} color="#000" />
-              </TouchableOpacity>
-              <Text style={modalStyles.modalTitle}>Thêm bạn</Text>
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Icon name="times" size={20} color="#000" />
-              </TouchableOpacity>
-            </View>
-            <Text style={modalStyles.modalSubtitle}>Nội dung lời mời kết bạn</Text>
-            <TextInput style={modalStyles.modalInput} placeholder="Kết bạn với mình nhé!" value={contentRequest} onChangeText={setContentRequest} />
-            <View style={modalStyles.modalActionContainer}>
-              <TouchableOpacity style={modalStyles.modalCancelButton} onPress={() => setModalVisible(false)}>
-                <Text style={modalStyles.modalCancelButtonText}>Hủy</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={modalStyles.modalSendButton} onPress={handleSendFriendRequest}>
-                <Text style={modalStyles.modalSendButtonText}>Gửi lời mời</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 };

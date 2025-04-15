@@ -2,7 +2,7 @@ import { React, useState, useEffect, useRef, use } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { friendInvitations, friendRecommendations } from '../data/friendInvitationData';
 import { useDispatch, useSelector } from 'react-redux';
-import { acceptFriendRequest, getFriendsRequest, rejectFriendRequest, setFriends, setFriendsRequest } from '../redux/slices/FriendSlice';
+import { acceptFriendRequest, addFriend, getFriendsRequest, rejectFriendRequest, removeFriend, removeFriendRequest, setFriends, setFriendsRequest } from '../redux/slices/FriendSlice';
 import showToast from '../utils/AppUtils';
 import socket from '../utils/socket';
 import { getAllConversation } from '../redux/slices/ConversationSlice';
@@ -55,58 +55,71 @@ export default function InvitationFriend() {
   //   fetchFriendInvitation();
   // }, [changeInvitation]);
 
-  const handleRejectFriend = async (userId) => {
+  const handleAcceptFriend = async (item) => {
     try {
-      const friendUpdate = { userId: userLogin.id, friendId: userId }
-      await dispatch(rejectFriendRequest(friendUpdate)).unwrap().then((res) => {
-        const friendRequest = res.data;
-        // Xóa lời mời kết bạn trong danh sách
-        const updatedFriendsRequest = friendsRequest.filter((item) => item.senderId !== friendRequest.senderId);
+      const friendId = [item.friendId, item.userId].filter((id) => id !== userLogin.id)[0];
+      const friendUpdate = {
+        userId: userLogin.id,
+        friendId: friendId
+      };
+
+      const res = await dispatch(acceptFriendRequest(friendUpdate)).unwrap();
+      if (res.data.status === 1) {
+        // Cập nhật danh sách lời mời
+        const updatedFriendsRequest = friendsRequest.filter(
+          (value) => !(item.friendId === value.friendId && item.userId === value.userId)
+        );
         dispatch(setFriendsRequest(updatedFriendsRequest));
-        setChangeInvitation(!changeInvitation);
-        socket.emit('reject-friend-request', friendUpdate);
-      })
-    } catch (error) {
-      showToast(error.message, "error");
-    }
-  }
 
-  const handleAcceptFriend = async (userId, item) => {
-    console.log("Item", item)
-    try {
-      const friendUpdate = { userId: userLogin.id, friendId: userId }
-      await dispatch(acceptFriendRequest(friendUpdate)).unwrap().then(async (res) => {
-        if (res.data.status === 1) {
-          const friendRequest = res.data;
-          // Xóa lời mời kết bạn trong danh sách
-          const updatedFriendsRequest = friendsRequest.filter((item) => item.senderId !== friendRequest.senderId);
-          dispatch(setFriendsRequest(updatedFriendsRequest));
-          // Thêm bạn bè vào danh sách bạn bè
-          dispatch(setFriends(
-            (Array.isArray(friends) ? friends : []).concat({
-              ...friendUpdate, friendInfo: {
-                id: item.senderId,
-                fullName: item.fullName,
-                avatarLink: item.avatarLink,
-              }
-            })
-          ));
-          setChangeInvitation(!changeInvitation);
-          showToast("Giờ đây các bạn đã trở thành bạn bè.", "success");
-          socket.emit('accept-friend-request', {
-            userId: friendUpdate.userId,
-            friendId: friendUpdate.friendId,
-            friendInfo: userLogin
-          });
+        // Cập nhật danh sách bạn bè (đảm bảo không bị ghi đè)
+        dispatch(addFriend({
+          ...friendUpdate,
+          friendInfo: {
+            id: item.senderId,
+            fullName: item.fullName,
+            avatarLink: item.avatarLink,
+          }
+        }));
 
-          await dispatch(getAllConversation());
-        }
-      })
+        setChangeInvitation(prev => !prev);
+        showToast("Giờ đây các bạn đã trở thành bạn bè.", "success");
+
+        socket.emit('accept-friend-request', {
+          userId: friendUpdate.userId,
+          friendId: friendUpdate.friendId,
+          friendInfo: userLogin
+        });
+
+        await dispatch(getAllConversation());
+      }
 
     } catch (error) {
       console.log(error);
+      showToast("Đã xảy ra lỗi khi chấp nhận lời mời.", "error");
     }
-  }
+  };
+
+  const handleRejectFriend = async (item) => {
+    try {
+      const friendId = [item.friendId, item.userId].filter((id) => id !== userLogin.id)[0];
+      const friendUpdate = {
+        userId: userLogin.id,
+        friendId: friendId
+      };
+
+      const res = await dispatch(rejectFriendRequest(friendUpdate)).unwrap();
+      if (res.data) {
+        dispatch(removeFriendRequest(friendUpdate));
+        setChangeInvitation(prev => !prev);
+        socket.emit('reject-friend-request', friendUpdate);
+      }
+
+    } catch (error) {
+      showToast(error.message, "error");
+    }
+  };
+
+
 
 
 
@@ -161,7 +174,7 @@ export default function InvitationFriend() {
                           <button
                             onClick={async () => {
                               setIsRejected(true);
-                              await handleRejectFriend(item.userId)
+                              await handleRejectFriend(item)
                               setIsRejected(false);
                             }}
                             className="px-4 py-1 rounded-[5px] hover:bg-gray-300 w-[47%] h-[38px] bg-[#EBECF0] font-bold">
@@ -176,7 +189,7 @@ export default function InvitationFriend() {
                           <button
                             onClick={async () => {
                               setIsAccepted(true);
-                              await handleAcceptFriend(item.userId, item)
+                              await handleAcceptFriend(item)
                               setIsAccepted(false);
                             }}
                             className="px-4 py-1 rounded-[5px] hover:bg-[#005AE0] hover:text-white w-[47%] h-[38px] bg-blue-100 font-bold text-blue-600">

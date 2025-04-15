@@ -7,7 +7,7 @@ import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
 import { getAllConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
 import { setMessages } from "../redux/slices/MessageSlice";
-import { getFriends, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
+import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 export const Navigation = () => {
     const dispatch = useDispatch();
     const userLogin = useSelector((state) => state.user.userLogin);
@@ -56,6 +56,7 @@ export const Navigation = () => {
         }
         dispatch(getAllConversation());
         dispatch(getFriends());
+        dispatch(getFriendsRequest())
     }
 
     useEffect(() => {
@@ -70,8 +71,7 @@ export const Navigation = () => {
     // ============= HANDLE SOCKET FRIEND ==============
     useEffect(() => {
         const handleReceiveAcceptFriendRequest = async (data) => {
-            console.log('Receive Accept', data);
-            dispatch(setFriends([data, ...friends]));
+            dispatch(addFriend(data));
         };
         socket.on("receive-accept-friend", handleReceiveAcceptFriendRequest);
         return () => {
@@ -80,9 +80,7 @@ export const Navigation = () => {
     }, []);
     useEffect(() => {
         const handleReceiveUnfriendRequest = async (data) => {
-            console.log('Receive Unfriend', data);
-            const updatedList = friends.filter((item) => (item.userId === data.userId && item.friendId === data.friendId));
-            dispatch(setFriends(updatedList));
+            dispatch(removeFriend(data));
 
         };
         socket.on("receive-unfriend", handleReceiveUnfriendRequest);
@@ -117,7 +115,7 @@ export const Navigation = () => {
     useEffect(() => {
         const handleReceiveFriendRequest = async (data) => {
             console.log('Receive Friend', data);
-            dispatch(setFriendsRequest([data, ...friendsRequest]));
+            dispatch(addFriendsRequest(data));
             showToast("Bạn có lời mời kết bạn mới từ " + data.fullName, "success");
             await dispatch(getAllConversation());
         };

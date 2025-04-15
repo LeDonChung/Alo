@@ -2,7 +2,7 @@ import { React, useState, useEffect, useRef, use } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass, faChevronDown, faChevronRight, faTag, faCircleXmark, faEllipsis } from "@fortawesome/free-solid-svg-icons";
 import { useDispatch, useSelector } from 'react-redux';
-import { blockFriend, getFriends, setFriends, unblockFriend, unfriend } from '../redux/slices/FriendSlice';
+import { blockFriend, getFriends, removeFriend, setFriends, unblockFriend, unfriend } from '../redux/slices/FriendSlice';
 import showToast, { removeVietnameseTones } from '../utils/AppUtils';
 import socket from '../utils/socket';
 
@@ -48,37 +48,36 @@ export default function FriendsOfUser() {
   const [isUnfriend, setIsUnfriend] = useState(false);
   const friends = useSelector(state => state.friend.friends);
   console.log("friends", friends);
-  const handleUnfriend = async (id, item) => {
-    console.log("item", item);
-    console.log("UID", id)
+  const handleUnfriend = async (item) => {
     try {
       if (isOpenConfirm) {
+        const friendId = [item.friendId, item.userId].filter((id) => id !== userLogin.id)[0];
 
         const friendUpdate = {
-          userId: userLogin.id, friendId: id
-        }
-        // Xóa bạn
-        await dispatch(unfriend(friendUpdate)).unwrap().then((res) => {
-          if (res.data && res.data.status === 4) {
-            // Xóa friends
-            const updatedFriends = friends.filter((friend) => friendUpdate.friendId !== friend.friendId);
-            dispatch(setFriends(updatedFriends));
-            setIsOpenConfirm(false);
-            socket.emit("unfriend-request", friendUpdate)
-          }
-        })
-      }
+          userId: userLogin.id,
+          friendId: friendId
+        };
 
+        const res = await dispatch(unfriend(friendUpdate)).unwrap();
+
+        if (res.data && res.data.status === 4) {
+
+          dispatch(removeFriend(friendUpdate));
+          setIsOpenConfirm(false);
+          socket.emit("unfriend-request", friendUpdate);
+          showToast("Đã hủy kết bạn thành công.", "success");
+        }
+      }
     } catch (error) {
       console.error("Error unfriending:", error);
-      // Hiển thị thông báo lỗi
       showToast("Đã xảy ra lỗi khi xóa kết bạn. Vui lòng thử lại.", "error");
     }
   };
 
-  
 
-  
+
+
+
 
   const handleBlockFriend = async (id) => {
     try {
@@ -471,7 +470,7 @@ export default function FriendsOfUser() {
                                                   className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
                                                   onClick={async () => {
                                                     setIsUnfriend(true);
-                                                    await handleUnfriend(friend.friendId, friend)
+                                                    await handleUnfriend(friend)
                                                     setIsUnfriend(false);
                                                   }}
                                                 >

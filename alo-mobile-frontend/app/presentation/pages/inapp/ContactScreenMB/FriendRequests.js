@@ -24,15 +24,16 @@ const FriendRequests = ({
   const dispatch = useDispatch();
   const onRefresh = async () => {
     console.log("onRefresh");
-    setRefreshing(true);
+    setRefreshing(true); 
     try {
       // Gọi API hoặc Redux để reload lại danh sách hội thoại
       await dispatch(getFriendsRequest());
-    } catch (error) {
+    } catch (error) { 
     } finally {
       setRefreshing(false);
     }
   };
+
   const renderReceivedItem = ({ item }) => {
     return (
       <View style={FriendRequestStyles.contactItem}>
@@ -65,9 +66,10 @@ const FriendRequests = ({
             <TouchableOpacity
               style={[ContactStyles.acceptButton, { backgroundColor: "#ddd", borderRadius: 50, paddingVertical: 8, paddingHorizontal: 15, marginTop: 10 }]}
               onPress={async () => {
+                console.log("IOTEM", item)
                 setIsAccepted(true);
                 await handleAcceptFriend(item)
-                setIsAccepted(false);
+                setIsAccepted(false); 
               }}
             >
               {
