@@ -1,11 +1,14 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, ToastAndroid } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { useDispatch, useSelector } from 'react-redux';
 import { createPin } from '../../redux/slices/ConversationSlice';
 import { showToast } from '../../../utils/AppUtils';
 import socket from '../../../utils/socket';
-export const MenuComponent = ({ message, showMenuComponent }) => {
+import MessageDetailModal from './MessageDetailModal';
+export const MenuComponent = ({ message, showMenuComponent, friend }) => {
+    const navigation = useNavigation();
     const dispatch = useDispatch();
     const [reaction, setReaction] = useState([
         { type: 'like', icon: '👍' },
@@ -32,6 +35,18 @@ export const MenuComponent = ({ message, showMenuComponent }) => {
             showToast('error', 'bottom', "Thông báo", error.message || "Ghim tin nhắn không thành công.", 2000);
         }
     };
+
+    //Xem chi tiết tin nhắn
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [selectedMessage, setSelectedMessage] = useState(null);
+    const handlerClickDetail = (message) => {
+        console.log('message', message);
+        console.log('friend', friend);
+        setSelectedMessage(message);
+        setShowDetailModal(true);
+    }
+
+
     return (
         <ScrollView contentContainerStyle={styles.container}>
             {/* Emoji Bar */}
@@ -68,7 +83,9 @@ export const MenuComponent = ({ message, showMenuComponent }) => {
                     <Icon name="thumbtack" size={24} color="#EA580C" />
                     <Text>Thu hồi</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionItem}>
+                <TouchableOpacity style={styles.actionItem} onPress={() => {
+                    handlerClickDetail(message);
+                }} >
                     <Icon name="info-circle" size={24} color="#6B7280" />
                     <Text>Chi tiết</Text>
                 </TouchableOpacity>
@@ -85,7 +102,17 @@ export const MenuComponent = ({ message, showMenuComponent }) => {
                     )
                 }
             </View>
+            <MessageDetailModal
+                visible={showDetailModal}
+                onClose={() => {
+                    setShowDetailModal(false);
+                    showMenuComponent(false);
+                } }
+                message={selectedMessage}
+                friend={friend}
+            />
         </ScrollView>
+        
     )
 }
 
