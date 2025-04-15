@@ -123,7 +123,21 @@ io.on("connection", (socket) => {
 
     socket.on('unfriend-request', async (data) => {
         const socketIds = await findSocketIdsByUserId(data.friendId);
-        socketIds.forEach(id => io.to(id).emit('receive-unfriend', data));
+        const socketIdOfUserId = await findSocketIdsByUserId(data.userId);
+        // trừ socketid của người gửi
+        console.log("SocketId của người gửi:", socketIdOfUserId);
+        console.log("SocketId của người nhận:", socketIds);
+        const filteredSocketIds = socketIdOfUserId.filter(id => id !== socket.id);
+        console.log("SocketId đã lọc:", filteredSocketIds);
+        filteredSocketIds.forEach(id => io.to(id).emit('receive-unfriend', data));
+        socketIds.forEach(id => io.to(id).emit('receive-unfriend', data)); 
+    });
+
+    socket.on('reject-friend-request-for-me', async (data) => {
+        console.log("Từ chối lời mời kết bạn cho tôi:", data);
+        const socketIds = await findSocketIdsByUserId(data.userId);
+        const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+        filteredSocketIds.forEach(id => io.to(id).emit('receive-reject-friend-for-me', data));
     });
 
     socket.on('block-request', async (data) => {
@@ -147,8 +161,22 @@ io.on("connection", (socket) => {
         socketIds.forEach(id => io.to(id).emit('receive-accept-friend', data));
     });
 
+    socket.on('accept-friend-request-for-me', async (data) => {
+        console.log("Nhận lời mời kết bạn cho tôi:", data);
+        const socketIds = await findSocketIdsByUserId(data.userId);
+        const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+        filteredSocketIds.forEach(id => io.to(id).emit('receive-accept-friend-for-me', data));
+    });
+
     socket.on('reject-friend-request', async (data) => {
         const socketIds = await findSocketIdsByUserId(data.friendId);
+        const socketIdOfUserId = await findSocketIdsByUserId(data.userId);
+        // trừ socketid của người gửi
+        console.log("SocketId của người gửi:", socketIdOfUserId);
+        console.log("SocketId của người nhận:", socketIds);
+        const filteredSocketIds = socketIdOfUserId.filter(id => id !== socket.id);
+        console.log("SocketId đã lọc:", filteredSocketIds);
+        filteredSocketIds.forEach(id => io.to(id).emit('receive-reject-friend', data));
         socketIds.forEach(id => io.to(id).emit('receive-reject-friend', data));
     });
 

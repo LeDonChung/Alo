@@ -28,22 +28,22 @@ export const FriendComponent = () => {
     const userLogin = useSelector((state) => state.user.userLogin);
     const handleUnfriend = async (item) => {
         try {
-            if (isOpenConfirm) {
-                const friendId = [item.friendId, item.userId].filter((id) => id !== userLogin.id)[0];
+            console.log("item", item);
+            const friendId = [item.friendId, item.userId].filter((id) => id !== userLogin.id)[0];
 
-                const friendUpdate = {
-                    userId: userLogin.id,
-                    friendId: friendId
-                };
+            const friendUpdate = {
+                userId: userLogin.id,
+                friendId: friendId
+            };
+            console.log("friendUpdate", friendUpdate);
 
-                const res = await dispatch(unfriend(friendUpdate)).unwrap();
+            const res = await dispatch(unfriend(friendUpdate)).unwrap();
 
-                if (res.data && res.data.status === 4) {
+            if (res.data && res.data.status === 4) {
 
-                    dispatch(removeFriend(friendUpdate));
-                    socket.emit("unfriend-request", friendUpdate);
-                    showToast("info", "top", "Lỗi", "Đã hủy kết bạn thành công.");
-                }
+                dispatch(removeFriend(friendUpdate));
+                socket.emit("unfriend-request", friendUpdate);
+                showToast("info", "top", "Lỗi", "Đã hủy kết bạn thành công.");
             }
         } catch (error) {
             console.error("Error unfriending:", error);

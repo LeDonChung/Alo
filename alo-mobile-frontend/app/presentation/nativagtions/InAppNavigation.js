@@ -243,37 +243,69 @@ export const InAppNavigation = () => {
   // =============== HANDLE SOCKET FRIEND REQUEST ===============
   useEffect(() => {
     const handleReceiveAcceptFriendRequest = async (data) => {
-        dispatch(addFriend(data));
+      dispatch(addFriend(data));
     };
     socket.on("receive-accept-friend", handleReceiveAcceptFriendRequest);
     return () => {
-        socket.off("receive-accept-friend", handleReceiveAcceptFriendRequest);
+      socket.off("receive-accept-friend", handleReceiveAcceptFriendRequest);
     };
-}, []);
-useEffect(() => {
+  }, []);
+
+  useEffect(() => {
+    const handleRejectFriendRequestForMe = async (data) => {
+      console.log("Receive Reject Friend For Me", data);
+      dispatch(setFriendRequests(data.updatedFriendsRequest));
+    }
+    socket.on("receive-reject-friend-for-me", handleRejectFriendRequestForMe);
+    return () => {
+      socket.off("receive-reject-friend-for-me", handleRejectFriendRequestForMe);
+    };
+  },[])
+
+  useEffect(() => {
     const handleReceiveUnfriendRequest = async (data) => {
-        dispatch(removeFriend(data));
+      console.log("Receive Unfriend Mobile", data);
+      dispatch(removeFriend({
+        userId: data.friendId,
+        friendId: data.userId
+      }));
 
     };
     socket.on("receive-unfriend", handleReceiveUnfriendRequest);
     return () => {
-        socket.off("receive-unfriend", handleReceiveUnfriendRequest);
+      socket.off("receive-unfriend", handleReceiveUnfriendRequest);
     };
-}, []);
-useEffect(() => {
-  const handleReceiveFriendRequest = async (data) => {
+  }, []);
+  useEffect(() => {
+    const handleReceiveFriendRequest = async (data) => {
       console.log('Receive Friend', data);
       dispatch(addFriendRequests(data));
-      showToast("info", "top","Thông báo","Bạn có lời mời kết bạn mới từ " + data.fullName);
+      showToast("info", "top", "Thông báo", "Bạn có lời mời kết bạn mới từ " + data.fullName);
       await dispatch(getAllConversation());
-  };
+    };
 
-  socket.on("receive-friend-request", handleReceiveFriendRequest);
+    socket.on("receive-friend-request", handleReceiveFriendRequest);
 
-  return () => {
+    return () => {
       socket.off("receive-friend-request", handleReceiveFriendRequest);
-  };
-}, []);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleReceiveAcceptFriendRequestForMe = async (data) => {
+      console.log("Receive Accept Friend For Me", data);
+      dispatch(setFriendRequests(data.updatedFriendsRequest));
+      dispatch(addFriend({
+        userId: data.userId,
+        friendInfo: data.friendInfo,
+        friendId: data.friendId
+      }));
+    };
+    socket.on("receive-accept-friend-for-me", handleReceiveAcceptFriendRequestForMe);
+    return () => {
+      socket.off("receive-accept-friend-for-me", handleReceiveAcceptFriendRequestForMe);
+    };
+  }, []);
 
   const dispatch = useDispatch();
   const userLogin = useSelector((state) => state.user.userLogin);

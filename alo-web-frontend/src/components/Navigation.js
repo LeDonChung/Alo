@@ -80,12 +80,42 @@ export const Navigation = () => {
     }, []);
     useEffect(() => {
         const handleReceiveUnfriendRequest = async (data) => {
-            dispatch(removeFriend(data));
+            console.log("Receive Unfriend WEB", data);
+            dispatch(removeFriend({
+                userId: data.friendId,
+                friendId: data.userId
+            }));
 
         };
         socket.on("receive-unfriend", handleReceiveUnfriendRequest);
         return () => {
             socket.off("receive-unfriend", handleReceiveUnfriendRequest);
+        };
+    }, []);
+    useEffect(() => {
+        const handleRejectFriendRequestForMe = async (data) => {
+          console.log("Receive Reject Friend For Me", data);
+          dispatch(setFriendsRequest(data.updatedFriendsRequest));
+        }
+        socket.on("receive-reject-friend-for-me", handleRejectFriendRequestForMe);
+        return () => {
+          socket.off("receive-reject-friend-for-me", handleRejectFriendRequestForMe);
+        };
+      },[])
+    
+    useEffect(() => {
+        const handleReceiveAcceptFriendRequestForMe = async (data) => {
+            console.log("Receive Accept Friend For Me", data);
+            dispatch(setFriendsRequest(data.updatedFriendsRequest));
+            dispatch(addFriend({
+                userId: data.userId,
+                friendInfo: data.friendInfo,
+                friendId: data.friendId
+            }));
+        };
+        socket.on("receive-accept-friend-for-me", handleReceiveAcceptFriendRequestForMe);
+        return () => {
+            socket.off("receive-accept-friend-for-me", handleReceiveAcceptFriendRequestForMe);
         };
     }, []);
     useEffect(() => {
