@@ -10,11 +10,7 @@ const ConversationList = () => {
   const userOnlines = useSelector(state => state.user.userOnlines);
   const dispatch = useDispatch();
 
-  useEffect(() => {
-    socket.on("users-online", ({ userIds }) => {
-      dispatch(setUserOnlines(userIds));
-    });
-  }, []);
+  
 
   const isFriendOnline = (userId) => {
     return userOnlines.includes(userId);
@@ -49,13 +45,7 @@ const ConversationList = () => {
     }
   }
 
-  useEffect(() => {
-    socket.on('update-last-message', (conversationId, message) => {
-      console.log('update-last-message', conversationId, message);
-      dispatch(updateLastMessage({ conversationId, message }));
-    });
-
-  }, []);
+  
 
   const getLastTimeMessage = (time) => {
     const now = new Date();

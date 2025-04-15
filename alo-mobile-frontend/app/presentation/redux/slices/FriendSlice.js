@@ -79,8 +79,7 @@ const rejectFriendRequest = createAsyncThunk('FriendSlice/rejectFriendRequest', 
     try {
         const response = await axiosInstance.post('/api/friend/reject-friend-request', request);
         return response.data;
-    }
-    catch (error) {
+    } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 });
@@ -125,7 +124,26 @@ const FriendSlice = createSlice({
         },
         setFriends: (state, action) => {
             state.friends = action.payload;
-        }
+        },
+        addFriend: (state, action) => {
+            state.friends.push(action.payload);
+        },
+        addFriendRequests: (state, action) => {
+            state.friendRequests.push(action.payload);
+        },
+        removeFriend: (state, action) => {
+            const { userId, friendId } = action.payload;
+            state.friends = state.friends.filter(
+                (f) => !(f.userId === userId && f.friendId === friendId) &&
+                    !(f.userId === friendId && f.friendId === userId)
+            );
+        },
+        removeFriendRequest: (state, action) => {
+            const { userId, friendId } = action.payload;
+            state.friendRequests = state.friendRequests.filter(
+                (f) => !(f.userId === userId && f.friendId === friendId)
+            );
+        } 
     },
     extraReducers: (builder) => {
         builder.addCase(getFriends.pending, (state) => {
@@ -216,6 +234,6 @@ const FriendSlice = createSlice({
 
     }
 });
-export const { clearError, addSentRequest, removeSentRequest, clearSentRequests, setFriendRequests, setFriends } = FriendSlice.actions;
+export const { clearError, addSentRequest, removeSentRequest, clearSentRequests, setFriendRequests, setFriends, addFriendRequests, addFriend, removeFriend, removeFriendRequest } = FriendSlice.actions;
 export { getFriends, unfriend, blockFriend, sendFriendRequest, acceptFriendRequest, rejectFriendRequest, getFriendByPhoneNumber, getFriendsRequest, cancelFriend };
 export default FriendSlice.reducer;

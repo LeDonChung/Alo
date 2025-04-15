@@ -14,8 +14,8 @@ import { FilterScreen } from "../pages/inapp/FilterScreen";
 import { AccountNavigation } from "./AccountNavigation";
 import { useDispatch, useSelector } from "react-redux";
 import socket from "../../utils/socket";
-import { addPinToConversation, removePinToConversation, setConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
-import { cancelFriend, getFriendByPhoneNumber, getFriends, getFriendsRequest, setFriendRequests, unfriend } from "../redux/slices/FriendSlice";
+import { addPinToConversation, getAllConversation, removePinToConversation, setConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
+import { addFriend, addFriendRequests, cancelFriend, getFriendByPhoneNumber, getFriends, getFriendsRequest, removeFriend, setFriendRequests, setFriends, unfriend } from "../redux/slices/FriendSlice";
 import { showToast } from "../../utils/AppUtils";
 import { FlatList } from "react-native-gesture-handler";
 import { ContactStyles } from "../styles/ContactStyle";
@@ -40,8 +40,8 @@ export const InAppNavigation = () => {
   const [showBackIcon, setShowBackIcon] = useState(false);
 
   const init = async () => {
-    await dispatch(getFriends());
-    await dispatch(getFriendsRequest())
+    dispatch(getFriends());
+    dispatch(getFriendsRequest())
   }
   useEffect(() => {
     init();
@@ -232,7 +232,7 @@ export const InAppNavigation = () => {
         updatedReaction: data.reaction
       }))
       console.log("Received reaction:", data);
-      
+
     }
     socket.on("receice-update-reaction", handlerReceiveReaction);
     return () => {
@@ -242,60 +242,70 @@ export const InAppNavigation = () => {
 
   // =============== HANDLE SOCKET FRIEND REQUEST ===============
   useEffect(() => {
-    const handlerReceiveFriendRequest = (data) => {
-      dispatch(setFriendRequests([...friendRequests, data]));
-      // Thêm lời mời kết bạn mới vào danh sách
-      showToast("info", "top", "Thông báo", "Bạn nhận được lời mời kết bạn mới!");
-      console.log("END")
+    const handleReceiveAcceptFriendRequest = async (data) => {
+      dispatch(addFriend(data));
+    };
+    socket.on("receive-accept-friend", handleReceiveAcceptFriendRequest);
+    return () => {
+      socket.off("receive-accept-friend", handleReceiveAcceptFriendRequest);
+    };
+  }, []);
+
+  useEffect(() => {
+    const handleRejectFriendRequestForMe = async (data) => {
+      console.log("Receive Reject Friend For Me", data);
+      dispatch(setFriendRequests(data.updatedFriendsRequest));
     }
-    socket.on("receive-friend-request", handlerReceiveFriendRequest);
+    socket.on("receive-reject-friend-for-me", handleRejectFriendRequestForMe);
     return () => {
-      socket.off("receive-friend-request", handlerReceiveFriendRequest);
+      socket.off("receive-reject-friend-for-me", handleRejectFriendRequestForMe);
     };
-
-  }, [])
-
-
+  },[])
 
   useEffect(() => {
-    socket.on("receive-accept-friend", callRenderFriends);
+    const handleReceiveUnfriendRequest = async (data) => {
+      console.log("Receive Unfriend Mobile", data);
+      dispatch(removeFriend({
+        userId: data.friendId,
+        friendId: data.userId
+      }));
+
+    };
+    socket.on("receive-unfriend", handleReceiveUnfriendRequest);
     return () => {
-      socket.off("receive-accept-friend", callRenderFriends);
+      socket.off("receive-unfriend", handleReceiveUnfriendRequest);
+    };
+  }, []);
+  useEffect(() => {
+    const handleReceiveFriendRequest = async (data) => {
+      console.log('Receive Friend', data);
+      dispatch(addFriendRequests(data));
+      showToast("info", "top", "Thông báo", "Bạn có lời mời kết bạn mới từ " + data.fullName);
+      await dispatch(getAllConversation());
     };
 
-  }, [])
+    socket.on("receive-friend-request", handleReceiveFriendRequest);
+
+    return () => {
+      socket.off("receive-friend-request", handleReceiveFriendRequest);
+    };
+  }, []);
 
   useEffect(() => {
-    socket.on("receive-reject-friend", callRenderFriends);
-    return () => {
-      socket.off("receive-reject-friend", callRenderFriends);
+    const handleReceiveAcceptFriendRequestForMe = async (data) => {
+      console.log("Receive Accept Friend For Me", data);
+      dispatch(setFriendRequests(data.updatedFriendsRequest));
+      dispatch(addFriend({
+        userId: data.userId,
+        friendInfo: data.friendInfo,
+        friendId: data.friendId
+      }));
     };
-
-  }, [])
-
-  useEffect(() => {
-    socket.on("receive-unfriend", callRenderFriends);
+    socket.on("receive-accept-friend-for-me", handleReceiveAcceptFriendRequestForMe);
     return () => {
-      socket.off("receive-unfriend", callRenderFriends);
+      socket.off("receive-accept-friend-for-me", handleReceiveAcceptFriendRequestForMe);
     };
-
-  }, [])
-
-  useEffect(() => {
-    socket.on("receive-block", callRenderFriends);
-    return () => {
-      socket.off("receive-block", callRenderFriends);
-    };
-
-  }, [])
-
-  useEffect(() => {
-    socket.on("receive-unblock", callRenderFriends);
-    return () => {
-      socket.off("receive-unblock", callRenderFriends);
-    };
-
-  }, [])
+  }, []);
 
   const dispatch = useDispatch();
   const userLogin = useSelector((state) => state.user.userLogin);
