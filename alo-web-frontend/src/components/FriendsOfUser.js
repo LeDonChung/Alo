@@ -2,7 +2,7 @@ import { React, useState, useEffect, useRef, use } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass, faChevronDown, faChevronRight, faTag, faCircleXmark, faEllipsis } from "@fortawesome/free-solid-svg-icons";
 import { useDispatch, useSelector } from 'react-redux';
-import { blockFriend, getFriends, unblockFriend, unfriend } from '../redux/slices/FriendSlice';
+import { blockFriend, getFriends, setFriends, unblockFriend, unfriend } from '../redux/slices/FriendSlice';
 import showToast, { removeVietnameseTones } from '../utils/AppUtils';
 import socket from '../utils/socket';
 
@@ -43,9 +43,14 @@ export default function FriendsOfUser() {
   const [detailFriend, setDetailFriend] = useState(null);
   const [isOpenConfirm, setIsOpenConfirm] = useState(false);
 
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
 
-  const handleUnfriend = async (id) => {
+  const [isUnfriend, setIsUnfriend] = useState(false);
+  const friends = useSelector(state => state.friend.friends);
+  console.log("friends", friends);
+  const handleUnfriend = async (id, item) => {
+    console.log("item", item);
+    console.log("UID", id)
     try {
       if (isOpenConfirm) {
 
@@ -53,13 +58,15 @@ export default function FriendsOfUser() {
           userId: userLogin.id, friendId: id
         }
         // Xóa bạn
-        const friendResp = await dispatch(unfriend(friendUpdate));
-        const friendResult = friendResp.payload.data ? friendResp.payload.data : null;
-
-        if (friendResult && friendResult.status === 4) {
-          setIsOpenConfirm(false);
-          socket.emit("unfriend-request", friendUpdate)
-        }
+        await dispatch(unfriend(friendUpdate)).unwrap().then((res) => {
+          if (res.data && res.data.status === 4) {
+            // Xóa friends
+            const updatedFriends = friends.filter((friend) => friendUpdate.friendId !== friend.friendId);
+            dispatch(setFriends(updatedFriends));
+            setIsOpenConfirm(false);
+            socket.emit("unfriend-request", friendUpdate)
+          }
+        })
       }
 
     } catch (error) {
@@ -69,38 +76,9 @@ export default function FriendsOfUser() {
     }
   };
 
-  useEffect(() => {
-    const handleReceiveUnfriendRequest = async (data) => {
-      if (data.friendId === userLogin.id) {
-        const updatedList = await dispatch(getFriends());
-        if (updatedList.payload.status === 200) {
-          setLoading(false);
-        }
-      }
+  
 
-    };
-    socket.on("receive-unfriend", handleReceiveUnfriendRequest);
-    return () => {
-      socket.off("receive-unfriend", handleReceiveUnfriendRequest);
-    };
-  }, []);
-
-  useEffect(() => {
-    const handleReceiveAcceptFriendRequest = async (data) => {
-      console.log('data', data);
-
-      if (data.friendId === userLogin.id) {
-        const updatedList = await dispatch(getFriends());
-        if (updatedList.payload.status === 200) {
-          setLoading(false);
-        }
-      }
-    };
-    socket.on("receive-accept-friend", handleReceiveAcceptFriendRequest);
-    return () => {
-      socket.off("receive-accept-friend", handleReceiveAcceptFriendRequest);
-    };
-  }, []);
+  
 
   const handleBlockFriend = async (id) => {
     try {
@@ -156,22 +134,22 @@ export default function FriendsOfUser() {
 
 
 
-  useEffect(() => {
-    setLoading(true);
-    const fetchFriends = async () => {
-      try {
-        const result = await dispatch(getFriends());
-        if (result.payload.status === 200) {
-          setLoading(false);
-        }
+  // useEffect(() => {
+  //   setLoading(true);
+  //   const fetchFriends = async () => {
+  //     try {
+  //       const result = await dispatch(getFriends());
+  //       if (result.payload.status === 200) {
+  //         setLoading(false);
+  //       }
 
-      } catch (error) {
-        console.log(error);
-        setLoading(false);
-      }
-    };
-    fetchFriends();
-  }, [dispatch, friend]);
+  //     } catch (error) {
+  //       console.log(error);
+  //       setLoading(false);
+  //     }
+  //   };
+  //   fetchFriends();
+  // }, []);
 
   // Lọc danh sách bạn bè theo tên A-Z hoặc Z-A
   const groupAndSortFriends = (friends, sortOrder) => {
@@ -491,9 +469,19 @@ export default function FriendsOfUser() {
                                               <div className="flex justify-between mt-4">
                                                 <button
                                                   className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                                                  onClick={() => handleUnfriend(friend.friendId)}
+                                                  onClick={async () => {
+                                                    setIsUnfriend(true);
+                                                    await handleUnfriend(friend.friendId, friend)
+                                                    setIsUnfriend(false);
+                                                  }}
                                                 >
-                                                  Đồng ý
+                                                  {
+                                                    isUnfriend ? (
+                                                      <div className="bg-blue animate-spin rounded-full border-t-2 border-b-2 border-blue-500 w-4 h-4"></div>
+                                                    ) : (
+                                                      "Đồng ý"
+                                                    )
+                                                  }
                                                 </button>
                                                 <button
                                                   className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"

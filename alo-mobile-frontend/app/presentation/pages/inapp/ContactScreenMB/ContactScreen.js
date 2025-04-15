@@ -86,13 +86,11 @@ const ContactScreen = ({ navigation }) => {
       const request = { userId: item.userId, friendId: item.friendId };
       await dispatch(acceptFriendRequest(request)).unwrap().then((res) => {
 
-        console.log("RES", res);
-
         //Cập nhật lại danh sách kết bạn: senderId là userLogin.id, friendId(userId hoặc friendId)
         const friendId = [item.userId, item.friendId].filter((x) => x !== userLogin.id)[0];
 
         const updatedFriendRequests = friendRequests.filter((request) => request.userId !== item.userId && request.friendId !== item.friendId);
-        dispatch(setFriendRequests(updatedFriendRequests)); // Cập nhật lại danh sách lời mời kết bạn
+        dispatch(setFriendRequests(updatedFriendRequests)); 
 
         // Render lại danh sách bạn bè
         callRenderFriends();
@@ -109,7 +107,10 @@ const ContactScreen = ({ navigation }) => {
   const handleRejectFriend = async (item) => {
     const request = { userId: item.userId, friendId: item.friendId };
     try {
-      await dispatch(rejectFriendRequest(request)).unwrap();
+      await dispatch(rejectFriendRequest(request)).unwrap().then((res) => {
+        const updatedFriendRequests = friendRequests.filter((request) => request.userId !== item.userId && request.friendId !== item.friendId);
+        dispatch(setFriendRequests(updatedFriendRequests)); 
+      })
       socket.emit("reject-friend-request", request);
       showToast("info", "top", "Thông báo", "Đã từ chối lời mời kết bạn");
     } catch (error) {

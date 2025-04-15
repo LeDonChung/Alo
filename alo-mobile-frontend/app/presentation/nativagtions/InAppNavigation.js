@@ -40,8 +40,8 @@ export const InAppNavigation = () => {
   const [showBackIcon, setShowBackIcon] = useState(false);
 
   const init = async () => {
-    await dispatch(getFriends());
-    await dispatch(getFriendsRequest())
+    dispatch(getFriends());
+    dispatch(getFriendsRequest())
   }
   useEffect(() => {
     init();
@@ -243,6 +243,8 @@ export const InAppNavigation = () => {
   // =============== HANDLE SOCKET FRIEND REQUEST ===============
   useEffect(() => {
     const handlerReceiveFriendRequest = (data) => {
+      console.log("FriendRequest", friendRequests);
+      // Kiểm tra tồn tại chưa
       dispatch(setFriendRequests([...friendRequests, data]));
       // Thêm lời mời kết bạn mới vào danh sách
       showToast("info", "top", "Thông báo", "Bạn nhận được lời mời kết bạn mới!");

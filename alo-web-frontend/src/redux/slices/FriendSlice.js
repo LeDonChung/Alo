@@ -5,6 +5,7 @@ const initialState = {
     friends: [],
     friend: null,
     error: null,
+    friendsRequest: [],
 };
 
 const getFriends = createAsyncThunk('FriendSlice/getFriends', async (_, { rejectWithValue }) => {
@@ -107,7 +108,14 @@ const getFriendByPhone = createAsyncThunk('FriendSlice/getFriendByPhone', async 
 const FriendSlice = createSlice({
     name: 'FriendSlice',
     initialState: initialState,
-    reducers: {},
+    reducers: {
+        setFriendsRequest: (state, action) => {
+            state.friendsRequest = action.payload;
+        },
+        setFriends: (state, action) => {
+            state.friends = action.payload;
+        }
+    },
     extraReducers: (builder) => {
 
         // getFriends
@@ -202,13 +210,13 @@ const FriendSlice = createSlice({
 
         // getFriendsRequest
         builder.addCase(getFriendsRequest.pending, (state) => {
-            state.friends = [];
+            state.friendsRequest = [];
         });
         builder.addCase(getFriendsRequest.fulfilled, (state, action) => {
-            state.friends = action.payload.data;
+            state.friendsRequest = action.payload.data;
         });
         builder.addCase(getFriendsRequest.rejected, (state, action) => {
-            state.friends = [];
+            state.friendsRequest = [];
         });
 
         // getFriendByPhone
@@ -225,6 +233,6 @@ const FriendSlice = createSlice({
     }
 });
 
-export const { } = FriendSlice.actions;
+export const { setFriendsRequest, setFriends } = FriendSlice.actions;
 export { getFriends, unfriend, blockFriend, sendFriendRequest, acceptFriendRequest, cancelFriendRequest, rejectFriendRequest, getFriendsRequest, unblockFriend, getFriendByPhone };
 export default FriendSlice.reducer;

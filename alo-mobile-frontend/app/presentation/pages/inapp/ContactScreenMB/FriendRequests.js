@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { SafeAreaView, View, Text, FlatList, Image, TouchableOpacity } from "react-native";
+import { SafeAreaView, View, Text, FlatList, Image, TouchableOpacity, ActivityIndicator } from "react-native";
 import { FriendRequestStyles } from "../../../styles/FriendRequestStyle";
 import { ContactStyles } from "../../../styles/ContactStyle";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -19,6 +19,8 @@ const FriendRequests = ({
   const userLogin = useSelector((state) => state.user.userLogin);
   const [refreshing, setRefreshing] = useState(false);
 
+  const [isAccepted, setIsAccepted] = useState(false);
+  const [isCancel, setIsCancel] = useState(false);
   const dispatch = useDispatch();
   const onRefresh = async () => {
     console.log("onRefresh");
@@ -45,22 +47,35 @@ const FriendRequests = ({
           <View style={ContactStyles.actionButtons}>
             <TouchableOpacity
               style={[ContactStyles.rejectButton, { backgroundColor: "#ddd", borderRadius: 50, paddingVertical: 8, paddingHorizontal: 15, marginTop: 10 }]}
-              onPress={() => handleRejectFriend(item)}
-            >
-              <Text style={{ color: "#000", fontWeight: "bold" }}>Từ chối</Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              style={[ContactStyles.acceptButton, { backgroundColor: "#ddd", borderRadius: 50, paddingVertical: 8, paddingHorizontal: 15, marginTop: 10 }]}
-              onPress={() => {
-                handleAcceptFriend(item)
+              onPress={async () => {
+                setIsCancel(true) 
+                await handleRejectFriend(item)
+                setIsCancel(false)
               }}
             >
               {
-                // isAccepted ? (
-                // <ActivityIndicator size="small" color="#fff" />
-                // ):(
-                <Text style={{ color: "blue", fontWeight: "bold" }}>Đồng ý</Text>
-                // )
+                isCancel ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={{ color: "#000", fontWeight: "bold" }}>Từ chối</Text>
+                )
+              }
+              
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[ContactStyles.acceptButton, { backgroundColor: "#ddd", borderRadius: 50, paddingVertical: 8, paddingHorizontal: 15, marginTop: 10 }]}
+              onPress={async () => {
+                setIsAccepted(true);
+                await handleAcceptFriend(item)
+                setIsAccepted(false);
+              }}
+            >
+              {
+                isAccepted ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={{ color: "blue", fontWeight: "bold" }}>Đồng ý</Text>
+                )
               }
             </TouchableOpacity>
           </View>

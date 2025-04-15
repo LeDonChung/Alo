@@ -2,14 +2,17 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { changePassword, getProfile, logout, setUserLogin, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
+import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
-import { getAllConversation } from "../redux/slices/ConversationSlice";
+import { getAllConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
+import { setMessages } from "../redux/slices/MessageSlice";
+import { getFriends, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 export const Navigation = () => {
     const dispatch = useDispatch();
     const userLogin = useSelector((state) => state.user.userLogin);
 
+    // ============= HANDLE SOCKET LOGOUT ==============
     const handleLogout = async () => {
         await dispatch(logout()).unwrap().then((res) => {
             // remove 
@@ -23,6 +26,8 @@ export const Navigation = () => {
             navigate("/login");
         });
     }
+
+
     useEffect(() => {
         const handleLogoutChangedPassword = () => {
             showToast("Phiên đăng nhập đã hết.", "error");
@@ -49,7 +54,8 @@ export const Navigation = () => {
                 window.location.href = '/login';
             }
         }
-        await dispatch(getAllConversation());
+        dispatch(getAllConversation());
+        dispatch(getFriends());
     }
 
     useEffect(() => {
@@ -59,6 +65,80 @@ export const Navigation = () => {
         init();
     }, []);
 
+
+    const friends = useSelector((state) => state.friend.friends);
+    // ============= HANDLE SOCKET FRIEND ==============
+    useEffect(() => {
+        const handleReceiveAcceptFriendRequest = async (data) => {
+            console.log('Receive Accept', data);
+            dispatch(setFriends([data, ...friends]));
+        };
+        socket.on("receive-accept-friend", handleReceiveAcceptFriendRequest);
+        return () => {
+            socket.off("receive-accept-friend", handleReceiveAcceptFriendRequest);
+        };
+    }, []);
+    useEffect(() => {
+        const handleReceiveUnfriendRequest = async (data) => {
+            console.log('Receive Unfriend', data);
+            const updatedList = friends.filter((item) => (item.userId === data.userId && item.friendId === data.friendId));
+            dispatch(setFriends(updatedList));
+
+        };
+        socket.on("receive-unfriend", handleReceiveUnfriendRequest);
+        return () => {
+            socket.off("receive-unfriend", handleReceiveUnfriendRequest);
+        };
+    }, []);
+    useEffect(() => {
+        const handlerUpdateLastMessage = async (conversationId, message) => {
+            console.log('update-last-message', conversationId, message);
+            dispatch(updateLastMessage({ conversationId, message }));
+        }
+
+        socket.on('update-last-message', handlerUpdateLastMessage);
+
+        return () => {
+            socket.off('update-last-message', handlerUpdateLastMessage);
+        }
+    }, []);
+    useEffect(() => {
+        socket.on("users-online", ({ userIds }) => {
+            dispatch(setUserOnlines(userIds));
+        });
+    }, []);
+    const messages = useSelector((state) => state.message.messages);
+    useEffect(() => {
+        socket.on('receive-message', (message) => {
+            dispatch(setMessages([...messages, message]));
+        });
+    }, [messages, dispatch]);
+    const friendsRequest = useSelector((state) => state.friend.friendsRequest);
+    useEffect(() => {
+        const handleReceiveFriendRequest = async (data) => {
+            console.log('Receive Friend', data);
+            dispatch(setFriendsRequest([data, ...friendsRequest]));
+            showToast("Bạn có lời mời kết bạn mới từ " + data.fullName, "success");
+            await dispatch(getAllConversation());
+        };
+
+        socket.on("receive-friend-request", handleReceiveFriendRequest);
+
+        return () => {
+            socket.off("receive-friend-request", handleReceiveFriendRequest);
+        };
+    }, []);
+    useEffect(() => {
+        const handleCancleFriendRequest = (data) => {
+            console.log('Cancle Friend', data);
+            const updatedList = friendsRequest.filter((item) => item.senderId !== data.senderId);
+            dispatch(setFriendsRequest(updatedList));
+        };
+        socket.on("receive-cancle-friend-request", handleCancleFriendRequest);
+        return () => {
+            socket.off("receive-cancle-friend-request", handleCancleFriendRequest);
+        };
+    }, []);
     const [menus, setMenus] = useState([
         { id: 1, icon: "./icon/ic_message.png", onPress: () => navigate("/me") },
         { id: 2, icon: "./icon/ic_round-perm-contact-calendar.png", onPress: () => navigate("/contact") },
@@ -88,7 +168,7 @@ export const Navigation = () => {
         <>
             {/* Sidebar Navigation */}
             <div className="w-20 bg-blue-600 text-white flex flex-col items-center py-4 px-4 relative">
-                <div className="cursor-pointer"  onClick={() => setShowProfileModal(true)}>
+                <div className="cursor-pointer" onClick={() => setShowProfileModal(true)}>
                     <img src={userLogin?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
                         className="rounded-full w-12 h-12 bg-cover" />
                 </div>

@@ -2,7 +2,7 @@ import { React, useState, useEffect, useRef, use } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { friendInvitations, friendRecommendations } from '../data/friendInvitationData';
 import { useDispatch, useSelector } from 'react-redux';
-import { acceptFriendRequest, getFriendsRequest, rejectFriendRequest } from '../redux/slices/FriendSlice';
+import { acceptFriendRequest, getFriendsRequest, rejectFriendRequest, setFriends, setFriendsRequest } from '../redux/slices/FriendSlice';
 import showToast from '../utils/AppUtils';
 import socket from '../utils/socket';
 import { getAllConversation } from '../redux/slices/ConversationSlice';
@@ -27,7 +27,7 @@ export default function InvitationFriend() {
   const userLogin = JSON.parse(localStorage.getItem("userLogin"));
 
   const friendRecommendationsData = friendRecommendations;
-  const [invitationList, setInvitationList] = useState([]);
+  const friendsRequest = useSelector(state => state.friend.friendsRequest);
   const [recommendList, setRecommendList] = useState(friendRecommendationsData);
 
   const [showListInvitation, setShowListInvitation] = useState(true);
@@ -36,91 +36,82 @@ export default function InvitationFriend() {
   const [changeInvitation, setChangeInvitation] = useState(false);
 
   const [loading, setLoading] = useState(false);
-  useEffect(() => {
-    const handleCancleFriendRequest = (data) => {
-      if (data.senderId !== userLogin.id) {
-        const newInvitation = invitationList.filter(item => item.userId !== data.senderId || item.friendId !== data.senderId);
-        setInvitationList(newInvitation);
-        setChangeInvitation(!changeInvitation);
-      }
-    };
-    socket.on("receive-cancle-friend-request", handleCancleFriendRequest);
-    return () => {
-      socket.off("receive-cancle-friend-request", handleCancleFriendRequest);
-    };
-  }, []);
-
-  useEffect(() => {
-
-    const fetchFriendInvitation = async () => {
-      try {
-        setLoading(true);
-        const resp = await dispatch(getFriendsRequest());
-        setInvitationList(resp.payload.data);
-
-      } catch (error) {
-        console.log(error);
-      }
-      setLoading(false);
-
-    };
 
 
-    fetchFriendInvitation();
-  }, [changeInvitation]);
+  // useEffect(() => {
+
+  //   const fetchFriendInvitation = async () => {
+  //     try {
+  //       setLoading(true);
+  //       await dispatch(getFriendsRequest());
+  //     } catch (error) {
+  //       console.log(error);
+  //     }
+  //     setLoading(false);
+
+  //   };
+
+
+  //   fetchFriendInvitation();
+  // }, [changeInvitation]);
 
   const handleRejectFriend = async (userId) => {
     try {
       const friendUpdate = { userId: userLogin.id, friendId: userId }
-      const resp = await dispatch(rejectFriendRequest(friendUpdate));
-      const data = resp.payload.data;
-      if (data.status === 2) {
+      await dispatch(rejectFriendRequest(friendUpdate)).unwrap().then((res) => {
+        const friendRequest = res.data;
+        // Xóa lời mời kết bạn trong danh sách
+        const updatedFriendsRequest = friendsRequest.filter((item) => item.senderId !== friendRequest.senderId);
+        dispatch(setFriendsRequest(updatedFriendsRequest));
         setChangeInvitation(!changeInvitation);
         socket.emit('reject-friend-request', friendUpdate);
-      }
+      })
     } catch (error) {
-      console.log(error);
+      showToast(error.message, "error");
     }
   }
 
-  const handleAcceptFriend = async (userId) => {
+  const handleAcceptFriend = async (userId, item) => {
+    console.log("Item", item)
     try {
       const friendUpdate = { userId: userLogin.id, friendId: userId }
-      const resp = await dispatch(acceptFriendRequest(friendUpdate));
-      const data = resp.payload.data;
-      if (data.status === 1) {
-        setChangeInvitation(!changeInvitation);
-        showToast("Giờ đây các bạn đã trở thành bạn bè.", "success");
-        await dispatch(getAllConversation()); 
-        socket.emit('accept-friend-request', friendUpdate);
-      }
+      await dispatch(acceptFriendRequest(friendUpdate)).unwrap().then(async (res) => {
+        if (res.data.status === 1) {
+          const friendRequest = res.data;
+          // Xóa lời mời kết bạn trong danh sách
+          const updatedFriendsRequest = friendsRequest.filter((item) => item.senderId !== friendRequest.senderId);
+          dispatch(setFriendsRequest(updatedFriendsRequest));
+          // Thêm bạn bè vào danh sách bạn bè
+          dispatch(setFriends(
+            (Array.isArray(friends) ? friends : []).concat({
+              ...friendUpdate, friendInfo: {
+                id: item.senderId,
+                fullName: item.fullName,
+                avatarLink: item.avatarLink,
+              }
+            })
+          ));
+          setChangeInvitation(!changeInvitation);
+          showToast("Giờ đây các bạn đã trở thành bạn bè.", "success");
+          socket.emit('accept-friend-request', {
+            userId: friendUpdate.userId,
+            friendId: friendUpdate.friendId,
+            friendInfo: userLogin
+          });
+
+          await dispatch(getAllConversation());
+        }
+      })
+
     } catch (error) {
       console.log(error);
     }
   }
 
-  useEffect(() => {
-    const handleReceiveFriendRequest = async (data) => {
-      if (data.senderId !== userLogin.id) {
-        const newInvitation = {
-          userId: data.userId,
-          fullName: data.fullName,
-          avatarLink: data.avatarLink,
-          contentRequest: data.contentRequest,
-          requestDate: data.requestDate
-        };
-        setInvitationList((prev) => [newInvitation, ...prev]);
-        await dispatch(getAllConversation()); 
-      }
-    };
 
-    socket.on("receive-friend-request", handleReceiveFriendRequest);
 
-    return () => {
-      socket.off("receive-friend-request", handleReceiveFriendRequest);
-    };
-  }, []);
-
+  const [isRejected, setIsRejected] = useState(false);
+  const [isAccepted, setIsAccepted] = useState(false);
 
   return (
     <div className="flex-1 flex flex-col w-full h-full bg-[#EBECF0]">
@@ -134,22 +125,22 @@ export default function InvitationFriend() {
         {/* Loi moi ket ban */}
         <div className="mb-5">
           {
-            invitationList && (
+            friendsRequest && (
               <h2 className="text-lg font-semibold mb-4" onClick={() => setShowListInvitation(!showListInvitation)}>
-                Lời mời đã nhận ({invitationList.length}) <span>{showListInvitation ? "▼" : "▶"}</span>
+                Lời mời đã nhận ({friendsRequest.length}) <span>{showListInvitation ? "▼" : "▶"}</span>
               </h2>
             )
           }
           {
             showListInvitation && (
               <>
-                {(invitationList.length === 0 && !loading) ? (
+                {(friendsRequest.length === 0 && !loading) ? (
                   <div className="flex justify-center items-center w-full h-full">
                     <span className="text-gray-500">Không có lời mời kết bạn nào</span>
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                    {invitationList.map((item) => (
+                    {friendsRequest.map((item) => (
                       <div key={item.userId} className="bg-white rounded-lg shadow p-4">
                         <div className="flex items-center mb-3">
                           <img
@@ -168,14 +159,34 @@ export default function InvitationFriend() {
 
                         <div className="flex justify-between">
                           <button
-                            onClick={() => handleRejectFriend(item.userId)}
+                            onClick={async () => {
+                              setIsRejected(true);
+                              await handleRejectFriend(item.userId)
+                              setIsRejected(false);
+                            }}
                             className="px-4 py-1 rounded-[5px] hover:bg-gray-300 w-[47%] h-[38px] bg-[#EBECF0] font-bold">
-                            Từ chối
+                            {
+                              isRejected ? (
+                                <div className="bg-blue animate-spin rounded-full border-t-2 border-b-2 border-blue-500 w-4 h-4"></div>
+                              ) : (
+                                "Từ chối"
+                              )
+                            }
                           </button>
                           <button
-                            onClick={() => handleAcceptFriend(item.userId)}
+                            onClick={async () => {
+                              setIsAccepted(true);
+                              await handleAcceptFriend(item.userId, item)
+                              setIsAccepted(false);
+                            }}
                             className="px-4 py-1 rounded-[5px] hover:bg-[#005AE0] hover:text-white w-[47%] h-[38px] bg-blue-100 font-bold text-blue-600">
-                            Đồng ý
+                            {
+                              isAccepted ? (
+                                <div className="bg-blue animate-spin rounded-full border-t-2 border-b-2 border-blue-500 w-4 h-4"></div>
+                              ) : (
+                                "Đồng ý"
+                              )
+                            }
                           </button>
                         </div>
                       </div>
@@ -192,7 +203,7 @@ export default function InvitationFriend() {
             <div className="flex justify-center items-center">
               <div className="bg-blue animate-spin rounded-full border-t-2 border-b-2 border-blue-500 w-4 h-4"></div>
             </div>
-          ) 
+          )
           }
         </div>
 
