@@ -363,12 +363,7 @@ exports.forwardMessage = async (req, res) => {
                 status: 0
             };
 
-            // Nếu là image/file thì upload và thêm link
-            if (['image', 'file'].includes(originalMessage.messageType)) {
-                forwardedMessage.fileLink = await fileService.uploadFile(originalMessage.fileLink);
-            }
-            // Nếu là sticker thì lấy fileLink
-            if (originalMessage.messageType === 'sticker') {
+            if (['image', 'file', 'sticker'].includes(originalMessage.messageType)) {
                 forwardedMessage.fileLink = originalMessage.fileLink;
             }
 

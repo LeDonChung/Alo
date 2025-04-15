@@ -7,7 +7,9 @@ import { createPin } from '../../redux/slices/ConversationSlice';
 import { showToast } from '../../../utils/AppUtils';
 import socket from '../../../utils/socket';
 import MessageDetailModal from './MessageDetailModal';
+import ForwardMessageModal from './ForwardMessageModal';
 export const MenuComponent = ({ message, showMenuComponent, friend }) => {
+    
     const navigation = useNavigation();
     const dispatch = useDispatch();
     const [reaction, setReaction] = useState([
@@ -40,12 +42,13 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
     const [showDetailModal, setShowDetailModal] = useState(false);
     const [selectedMessage, setSelectedMessage] = useState(null);
     const handlerClickDetail = (message) => {
-        console.log('message', message);
-        console.log('friend', friend);
         setSelectedMessage(message);
+        console.log('message',message)
         setShowDetailModal(true);
     }
 
+    //Chuyển tiếp tin nhắn
+    const [showForwardModal, setShowForwardModal] = useState(false);
 
     return (
         <ScrollView contentContainerStyle={styles.container}>
@@ -65,7 +68,9 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                     <Icon name="reply" size={24} color="#6B21A8" />
                     <Text>Trả lời</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionItem}>
+                <TouchableOpacity style={styles.actionItem} onPress={() => {
+                    setShowForwardModal(true);
+                }}>
                     <Icon name="share" size={24} color="#2563EB" />
                     <Text>Chuyển tiếp</Text>
                 </TouchableOpacity>
@@ -110,6 +115,14 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                 } }
                 message={selectedMessage}
                 friend={friend}
+            />
+            <ForwardMessageModal
+                visible={showForwardModal}
+                onClose={() => {
+                    showMenuComponent(false);
+                    setShowForwardModal(false);
+                }}
+                message={message}
             />
         </ScrollView>
         
