@@ -32,6 +32,8 @@ const ConversationSlice = createSlice({
         setConversation: (state, action) => {
             state.conversation = action.payload;
         },
+
+        // thêm status message vào để khi thu hồi thì bắt  được tin nhắn đã thu hồi -> update lastMessage bên conversation để hiển thị ngay lập tức
         updateLastMessage: (state, action) => {
             const conversationId = action.payload.conversationId;
             const message = action.payload.message;

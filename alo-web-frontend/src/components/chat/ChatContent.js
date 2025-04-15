@@ -109,6 +109,8 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
               isUserMessage={isUserMessage}
               isLastMessage={isLastMessage}
               showAvatar={showAvatar}
+              conversation={conversation}
+              userLogin={userLogin}
               isHighlighted={highlightedMessage === message.id} // Kiểm tra xem tin nhắn có được làm nổi bật không
               onClickParent={() => {
                 if (message.messageParent?.id) {

@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { axiosInstance } from '../api/APIClient';
 import socket from '../utils/socket';
-import { getMessagesByConversationId, sendMessage, setInputMessage, setMessages } from '../redux/slices/MessageSlice';
+import { getMessagesByConversationId, sendMessage, setInputMessage, setMessages, setMessageUpdate } from '../redux/slices/MessageSlice';
 import RightSlidebar from './RightSlideBarChat';
 import ChatHeader from './chat/ChatHeader';
 import ChatContent from './chat/ChatContent';
@@ -42,12 +42,7 @@ const ChatWindow = () => {
     await axiosInstance.get(`/api/user/get-profile/${userId}`).then((res) => {
       setLastLogout(res.data.data.lastLogout);
     });
-  };
-
-  
-
-
-  
+  };  
 
   useEffect(() => {
     socket.emit("join_conversation", conversation.id);
@@ -63,7 +58,7 @@ const ChatWindow = () => {
       dispatch(setMessages([...messages, message]));
     });
   }, [messages, dispatch]);
-
+  
   useEffect(() => {
     dispatch(getMessagesByConversationId(conversation.id));
   }, [conversation, limit, dispatch]);

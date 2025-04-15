@@ -32,6 +32,8 @@ const ConversationList = () => {
   const showLastMessage = (conversation) => {
     if (conversation.lastMessage) {
       let message = conversation.lastMessage.content;
+      let messageStatus = conversation.lastMessage.status;     
+      
       if (conversation.lastMessage.messageType === 'sticker') {
         message = 'Sticker';
       } else if (conversation.lastMessage.messageType === 'image') {
@@ -42,9 +44,9 @@ const ConversationList = () => {
         message = 'Video';
       }
       if (conversation.lastMessage.senderId === userLogin.id) {
-        return "Bạn: " + message;
+        return "Bạn: " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi");
       } else {
-        return getFriend(conversation).fullName + ": " + message;
+        return getFriend(conversation).fullName + ": " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi");
       }
     }
   }

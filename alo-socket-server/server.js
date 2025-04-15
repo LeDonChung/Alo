@@ -203,10 +203,31 @@ io.on("connection", (socket) => {
             const filteredSocketIds = socketIds.filter(id => id !== socket.id);
             filteredSocketIds.forEach(id => {
                 console.log("Cập nhật reaction cho user:", userId);
-                io.to(id).emit('receice-update-reaction', data.message);
+                io.to(id).emit('receive-update-reaction', data.message);
             });
         }
     })
+
+    socket.on('updateMessage', async (data) => {
+        const message = data.message;
+        const conversation = data.conversation;
+        const members = conversation.memberUserIds;
+        console.log(conversation.lastMessage);
+        if(conversation.lastMessage.id === message.id) {
+            handleUpdateLastMessage(conversation, message);
+        }
+        
+        console.log("Cập nhật tin nhắn cho các thành viên trong cuộc trò chuyện:", members, conversation.id, message);
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                console.log("Cập nhật tin nhắn cho user:", userId);
+                io.to(id).emit('receive-update-message', message);
+            });
+        }        
+    })
+
     // =====================
     // Helper functions
     // =====================
