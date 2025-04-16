@@ -212,23 +212,29 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
           onClick={(e) => e.stopPropagation()}
         >
           <ul className="text-sm text-gray-700">
-            <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleAnwer()}>Trả lời</li>
-            <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleShareMessage()}>Chia sẻ</li>
             {
-              message.messageType !== 'file' && message.messageType !== 'sticker' && (
-                <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleCopy()}>Copy tin nhắn</li>
-              )
-            }
-            {
-              message.messageType === 'image' && (
-                <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Lưu về máy</li>
-              )
-            }
-            <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Ghim tin nhắn</li>
-            <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleViewDetails}>Xem chi tiết</li>
-            {
-              message.senderId === userLogin.id && (
-                <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleMessageRecall()}>Thu hồi</li>
+              message.status === 0 && (
+                <>
+                  <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleAnwer()}>Trả lời</li>
+                  <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleShareMessage()}>Chia sẻ</li>
+                  {
+                    message.messageType !== 'file' && message.messageType !== 'sticker' && (
+                      <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleCopy()}>Copy tin nhắn</li>
+                    )
+                  }
+                  {
+                    message.messageType === 'image' && (
+                      <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Lưu về máy</li>
+                    )
+                  }
+                  <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Ghim tin nhắn</li>
+                  <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Xem chi tiết</li>
+                  {
+                    message.senderId === userLogin.id && (
+                      <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleMessageRecall()}>Thu hồi</li>
+                    )
+                  }
+                </>
               )
             }
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-red-500">Xóa chỉ ở phía tôi</li>
