@@ -5,11 +5,8 @@ const initialState = {
     isLoadMessage: false,
     messages: [],
     limit: 20,
-    inputMessage: {
-        messageType: 'text',
-        content: '',
-    },
     messageParent: null,
+    messageUpdate: null,
 };
 
 const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ message, file }, { rejectWithValue }) => {
@@ -42,6 +39,19 @@ const getMessagesByConversationId = createAsyncThunk('MessageSlice/getMessagesBy
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 });
+
+
+const updateMessageStatus = createAsyncThunk('MessageSlice/updateMessageStatus', async ({ messageId, status }, { rejectWithValue }) => {
+    try {
+        console.log(messageId, status);
+        
+        const response = await axiosInstance.put(`/api/message/${messageId}/status?status=${status}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
 const MessageSlice = createSlice({
     name: 'MessageSlice',
     initialState: initialState,
@@ -52,14 +62,27 @@ const MessageSlice = createSlice({
         increaseLimit: (state, action) => {
             state.limit += action.payload;
         },
-        setInputMessage: (state, action) => {
-            state.inputMessage = action.payload;
-        },
         addMessage: (state, action) => {
-            state.messages = [...state.messages, action.payload];
+            state.messages.push(action.payload)
         },
         setMessageParent: (state, action) => {
             state.messageParent = action.payload;
+        },
+        setMessageUpdate: (state, action) => {
+            const {messageId, status} = action.payload;
+            const index = state.messages.findIndex(message => message.id === messageId);
+            if (index !== -1) { 
+                state.messages[index].status = status; 
+            }
+        },
+        updateMessage: (state, action) => {
+
+            const index = state.messages.findIndex(message => { 
+                return message.requestId === Number(action.payload.requestId)
+            }); 
+            if (index !== -1) {
+                state.messages[index] = action.payload; 
+            }  
         },
     },
     extraReducers: (builder) => {
@@ -85,9 +108,19 @@ const MessageSlice = createSlice({
         builder.addCase(getMessagesByConversationId.rejected, (state, action) => {
             state.isLoadMessage = false
         });
+
+        builder.addCase(updateMessageStatus.pending, (state) => {
+            state.messageUpdate = null;
+        });
+        builder.addCase(updateMessageStatus.fulfilled, (state, action) => {
+            state.messageUpdate = action.payload.data;
+        });
+        builder.addCase(updateMessageStatus.rejected, (state, action) => {
+            state.messageUpdate = null;
+        });
     }
 });
 
-export const { setMessages, increaseLimit, setInputMessage, addMessage, setMessageParent } = MessageSlice.actions;
-export { sendMessage, getMessagesByConversationId };
+export const { setMessages, increaseLimit, addMessage, setMessageParent, setMessageUpdate, updateMessage } = MessageSlice.actions;
+export { sendMessage, getMessagesByConversationId, updateMessageStatus };
 export default MessageSlice.reducer;

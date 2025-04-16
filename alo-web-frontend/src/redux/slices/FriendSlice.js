@@ -22,7 +22,6 @@ const getFriends = createAsyncThunk('FriendSlice/getFriends', async (_, { reject
 const unfriend = createAsyncThunk('FriendSlice/unfriend', async (request, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.post('/api/friend/unfriend', request);
-        console.log("response", response.data);
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");

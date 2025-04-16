@@ -6,8 +6,12 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Permissions from 'expo-permissions';
 import OptionModal from './OptionModal';
+<<<<<<< HEAD
 import { useSelector, useDispatch } from 'react-redux';
 import { setMessageParent } from '../../redux/slices/MessageSlice';
+=======
+import { showToast } from '../../../utils/AppUtils';
+>>>>>>> main
 
 const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isStickerPickerVisible, setIsStickerPickerVisible, handleSendFile, handlerSendImage }) => {
   const [isOptionModalVisible, setOptionModalVisible] = useState(false);
@@ -22,7 +26,8 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
   }
   const allowedExtensions = ['pdf', 'doc', 'docx', 'txt', 'xls', 'xlsx', 'ppt', 'pptx', 'zip', 'rar', 'mp4'];
   const openFilePicker = async () => {
-    const result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
+    try {
+      const result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
     console.log('result', result);
 
     if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -50,6 +55,9 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
     }
 
     setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
+    } catch (error) {
+      showToast('error', "top", "Lỗi", 'Không hỗ trợ loại tệp này');
+    }
   };
 
   const openImageLibrary = async () => {
@@ -58,15 +66,17 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
       alert('Ứng dụng cần quyền truy cập thư viện ảnh để chọn ảnh.');
       return;
     }
+
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
       quality: 1,
       allowsMultipleSelection: true,
     });
+
     if (!result.canceled) {
-      for (const aset of result.assets) {
-        const imageUrl = aset.uri;
+      for (const asset of result.assets) {
+        const imageUrl = asset.uri;
         const fileName = imageUrl.split('/').pop();
         const fileType = imageUrl.split('.').pop();
         const file = {
@@ -74,17 +84,25 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
           name: fileName,
           type: `image/${fileType}`,
         };
+
         const newMessage = {
           content: '',
           messageType: 'image',
           file: file,
           fileLink: imageUrl,
         };
-        await handlerSendImage(newMessage);
+
+
+
+        handlerSendImage(newMessage);
+
+        // Delay nhỏ tránh gửi quá nhanh
+        await new Promise(resolve => setTimeout(resolve, 500));
+
       }
-      setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
     }
-  }
+  };
+
 
   return (
     <View style={{ backgroundColor: 'white', padding: 10, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderColor: '#EDEDED' }}>

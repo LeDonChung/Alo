@@ -98,6 +98,9 @@ export default function InvitationFriend() {
 
         });
 
+        console.log("friendUpdate", friendUpdate);
+        
+
         socket.emit('accept-friend-request', {
           userId: friendUpdate.userId,
           friendId: friendUpdate.friendId,

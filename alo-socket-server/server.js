@@ -130,7 +130,7 @@ io.on("connection", (socket) => {
         const filteredSocketIds = socketIdOfUserId.filter(id => id !== socket.id);
         console.log("SocketId đã lọc:", filteredSocketIds);
         filteredSocketIds.forEach(id => io.to(id).emit('receive-unfriend', data));
-        socketIds.forEach(id => io.to(id).emit('receive-unfriend', data)); 
+        socketIds.forEach(id => io.to(id).emit('receive-unfriend', data));
     });
 
     socket.on('reject-friend-request-for-me', async (data) => {
@@ -199,7 +199,7 @@ io.on("connection", (socket) => {
 
     socket.on('pin-message', async (data) => {
         const members = data.conversation.memberUserIds;
-        
+
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);
             const filteredSocketIds = socketIds.filter(id => id !== socket.id);
@@ -213,7 +213,7 @@ io.on("connection", (socket) => {
 
     socket.on('unpin-message', async (data) => {
         const members = data.conversation.memberUserIds;
-        
+
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);
             const filteredSocketIds = socketIds.filter(id => id !== socket.id);
@@ -231,10 +231,25 @@ io.on("connection", (socket) => {
             const filteredSocketIds = socketIds.filter(id => id !== socket.id);
             filteredSocketIds.forEach(id => {
                 console.log("Cập nhật reaction cho user:", userId);
-                io.to(id).emit('receice-update-reaction', data.message);
+                io.to(id).emit('receive-update-reaction', data.message);
             });
         }
     })
+
+    socket.on('updateMessage', async (data) => {
+        const message = data.message;
+        const conversation = data.conversation;
+        const members = conversation.memberUserIds;
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-update-message', data);
+            });
+            io.to(socket.id).emit('receive-update-message', data);
+        }
+    })
+
     // =====================
     // Helper functions
     // =====================
@@ -251,16 +266,9 @@ io.on("connection", (socket) => {
 
     const handleUpdateLastMessage = async (conversation, message) => {
         const members = conversation.memberUserIds;
-        console.log(
-            "Cập nhật tin nhắn cuối cho các thành viên trong cuộc trò chuyện:",
-            members,
-            conversation.id,
-            message
-        )
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);
             socketIds.forEach(id => {
-                console.log("Cập nhật tin nhắn cuối cho user:", userId);
                 io.to(id).emit('update-last-message', conversation.id, message);
             });
         }
