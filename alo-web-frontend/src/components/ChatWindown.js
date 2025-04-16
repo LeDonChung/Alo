@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { axiosInstance } from '../api/APIClient';
 import socket from '../utils/socket';
-import { getMessagesByConversationId, sendMessage, setInputMessage, setMessages, setMessageUpdate } from '../redux/slices/MessageSlice';
+import { getMessagesByConversationId,setMessages } from '../redux/slices/MessageSlice';
 import RightSlidebar from './RightSlideBarChat';
 import ChatHeader from './chat/ChatHeader';
 import ChatContent from './chat/ChatContent';
@@ -18,6 +18,7 @@ const ChatWindow = () => {
   const messages = useSelector(state => state.message.messages);
   const [lastLogout, setLastLogout] = useState(null);
   const limit = useSelector(state => state.message.limit);
+  const conversations = useSelector(state => state.conversation.conversations);
   const getLastLoginMessage = (lastLogout) => {
     if (!lastLogout) return 'Chưa truy cập';
     const now = new Date();
@@ -52,13 +53,13 @@ const ChatWindow = () => {
       handleGetLastLogout(friend);
     }
   }, [conversation, userLogin.id]);
-
+ 
   useEffect(() => {
     socket.on('receive-message', (message) => {
       dispatch(setMessages([...messages, message]));
     });
   }, [messages, dispatch]);
-  
+
   useEffect(() => {
     dispatch(getMessagesByConversationId(conversation.id));
   }, [conversation, limit, dispatch]);
@@ -86,6 +87,7 @@ const ChatWindow = () => {
             conversation={conversation}
             userLogin={userLogin}
             getFriend={getFriend}
+            conversations={conversations}
           />
         </div>
 

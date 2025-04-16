@@ -414,6 +414,7 @@ const getFriends = async (userId) => {
                     accountId: user.accountId,
                     requestDate: friend.requestDate,
                     avatarLink: user.avatarLink,
+                    id: user.id
                 }
             }
             listResult.push(response);

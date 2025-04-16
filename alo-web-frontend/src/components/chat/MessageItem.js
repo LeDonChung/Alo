@@ -11,14 +11,13 @@ import { setMessageParent, setMessageUpdate, updateMessageStatus } from '../../r
 import { getConversationById } from '../../redux/slices/ConversationSlice';
 import socket from '../../utils/socket';
 
-const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClickParent, isHighlighted, conversation, userLogin }) => {
+const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClickParent, isHighlighted, conversation, userLogin, conversations }) => {
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, messageId: null });
   const dispatch = useDispatch();
 
   useEffect(() => {
     const handleUpdateMessage = async (ms) => {
       await dispatch(setMessageUpdate({ messageId: ms.id, status: ms.status }));
-      console.log('update message', ms);
     }
 
     socket.on('receive-update-message', handleUpdateMessage);
@@ -160,6 +159,10 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
     }
   }
 
+  const handleShareMessage = () => {
+
+  }
+
   return (
     <div
       className={`flex ${isUserMessage ? 'justify-end' : 'justify-start'} mt-4 group`}
@@ -177,7 +180,7 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
         >
           <ul className="text-sm text-gray-700">
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleAnwer()}>Trả lời</li>
-            <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Chia sẻ</li>
+            <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleShareMessage()}>Chia sẻ</li>
             {
               message.messageType !== 'file' && message.messageType !== 'sticker' && (
                 <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleCopy()}>Copy tin nhắn</li>
