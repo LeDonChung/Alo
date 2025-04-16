@@ -59,7 +59,7 @@ export const HomeScreen = ({ navigation }) => {
 
       const message = item.lastMessage;
       let content = message.content;
-
+      let messageStatus = item.lastMessage.status;
       switch (message.messageType) {
         case 'sticker':
           content = 'Sticker';
@@ -76,10 +76,16 @@ export const HomeScreen = ({ navigation }) => {
       }
 
       if (message.senderId === userLogin.id) {
-        return 'Bạn: ' + content;
+        return "Bạn: " + (messageStatus === 0 ? content : "Tin nhắn đã thu hồi");
       } else {
-        return friend?.fullName + ': ' + content;
+        return (
+          item.isGroup
+            ? friend?.fullName + ": " + (messageStatus === 0 ? content : "Tin nhắn đã thu hồi")
+            : (messageStatus === 0 ? content : "Tin nhắn đã thu hồi")
+        );
+
       }
+
     };
 
     const getLastTime = () => {
@@ -110,7 +116,7 @@ export const HomeScreen = ({ navigation }) => {
           navigation.navigate("chat", {
             friend: friend,
           })
-          }}
+        }}
         style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: '#EDEDED' }}
       >
         <Image
@@ -147,10 +153,10 @@ export const HomeScreen = ({ navigation }) => {
           userLogin && (
             <FlatList
               refreshControl={
-                <RefreshControl refreshing={refreshing} onRefresh={onRefresh} 
-                colors={['transparent']} 
-                tintColor="transparent" 
-              />}
+                <RefreshControl refreshing={refreshing} onRefresh={onRefresh}
+                  colors={['transparent']}
+                  tintColor="transparent"
+                />}
               data={conversations}
               renderItem={(item) => renderItem({ item: item.item, handlerChoostConversation })}
               keyExtractor={(item) => item.id}

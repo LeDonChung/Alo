@@ -10,7 +10,7 @@ const ConversationList = () => {
   const userOnlines = useSelector(state => state.user.userOnlines);
   const dispatch = useDispatch();
 
-  
+
 
   const isFriendOnline = (userId) => {
     return userOnlines.includes(userId);
@@ -28,8 +28,8 @@ const ConversationList = () => {
   const showLastMessage = (conversation) => {
     if (conversation.lastMessage) {
       let message = conversation.lastMessage.content;
-      let messageStatus = conversation.lastMessage.status;     
-      
+      let messageStatus = conversation.lastMessage.status;
+
       if (conversation.lastMessage.messageType === 'sticker') {
         message = 'Sticker';
       } else if (conversation.lastMessage.messageType === 'image') {
@@ -42,12 +42,17 @@ const ConversationList = () => {
       if (conversation.lastMessage.senderId === userLogin.id) {
         return "Bạn: " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi");
       } else {
-        return getFriend(conversation).fullName + ": " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi");
+        return (
+          conversation.isGroup
+            ? getFriend(conversation).fullName + ": " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi")
+            : (messageStatus === 0 ? message : "Tin nhắn đã thu hồi")
+        );
+
       }
     }
   }
 
-  
+
 
   const getLastTimeMessage = (time) => {
     const now = new Date();
@@ -74,7 +79,7 @@ const ConversationList = () => {
       <div>
         {conversations && conversations.map((conversation) => (
           !conversation.isGroup &&
-          <div 
+          <div
             key={conversations.id}
             onClick={() => {
               if (selectedConversation) {
