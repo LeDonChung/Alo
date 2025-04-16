@@ -44,6 +44,20 @@ const getMessagesByConversationId = createAsyncThunk('MessageSlice/getMessagesBy
     }
 });
 
+const forwardMessage = createAsyncThunk(
+    'MessageSlice/forwardMessage',
+    async ({ messageId, conversationIds }, { rejectWithValue }) => {
+      try {
+        const response = await axiosInstance.post(`/api/message/${messageId}/send-continue`, {
+          conversationIds: conversationIds,
+        });
+        return response.data;
+      } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+      }
+    }
+  );
+
 const updateReaction = createAsyncThunk('MessageSlice/updateReaction', async ({ messageId, type }, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.put(`/api/message/${messageId}/reaction`, {
@@ -64,6 +78,7 @@ const removeAllReaction = createAsyncThunk('MessageSlice/removeAllReaction', asy
     }
 })
  
+
 const MessageSlice = createSlice({
     name: 'MessageSlice',
     initialState: initialState,
@@ -105,6 +120,15 @@ const MessageSlice = createSlice({
         builder.addCase(getMessagesByConversationId.rejected, (state, action) => {
             state.isLoadMessage = false
         });
+        builder.addCase(forwardMessage.pending, (state) => {
+            state.isSending = true;
+        });
+        builder.addCase(forwardMessage.fulfilled, (state, action) => {
+            state.isSending = false
+        });
+        builder.addCase(forwardMessage.rejected, (state, action) => {
+            state.isSending = false
+        });
 
         builder.addCase(updateReaction.pending, (state) => {
         });
@@ -131,5 +155,5 @@ const MessageSlice = createSlice({
 });
 
 export const { setMessages, increaseLimit, handlerUpdateReaction } = MessageSlice.actions;
-export { sendMessage, getMessagesByConversationId, updateReaction, removeAllReaction };
+export { sendMessage, getMessagesByConversationId, updateReaction, removeAllReaction, forwardMessage };
 export default MessageSlice.reducer;

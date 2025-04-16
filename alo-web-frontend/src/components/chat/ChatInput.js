@@ -40,7 +40,7 @@ const ChatInput = ({ isSending, getFriend }) => {
 
   const handlerSendImagesCopy = async () => {
     for (const image of images) {
-      const newMessage = { ...inputMessage, messageType: 'image', fileLink: image };      
+      const newMessage = { ...inputMessage, messageType: 'image', fileLink: image };
       await handlerSendMessage(newMessage);
       setImages(images.filter(img => img !== image)); // Xóa hình ảnh đã gửi
     }
@@ -57,10 +57,14 @@ const ChatInput = ({ isSending, getFriend }) => {
       conversationId: conversation.id,
       content: messageNew.content,
       messageType: messageNew.messageType,
-      fileLink: messageNew.fileLink,
       timestamp: Date.now(),
       seen: [],
     };
+
+    if (messageNew.fileLink) {
+      message.fileLink = messageNew.fileLink;
+    }
+
     if (messageParent) {
       message.messageParent = messageParent.id;
     }
@@ -192,7 +196,7 @@ const ChatInput = ({ isSending, getFriend }) => {
     dispatch(setInputMessage({ ...inputMessage, messageType: 'text', content: '' }));
   };
 
-  if(messageParent) {
+  if (messageParent) {
     inputRef.current.focus();
   }
 

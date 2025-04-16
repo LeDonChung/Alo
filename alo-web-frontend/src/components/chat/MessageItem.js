@@ -13,6 +13,8 @@ import socket from '../../utils/socket';
 
 const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClickParent, isHighlighted, conversation, userLogin, conversations }) => {
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, messageId: null });
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -162,6 +164,37 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
   const handleShareMessage = () => {
 
   }
+  // Xử lý sự kiện khi nhấn vào "Xem chi tiết"
+  const handleViewDetails = () => {
+    setShowDetailsModal(true);
+    setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
+  }
+  // Định dạng ngày và thời gian gửi
+  const formatMessageDateTime = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return `${isToday ? 'Hôm nay' : date.toLocaleDateString('vi-VN')} • ${time}`;
+  };
+
+  // Lấy thông tin người gửi
+  const getSenderInfo = () => {
+    if (message.senderId === userLogin.id) {
+      return {
+        fullName: "Bạn",
+        avatarLink: userLogin.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg",
+      };
+    }
+    const sender = conversation?.members?.find(member => member.id === message.senderId) || message.sender;
+    return {
+      fullName: sender?.fullName || "Thành viên",
+      avatarLink: sender?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg",
+    };
+  };
+
+  const senderInfo = getSenderInfo();
+
 
   return (
     <div
@@ -402,6 +435,78 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
         )}
 
       </div>
+      {showDetailsModal && (
+        <div
+          className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20"
+          onClick={() => setShowDetailsModal(false)}
+        >
+          <div
+            className="bg-white rounded-lg shadow-lg w-full max-w-md p-4 relative"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+              onClick={() => setShowDetailsModal(false)}
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+            <h3 className="text-lg font-semibold mb-4">Thông tin tin nhắn</h3>
+            <div className="flex items-center mb-4">
+              <img
+                src={senderInfo.avatarLink}
+                alt="avatar"
+                className="w-10 h-10 rounded-full mr-3"
+              />
+              <div>
+                <p className="font-semibold">{senderInfo.fullName}</p>
+                <p className="text-sm text-gray-500">{formatMessageDateTime(message.timestamp)}</p>
+              </div>
+            </div>
+            <div className="border-t border-gray-200 pt-4">
+              {message.status === 0 ? (
+                <>
+                  {message.messageType === 'text' && (
+                    <p className="text-gray-800 break-words">{message.content}</p>
+                  )}
+                  {message.messageType === 'image' && (
+                    message.fileLink.includes('.mp4') ? (
+                      <video
+                        src={message.fileLink}
+                        controls
+                        className="max-w-full max-h-64 rounded-lg"
+                      />
+                    ) : (
+                      <img
+                        src={message.fileLink}
+                        alt="Hình ảnh"
+                        className="max-w-full max-h-64 rounded-lg"
+                      />
+                    )
+                  )}
+                  {message.messageType === 'sticker' && (
+                    <img
+                      src={message.fileLink}
+                      alt="Sticker"
+                      className="max-w-32 max-h-32 rounded-lg"
+                    />
+                  )}
+                  {message.messageType === 'file' && !message.fileLink.includes('.mp4') && (
+                    <div className="flex items-center space-x-2">
+                      {getFileIcon(getFileExtension(message.fileLink))}
+                      <p className="text-gray-800 break-words">{extractOriginalName(message.fileLink)}</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <p className="text-gray-800">Tin nhắn đã được thu hồi</p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   );
 

@@ -55,26 +55,23 @@ export const ChatScreen = ({ route, navigation }) => {
     const messageData = customInputMessage || inputMessage;
     const { content, messageType, file } = messageData;
 
-    // Lấy fileLink nếu có
-    const fileLink = messageData.fileLink || (file ? file.uri : '');
-
     const message = {
       senderId: userLogin.id,
       conversationId: conversation.id,
       content,
       messageType,
-      fileLink,
       timestamp: Date.now(),
       seen: []
     };
 
     try {
-      const response = await dispatch(sendMessage({ message, file })).then((res) => {
+      const response = await dispatch(sendMessage({ message, file })).unwrap().then((res) => {
         const sentMessage = {
-          ...res.payload.data,
+          ...res.data,
           sender: userLogin
         };
 
+        console.log("sentMessage", sentMessage);
         dispatch(setMessages([...messages, sentMessage]));
         socket.emit('send-message', {
           conversation,
@@ -349,6 +346,7 @@ export const ChatScreen = ({ route, navigation }) => {
               <MenuComponent
                 message={selectedMessage}
                 showMenuComponent={setIsShowMenuInMessage}
+                friend={friend}
               />
             </Pressable>
           </Modal>

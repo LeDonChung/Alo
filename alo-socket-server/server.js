@@ -130,7 +130,7 @@ io.on("connection", (socket) => {
         const filteredSocketIds = socketIdOfUserId.filter(id => id !== socket.id);
         console.log("SocketId đã lọc:", filteredSocketIds);
         filteredSocketIds.forEach(id => io.to(id).emit('receive-unfriend', data));
-        socketIds.forEach(id => io.to(id).emit('receive-unfriend', data)); 
+        socketIds.forEach(id => io.to(id).emit('receive-unfriend', data));
     });
 
     socket.on('reject-friend-request-for-me', async (data) => {
@@ -199,7 +199,7 @@ io.on("connection", (socket) => {
 
     socket.on('pin-message', async (data) => {
         const members = data.conversation.memberUserIds;
-        
+
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);
             const filteredSocketIds = socketIds.filter(id => id !== socket.id);
@@ -213,7 +213,7 @@ io.on("connection", (socket) => {
 
     socket.on('unpin-message', async (data) => {
         const members = data.conversation.memberUserIds;
-        
+
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);
             const filteredSocketIds = socketIds.filter(id => id !== socket.id);
@@ -240,11 +240,12 @@ io.on("connection", (socket) => {
         const message = data.message;
         const conversation = data.conversation;
         const members = conversation.memberUserIds;
-        console.log(conversation.lastMessage);
-        if(conversation.lastMessage.id === message.id) {
+        console.log("CONV", conversation);
+        console.log("sadassa", conversation.lastMessage);
+        if (conversation.lastMessage.id === message.id) {
             handleUpdateLastMessage(conversation, message);
         }
-        
+
         console.log("Cập nhật tin nhắn cho các thành viên trong cuộc trò chuyện:", members, conversation.id, message);
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);
@@ -253,7 +254,7 @@ io.on("connection", (socket) => {
                 console.log("Cập nhật tin nhắn cho user:", userId);
                 io.to(id).emit('receive-update-message', message);
             });
-        }        
+        }
     })
 
     // =====================
