@@ -74,11 +74,6 @@ export default function FriendsOfUser() {
     }
   };
 
-
-
-
-
-
   const handleBlockFriend = async (id) => {
     try {
       const friendUpdate = {
@@ -357,7 +352,6 @@ export default function FriendsOfUser() {
               </div>
 
               <div className="flex flex-col w-full mx-auto mb-5 px-2">
-
                 {
                   !loading ? (
 
@@ -397,7 +391,7 @@ export default function FriendsOfUser() {
                                   >
                                     <FontAwesomeIcon icon={faEllipsis} />
                                   </button>
-                                  {openDetail && detailFriend.friendId === friend.friendId && (
+                                  {openDetail && detailFriend.friendInfo.id === friend.friendInfo.id && (
                                     <div className="absolute left-[-200px] mt-1 w-[200px] bg-white rounded-lg shadow-lg">
                                       <button className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
                                         <span className="">Xem thông tin</span>

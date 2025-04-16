@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react';
 import MessageItem from './MessageItem';
 import { useDispatch } from 'react-redux';
 
-const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFriend, loadMoreMessages }) => {
+const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFriend, loadMoreMessages, conversations }) => {
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const [isScrolledToTop, setIsScrolledToTop] = useState(false);
@@ -109,6 +109,9 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
               isUserMessage={isUserMessage}
               isLastMessage={isLastMessage}
               showAvatar={showAvatar}
+              conversation={conversation}
+              userLogin={userLogin}                            
+              conversations={conversations}
               isHighlighted={highlightedMessage === message.id} // Kiểm tra xem tin nhắn có được làm nổi bật không
               onClickParent={() => {
                 if (message.messageParent?.id) {

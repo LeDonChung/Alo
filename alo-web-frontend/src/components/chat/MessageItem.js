@@ -7,11 +7,24 @@ import lgZoom from 'lightgallery/plugins/zoom';
 import lgThumbnail from 'lightgallery/plugins/thumbnail';
 import lgVideo from "lightgallery/plugins/video";
 import { useDispatch } from 'react-redux';
-import { setMessageParent } from '../../redux/slices/MessageSlice';
+import { setMessageParent, setMessageUpdate, updateMessageStatus } from '../../redux/slices/MessageSlice';
+import { getConversationById } from '../../redux/slices/ConversationSlice';
+import socket from '../../utils/socket';
 
-const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClickParent, isHighlighted }) => {
+const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClickParent, isHighlighted, conversation, userLogin, conversations }) => {
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, messageId: null });
   const dispatch = useDispatch();
+
+  useEffect(() => {
+    const handleUpdateMessage = async (ms) => {
+      await dispatch(setMessageUpdate({ messageId: ms.id, status: ms.status }));
+    }
+
+    socket.on('receive-update-message', handleUpdateMessage);
+    return () => {
+      socket.off('receive-update-message', handleUpdateMessage);
+    };
+  }, [dispatch]);
 
   useEffect(() => {
     const handleClick = () => {
@@ -108,9 +121,9 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
 
   const handleCopy = () => {
     let content = "";
-    if(message.messageType === 'text'){
+    if (message.messageType === 'text') {
       content = message.content;
-    }else if(message.messageType === 'image'){
+    } else if (message.messageType === 'image') {
       content = message.fileLink;
     }
 
@@ -122,6 +135,32 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
       });
     }
     setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
+  }
+
+  const handleMessageRecall = async () => {
+    try {
+      setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
+      const resp = await dispatch(updateMessageStatus({ messageId: message.id, status: 1 }));
+      const messageUpdate = resp.payload.data;
+      await dispatch((setMessageUpdate({ messageId: messageUpdate.id, status: messageUpdate.status })));
+      // const messageUpdate = message
+      console.log("Thu hồi tin nhắn", messageUpdate);
+      const objectValue = {
+        message: messageUpdate,
+        conversation: conversation,
+      }
+      console.log("objectValue", objectValue);
+
+      socket.emit('updateMessage', objectValue);
+      
+    } catch (error) {
+      console.log(error.message);
+
+    }
+  }
+
+  const handleShareMessage = () => {
+
   }
 
   return (
@@ -141,7 +180,7 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
         >
           <ul className="text-sm text-gray-700">
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleAnwer()}>Trả lời</li>
-            <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Chia sẻ</li>
+            <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleShareMessage()}>Chia sẻ</li>
             {
               message.messageType !== 'file' && message.messageType !== 'sticker' && (
                 <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleCopy()}>Copy tin nhắn</li>
@@ -154,7 +193,11 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
             }
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Ghim tin nhắn</li>
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Xem chi tiết</li>
-            <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Thu hồi</li>
+            {
+              message.senderId === userLogin.id && (
+                <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => handleMessageRecall()}>Thu hồi</li>
+              )
+            }
             <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-red-500">Xóa chỉ ở phía tôi</li>
           </ul>
         </div>
@@ -184,23 +227,23 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
           <p className='text-sm text-gray-500 font-medium max-w-xs mb-3'>{message.sender?.fullName}</p>
         )}
 
-        {message.messageParent && (
-          <div className={`flex items-center space-x-2 mb-2 ${isUserMessage ? 'bg-blue-200' : 'bg-gray-200'} p-2 rounded-md`} onClick={onClickParent}>
-            {message.messageParent.messageType === 'image' && (
+        {message.messageParent && message.status === 0 && (
+          <div className={`flex items-center space-x-2 mb-2 ${isUserMessage ? 'bg-blue-200' : 'bg-gray-200'} p-2 rounded-md cursor-pointer`} onClick={onClickParent}>
+            {message.messageParent.status === 0 && message.messageParent.messageType === 'image' && (
               <img
                 src={message.messageParent.fileLink}
                 alt=""
                 className="w-11 h-11 object-cover rounded-lg mx-2"
               />
             )}
-            {message.messageParent.messageType === 'sticker' && (
+            {message.messageParent.status === 0 && message.messageParent.messageType === 'sticker' && (
               <img
                 src={message.messageParent.fileLink}
                 alt=""
                 className="w-11 h-11 object-cover rounded-lg mx-2"
               />
             )}
-            {message.messageParent.messageType === 'file' && (
+            {message.messageParent.status === 0 && message.messageParent.messageType === 'file' && (
               message.messageParent.fileLink.includes('.mp4') ? (
                 <video
                   src={message.messageParent.fileLink}
@@ -215,6 +258,7 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
             )}
             <div>
               <p className="text-sm text-gray-800 max-w-xs font-semibold">{message.messageParent.sender.fullName}</p>
+
               <div className="text-gray-500 font-normal">
                 {message.messageParent.messageType === 'text' && <p>{message.messageParent.content}</p>}
                 {message.messageParent.messageType === 'image' && (
@@ -231,121 +275,125 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
           </div>
         )}
 
-        {message.messageType === 'text' && (
-          <p className="text-sm text-gray-800 max-w-xs">{message.content}</p>
-        )}
+        {message.status === 0 && (
+          <>
+            {message.messageType === 'text' && (
+              <p className="text-sm text-gray-800 max-w-xs">{message.content}</p>
+            )}
 
-        {message.messageType === 'sticker' && (
-          <img src={message.fileLink} alt="sticker" className="w-20 h-20" />
-        )}
+            {message.messageType === 'sticker' && (
+              <img src={message.fileLink} alt="sticker" className="w-20 h-20" />
+            )}
 
-        {message.messageType === 'image' && (
-          <LightGallery plugins={[lgZoom, lgThumbnail, lgVideo]} mode="lg-fade">
-            {[message.fileLink].map((img, index) => {
-              const isVideo = img.includes('.mp4');
-              return !isVideo ? (
-                <a key={index} href={img}>
-                  <img src={img} alt="Hình ảnh" className='max-w-full max-h-96 cursor-pointer object-cover' />
-                </a>
-              ) : (
-                <a key={index} href={img} data-lg-size="1280-720">
-                  <video src={img} controls className='max-w-full max-h-96 cursor-pointer object-cover' />
-                </a>
-              );
-            })}
-          </LightGallery>
-        )}
+            {message.messageType === 'image' && (
+              <LightGallery plugins={[lgZoom, lgThumbnail, lgVideo]} mode="lg-fade">
+                {[message.fileLink].map((img, index) => {
+                  const isVideo = img.includes('.mp4');
+                  return !isVideo ? (
+                    <a key={index} href={img}>
+                      <img src={img} alt="Hình ảnh" className='max-w-full max-h-96 cursor-pointer object-cover' />
+                    </a>
+                  ) : (
+                    <a key={index} href={img} data-lg-size="1280-720">
+                      <video src={img} controls className='max-w-full max-h-96 cursor-pointer object-cover' />
+                    </a>
+                  );
+                })}
+              </LightGallery>
+            )}
 
-        {message.messageType === 'file' && (
-          message.fileLink.includes('.mp4') ? (
-            <div className="flex items-center space-x-3 rounded-lg w-full max-w-sm cursor-pointer">
-              <a href={message.fileLink} data-lg-size="1280-720">
-                <video src={message.fileLink} controls className='max-w-full max-h-96 cursor-pointer object-cover' />
-              </a>
-            </div>
-          ) : (
-            <div className="flex items-center space-x-3 rounded-lg w-full max-w-sm cursor-pointer">
-              {getFileIcon(getFileExtension(message.fileLink))}
-              <div className="flex-1 min-w-0">
-                <div className="text-gray-900 font-semibold truncate max-w-full">
-                  {extractOriginalName(message.fileLink)}
+            {message.messageType === 'file' && (
+              message.fileLink.includes('.mp4') ? (
+                <div className="flex items-center space-x-3 rounded-lg w-full max-w-sm cursor-pointer">
+                  <a href={message.fileLink} data-lg-size="1280-720">
+                    <video src={message.fileLink} controls className='max-w-full max-h-96 cursor-pointer object-cover' />
+                  </a>
                 </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <button
-                  onClick={() => handleDownload(message.fileLink)}
-                  className="rounded-sm bg-white transition"
-                  title="Tải xuống"
-                >
-                  <img src="/icon/ic_download.png" alt="Tải xuống" />
-                </button>
-              </div>
-            </div>
-          )
-        )}
-
-        {isLastMessage && (
-          <div className={`text-xs text-gray-400 mt-2 ${message.messageType === 'image' && "mx-2 mb-2"}`}>
-            {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-          </div>
-        )}
-
-        <div
-          className="absolute bottom-[-10px] right-[-10px] group/reaction hidden group-hover:flex items-center justify-center bg-white rounded-full shadow-lg cursor-pointer transition duration-200"
-          onMouseEnter={() => setShowReactions(true)}
-          onMouseLeave={() => setShowReactions(false)}
-        >
-          <div className="relative">
-            {/* Nút Like */}
-            <div className="flex items-center justify-center p-1 bg-white rounded-full shadow cursor-pointer transition duration-200">
-              <img
-                src="https://res-zalo.zadn.vn/upload/media/2019/1/25/iconlike_1548389696575_103596.png"
-                width={15}
-                height={15}
-                alt="like"
-              />
-            </div>
-
-            {/* Hover Bridge - Giữ hover giữa Like và Reaction */}
-            <div
-              className="absolute"
-              style={{
-                top: isUserMessage ? '50%' : 'auto',
-                bottom: isUserMessage ? 'auto' : '100%',
-                left: isUserMessage ? 'auto' : '50%',
-                right: isUserMessage ? '100%' : 'auto',
-                transform: isUserMessage ? 'translateY(-50%)' : 'translateX(-50%)',
-                width: '30px',
-                height: '20px',
-                zIndex: 5,
-              }}
-            ></div>
-
-            {/* Reactions */}
-            {showReactions && (
-              <div
-                className={`absolute ${isUserMessage
-                  ? 'right-full mr-2 top-1/2 -translate-y-1/2'
-                  : 'bottom-full left-1/2 -translate-x-1/2 mb-2'
-                  } flex items-center justify-center bg-white p-2 rounded-full shadow-lg z-10 w-fit`}
-              >
-                {reaction.map((item, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-200 cursor-pointer"
-                    onClick={() => console.log(item.type)}
-                  >
-                    <span className="text-lg">{item.icon}</span>
+              ) : (
+                <div className="flex items-center space-x-3 rounded-lg w-full max-w-sm cursor-pointer">
+                  {getFileIcon(getFileExtension(message.fileLink))}
+                  <div className="flex-1 min-w-0">
+                    <div className="text-gray-900 font-semibold truncate max-w-full">
+                      {extractOriginalName(message.fileLink)}
+                    </div>
                   </div>
-                ))}
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => handleDownload(message.fileLink)}
+                      className="rounded-sm bg-white transition"
+                      title="Tải xuống"
+                    >
+                      <img src="/icon/ic_download.png" alt="Tải xuống" />
+                    </button>
+                  </div>
+                </div>
+              )
+            )}
+
+            {isLastMessage && (
+              <div className={`text-xs text-gray-400 mt-2 ${message.messageType === 'image' && "mx-2 mb-2"}`}>
+                {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
               </div>
             )}
-          </div>
-        </div>
 
+            <div
+              className="absolute bottom-[-10px] right-[-10px] group/reaction hidden group-hover:flex items-center justify-center bg-white rounded-full shadow-lg cursor-pointer transition duration-200"
+              onMouseEnter={() => setShowReactions(true)}
+              onMouseLeave={() => setShowReactions(false)}
+            >
+              <div className="relative">
+                {/* Nút Like */}
+                <div className="flex items-center justify-center p-1 bg-white rounded-full shadow cursor-pointer transition duration-200">
+                  <img
+                    src="https://res-zalo.zadn.vn/upload/media/2019/1/25/iconlike_1548389696575_103596.png"
+                    width={15}
+                    height={15}
+                    alt="like"
+                  />
+                </div>
 
+                {/* Hover Bridge - Giữ hover giữa Like và Reaction */}
+                <div
+                  className="absolute"
+                  style={{
+                    top: isUserMessage ? '50%' : 'auto',
+                    bottom: isUserMessage ? 'auto' : '100%',
+                    left: isUserMessage ? 'auto' : '50%',
+                    right: isUserMessage ? '100%' : 'auto',
+                    transform: isUserMessage ? 'translateY(-50%)' : 'translateX(-50%)',
+                    width: '30px',
+                    height: '20px',
+                    zIndex: 5,
+                  }}
+                ></div>
 
+                {/* Reactions */}
+                {showReactions && (
+                  <div
+                    className={`absolute ${isUserMessage
+                      ? 'right-full mr-2 top-1/2 -translate-y-1/2'
+                      : 'bottom-full left-1/2 -translate-x-1/2 mb-2'
+                      } flex items-center justify-center bg-white p-2 rounded-full shadow-lg z-10 w-fit`}
+                  >
+                    {reaction.map((item, index) => (
+                      <div
+                        key={index}
+                        className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-200 cursor-pointer"
+                        onClick={() => console.log(item.type)}
+                      >
+                        <span className="text-lg">{item.icon}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          </>
+        )}
 
+        {message.status === 1 && (
+          <p className={`text-sm text-gray-400 max-w-xs ${message.messageType !== 'text' ? 'p-3' : ''}`}>Tin nhắn đã được thu hồi</p>
+        )}
 
       </div>
     </div>
