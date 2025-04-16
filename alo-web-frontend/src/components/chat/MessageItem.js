@@ -16,18 +16,6 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
   const [showDetailsModal, setShowDetailsModal] = useState(false);
 
   const dispatch = useDispatch();
-
-  useEffect(() => {
-    const handleUpdateMessage = async (ms) => {
-      await dispatch(setMessageUpdate({ messageId: ms.id, status: ms.status }));
-    }
-
-    socket.on('receive-update-message', handleUpdateMessage);
-    return () => {
-      socket.off('receive-update-message', handleUpdateMessage);
-    };
-  }, [dispatch]);
-
   useEffect(() => {
     const handleClick = () => {
       if (contextMenu.visible) {

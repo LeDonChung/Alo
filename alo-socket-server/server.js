@@ -240,20 +240,13 @@ io.on("connection", (socket) => {
         const message = data.message;
         const conversation = data.conversation;
         const members = conversation.memberUserIds;
-        console.log("CONV", conversation);
-        console.log("sadassa", conversation.lastMessage);
-        if (conversation.lastMessage.id === message.id) {
-            handleUpdateLastMessage(conversation, message);
-        }
-
-        console.log("Cập nhật tin nhắn cho các thành viên trong cuộc trò chuyện:", members, conversation.id, message);
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);
             const filteredSocketIds = socketIds.filter(id => id !== socket.id);
             filteredSocketIds.forEach(id => {
-                console.log("Cập nhật tin nhắn cho user:", userId);
-                io.to(id).emit('receive-update-message', message);
+                io.to(id).emit('receive-update-message', data);
             });
+            io.to(socket.id).emit('receive-update-message', data);
         }
     })
 
@@ -273,16 +266,9 @@ io.on("connection", (socket) => {
 
     const handleUpdateLastMessage = async (conversation, message) => {
         const members = conversation.memberUserIds;
-        console.log(
-            "Cập nhật tin nhắn cuối cho các thành viên trong cuộc trò chuyện:",
-            members,
-            conversation.id,
-            message
-        )
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);
             socketIds.forEach(id => {
-                console.log("Cập nhật tin nhắn cuối cho user:", userId);
                 io.to(id).emit('update-last-message', conversation.id, message);
             });
         }
