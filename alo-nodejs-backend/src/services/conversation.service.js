@@ -41,16 +41,22 @@ const getConversationById = async (id) => {
 }
 
 const getConversationByMembers = async (memberUserIds) => {
-    try {
+    try {       
         const params = {
             TableName: 'Conversations',
-            FilterExpression: 'memberUserIds = :memberUserIds',
+            FilterExpression: '#createdBy IN (:memberA, :memberB) AND contains(#memberUserIds, :memberA) AND contains(#memberUserIds, :memberB)',
+            ExpressionAttributeNames: {
+                '#createdBy': 'createdBy',
+                '#memberUserIds': 'memberUserIds'
+            },
             ExpressionAttributeValues: {
-                ':memberUserIds': memberUserIds
+                ':memberA': memberUserIds[0],
+                ':memberB': memberUserIds[1]
             }
         };
         const data = await client.scan(params).promise();
-        return data.Items[0];
+        const result =  data.Items?.find(item => item.memberUserIds.length === 2);
+        return result;
     } catch (err) {
         console.error(err);
         throw new Error(err);
