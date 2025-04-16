@@ -82,6 +82,12 @@ const MessageSlice = createSlice({
                 state.messages[index].status = status; 
             }
         },
+        updateMessage: (state, action) => {
+            const index = state.messages.findIndex(message => message.requestId === action.payload.requestId);
+            if (index !== -1) {
+                state.messages[index] = action.payload;
+            }
+        }
     },
     extraReducers: (builder) => {
 
@@ -119,6 +125,6 @@ const MessageSlice = createSlice({
     }
 });
 
-export const { setMessages, increaseLimit, setInputMessage, addMessage, setMessageParent, setMessageUpdate } = MessageSlice.actions;
+export const { setMessages, increaseLimit, setInputMessage, addMessage, setMessageParent, setMessageUpdate, updateMessage } = MessageSlice.actions;
 export { sendMessage, getMessagesByConversationId, updateMessageStatus };
 export default MessageSlice.reducer;

@@ -10,7 +10,7 @@ exports.createMessage = async (req, res) => {
     try {
         console.log('Request body:', req.body);
         
-        const { senderId, conversationId, content, messageType, fileLink } = req.body;
+        const { senderId, conversationId, content, messageType, fileLink, requestId } = req.body;
 
         // Kiểm tra conversation có tồn tại
         const conversation = await conversationService.getConversationById(conversationId);
@@ -86,10 +86,10 @@ exports.createMessage = async (req, res) => {
         // Tìm người gửi
         const sender = await userService.getUserById(senderId);
         message.sender = sender;
-
         // Cập nhật tin nhắn cuối cùng của cuộc trò chuyện
         await conversationService.updateLastMessage(conversation.id, message);
 
+        message.requestId = requestId;
         console.log('Tin nhắn đã được tạo:', message);
         return res.status(200).json({
             status: 200,

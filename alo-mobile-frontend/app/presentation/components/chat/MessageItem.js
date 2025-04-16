@@ -4,7 +4,7 @@ import { Video } from 'expo-av';
 import { ReactionListComponent } from './ReactionListComponent';
 
 const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted, handlerRemoveAllAction }) => {
-  
+
   const isSent = item.senderId === userLogin.id;
   const messageType = item.messageType;
   const fileLink = item.fileLink;
@@ -70,7 +70,7 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
         </TouchableOpacity>
       )}
 
-      <View style={{flexDirection: 'column'}}>
+      <View style={{ flexDirection: 'column' }}>
         <TouchableOpacity
           style={[{ borderRadius: 10, maxWidth: '90%', minWidth: '40%', flexDirection: 'column' }, isHighlighted && { backgroundColor: '#fef08a' }]}
           onLongPress={() => {
@@ -179,8 +179,10 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
 
 
           {item.reaction && Object.keys(item.reaction).length > 0 && (
-            <ReactionListComponent message={item} isSent={isSent} handlerRemoveAllAction={handlerRemoveAllAction}/>
+            <ReactionListComponent message={item} isSent={isSent} handlerRemoveAllAction={handlerRemoveAllAction} />
           )}
+
+
 
         </TouchableOpacity>
         {/* Time */}
@@ -192,6 +194,19 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
             })}
           </Text>
         )}
+        {
+          isSent && showTime() && (
+            (item.status === -1) ?
+              <Text style={{ marginLeft: 'auto', marginRight: 10, width: 70, textAlign: 'center', padding: 3, borderRadius: 100, backgroundColor: '#b6bbc5', fontSize: 12, color: '#fff' }}>
+                Đang gửi
+              </Text> : (
+                <Text style={{ marginLeft: 'auto', marginRight: 10, width: 70, textAlign: 'center', padding: 3, borderRadius: 100, backgroundColor: '#b6bbc5', fontSize: 12, color: '#fff' }}>
+                  Đã nhận 
+                </Text>
+              )
+
+          )
+        }
       </View>
 
     </View>
