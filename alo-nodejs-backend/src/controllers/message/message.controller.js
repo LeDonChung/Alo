@@ -162,13 +162,26 @@ exports.updateMessageStatus = async (req, res) => {
 
         // Cập nhật trạng thái tin nhắn
         await messageService.updateMessageStatus(messageId, message.timestamp, Number(status));
-
         message.status = Number(status);
 
+
+        // Cập nhật tin nhắn cuối cùng của cuộc trò chuyện
+        const conversation = await conversationService.getConversationById(message.conversationId);
+        if (!conversation) {
+            return res.status(404).json({
+                status: 404,
+                message: "Cuộc trò chuyện không tồn tại.",
+                data: null
+            });
+        }
+
+        console.log('Message:', message);
+        
+        await conversationService.updateLastMessage(conversation.id, message);
         return res.status(200).json({
             status: 200,
             data: message,
-            message: "Cập nhật trạng thái tin nhắn thành công."
+            message: "Cập nhật trạng thái tin nhắn thành công." 
         });
 
     } catch (err) {
