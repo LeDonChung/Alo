@@ -5,10 +5,6 @@ const initialState = {
     isLoadMessage: false,
     messages: [],
     limit: 20,
-    inputMessage: {
-        messageType: 'text',
-        content: '',
-    },
     messageParent: null,
     messageUpdate: null,
 };
@@ -66,11 +62,8 @@ const MessageSlice = createSlice({
         increaseLimit: (state, action) => {
             state.limit += action.payload;
         },
-        setInputMessage: (state, action) => {
-            state.inputMessage = action.payload;
-        },
         addMessage: (state, action) => {
-            state.messages = [...state.messages, action.payload];
+            state.messages.push(action.payload)
         },
         setMessageParent: (state, action) => {
             state.messageParent = action.payload;
@@ -83,11 +76,14 @@ const MessageSlice = createSlice({
             }
         },
         updateMessage: (state, action) => {
-            const index = state.messages.findIndex(message => message.requestId === action.payload.requestId);
+
+            const index = state.messages.findIndex(message => { 
+                return message.requestId === Number(action.payload.requestId)
+            }); 
             if (index !== -1) {
-                state.messages[index] = action.payload;
-            }
-        }
+                state.messages[index] = action.payload; 
+            }  
+        },
     },
     extraReducers: (builder) => {
 
@@ -125,6 +121,6 @@ const MessageSlice = createSlice({
     }
 });
 
-export const { setMessages, increaseLimit, setInputMessage, addMessage, setMessageParent, setMessageUpdate, updateMessage } = MessageSlice.actions;
+export const { setMessages, increaseLimit, addMessage, setMessageParent, setMessageUpdate, updateMessage } = MessageSlice.actions;
 export { sendMessage, getMessagesByConversationId, updateMessageStatus };
 export default MessageSlice.reducer;
