@@ -4,7 +4,7 @@ import { Modal, Pressable, View } from 'react-native';
 import { axiosInstance } from '../../../api/APIClient';
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
-import { addMessage, getMessagesByConversationId, handlerUpdateReaction, removeAllReaction, sendMessage, setMessages, updateMessage } from '../../redux/slices/MessageSlice';
+import { addMessage, getMessagesByConversationId, handlerUpdateReaction, removeAllReaction, sendMessage, setMessages, updateMessage, setMessageUpdate, updateMessageStatus } from '../../redux/slices/MessageSlice'; 
 import HeaderComponent from '../../components/chat/HeaderComponent';
 import InputComponent from '../../components/chat/InputComponent';
 import MessageItem from '../../components/chat/MessageItem';
@@ -15,7 +15,7 @@ import StickerPicker from '../../components/chat/StickerPicker';
 import { ActivityIndicator } from 'react-native-paper';
 import { MenuComponent } from '../../components/chat/MenuConponent';
 import { showToast } from '../../../utils/AppUtils';
-import { removePin } from '../../redux/slices/ConversationSlice';
+import { removePin, updateLastMessage } from '../../redux/slices/ConversationSlice';
 
 
 
@@ -26,6 +26,7 @@ export const ChatScreen = ({ route, navigation }) => {
   const isLoadMessage = useSelector(state => state.message.isLoadMessage);
   const limit = useSelector(state => state.message.limit);
   const messages = useSelector(state => state.message.messages);
+  const messageParent = useSelector(state => state.message.messageParent);
   const [inputMessage, setInputMessage] = useState({
     messageType: 'text',
     content: '',
@@ -68,7 +69,9 @@ export const ChatScreen = ({ route, navigation }) => {
       requestId,
       status: -1,
     };
-  
+    if (messageParent) {
+      message.messageParent = messageParent.id; 
+    }
 
     const newMessageTemp = {
       ...message,
@@ -86,7 +89,9 @@ export const ChatScreen = ({ route, navigation }) => {
     try {
       dispatch(addMessage(newMessageTemp));
       setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
-  
+      if (messageParent) {
+        dispatch(setMessageParent(null));
+      }
       const res = await dispatch(sendMessage({ message, file })).unwrap();
       const sentMessage = {
         ...res.data,
@@ -134,17 +139,20 @@ export const ChatScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     socket.on('receive-message', (message) => {
-      dispatch(setMessages([...messages, message]));
+      dispatch(addMessage(message)); 
     });
-  }, [messages, dispatch]);
+    return () => socket.off('receive-message');
+  }, [dispatch]);
 
   useEffect(() => {
-    socket.on('receive-update-message', (ms) => {
-      dispatch(setMessageUpdate({ messageId: ms.id, status: ms.status })); // Cập nhật trạng thái tin nhắn // Bổ sung để hỗ trợ thu hồi
-      dispatch(setMessages(messages.map(msg => msg.id === ms.id ? { ...msg, status: ms.status } : msg))); // Cập nhật danh sách tin nhắn // Bổ sung để hỗ trợ thu hồi
+    socket.on('receive-update-message', (data) => {
+      const { message, conversation } = data;
+      dispatch(setMessageUpdate({ messageId: message.id, status: message.status }));
+      dispatch(updateLastMessage({ conversationId: conversation.id, message })); 
     });
-    return () => socket.off('receive-update-message');  
-  }, [messages, dispatch]);
+    return () => socket.off('receive-update-message');
+  }, [dispatch]);
+  
   useEffect(() => {
     socket.on("users-online", ({ userIds }) => {
       dispatch(setUserOnlines(userIds));
@@ -337,7 +345,7 @@ export const ChatScreen = ({ route, navigation }) => {
                 handlerRemoveAllAction={handlerRemoveAllAction}
               />
             )}
-            keyExtractor={(item, index) => item.id?.toString() || item.timestamp?.toString() || index.toString()}
+            keyExtractor={(item, index) => item.id?.toString() || item.requestId?.toString() || index.toString()}
             contentContainerStyle={{ paddingVertical: 10 }}
             inverted
           />

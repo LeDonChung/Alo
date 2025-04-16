@@ -85,7 +85,16 @@ const ConversationSlice = createSlice({
                 cons.pineds = cons.pineds.filter(pin => pin.messageId !== action.payload.messageId);
             } 
             state.conversation = {...cons};
-        }
+        },
+        updateConversationFromSocket: (state, action) => {
+            const { conversationId, message } = action.payload;
+            const conversation = state.conversations.find(conv => conv.id === conversationId);
+            if (conversation) {
+                conversation.lastMessage = message;
+                const index = state.conversations.findIndex(conv => conv.id === conversationId);
+                state.conversations[index] = conversation;
+            }
+        },
     },
     extraReducers: (builder) => {
 
@@ -143,6 +152,6 @@ const ConversationSlice = createSlice({
     }
 });
 
-export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation } = ConversationSlice.actions;
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket } = ConversationSlice.actions; 
 export { getAllConversation, getConversationById, createPin, removePin };
 export default ConversationSlice.reducer;

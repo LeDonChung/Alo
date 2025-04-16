@@ -2,15 +2,14 @@ import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { Video } from 'expo-av';
 import { ReactionListComponent } from './ReactionListComponent';
-
-const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted, handlerRemoveAllAction }) => {
+const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted, handlerRemoveAllAction, flatListRef }) => {
 
   const isSent = item.senderId === userLogin.id;
   const messageType = item.messageType;
   const fileLink = item.fileLink;
 
   const getFileExtension = (filename = '') => filename.split('.').pop().toLowerCase();
-
+  
   const extractOriginalName = (fileUrl) => {
     const fileNameEncoded = fileUrl.split("/").pop();
     const fileNameDecoded = decodeURIComponent(fileNameEncoded);
@@ -69,19 +68,19 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
         </TouchableOpacity>
       )}
 
-      <View style={{ flexDirection: 'column' }}>
+    <View style={{ flexDirection: 'column' }}>
         <TouchableOpacity
           style={[{ borderRadius: 10, maxWidth: '90%', minWidth: '40%', flexDirection: 'column' }, isHighlighted && { backgroundColor: '#fef08a' }]}
           onLongPress={() => handleLongPress(item)}
         >
-          {/* Hiển thị tin nhắn cha nếu có */}
           {item.messageParent && item.status === 0 && (
             <TouchableOpacity
               onPress={() => {
-                const messageId = item.messageParent.id;
-                const index = messages.findIndex(msg => msg.id === messageId);
-                if (index !== -1 && flatListRef.current) {
-                  flatListRef.current.scrollToIndex({ index, animated: true });
+                if (item.messageParent?.id) {
+                  const index = flatListRef.current?.props?.data?.findIndex(msg => msg.id === item.messageParent.id);
+                  if (index !== -1 && flatListRef.current) {
+                    flatListRef.current.scrollToIndex({ index, animated: true });
+                  }
                 }
               }}
               style={{
@@ -91,14 +90,17 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
                 marginBottom: 5,
               }}
             >
-              <Text style={{ fontWeight: 'bold' }}>{item.messageParent.sender.fullName}</Text>
+              <Text style={{ fontWeight: 'bold' }}>{item.messageParent.sender?.fullName || 'Ẩn danh'}</Text>
               <Text>
-                {item.messageParent.messageType === 'text' ? item.messageParent.content : `[${item.messageParent.messageType}]`}
+                {item.messageParent.status === 1
+                  ? 'Tin nhắn đã được thu hồi'
+                  : item.messageParent.messageType === 'text'
+                  ? item.messageParent.content
+                  : `[${item.messageParent.messageType}]`}
               </Text>
             </TouchableOpacity>
-          )} {/* Bổ sung để hỗ trợ trả lời tin nhắn */}
+          )} 
 
-          {/* Hiển thị trạng thái thu hồi */}
           {item.status === 1 ? (
             <View style={{ backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
               <Text style={{ color: 'gray' }}>Tin nhắn đã được thu hồi</Text>

@@ -9,6 +9,8 @@ import socket from '../../../utils/socket';
 import { ReactionBar } from './ReactionBar';
 import MessageDetailModal from './MessageDetailModal';
 import ForwardMessageModal from './ForwardMessageModal';
+import * as Clipboard from 'expo-clipboard';
+import { setMessageParent, updateMessageStatus } from '../../redux/slices/MessageSlice';
 export const MenuComponent = ({ message, showMenuComponent, friend }) => {
     const navigation = useNavigation();
     const dispatch = useDispatch();
@@ -50,13 +52,71 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
     //Chuyển tiếp tin nhắn
     const [showForwardModal, setShowForwardModal] = useState(false);
 
+    // Sao chép tin nhắn
+    const handleCopy = async () => {
+        let content = '';
+        switch (message.messageType) {
+            case 'text':
+                content = message.content;
+                break;
+            case 'image':
+            case 'file':
+                content = message.fileLink;
+                break;
+            case 'sticker':
+                content = `[Sticker] ${message.fileLink}`;
+                break;
+            default:
+                content = 'Không thể sao chép nội dung này.';
+        }
+
+        await Clipboard.setStringAsync(content);
+        showMenuComponent(false);
+        showToast('success', 'bottom', 'Thông báo', 'Đã sao chép vào clipboard!', 2000);
+    };
+
+    // Thu hồi tin nhắn
+    const handleMessageRecall = async () => {
+        const messageTime = new Date(message.timestamp);
+        const currentTime = new Date();
+        const timeDiff = (currentTime - messageTime) / (1000 * 60); // Tính khoảng cách thời gian (phút)
+
+        if (timeDiff > 2) {
+            showToast('error', 'bottom', 'Thông báo', 'Không thể thu hồi tin nhắn sau 2 phút.', 2000);
+            showMenuComponent(false);
+            return;
+        }
+
+        try {
+            showMenuComponent(false);
+            const resp = await dispatch(updateMessageStatus({ messageId: message.id, status: 1 })).unwrap();
+            const messageUpdate = resp.data;
+            dispatch(setMessageUpdate({ messageId: messageUpdate.id, status: messageUpdate.status }));
+            socket.emit('updateMessage', { message: messageUpdate, conversation });
+            showToast('success', 'bottom', 'Thông báo', 'Đã thu hồi tin nhắn!', 2000);
+        } catch (error) {
+            showToast('error', 'bottom', 'Thông báo', 'Không thể thu hồi tin nhắn.', 2000);
+        }
+    };
+
+    // Trả lời tin nhắn
+    const handleReply = () => {
+        dispatch(setMessageParent(message));
+        showMenuComponent(false);
+    };
     return (
         <ScrollView contentContainerStyle={styles.container}>
             {/* Emoji Bar */}
-            <ReactionBar message={message} onClose={() => showMenuComponent(false)}/>
+            <ReactionBar message={message} onClose={() => showMenuComponent(false)} />
             {/* Action Grid */}
             <View style={styles.actionGrid}>
-                <TouchableOpacity style={styles.actionItem}>
+                {message.senderId === userLogin.id && message.status === 0 && (
+                    <TouchableOpacity style={styles.actionItem} onPress={handleMessageRecall}>
+                        <Icon name="undo" size={24} color="#EA580C" />
+                        <Text>Thu hồi</Text>
+                    </TouchableOpacity>
+                )} // Cập nhật để chỉ hiển thị thu hồi cho tin nhắn của người gửi và chưa thu hồi
+                <TouchableOpacity style={styles.actionItem} onPress={handleReply}>
                     <Icon name="reply" size={24} color="#6B21A8" />
                     <Text>Trả lời</Text>
                 </TouchableOpacity>
@@ -66,7 +126,7 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                     <Icon name="share" size={24} color="#2563EB" />
                     <Text>Chuyển tiếp</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionItem}>
+                <TouchableOpacity style={styles.actionItem} onPress={handleCopy}>
                     <Icon name="copy" size={24} color="#2563EB" />
                     <Text>Sao chép</Text>
                 </TouchableOpacity>
@@ -76,13 +136,9 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                     <Icon name="thumbtack" size={24} color="#EA580C" />
                     <Text>Ghim</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionItem}>
-                    <Icon name="thumbtack" size={24} color="#EA580C" />
-                    <Text>Thu hồi</Text>
-                </TouchableOpacity>
                 <TouchableOpacity style={styles.actionItem} onPress={() => {
                     handlerClickDetail(message);
-                }} >
+                }}>
                     <Icon name="info-circle" size={24} color="#6B7280" />
                     <Text>Chi tiết</Text>
                 </TouchableOpacity>
@@ -93,7 +149,7 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                 {
                     message.messageType === 'file' && (
                         <TouchableOpacity style={styles.actionItem}>
-                            <Icon name="trash" size={24} color="#DC2626" />
+                            <Icon name="download" size={24} color="#DC2626" />
                             <Text>Tải xuống</Text>
                         </TouchableOpacity>
                     )
@@ -104,7 +160,7 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                 onClose={() => {
                     setShowDetailModal(false);
                     showMenuComponent(false);
-                } }
+                }}
                 message={selectedMessage}
                 friend={friend}
             />
@@ -117,9 +173,8 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                 message={message}
             />
         </ScrollView>
-        
-    )
-}
+    );
+};
 
 const styles = StyleSheet.create({
     container: {
