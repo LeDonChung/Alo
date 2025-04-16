@@ -69,11 +69,19 @@ export const ChatScreen = ({ route, navigation }) => {
       status: -1,
     };
   
+
     const newMessageTemp = {
       ...message,
       sender: userLogin,
-      fileLink: file?.uri || '',
     };
+
+    /// file, image
+    if (messageType === 'file' || messageType === 'image') {
+      newMessageTemp.fileLink = file.uri;
+    } else if (messageType === 'sticker') {
+      newMessageTemp.fileLink = messageData.fileLink;
+      message.fileLink = messageData.fileLink;
+    } 
   
     try {
       dispatch(addMessage(newMessageTemp));
@@ -100,7 +108,6 @@ export const ChatScreen = ({ route, navigation }) => {
 
 
   const handleSendImage = async (newMessage) => {
-    console.log("newMessageSSSSSSS", newMessage);
     handlerSendMessage(newMessage);
   };
   const handleSendFile = async (newMessage) => {
@@ -108,17 +115,22 @@ export const ChatScreen = ({ route, navigation }) => {
     handlerSendMessage(newMessage);
   };
   const handleStickerSelect = async (stickerUrl) => {
-    dispatch(setInputMessage({ ...inputMessage, fileLink: stickerUrl, messageType: 'sticker' }))
-    setShowStickerPicker(false);
+    const newMessage = {
+      content: '',
+      messageType: 'sticker',
+      fileLink: stickerUrl,
+    };
+    handlerSendMessage(newMessage);
+    setShowStickerPicker(false);  
   };
 
-  useEffect(() => {
-    if (inputMessage.messageType === 'sticker') {
-      if (inputMessage.fileLink) {
-        handlerSendMessage();
-      }
-    }
-  }, [inputMessage]);
+  // useEffect(() => {
+  //   if (inputMessage.messageType === 'sticker') {
+  //     if (inputMessage.fileLink) {
+       
+  //     }
+  //   }
+  // }, [inputMessage]);
 
   useEffect(() => {
     socket.on('receive-message', (message) => {

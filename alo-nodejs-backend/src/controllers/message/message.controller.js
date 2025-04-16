@@ -73,6 +73,7 @@ exports.createMessage = async (req, res) => {
             messageParentExists.sender = sender;
             request.messageParent = messageParentExists;
         }
+        console.log('Request:', request);
         // Tạo tin nhắn
         const message = await messageService.createMessage(request);
         if (!message) {
