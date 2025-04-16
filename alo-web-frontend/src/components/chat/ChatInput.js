@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import EmojiPicker from 'emoji-picker-react';
 import StickerPicker from './StickerPicker';
 import { useDispatch, useSelector } from 'react-redux';
-import { addMessage, sendMessage, setInputMessage, setMessageParent, setMessages } from '../../redux/slices/MessageSlice';
+import { addMessage, sendMessage, setMessageParent, setMessages, updateMessage } from '../../redux/slices/MessageSlice';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faQuoteRight, faXmark } from "@fortawesome/free-solid-svg-icons";
 import LightGallery from 'lightgallery/react';
@@ -17,11 +17,11 @@ const ChatInput = ({ isSending, getFriend }) => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const conversation = useSelector((state) => state.conversation.conversation);
   const userLogin = useSelector((state) => state.user.userLogin);
-  const messages = useSelector((state) => state.message.messages);
   const messageParent = useSelector((state) => state.message.messageParent);
   const [images, setImages] = useState([]); // Lưu hình ảnh từ URL
+  const [inputMessage, setInputMessage] = useState({ content: '', messageType: 'text', fileLink: '', file: null });
   const handlePaste = async (event) => {
-    dispatch(setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' }));
+    setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
     const clipboardData = event.clipboardData || window.clipboardData;
     const pastedData = clipboardData.getData("text"); // Lấy dữ liệu dạng text từ clipboard
 
@@ -40,76 +40,147 @@ const ChatInput = ({ isSending, getFriend }) => {
 
   const handlerSendImagesCopy = async () => {
     for (const image of images) {
-      const newMessage = { ...inputMessage, messageType: 'image', fileLink: image };
-      await handlerSendMessage(newMessage);
+      console.log("image", image);
+      const newMessage = { ...inputMessage, messageType: 'image', fileLink: image, isCopy: true };
+      handlerSendMessage(newMessage);
       setImages(images.filter(img => img !== image)); // Xóa hình ảnh đã gửi
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
     setImages([]); // Reset sau khi gửi xong
   }
 
+  const handlerSendMessage = async (customInputMessage = null) => {
+    const messageData = customInputMessage || inputMessage;
+    setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
+    const { content, messageType, file, isCopy } = messageData;
 
-  const handlerSendMessage = async (messageNew) => {
-    // const messageParentParse = messageParent ? JSON.parse(messageParent) : null;
-    console.log('messageParent', messageParent);
-    // console.log('messageParentParse', messageParentParse);
+    const requestId = Date.now() + Math.random();
+
     const message = {
       senderId: userLogin.id,
       conversationId: conversation.id,
-      content: messageNew.content,
-      messageType: messageNew.messageType,
+      content,
+      messageType,
       timestamp: Date.now(),
       seen: [],
+      requestId,
+      status: -1,
     };
-
-    if (messageNew.fileLink) {
-      message.fileLink = messageNew.fileLink;
-    }
 
     if (messageParent) {
       message.messageParent = messageParent.id;
     }
-
-    const file = messageNew.file;
-    console.log("messageNew", message);
-
-    try {
-      await dispatch(sendMessage({ message, file })).then(async (res) => {
-        await dispatch(addMessage(res.payload.data));
-        console.log("New message sent:", res.payload.data);
-        socket.emit('send-message', {
-          conversation: conversation,
-          message: res.payload.data
-
-        });
-        // Reset messageParent after sending the message
-        dispatch(setMessageParent(null));
-        dispatch(setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' }));
-      });
-    } catch (error) {
-
-      console.error("Error sending message:", error);
+    const newMessageTemp = {
+      ...message,
+      sender: userLogin,
+    };
+    if (messageParent) {
+      newMessageTemp.messageParent = messageParent;
     }
 
 
+    /// file, image
+    if (messageType === 'image') {
+      if (isCopy) {
+        newMessageTemp.fileLink = messageData.fileLink;
+        message.fileLink = messageData.fileLink;
+      } else {
+        newMessageTemp.fileLink = URL.createObjectURL(file);
+
+      }
+    } else if (messageType === 'file') {
+      newMessageTemp.fileLink = file.name;
+    } else if (messageType === 'sticker') {
+      newMessageTemp.fileLink = messageData.fileLink;
+      message.fileLink = messageData.fileLink;
+    }
+
+    try {
+
+      dispatch(addMessage(newMessageTemp));
+      dispatch(setMessageParent(null));
+
+
+      const res = await dispatch(sendMessage({ message, file })).unwrap();
+      const sentMessage = {
+        ...res.data,
+        sender: userLogin,
+      };
+
+      dispatch(updateMessage(sentMessage));
+
+      socket.emit('send-message', {
+        conversation,
+        message: sentMessage,
+      });
+
+    } catch (err) {
+      console.error("Error sending message:", err);
+    }
   };
 
-  const inputMessage = useSelector((state) => state.message.inputMessage);
+  // const handlerSendMessage = async (messageNew) => {
+  //   // const messageParentParse = messageParent ? JSON.parse(messageParent) : null;
+  //   console.log('messageParent', messageParent);
+  //   // console.log('messageParentParse', messageParentParse);
+  //   const message = {
+  //     senderId: userLogin.id,
+  //     conversationId: conversation.id,
+  //     content: messageNew.content,
+  //     messageType: messageNew.messageType,
+  //     fileLink: messageNew.fileLink,
+  //     timestamp: Date.now(),
+  //     seen: [],
+  //   };
+  //   if (messageParent) {
+  //     message.messageParent = messageParent.id;
+  //   }
+
+  //   const file = messageNew.file;
+  //   console.log("messageNew", message);
+
+  //   try {
+  //     await dispatch(sendMessage({ message, file })).then(async (res) => {
+  //       await dispatch(addMessage(res.payload.data));
+  //       console.log("New message sent:", res.payload.data);
+  //       socket.emit('send-message', {
+  //         conversation: conversation,
+  //         message: res.payload.data
+
+  //       });
+  //       // Reset messageParent after sending the message
+  //       dispatch(setMessageParent(null));
+  //       dispatch(setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' }));
+  //     });
+  //   } catch (error) {
+
+  //     console.error("Error sending message:", error);
+  //   }
+
+
+  // };
+
   const dispatch = useDispatch();
   const inputRef = useRef(null);
   const handleEmojiClick = (emojiData, event) => {
-    dispatch(setInputMessage({ ...inputMessage, content: inputMessage.content + emojiData.emoji }));
+    setInputMessage({ ...inputMessage, content: inputMessage.content + emojiData.emoji });
   };
 
   const [showStickerPicker, setShowStickerPicker] = useState(false);
 
-  useEffect(() => {
-    if (inputMessage.messageType === 'sticker') {
-      handlerSendMessage(inputMessage);
-    }
-  }, [inputMessage]);
+  // useEffect(() => {
+  //   if (inputMessage.messageType === 'sticker') {
+  //     handlerSendMessage(inputMessage);
+  //   }
+  // }, [inputMessage]);
 
   const handleStickerSelect = async (stickerUrl) => {
-    dispatch(setInputMessage({ ...inputMessage, fileLink: stickerUrl, messageType: 'sticker' }))
+    const newMessage = {
+      content: '',
+      messageType: 'sticker',
+      fileLink: stickerUrl,
+    };
+    handlerSendMessage(newMessage);
     setShowStickerPicker(false);
   };
 
@@ -161,18 +232,21 @@ const ChatInput = ({ isSending, getFriend }) => {
         alert('Chỉ chấp nhận file ảnh (PNG, JPEG, GIF, MP4)');
         continue;
       }
+      const message = {
+        content: '',
+        messageType: 'image',
+        file: file,
+        fileLink: file.uri,
+      };
+      handlerSendMessage(message); // Chờ gửi xong trước khi tiếp tục
 
-      // Tạo dữ liệu message mới trực tiếp
-      const newMessage = { ...inputMessage, messageType: 'image', file: file };
-      dispatch(setInputMessage(newMessage));
-      await handlerSendMessage(newMessage); // Chờ gửi xong trước khi tiếp tục
+      await new Promise(resolve => setTimeout(resolve, 500));
     }
 
-    // Reset sau khi xử lý tất cả
-    dispatch(setInputMessage({ ...inputMessage, messageType: 'text', content: '' }));
   };
 
   const handleFileUpload = async (e) => {
+    console.log("Handle file upload");
     const files = Array.from(e.target.files);
     if (!files.length) return;
 
@@ -185,15 +259,16 @@ const ChatInput = ({ isSending, getFriend }) => {
         alert('Chỉ chấp nhận file (PDF, DOC, DOCX, TXT, XLS, XLSX, PPT, PPTX, ZIP, RAR, MP4)');
         continue;
       }
+      const message = {
+        content: '',
+        messageType: 'file',
+        file: file,
+      };
+      handlerSendMessage(message); // Chờ gửi xong trước khi tiếp tục
+      await new Promise(resolve => setTimeout(resolve, 500));
 
-      // Tạo dữ liệu message mới trực tiếp
-      const newMessage = { ...inputMessage, messageType: 'file', file: file };
-      dispatch(setInputMessage(newMessage));
-      await handlerSendMessage(newMessage); // Chờ gửi xong trước khi tiếp tục
     }
 
-    // Reset sau khi xử lý tất cả
-    dispatch(setInputMessage({ ...inputMessage, messageType: 'text', content: '' }));
   };
 
   if (messageParent) {
@@ -337,12 +412,12 @@ const ChatInput = ({ isSending, getFriend }) => {
         </div>
       )}
 
-      <form className="flex items-center space-x-2">
+      <div className="flex items-center space-x-2">
         <input
           type="text"
           onPaste={(e) => handlePaste(e)}
           value={images && images.length > 0 ? '' : inputMessage.content}
-          onChange={(e) => dispatch(setInputMessage({ ...inputMessage, content: e.target.value }))}
+          onChange={(e) => setInputMessage({ ...inputMessage, content: e.target.value })}
           placeholder="Nhập tin nhắn..."
           className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-0"
           ref={inputRef}
@@ -367,7 +442,7 @@ const ChatInput = ({ isSending, getFriend }) => {
         {
           !images || images?.length === 0 ? (
             <button
-              onClick={() => handlerSendMessage(inputMessage)}
+              onClick={() => handlerSendMessage()}
               type="button"
               className="p-2 bg-blue-500 text-white rounded-full hover:bg-blue-600 transition"
             >
@@ -387,7 +462,7 @@ const ChatInput = ({ isSending, getFriend }) => {
             </button>
           )
         }
-      </form>
+      </div>
 
       {images && images.length > 0 && (
         <>
