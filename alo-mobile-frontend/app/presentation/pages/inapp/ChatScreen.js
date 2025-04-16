@@ -349,6 +349,7 @@ export const ChatScreen = ({ route, navigation }) => {
               <MenuComponent
                 message={selectedMessage}
                 showMenuComponent={setIsShowMenuInMessage}
+                friend={friend}
               />
             </Pressable>
           </Modal>

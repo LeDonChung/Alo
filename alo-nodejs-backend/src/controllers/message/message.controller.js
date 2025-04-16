@@ -389,3 +389,96 @@ exports.updateSeenMessage = async (req, res) => {
         });
     }
 };
+
+// Chuyển tiếp tin nhắn
+exports.forwardMessage = async (req, res) => {
+    try {
+        const { messageId } = req.params;
+        const { conversationIds } = req.body; // Lấy danh sách các conversationId từ body
+        if (!Array.isArray(conversationIds) || conversationIds.length === 0) {
+            return res.status(400).json({
+                status: 400,
+                message: "Danh sách cuộc trò chuyện không hợp lệ.",
+                data: null
+            });
+        }
+
+        // Lấy Authorization từ header
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        // Lấy userId từ token
+        const userId = userService.getUserIdFromToken(token);
+
+        // Lấy thông tin tin nhắn gốc
+        const originalMessage = await messageService.getMessageById(messageId);
+        if (!originalMessage) {
+            return res.status(400).json({
+                status: 400,
+                message: "Tin nhắn không tồn tại.",
+                data: null
+            });
+        }
+
+        // Lặp qua các cuộc trò chuyện và chuyển tiếp tin nhắn
+        const newMessages = [];
+        for (const conversationId of conversationIds) {
+            // Kiểm tra xem cuộc trò chuyện có tồn tại không
+            const conversation = await conversationService.getConversationById(conversationId);
+            if (!conversation) {
+                continue; // Nếu cuộc trò chuyện không tồn tại, bỏ qua
+            }
+
+            // Tạo một tin nhắn mới với thông tin của tin nhắn gốc
+            const forwardedMessage = {
+                id: uuidv4(),
+                senderId: userId,
+                conversationId: conversationId,
+                content: originalMessage.content,
+                messageType: originalMessage.messageType,
+                fileLink: originalMessage.fileLink,
+                timestamp: Date.now(),
+                seen: [userId],
+                status: 0
+            };
+
+            if (['image', 'file', 'sticker'].includes(originalMessage.messageType)) {
+                forwardedMessage.fileLink = originalMessage.fileLink;
+            }
+
+            // Tạo tin nhắn mới trong cuộc trò chuyện này
+            const newMessage = await messageService.createMessage(forwardedMessage);
+            if (!newMessage) {
+                continue; // Nếu tạo tin nhắn thất bại, bỏ qua và chuyển tiếp qua cuộc trò chuyện khác
+            }
+
+            // Tìm người gửi
+            const sender = await userService.getUserById(userId);
+            newMessage.sender = sender;
+            newMessages.push(newMessage);
+
+            // Cập nhật tin nhắn cuối cùng của cuộc trò chuyện
+            await conversationService.updateLastMessage(conversationId, newMessage);
+        }
+
+        if (newMessages.length === 0) {
+            return res.status(400).json({
+                status: 400,
+                message: "Không có cuộc trò chuyện nào để chuyển tiếp.",
+                data: null
+            });
+        }
+
+        return res.status(200).json({
+            status: 200,
+            data: newMessages,
+            message: "Chuyển tiếp tin nhắn thành công."
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+};

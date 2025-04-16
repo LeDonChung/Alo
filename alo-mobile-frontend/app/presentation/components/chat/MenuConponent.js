@@ -1,12 +1,16 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, ToastAndroid } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { useDispatch, useSelector } from 'react-redux';
 import { createPin } from '../../redux/slices/ConversationSlice';
 import { showToast } from '../../../utils/AppUtils';
 import socket from '../../../utils/socket';
 import { ReactionBar } from './ReactionBar';
-export const MenuComponent = ({ message, showMenuComponent }) => {
+import MessageDetailModal from './MessageDetailModal';
+import ForwardMessageModal from './ForwardMessageModal';
+export const MenuComponent = ({ message, showMenuComponent, friend }) => {
+    const navigation = useNavigation();
     const dispatch = useDispatch();
     const [reaction, setReaction] = useState([
         { type: 'like', icon: '👍' },
@@ -32,6 +36,19 @@ export const MenuComponent = ({ message, showMenuComponent }) => {
             showToast('error', 'bottom', "Thông báo", error.message || "Ghim tin nhắn không thành công.", 2000);
         }
     };
+
+    //Xem chi tiết tin nhắn
+    const [showDetailModal, setShowDetailModal] = useState(false);
+    const [selectedMessage, setSelectedMessage] = useState(null);
+    const handlerClickDetail = (message) => {
+        setSelectedMessage(message);
+        console.log('message',message)
+        setShowDetailModal(true);
+    }
+
+    //Chuyển tiếp tin nhắn
+    const [showForwardModal, setShowForwardModal] = useState(false);
+
     return (
         <ScrollView contentContainerStyle={styles.container}>
             {/* Emoji Bar */}
@@ -42,7 +59,9 @@ export const MenuComponent = ({ message, showMenuComponent }) => {
                     <Icon name="reply" size={24} color="#6B21A8" />
                     <Text>Trả lời</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionItem}>
+                <TouchableOpacity style={styles.actionItem} onPress={() => {
+                    setShowForwardModal(true);
+                }}>
                     <Icon name="share" size={24} color="#2563EB" />
                     <Text>Chuyển tiếp</Text>
                 </TouchableOpacity>
@@ -60,7 +79,9 @@ export const MenuComponent = ({ message, showMenuComponent }) => {
                     <Icon name="thumbtack" size={24} color="#EA580C" />
                     <Text>Thu hồi</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionItem}>
+                <TouchableOpacity style={styles.actionItem} onPress={() => {
+                    handlerClickDetail(message);
+                }} >
                     <Icon name="info-circle" size={24} color="#6B7280" />
                     <Text>Chi tiết</Text>
                 </TouchableOpacity>
@@ -77,7 +98,25 @@ export const MenuComponent = ({ message, showMenuComponent }) => {
                     )
                 }
             </View>
+            <MessageDetailModal
+                visible={showDetailModal}
+                onClose={() => {
+                    setShowDetailModal(false);
+                    showMenuComponent(false);
+                } }
+                message={selectedMessage}
+                friend={friend}
+            />
+            <ForwardMessageModal
+                visible={showForwardModal}
+                onClose={() => {
+                    showMenuComponent(false);
+                    setShowForwardModal(false);
+                }}
+                message={message}
+            />
         </ScrollView>
+        
     )
 }
 
