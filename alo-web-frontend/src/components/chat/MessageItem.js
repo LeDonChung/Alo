@@ -252,9 +252,9 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
       {/* Nội dung tin nhắn */}
       <div
         className={`flex flex-col relative 
-          items-start 
+          items-start   max-w-[50%]
           ${message.messageType !== 'image' && 'p-3'} rounded-lg shadow-md 
-          ${isUserMessage && 'bg-blue-100'} ${isHighlighted && 'border-2 border-yellow-500 animate-flash'} `}
+          ${isUserMessage ?'bg-blue-100' : 'bg-white'} ${isHighlighted && 'border-2 border-yellow-500 animate-flash'} `}
       >
         {(showAvatar && !isUserMessage) && (
           <p className='text-sm text-gray-500 font-medium max-w-xs mb-3'>{message.sender?.fullName}</p>
@@ -311,7 +311,7 @@ const MessageItem = ({ message, isUserMessage, isLastMessage, showAvatar, onClic
         {message.status === 0 && (
           <>
             {message.messageType === 'text' && (
-              <p className="text-sm text-gray-800 max-w-xs">{message.content}</p>
+              <p className="text-sm text-gray-800">{message.content}</p>
             )}
 
             {message.messageType === 'sticker' && (
