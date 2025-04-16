@@ -36,7 +36,6 @@ export const HomeScreen = ({ navigation }) => {
         dispatch(setUserLogin(user));
       }
     }
-    await dispatch(getAllConversation());
   }
   useEffect(() => {
     init();
