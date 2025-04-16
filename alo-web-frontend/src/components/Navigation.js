@@ -1,12 +1,12 @@
 /* eslint-disable jsx-a11y/alt-text */
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, use } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
 import { getAllConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
-import { setMessages } from "../redux/slices/MessageSlice";
+import { setMessages, setMessageUpdate } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 export const Navigation = () => {
     const dispatch = useDispatch();
@@ -66,6 +66,19 @@ export const Navigation = () => {
         init();
     }, []);
 
+    useEffect(() => {
+        const handleUpdateMessage = async (data) => {
+            const ms = data.message;
+            const cvt = data.conversation;
+            await dispatch(setMessageUpdate({ messageId: ms.id, status: ms.status }));
+            await dispatch(updateLastMessage({ conversationId: cvt.id, message: ms }));
+        }
+        socket.on('receive-update-message', handleUpdateMessage);
+        return () => {
+            socket.off('receive-update-message', handleUpdateMessage);
+        };
+    }, [userLogin?.id, dispatch]);
+
 
     const friends = useSelector((state) => state.friend.friends);
     // ============= HANDLE SOCKET FRIEND ==============
@@ -94,15 +107,15 @@ export const Navigation = () => {
     }, []);
     useEffect(() => {
         const handleRejectFriendRequestForMe = async (data) => {
-          console.log("Receive Reject Friend For Me", data);
-          dispatch(setFriendsRequest(data.updatedFriendsRequest));
+            console.log("Receive Reject Friend For Me", data);
+            dispatch(setFriendsRequest(data.updatedFriendsRequest));
         }
         socket.on("receive-reject-friend-for-me", handleRejectFriendRequestForMe);
         return () => {
-          socket.off("receive-reject-friend-for-me", handleRejectFriendRequestForMe);
+            socket.off("receive-reject-friend-for-me", handleRejectFriendRequestForMe);
         };
-      },[])
-    
+    }, [])
+
     useEffect(() => {
         const handleReceiveAcceptFriendRequestForMe = async (data) => {
             console.log("Receive Accept Friend For Me", data);
@@ -121,7 +134,7 @@ export const Navigation = () => {
     useEffect(() => {
         const handlerUpdateLastMessage = async (conversationId, message) => {
             console.log('update-last-message', conversationId, message);
-            dispatch(updateLastMessage({ conversationId, message }));
+            await dispatch(updateLastMessage({ conversationId, message }));
         }
 
         socket.on('update-last-message', handlerUpdateLastMessage);
