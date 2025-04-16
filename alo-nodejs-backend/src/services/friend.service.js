@@ -3,7 +3,6 @@ const { client } = require("../config/DynamoDB");
 
 const friendRequest = async (data) => {
     try {
-
         //check exists friend
         const friendParams = {
             userId: data.userId,
@@ -47,7 +46,8 @@ const friendRequest = async (data) => {
                     status: data.status,
                     requestDate: Date.now(),
                     contentRequest: data.contentRequest,
-                    senderId: data.userId
+                    senderId: data.userId,
+                    blockId: ''
                 }
             };
             await client.put(params).promise();
@@ -169,12 +169,14 @@ const blockFriendRequest = async (data) => {
                 userId: friend.userId,
                 friendId: friend.friendId
             },
-            UpdateExpression: 'SET #status = :status',
+            UpdateExpression: 'SET #status = :status, #blockId = :blockId',
             ExpressionAttributeNames: {
                 '#status': 'status',
+                '#blockId': 'blockId',
             },
             ExpressionAttributeValues: {
                 ':status': 3,
+                ':blockId': data.userId,
             },
             ReturnValues: 'ALL_NEW'
         };
@@ -200,12 +202,14 @@ const unblockFriendRequest = async (data) => {
                 userId: friend.userId,
                 friendId: friend.friendId
             },
-            UpdateExpression: 'SET #status = :status',
+            UpdateExpression: 'SET #status = :status, #blockId = :blockId',
             ExpressionAttributeNames: {
                 '#status': 'status',
+                '#blockId': 'blockId',
             },
             ExpressionAttributeValues: {
                 ':status': 1,
+                ':blockId': null,
             },
             ReturnValues: 'ALL_NEW'
         };
@@ -410,6 +414,7 @@ const getFriends = async (userId) => {
                     accountId: user.accountId,
                     requestDate: friend.requestDate,
                     avatarLink: user.avatarLink,
+                    id: user.id
                 }
             }
             listResult.push(response);

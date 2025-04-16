@@ -58,11 +58,7 @@ const ChatWindow = () => {
     }
   }, [conversation, userLogin.id]);
 
-  useEffect(() => {
-    socket.on('receive-message', (message) => {
-      dispatch(setMessages([...messages, message]));
-    });
-  }, [messages, dispatch]);
+  
 
   useEffect(() => {
     dispatch(getMessagesByConversationId(conversation.id));
@@ -97,6 +93,7 @@ const ChatWindow = () => {
 
         <ChatInput
           isSending={isSending}
+          getFriend={getFriend}
         />
       </div>
 
