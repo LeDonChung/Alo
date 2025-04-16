@@ -149,6 +149,42 @@ export const ChatScreen = ({ route, navigation }) => {
     dispatch(getMessagesByConversationId(conversation.id));
   }, [conversation.id, limit, dispatch]);
 
+// Bắt sự kiện get last logout
+  useEffect(() => {
+    const handleGetLastLogoutX = async (userId) => {
+      console.log('getLastLogoutX', userId);
+      console.log(getFriend(conversation));
+      if(userId === getFriend(conversation).id) {
+        console.log('getLastLogout', userId);
+        await handleGetLastLogout(userId);
+      }
+    }
+    socket.on('user-offline', handleGetLastLogoutX);
+
+    return () => {
+      socket.off('user-offline', handleGetLastLogoutX);
+    }
+
+  }, []);
+
+  // Bắt sự kiện get last logout
+  useEffect(() => {
+    const handleGetLastLogoutX = async (userId) => {
+      console.log('getLastLogoutX', userId);
+      console.log(friend.id);
+      if(userId === friend.id) {
+        console.log('getLastLogout', userId);
+        await handleGetLastLogout(userId);
+      }
+    }
+    socket.on('user-offline', handleGetLastLogoutX);
+
+    return () => {
+      socket.off('user-offline', handleGetLastLogoutX);
+    }
+
+  }, []);
+
   const getLastLoginMessage = (lastLogout) => {
     if (!lastLogout) return 'Chưa truy cập';
     const now = new Date();
