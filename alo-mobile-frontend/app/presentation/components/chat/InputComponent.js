@@ -6,9 +6,14 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Permissions from 'expo-permissions';
 import OptionModal from './OptionModal';
+import { useSelector, useDispatch } from 'react-redux';
+import { setMessageParent } from '../../redux/slices/MessageSlice';
 
 const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isStickerPickerVisible, setIsStickerPickerVisible, handleSendFile, handlerSendImage }) => {
   const [isOptionModalVisible, setOptionModalVisible] = useState(false);
+  const dispatch = useDispatch(); 
+  const messageParent = useSelector(state => state.message.messageParent);
+
   const handleOptionSelect = (options) => {
     setOptionModalVisible(false);
     if (options === "Tài liệu") {
@@ -83,6 +88,16 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
 
   return (
     <View style={{ backgroundColor: 'white', padding: 10, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderColor: '#EDEDED' }}>
+      {/* Hiển thị messageParent nếu đang trả lời */}
+      {messageParent && (
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, backgroundColor: '#f5f5f5', padding: 10, borderRadius: 5 }}>
+          <Text style={{ flex: 1 }}>Đang trả lời: {messageParent.content || `[${messageParent.messageType}]`}</Text>
+          <TouchableOpacity onPress={() => dispatch(setMessageParent(null))}>
+            <Text style={{ color: 'blue' }}>Hủy</Text>
+          </TouchableOpacity>
+        </View>
+      )} {/* Bổ sung để hỗ trợ trả lời tin nhắn */}
+      
       <TouchableOpacity
         onPress={() => setIsStickerPickerVisible(!isStickerPickerVisible)}
       >
@@ -97,9 +112,7 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
       />
 
       {inputMessage.content.trim() ? (
-        <TouchableOpacity onPress={() => {
-          handlerSendMessage(inputMessage);
-        }} style={{ paddingHorizontal: 10 }}>
+        <TouchableOpacity onPress={() => handlerSendMessage(inputMessage)} style={{ paddingHorizontal: 10 }}>
           <IconMI name="send" size={20} color="blue" />
         </TouchableOpacity>
       ) : (

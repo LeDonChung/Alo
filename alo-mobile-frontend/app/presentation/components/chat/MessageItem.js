@@ -58,7 +58,6 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
         paddingHorizontal: 10,
         justifyContent: isSent ? 'flex-end' : 'flex-start',
         marginLeft: (!isSent && !showAvatar()) ? 45 : 0,
-
       }}
     >
       {!isSent && showAvatar() && (
@@ -70,120 +69,147 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
         </TouchableOpacity>
       )}
 
-      <View style={{flexDirection: 'column'}}>
+      <View style={{ flexDirection: 'column' }}>
         <TouchableOpacity
           style={[{ borderRadius: 10, maxWidth: '90%', minWidth: '40%', flexDirection: 'column' }, isHighlighted && { backgroundColor: '#fef08a' }]}
-          onLongPress={() => {
-            setSelectedMessage(item);
-            setIsShowMenuInMessage(true);
-          }}
+          onLongPress={() => handleLongPress(item)}
         >
-          {/* Text Message */}
-          {messageType === 'text' && item.content && (
+          {/* Hiển thị tin nhắn cha nếu có */}
+          {item.messageParent && item.status === 0 && (
+            <TouchableOpacity
+              onPress={() => {
+                const messageId = item.messageParent.id;
+                const index = messages.findIndex(msg => msg.id === messageId);
+                if (index !== -1 && flatListRef.current) {
+                  flatListRef.current.scrollToIndex({ index, animated: true });
+                }
+              }}
+              style={{
+                backgroundColor: isSent ? '#bbdefb' : '#f5f5f5',
+                padding: 10,
+                borderRadius: 5,
+                marginBottom: 5,
+              }}
+            >
+              <Text style={{ fontWeight: 'bold' }}>{item.messageParent.sender.fullName}</Text>
+              <Text>
+                {item.messageParent.messageType === 'text' ? item.messageParent.content : `[${item.messageParent.messageType}]`}
+              </Text>
+            </TouchableOpacity>
+          )} {/* Bổ sung để hỗ trợ trả lời tin nhắn */}
+
+          {/* Hiển thị trạng thái thu hồi */}
+          {item.status === 1 ? (
             <View style={{ backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
-              <Text>{item.content}</Text>
+              <Text style={{ color: 'gray' }}>Tin nhắn đã được thu hồi</Text>
             </View>
-          )}
-
-          {/* Image or Video */}
-          {messageType === 'image' && item.fileLink && (
-            <View style={{ flexDirection: 'row', justifyContent: isSent ? 'flex-end' : 'flex-start' }}>
-              {fileExtension === 'mp4' ? (
-                <TouchableOpacity
-                  onLongPress={() => handleLongPress(item)}
-                  style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}
-                >
-                  <Video
-                    source={{ uri: fileLink }}
-                    style={{ width: '100%', height: '100%' }}
-                    useNativeControls
-                    resizeMode="cover"
-                    isLooping={false}
-                    shouldPlay={false}
-                  />
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  onPress={() => {
-                    setSelectedImage([{ uri: item.fileLink }]);
-                    setIsImageViewVisible(true);
-                  }}
-                  onLongPress={() => handleLongPress(item)}
-                >
-                  <Image
-                    source={{ uri: item.fileLink }}
-                    style={{ width: 200, height: 160, borderRadius: 10 }}
-                    resizeMode="contain"
-                  />
-                </TouchableOpacity>
+          ) : (
+            <>
+              {/* Text Message */}
+              {messageType === 'text' && item.content && (
+                <View style={{ backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
+                  <Text>{item.content}</Text>
+                </View>
               )}
-            </View>
-          )}
 
-          {/* Sticker */}
-          {messageType === 'sticker' && item.fileLink && (
-            <View style={{ flexDirection: 'row', justifyContent: isSent ? 'flex-end' : 'flex-start', marginTop: 5 }}>
-              <TouchableOpacity
-                onPress={() => {
-                  setSelectedImage([{ uri: item.fileLink }]);
-                  setIsImageViewVisible(true);
-                }}
-                onLongPress={() => handleLongPress(item)}
-              >
-                <Image
-                  source={{ uri: item.fileLink }}
-                  style={{ width: 120, height: 120, borderRadius: 10 }}
-                  resizeMode="cover"
-                />
-              </TouchableOpacity>
-            </View>
-          )}
-
-          {/* File */}
-          {messageType === 'file' && (
-            <View style={{ flexDirection: 'row', justifyContent: isSent ? 'flex-end' : 'flex-start', marginTop: 5 }}>
-              {fileExtension === 'mp4' ? (
-                <TouchableOpacity
-                  onLongPress={() => handleLongPress(item)}
-                  style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}
-                >
-                  <Video
-                    source={{ uri: fileLink }}
-                    style={{ width: '100%', height: '100%' }}
-                    useNativeControls
-                    resizeMode="cover"
-                    isLooping={false}
-                    shouldPlay={false}
-                  />
-                </TouchableOpacity>
-              ) : (
-                <TouchableOpacity
-                  onLongPress={() => handleLongPress(item)}
-                  style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    backgroundColor: isSent ? '#dbeafe' : 'white',
-                    padding: 10,
-                    borderRadius: 10,
-                  }}
-                >
-                  {getFileIcon(fileExtension)}
-                  <Text style={{ marginLeft: 5, color: 'gray' }}>
-                    {fileLink ? extractOriginalName(fileLink) : ''}
-                  </Text>
-                </TouchableOpacity>
+              {/* Image or Video */}
+              {messageType === 'image' && item.fileLink && (
+                <View style={{ flexDirection: 'row', justifyContent: isSent ? 'flex-end' : 'flex-start' }}>
+                  {fileExtension === 'mp4' ? (
+                    <TouchableOpacity
+                      onLongPress={() => handleLongPress(item)}
+                      style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}
+                    >
+                      <Video
+                        source={{ uri: fileLink }}
+                        style={{ width: '100%', height: '100%' }}
+                        useNativeControls
+                        resizeMode="cover"
+                        isLooping={false}
+                        shouldPlay={false}
+                      />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setSelectedImage([{ uri: item.fileLink }]);
+                        setIsImageViewVisible(true);
+                      }}
+                      onLongPress={() => handleLongPress(item)}
+                    >
+                      <Image
+                        source={{ uri: item.fileLink }}
+                        style={{ width: 200, height: 160, borderRadius: 10 }}
+                        resizeMode="contain"
+                      />
+                    </TouchableOpacity>
+                  )}
+                </View>
               )}
-            </View>
-          )}
 
+              {/* Sticker */}
+              {messageType === 'sticker' && item.fileLink && (
+                <View style={{ flexDirection: 'row', justifyContent: isSent ? 'flex-end' : 'flex-start', marginTop: 5 }}>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setSelectedImage([{ uri: item.fileLink }]);
+                      setIsImageViewVisible(true);
+                    }}
+                    onLongPress={() => handleLongPress(item)}
+                  >
+                    <Image
+                      source={{ uri: item.fileLink }}
+                      style={{ width: 120, height: 120, borderRadius: 10 }}
+                      resizeMode="cover"
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
 
+              {/* File */}
+              {messageType === 'file' && (
+                <View style={{ flexDirection: 'row', justifyContent: isSent ? 'flex-end' : 'flex-start', marginTop: 5 }}>
+                  {fileExtension === 'mp4' ? (
+                    <TouchableOpacity
+                      onLongPress={() => handleLongPress(item)}
+                      style={{ width: 250, height: 150, borderRadius: 10, overflow: 'hidden', backgroundColor: '#000' }}
+                    >
+                      <Video
+                        source={{ uri: fileLink }}
+                        style={{ width: '100%', height: '100%' }}
+                        useNativeControls
+                        resizeMode="cover"
+                        isLooping={false}
+                        shouldPlay={false}
+                      />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onLongPress={() => handleLongPress(item)}
+                      style={{
+                        flexDirection: 'row',
+                        alignItems: 'center',
+                        backgroundColor: isSent ? '#dbeafe' : 'white',
+                        padding: 10,
+                        borderRadius: 10,
+                      }}
+                    >
+                      {getFileIcon(fileExtension)}
+                      <Text style={{ marginLeft: 5, color: 'gray' }}>
+                        {fileLink ? extractOriginalName(fileLink) : ''}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+            </>
+          )} {/* Bổ sung để hỗ trợ thu hồi tin nhắn */}
 
           {item.reaction && Object.keys(item.reaction).length > 0 && (
             <ReactionListComponent message={item} isSent={isSent} handlerRemoveAllAction={handlerRemoveAllAction}/>
           )}
-
         </TouchableOpacity>
-        {/* Time */}
+
         {showTime() && (
           <Text style={{ fontSize: 10, color: 'gray', textAlign: 'right', marginTop: (item.reaction) ? 20 : 5, marginRight: !isSent ? 'auto' : 10 }}>
             {new Date(item.timestamp).toLocaleTimeString('vi-VN', {
@@ -193,7 +219,6 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
           </Text>
         )}
       </View>
-
     </View>
   );
 };

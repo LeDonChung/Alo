@@ -4,7 +4,8 @@ import { Modal, Pressable, View } from 'react-native';
 import { axiosInstance } from '../../../api/APIClient';
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
-import { getMessagesByConversationId, handlerUpdateReaction, removeAllReaction, sendMessage, setMessages } from '../../redux/slices/MessageSlice';
+import { getMessagesByConversationId, handlerUpdateReaction, removeAllReaction, sendMessage, setMessages , setMessageParent, // Bổ sung để hỗ trợ trả lời
+  setMessageUpdate,} from '../../redux/slices/MessageSlice';
 import HeaderComponent from '../../components/chat/HeaderComponent';
 import InputComponent from '../../components/chat/InputComponent';
 import MessageItem from '../../components/chat/MessageItem';
@@ -57,7 +58,7 @@ export const ChatScreen = ({ route, navigation }) => {
 
     // Lấy fileLink nếu có
     const fileLink = messageData.fileLink || (file ? file.uri : '');
-
+    const messageParent = useSelector(state => state.message.messageParent);
     const message = {
       senderId: userLogin.id,
       conversationId: conversation.id,
@@ -65,7 +66,8 @@ export const ChatScreen = ({ route, navigation }) => {
       messageType,
       fileLink,
       timestamp: Date.now(),
-      seen: []
+      seen: [],
+      parentMessageId: messageParent?.id || null,
     };
 
     try {
@@ -74,21 +76,19 @@ export const ChatScreen = ({ route, navigation }) => {
           ...res.payload.data,
           sender: userLogin
         };
-
         dispatch(setMessages([...messages, sentMessage]));
         socket.emit('send-message', {
           conversation,
           message: sentMessage
         });
-
-      })
-
-
+        if (messageParent) {
+          dispatch(setMessageParent(null)); 
+        }
+      });
     } catch (err) {
       console.error("Error sending message:", err);
     }
     setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
-
   };
 
 
@@ -118,7 +118,13 @@ export const ChatScreen = ({ route, navigation }) => {
     });
   }, [messages, dispatch]);
 
-
+  useEffect(() => {
+    socket.on('receive-update-message', (ms) => {
+      dispatch(setMessageUpdate({ messageId: ms.id, status: ms.status })); // Cập nhật trạng thái tin nhắn // Bổ sung để hỗ trợ thu hồi
+      dispatch(setMessages(messages.map(msg => msg.id === ms.id ? { ...msg, status: ms.status } : msg))); // Cập nhật danh sách tin nhắn // Bổ sung để hỗ trợ thu hồi
+    });
+    return () => socket.off('receive-update-message');  
+  }, [messages, dispatch]);
   useEffect(() => {
     socket.on("users-online", ({ userIds }) => {
       dispatch(setUserOnlines(userIds));
