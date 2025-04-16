@@ -5,6 +5,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const redis = require('./src/config/RedisClient');
+const { updateLastLogout } = require("./src/service/user.service");
 
 const app = express();
 app.use(cors());
@@ -184,12 +185,25 @@ io.on("connection", (socket) => {
         console.log("Socket ngắt kết nối: " + socket.id);
 
         const keys = await redis.keys('socket:*');
+        let userId = null;
         for (const key of keys) {
             const sessions = await redis.smembers(key);
             const updated = sessions.filter(session => JSON.parse(session).socketId !== socket.id);
+
+            if (sessions.length !== updated.length) {
+                // Tìm thấy socketId trong session, lấy userId
+                userId = key.split(':')[1];
+            }
+
             await redis.del(key);
             if (updated.length > 0) {
                 await redis.sadd(key, ...updated);
+            } else if (userId) {
+                await updateLastLogout(userId);
+                const socketIds = await findAllSocketId();
+                socketIds.forEach(id => {
+                    io.to(id).emit('user-offline', userId);
+                });
             }
         }
 
@@ -254,6 +268,17 @@ io.on("connection", (socket) => {
     // Helper functions
     // =====================
 
+    const findAllSocketId = async () => {
+        const keys = await redis.keys('socket:*');
+        const allSocketIds = [];
+        for (const key of keys) {
+            const sessions = await redis.smembers(key);
+            sessions.forEach(session => {
+                allSocketIds.push(JSON.parse(session).socketId);
+            });
+        }
+        return allSocketIds;
+    }
     const getUserOnline = async () => {
         const keys = await redis.keys('socket:*');
         return keys.map(key => key.split(':')[1]);

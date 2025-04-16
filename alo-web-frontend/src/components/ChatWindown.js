@@ -19,6 +19,7 @@ const ChatWindow = () => {
   const [lastLogout, setLastLogout] = useState(null);
   const limit = useSelector(state => state.message.limit);
   const conversations = useSelector(state => state.conversation.conversations);
+
   const getLastLoginMessage = (lastLogout) => {
     if (!lastLogout) return 'Chưa truy cập';
     const now = new Date();
@@ -41,9 +42,28 @@ const ChatWindow = () => {
 
   const handleGetLastLogout = async (userId) => {
     await axiosInstance.get(`/api/user/get-profile/${userId}`).then((res) => {
+      console.log("getLastLoginMessage", res.data.data);
       setLastLogout(res.data.data.lastLogout);
     });
   };  
+
+  // Bắt sự kiện get last logout
+  useEffect(() => {
+    const handleGetLastLogoutX = async (userId) => {
+      console.log('getLastLogoutX', userId);
+      console.log(getFriend(conversation));
+      if(userId === getFriend(conversation).id) {
+        console.log('getLastLogout', userId);
+        await handleGetLastLogout(userId);
+      }
+    }
+    socket.on('user-offline', handleGetLastLogoutX);
+
+    return () => {
+      socket.off('user-offline', handleGetLastLogoutX);
+    }
+
+  }, []);
 
   useEffect(() => {
     socket.emit("join_conversation", conversation.id);
@@ -66,6 +86,8 @@ const ChatWindow = () => {
   const isFriendOnline = (userId) => {
     return userOnlines.includes(userId);
   };
+
+  
 
   return (
     <>
