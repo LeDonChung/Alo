@@ -281,6 +281,27 @@ io.on("connection", (socket) => {
         socket.to(conversation.id).emit('receive-seen-message', {conversation, messages});
     })
 
+    socket.on('forward-message', async (data) => {
+        const messages = data.messages;
+        const conversations = data.conversations;
+        for(const message of messages){
+            const conversationId = message.conversationId;
+            for(const conversation of conversations){
+                if(conversation.id === conversationId){
+                    const members = conversation.memberUserIds;
+                    for (const userId of members) {
+                        const socketIds = await findSocketIdsByUserId(userId);
+                        const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+                        filteredSocketIds.forEach(id => {
+                            io.to(id).emit('receive-forward-message', {conversation, message});
+                        });
+                    }
+                    io.to(socket.id).emit('receive-forward-message', {conversation, message});
+                    handleUpdateLastMessage(conversation, message);
+                }
+            }
+        }
+        
 
     socket.on('remove-of-me', async (data) => {
         const {messageId, userId} = data;

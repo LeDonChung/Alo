@@ -71,6 +71,15 @@ const seenOne = createAsyncThunk('MessageSlice/seenOne', async (messageId, { rej
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
+});
+
+const forwardMessage = createAsyncThunk('MessageSlice/forwardMessage', async ({ messageId, conversationIds }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/message/${messageId}/send-continue`, { conversationIds });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
 })
 
 const removeOfMe = createAsyncThunk('MessageSlice/removeOfMe', async (messageId, { rejectWithValue }) => {
@@ -196,7 +205,19 @@ const MessageSlice = createSlice({
         builder.addCase(seenOne.rejected, (state, action) => {
         });
 
-        builder.addCase(removeOfMe.pending, (state) => {
+        builder.addCase(forwardMessage.pending, (state) => {
+            state.isSending = true;
+        });
+        builder.addCase(forwardMessage.fulfilled, (state, action) => {
+            state.isSending = false;
+
+        });
+        builder.addCase(forwardMessage.rejected, (state, action) => {
+            state.isSending = false;
+
+        });
+      
+       builder.addCase(removeOfMe.pending, (state) => {
         });
         builder.addCase(removeOfMe.fulfilled, (state, action) => {
         });
@@ -205,6 +226,7 @@ const MessageSlice = createSlice({
     }
 });
 
+
 export const { setMessages, increaseLimit, addMessage, setMessageParent, setMessageUpdate, updateMessage, updateSeenAllMessage, setMessageRemoveOfMe } = MessageSlice.actions;
-export { sendMessage, getMessagesByConversationId, updateMessageStatus, seenAll, seenOne, removeOfMe };
+export { sendMessage, getMessagesByConversationId, updateMessageStatus, seenAll, seenOne, removeOfMe, forwardMessage };
 export default MessageSlice.reducer;
