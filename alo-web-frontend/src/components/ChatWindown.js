@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { axiosInstance } from '../api/APIClient';
 import socket from '../utils/socket';
-import { getMessagesByConversationId, seenAll, seenOne, setMessages, updateSeenAllMessage } from '../redux/slices/MessageSlice';
+import { getMessagesByConversationId, seenAll, seenOne, setMessages, updateSeenAllMessage, setMessageUpdate } from '../redux/slices/MessageSlice';
 import RightSlidebar from './RightSlideBarChat';
 import ChatHeader from './chat/ChatHeader';
 import ChatContent from './chat/ChatContent';
@@ -64,6 +64,13 @@ const ChatWindow = () => {
     }
 
   }, []);
+
+  const scrollToMessage = (messageId) => {
+    const messageElement = document.getElementById(`message-${messageId}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   useEffect(() => {
     socket.emit("join_conversation", conversation.id);
@@ -127,7 +134,18 @@ const ChatWindow = () => {
     return userOnlines.includes(userId);
   };
 
-
+  useEffect(() => {
+    socket.on('receive-update-reaction', (message) => {
+      dispatch(setMessageUpdate({ 
+        messageId: message.id, 
+        reaction: message.reaction 
+      }));
+    });
+  
+    return () => {
+      socket.off('receive-update-reaction');
+    };
+  }, [dispatch]);
 
   return (
     <>
@@ -139,6 +157,7 @@ const ChatWindow = () => {
           getFriend={getFriend}
           getLastLoginMessage={getLastLoginMessage}
           isFriendOnline={isFriendOnline}
+          scrollToMessage={scrollToMessage}
         />
 
         <div className="flex-1 p-4 overflow-y-auto bg-gray-100" style={{ overflowAnchor: 'none' }}>

@@ -1,6 +1,9 @@
+import React from "react";
+import PinComponentWeb from "./PinComponent";
 import { useEffect, useState } from "react";
 
-const ChatHeader = ({ conversation, userLogin, lastLogout, getFriend, getLastLoginMessage, isFriendOnline }) => {
+const ChatHeader = ({ conversation, userLogin, lastLogout, getFriend, getLastLoginMessage, isFriendOnline, scrollToMessage }) => {
+
   const [timeDisplay, setTimeDisplay] = useState('Chưa truy cập');
 
   // Cập nhật timeDisplay mỗi phút dựa trên lastLogout
@@ -22,6 +25,8 @@ const ChatHeader = ({ conversation, userLogin, lastLogout, getFriend, getLastLog
 
   return (
     <div className="bg-white border-b border-gray-200 p-4 flex items-center">
+        
+      
       <img
         src={getFriend(conversation).avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'}
         alt="Avatar"
@@ -52,6 +57,14 @@ const ChatHeader = ({ conversation, userLogin, lastLogout, getFriend, getLastLog
           </svg>
         </button>
       </div>
+      {/* Danh sách ghim */}
+      {conversation.pineds && conversation.pineds.length > 0 && (
+        <PinComponentWeb
+          conversation={conversation}
+          pins={conversation.pineds}
+          scrollToMessage={scrollToMessage}
+        />
+      )}
     </div>
   );
 };
