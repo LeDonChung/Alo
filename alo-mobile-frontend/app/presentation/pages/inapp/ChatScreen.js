@@ -4,7 +4,7 @@ import { Modal, Pressable, View } from 'react-native';
 import { axiosInstance } from '../../../api/APIClient';
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
-import { addMessage, getMessagesByConversationId, handlerUpdateReaction, removeAllReaction, sendMessage, setMessages, updateMessage } from '../../redux/slices/MessageSlice';
+import { addMessage, getMessagesByConversationId, handlerUpdateReaction, removeAllReaction, seenAll, seenOne, sendMessage, setMessages, updateMessage, updateSeenAllMessage } from '../../redux/slices/MessageSlice';
 import HeaderComponent from '../../components/chat/HeaderComponent';
 import InputComponent from '../../components/chat/InputComponent';
 import MessageItem from '../../components/chat/MessageItem';
@@ -133,10 +133,24 @@ export const ChatScreen = ({ route, navigation }) => {
   // }, [inputMessage]);
 
   useEffect(() => {
-    socket.on('receive-message', (message) => {
+    const handlerReceiveMessage = async (message) => {
+      console.log("hiii")
       dispatch(setMessages([...messages, message]));
-    });
-  }, [messages, dispatch]);
+      await dispatch(seenOne(message.id)).unwrap().then((res) => {
+        const data = res.data;
+        // emit seen message
+        socket.emit('seen-message', {
+          messages: [data],
+          conversation: conversation
+        });
+      })
+    }
+    socket.on('receive-message', handlerReceiveMessage);
+
+    return () => {
+      socket.off('receive-message', handlerReceiveMessage);
+    }
+  }, [conversation.id]);
 
 
   useEffect(() => {
@@ -146,8 +160,33 @@ export const ChatScreen = ({ route, navigation }) => {
   }, []);
 
   useEffect(() => {
-    dispatch(getMessagesByConversationId(conversation.id));
-  }, [conversation.id, limit, dispatch]);
+    const handlerInitMessage = async () => {
+      await dispatch(getMessagesByConversationId(conversation.id)).unwrap().then(async (res) => {
+
+        const unseenMessages = res.data.filter((message) => {
+          const seen = message.seen || [];
+          return !seen.some((seenUser) => seenUser.userId === userLogin.id);
+        }).map((message) => message.id);
+
+        if (unseenMessages.length > 0) {
+          await dispatch(seenAll(unseenMessages)).unwrap().then((res) => {
+            const data = res.data;
+            dispatch(updateSeenAllMessage(data))
+            // emit seen message
+            socket.emit('seen-message', {
+              messages: data,
+              conversation: conversation
+            })
+          })
+        }
+
+
+      });
+    }
+
+    handlerInitMessage();
+
+  }, [conversation]);
 
 // Bắt sự kiện get last logout
   useEffect(() => {

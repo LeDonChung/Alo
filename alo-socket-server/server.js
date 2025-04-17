@@ -264,6 +264,19 @@ io.on("connection", (socket) => {
         }
     })
 
+    socket.on('seen-message', async (data) => {
+        const messages = data.messages;
+        const conversation = data.conversation;
+        // send to all members in conversation
+        console.log(
+            "Cập nhật đã xem tin nhắn cho các thành viên trong cuộc trò chuyện:",
+            conversation.memberUserIds,
+            conversation.id,
+            messages
+        )
+        socket.to(conversation.id).emit('receive-seen-message', {conversation, messages});
+    })
+
     // =====================
     // Helper functions
     // =====================

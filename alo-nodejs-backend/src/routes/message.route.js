@@ -64,4 +64,10 @@ router.post(
     messageController.forwardMessage
 );
 
+// Cập nhật Seen hàng loạt
+router.put(
+    '/seen-messages',
+    middleware.authenticateToken,
+    messageController.seenAll
+);
 module.exports = router;

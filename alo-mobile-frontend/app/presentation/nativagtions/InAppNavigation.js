@@ -19,7 +19,7 @@ import { addFriend, addFriendRequests, cancelFriend, getFriendByPhoneNumber, get
 import { showToast } from "../../utils/AppUtils";
 import { FlatList } from "react-native-gesture-handler";
 import { ContactStyles } from "../styles/ContactStyle";
-import { handlerUpdateReaction, updateReaction } from "../redux/slices/MessageSlice";
+import { handlerUpdateReaction, updateReaction, updateSeenAllMessage } from "../redux/slices/MessageSlice";
 
 const Tab = createBottomTabNavigator();
 
@@ -40,6 +40,7 @@ export const InAppNavigation = () => {
   const [showBackIcon, setShowBackIcon] = useState(false);
 
   const init = async () => {
+    dispatch(getAllConversation())
     dispatch(getFriends());
     dispatch(getFriendsRequest())
   }
@@ -160,6 +161,23 @@ export const InAppNavigation = () => {
       socket.off("receice-update-reaction", handlerReceiveReaction);
     }
   })
+
+  const conversation = useSelector((state) => state.conversation.conversation);
+  useEffect(() => {
+    const handleReceiveSeenMessage = async (data) => {
+        console.log(conversation)
+        if (!conversation || (conversation.id !== data.conversation.id)) {
+            return;
+        }
+        console.log('receive-seen-message', data);
+        dispatch(updateSeenAllMessage(data.messages));
+    }
+    socket.on('receive-seen-message', handleReceiveSeenMessage);
+
+    return () => {
+        socket.off('receive-seen-message', handleReceiveSeenMessage);
+    }
+})
 
   // =============== HANDLE SOCKET FRIEND REQUEST ===============
   useEffect(() => {

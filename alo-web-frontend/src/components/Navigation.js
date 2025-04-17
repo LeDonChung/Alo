@@ -6,7 +6,7 @@ import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updat
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
 import { getAllConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
-import { setMessages, setMessageUpdate } from "../redux/slices/MessageSlice";
+import { setMessages, setMessageUpdate, updateSeenAllMessage } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 export const Navigation = () => {
     const dispatch = useDispatch();
@@ -180,6 +180,22 @@ export const Navigation = () => {
             socket.off("receive-cancle-friend-request", handleCancleFriendRequest);
         };
     }, []);
+    const conversation = useSelector((state) => state.conversation.conversation);
+    useEffect(() => {
+        const handleReceiveSeenMessage = async (data) => {
+            console.log(conversation)
+            if (!conversation || (conversation.id !== data.conversation.id)) {
+                return;
+            }
+            console.log('receive-seen-message', data);
+            dispatch(updateSeenAllMessage(data.messages));
+        }
+        socket.on('receive-seen-message', handleReceiveSeenMessage);
+
+        return () => {
+            socket.off('receive-seen-message', handleReceiveSeenMessage);
+        }
+    })
     const [menus, setMenus] = useState([
         { id: 1, icon: "./icon/ic_message.png", onPress: () => navigate("/me") },
         { id: 2, icon: "./icon/ic_round-perm-contact-calendar.png", onPress: () => navigate("/contact") },
