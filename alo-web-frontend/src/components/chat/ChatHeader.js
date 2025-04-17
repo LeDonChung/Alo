@@ -1,11 +1,10 @@
 import React from "react";
-// import PinComponentWeb from "./PinComponent";
+import PinComponentWeb from "./PinComponent";
 const ChatHeader = ({ conversation, userLogin, lastLogout, getFriend, getLastLoginMessage, isFriendOnline, scrollToMessage }) => {
   if (conversation.isGroup) return null;
 
   return (
     <div className="bg-white border-b border-gray-200 p-4 flex items-center">
-      {/* <div className="p-4 flex items-center"> */}
         <img
           src={getFriend(conversation).avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'}
           alt="Avatar"
@@ -36,17 +35,14 @@ const ChatHeader = ({ conversation, userLogin, lastLogout, getFriend, getLastLog
             </svg>
           </button>
         </div>
-      {/* </div> */}
-      {/* Danh sách ghim
+      {/* Danh sách ghim */}
       {conversation.pineds && conversation.pineds.length > 0 && (
-        <div className="border-t border-gray-200 pt-2">
-          <PinComponentWeb
-            conversation={conversation}
-            pins={conversation.pineds}
-            scrollToMessage={scrollToMessage}
-          />
-        </div>
-      )} */}
+        <PinComponentWeb
+          conversation={conversation}
+          pins={conversation.pineds}
+          scrollToMessage={scrollToMessage}
+        />
+      )}
     </div>
   );
 };

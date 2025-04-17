@@ -9,7 +9,7 @@ import lgVideo from 'lightgallery/plugins/video';
 import { useDispatch } from 'react-redux';
 import { setMessageParent, setMessageUpdate, updateMessageStatus, removeAllReaction, handlerUpdateReaction, updateReaction } from '../../redux/slices/MessageSlice';
 import { batch } from 'react-redux';
-import {  getConversationById,   } from '../../redux/slices/ConversationSlice';
+import {  getConversationById, addPinToConversation, removePinToConversation, createPin   } from '../../redux/slices/ConversationSlice';
 import socket from '../../utils/socket';
 
 const MessageItem = ({
@@ -136,83 +136,75 @@ const MessageItem = ({
     }
   }, [message, userLogin.id, dispatch, conversation]);
 
-  // Xử lý gửi reaction
-  const handleSendReaction = useCallback(
-    async (type) => {
-      try {
-        const updatedReaction = { ...(message.reaction || {}) }; 
-        if (updatedReaction[type]) {
-          const updatedUsers = [...updatedReaction[type].users];
-          if (updatedUsers.includes(userLogin.id)) {
-            updatedReaction[type].users = updatedUsers.filter((userId) => userId !== userLogin.id);
-            updatedReaction[type].quantity -= 1;
-            if (updatedReaction[type].quantity === 0) {
-              delete updatedReaction[type];
-            }
-          } else {
-            updatedReaction[type].users.push(userLogin.id);
-            updatedReaction[type].quantity += 1;
-          }
-        } else {
-          updatedReaction[type] = { quantity: 1, users: [userLogin.id] };
-        }
-
-        dispatch(handlerUpdateReaction({ messageId: message.id, updatedReaction }));
-
-        await dispatch(updateReaction({ messageId: message.id, type }))
-          .unwrap()
-          .then((res) => {
-            socket.emit('update-reaction', {
-              conversation,
-              message: res.data,
-            });
-          });
-      } catch (error) {
-        console.error('Error updating reaction:', error);
-        dispatch(handlerUpdateReaction({ messageId: message.id, updatedReaction: message.reaction || {} }));
-      }
-      showReactionsRef.current = false;
-      forceUpdate();
-    },
-    [message, userLogin.id, dispatch, conversation]
-  );
-
   // Lấy reaction của người dùng hiện tại
   const myReaction = useMemo(
     () => getUserReactions(message.reaction).find((u) => u.id === userLogin.id),
     [message.reaction, getUserReactions]
   );
 
-//socket
-  useEffect(() => {
-    const handleUpdateMessage = async (ms) => {
-      await dispatch(setMessageUpdate({ messageId: ms.id, status: ms.status }));
-    };
+// Xử lý gửi reaction
+const handleSendReaction = useCallback(
+  async (type) => {
+    try {
+      const updatedReaction = { ...(message.reaction || {}) };
+      if (updatedReaction[type]) {
+        const updatedUsers = [...updatedReaction[type].users];
+        if (updatedUsers.includes(userLogin.id)) {
+          updatedReaction[type].users = updatedUsers.filter((userId) => userId !== userLogin.id);
+          updatedReaction[type].quantity -= 1;
+          if (updatedReaction[type].quantity === 0) {
+            delete updatedReaction[type];
+          }
+        } else {
+          updatedReaction[type].users.push(userLogin.id);
+          updatedReaction[type].quantity += 1;
+        }
+      } else {
+        updatedReaction[type] = { quantity: 1, users: [userLogin.id] };
+      }
 
-    const handleUpdateReaction = (data) => {
-      dispatch(setMessageUpdate({ messageId: data.message.id, reaction: data.message.reaction }));
-    };
+      dispatch(handlerUpdateReaction({ messageId: message.id, updatedReaction }));
 
-    // const handlePinMessage = (data) => {
-    //   dispatch(getConversationById(data.conversation.id));
-    // };
+      const res = await dispatch(updateReaction({ messageId: message.id, type })).unwrap();
+      socket.emit('update-reaction', {
+        conversation,
+        message: res.data,
+      });
+    } catch (error) {
+      console.error('Error updating reaction:', error);
+      dispatch(handlerUpdateReaction({ messageId: message.id, updatedReaction: message.reaction || {} }));
+    }
+    showReactionsRef.current = false;
+    forceUpdate({});
+  },
+  [message, userLogin.id, dispatch, conversation]
+);
 
-    // const handleConfirmPinMessage = (data) => {
-    //   dispatch(addPinToConversation(data.pin));
-    // };
 
-    socket.on('receive-update-message', handleUpdateMessage);
-    socket.on('update-reaction', handleUpdateReaction);
-    // socket.on('pin-message', handlePinMessage);
-    // socket.on('confirm-pin-message', handleConfirmPinMessage);
+// Socket listeners
+useEffect(() => {
+  const handleUpdateMessage = async (ms) => {
+    await dispatch(setMessageUpdate({ messageId: ms.id, status: ms.status }));
+  };
 
-    return () => {
-      socket.off('receive-update-message', handleUpdateMessage);
-      socket.off('update-reaction', handleUpdateReaction);
-      // socket.off('pin-message', handlePinMessage);
-      // socket.off('confirm-pin-message', handleConfirmPinMessage);
-    };
-  }, [dispatch]);
+  const handlePinMessage = (data) => {
+    dispatch(getConversationById(data.conversation.id));
+  };
+
+  const handleConfirmPinMessage = (data) => {
+    dispatch(addPinToConversation(data.pin));
+  };
+
+  socket.on('receive-update-message', handleUpdateMessage);
+  socket.on('pin-message', handlePinMessage);
+  socket.on('confirm-pin-message', handleConfirmPinMessage);
+
+  return () => {
+    socket.off('receive-update-message', handleUpdateMessage);
+    socket.off('pin-message', handlePinMessage);
+    socket.off('confirm-pin-message', handleConfirmPinMessage);
+  };
+}, [dispatch]);
 
   // Memoize các hàm xử lý sự kiện
   const handleContextMenu = useCallback(
@@ -353,25 +345,25 @@ const MessageItem = ({
 
   
 
-  // const handlePinMessage = useCallback(async () => {
-  //   try {
-  //     setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
-  //     // Cập nhật giao diện ngay lập tức
-  //     dispatch(addPinToConversation({ messageId: message.id }));
-  //     const res = await dispatch(createPin({ conversationId: message.conversationId, messageId: message.id })).unwrap();
-  //     socket.emit('pin-message', {
-  //       conversation,
-  //       pin: res.data,
-  //     });
-  //     if (conversation.pineds.length >= 3) {
-  //       alert('Đã đạt tối đa 3 ghim. Ghim cũ nhất sẽ bị xóa.');
-  //     }
-  //   } catch (error) {
-  //     console.error('Error pinning message:', error);
-  //     // Rollback nếu API thất bại
-  //     dispatch(removePinToConversation({ messageId: message.id }));
-  //   }
-  // }, [message, conversation, dispatch]);
+  const handlePinMessage = useCallback(async () => {
+    try {
+      setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
+      // Cập nhật giao diện ngay lập tức
+      dispatch(addPinToConversation({ messageId: message.id }));
+      const res = await dispatch(createPin({ conversationId: message.conversationId, messageId: message.id })).unwrap();
+      socket.emit('pin-message', {
+        conversation,
+        pin: res.data,
+      });
+      if (conversation.pineds.length >= 3) {
+        alert('Đã đạt tối đa 3 ghim. Ghim cũ nhất sẽ bị xóa.');
+      }
+    } catch (error) {
+      console.error('Error pinning message:', error);
+      // Rollback nếu API thất bại
+      dispatch(removePinToConversation({ messageId: message.id }));
+    }
+  }, [message, conversation, dispatch]);
 
   const formatMessageDateTime = useCallback((timestamp) => {
     const date = new Date(timestamp);
@@ -430,7 +422,7 @@ const MessageItem = ({
                   Lưu về máy
                 </li>
               )}
-              <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Ghim tin nhắn</li>
+              <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handlePinMessage}>Ghim tin nhắn</li>
               <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleViewDetails}>
                 Xem chi tiết
               </li>

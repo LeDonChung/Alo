@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { axiosInstance } from '../api/APIClient';
 import socket from '../utils/socket';
-import { getMessagesByConversationId,setMessages } from '../redux/slices/MessageSlice';
+import { getMessagesByConversationId,setMessages, setMessageUpdate } from '../redux/slices/MessageSlice';
 import RightSlidebar from './RightSlideBarChat';
 import ChatHeader from './chat/ChatHeader';
 import ChatContent from './chat/ChatContent';
@@ -73,6 +73,19 @@ const ChatWindow = () => {
   const isFriendOnline = (userId) => {
     return userOnlines.includes(userId);
   };
+
+  useEffect(() => {
+    socket.on('receive-update-reaction', (message) => {
+      dispatch(setMessageUpdate({ 
+        messageId: message.id, 
+        reaction: message.reaction 
+      }));
+    });
+  
+    return () => {
+      socket.off('receive-update-reaction');
+    };
+  }, [dispatch]);
 
   return (
     <>

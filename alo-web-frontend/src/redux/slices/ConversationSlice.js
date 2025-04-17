@@ -26,23 +26,23 @@ const getConversationById = createAsyncThunk('ConversationSlice/getConversationB
     }
 });
 
-// const createPin = createAsyncThunk('ConversationSlice/createPin', async ({ conversationId, messageId }, { rejectWithValue }) => {
-//     try {
-//         const response = await axiosInstance.post(`/api/conversation/${conversationId}/pin/${messageId}`);
-//         return response.data;
-//     } catch (error) {
-//         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
-//     }
-// });
+const createPin = createAsyncThunk('ConversationSlice/createPin', async ({ conversationId, messageId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/pin/${messageId}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
 
-// const removePin = createAsyncThunk('ConversationSlice/removePin', async ({ conversationId, messageId }, { rejectWithValue }) => {
-//     try {
-//         const response = await axiosInstance.delete(`/api/conversation/${conversationId}/pin/${messageId}`);
-//         return response.data;
-//     } catch (error) {
-//         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
-//     }
-// });
+const removePin = createAsyncThunk('ConversationSlice/removePin', async ({ conversationId, messageId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.delete(`/api/conversation/${conversationId}/pin/${messageId}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
 
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
@@ -63,23 +63,23 @@ const ConversationSlice = createSlice({
                 state.conversations[index] = conversation;
             }
         },
-        // addPinToConversation: (state, action) => {
-        //     let cons = state.conversation;
-        //     if (cons && action.payload?.message) { 
-        //         cons.pineds.unshift(action.payload);
-        //         if (cons.pineds.length > 3) {
-        //             cons.pineds.pop(); 
-        //         }
-        //     }
-        //     state.conversation = {...cons}; 
-        // },
-        // removePinToConversation: (state, action) => {
-        //     let cons = state.conversation;
-        //     if (cons) {
-        //         cons.pineds = cons.pineds.filter(pin => pin.messageId !== action.payload.messageId);
-        //     } 
-        //     state.conversation = {...cons};
-        // }
+        addPinToConversation: (state, action) => {
+            let cons = state.conversation;
+            if (cons && action.payload?.message) { 
+                cons.pineds.unshift(action.payload);
+                if (cons.pineds.length > 3) {
+                    cons.pineds.pop(); 
+                }
+            }
+            state.conversation = {...cons}; 
+        },
+        removePinToConversation: (state, action) => {
+            let cons = state.conversation;
+            if (cons) {
+                cons.pineds = cons.pineds.filter(pin => pin.messageId !== action.payload.messageId);
+            } 
+            state.conversation = {...cons};
+        }
     },
     extraReducers: (builder) => {
 
@@ -104,36 +104,36 @@ const ConversationSlice = createSlice({
             state.conversation = [];
         });
 
-        // builder.addCase(createPin.pending, (state) => {
-        // });
-        // builder.addCase(createPin.fulfilled, (state, action) => {
-        //     let cons = state.conversation;
-        //     if (cons && action.payload.data?.message) { // Kiểm tra action.payload.data và message
-        //         cons.pineds.unshift(action.payload.data);
-        //         if (cons.pineds.length > 3) {
-        //             cons.pineds.pop();
-        //         }
-        //     }
-        //     state.conversation = { ...cons };
-        // });
+        builder.addCase(createPin.pending, (state) => {
+        });
+        builder.addCase(createPin.fulfilled, (state, action) => {
+            let cons = state.conversation;
+            if (cons && action.payload.data?.message) { // Kiểm tra action.payload.data và message
+                cons.pineds.unshift(action.payload.data);
+                if (cons.pineds.length > 3) {
+                    cons.pineds.pop();
+                }
+            }
+            state.conversation = { ...cons };
+        });
 
-        // builder.addCase(createPin.rejected, (state, action) => {
-        // });
+        builder.addCase(createPin.rejected, (state, action) => {
+        });
 
-        // builder.addCase(removePin.pending, (state) => {
-        // });
-        // builder.addCase(removePin.fulfilled, (state, action) => {
-        //     let cons = state.conversation;
-        //     if (cons) {
-        //         cons.pineds = cons.pineds.filter(pin => pin.messageId !== action.payload.data.messageId);
-        //     }
-        //     state.conversation = { ...cons };
-        // });
-        // builder.addCase(removePin.rejected, (state, action) => {
-        // });
+        builder.addCase(removePin.pending, (state) => {
+        });
+        builder.addCase(removePin.fulfilled, (state, action) => {
+            let cons = state.conversation;
+            if (cons) {
+                cons.pineds = cons.pineds.filter(pin => pin.messageId !== action.payload.data.messageId);
+            }
+            state.conversation = { ...cons };
+        });
+        builder.addCase(removePin.rejected, (state, action) => {
+        });
     }
 });
 
-export const { setConversation, updateLastMessage } = ConversationSlice.actions;
-export { getAllConversation, getConversationById };
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation  } = ConversationSlice.actions;
+export { getAllConversation, getConversationById, createPin, removePin };
 export default ConversationSlice.reducer;

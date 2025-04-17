@@ -21,7 +21,7 @@ const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ messag
         }
 
         const response = await axiosInstance.post('/api/message/create-message', formData, {
-            headers: { 
+            headers: {
                 "Content-Type": "multipart/form-data"
             }
         });
@@ -44,7 +44,7 @@ const getMessagesByConversationId = createAsyncThunk('MessageSlice/getMessagesBy
 const updateMessageStatus = createAsyncThunk('MessageSlice/updateMessageStatus', async ({ messageId, status }, { rejectWithValue }) => {
     try {
         console.log(messageId, status);
-        
+
         const response = await axiosInstance.put(`/api/message/${messageId}/status?status=${status}`);
         return response.data;
     } catch (error) {
@@ -65,7 +65,7 @@ const updateReaction = createAsyncThunk('MessageSlice/updateReaction', async ({ 
 
 const removeAllReaction = createAsyncThunk('MessageSlice/removeAllReaction', async ({ messageId }, { rejectWithValue }) => {
     try {
-        const response = await axiosInstance.delete(`/api/message/${messageId}/reaction`); 
+        const response = await axiosInstance.delete(`/api/message/${messageId}/reaction`);
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
@@ -89,26 +89,32 @@ const MessageSlice = createSlice({
             state.messageParent = action.payload;
         },
         setMessageUpdate: (state, action) => {
-            const {messageId, status} = action.payload;
+            const { messageId, status, reaction } = action.payload;
             const index = state.messages.findIndex(message => message.id === messageId);
-            if (index !== -1) { 
-                state.messages[index].status = status; 
+            if (index !== -1) {
+                if (status !== undefined) {
+                    state.messages[index].status = status;
+                }
+                if (reaction !== undefined) {
+                    state.messages[index].reaction = reaction || {};
+                }
+                state.messages = [...state.messages];
             }
         },
         updateMessage: (state, action) => {
 
-            const index = state.messages.findIndex(message => { 
+            const index = state.messages.findIndex(message => {
                 return message.requestId === Number(action.payload.requestId)
-            }); 
+            });
             if (index !== -1) {
-                state.messages[index] = action.payload; 
-            }  
+                state.messages[index] = action.payload;
+            }
         },
         handlerUpdateReaction: (state, action) => {
             const { messageId, updatedReaction } = action.payload;
             const index = state.messages.findIndex(message => message.id === messageId);
-            if (index !== -1) { 
-                state.messages[index].reaction = updatedReaction || {}; 
+            if (index !== -1) {
+                state.messages[index].reaction = updatedReaction || {};
             }
         }
     },
@@ -150,7 +156,7 @@ const MessageSlice = createSlice({
         });
 
         builder.addCase(updateReaction.fulfilled, (state, action) => {
-            
+
         });
 
 
@@ -161,7 +167,7 @@ const MessageSlice = createSlice({
         });
 
         builder.addCase(removeAllReaction.fulfilled, (state, action) => {
-            
+
         });
 
 
