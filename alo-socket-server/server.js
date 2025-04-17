@@ -212,17 +212,19 @@ io.on("connection", (socket) => {
     });
 
     socket.on('pin-message', async (data) => {
-        const members = data.conversation.memberUserIds;
+        // const members = data.conversation.memberUserIds;
 
-        for (const userId of members) {
-            const socketIds = await findSocketIdsByUserId(userId);
-            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
-            filteredSocketIds.forEach(id => {
-                console.log("Đang ghim tin nhắn cho socket id:", id);
-                console.log("Ghim tin nhắn cho user:", userId);
-                io.to(id).emit('receive-pin-message', data);
-            });
-        }
+        // for (const userId of members) {
+        //     const socketIds = await findSocketIdsByUserId(userId);
+        //     const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+        //     filteredSocketIds.forEach(id => {
+        //         console.log("Đang ghim tin nhắn cho socket id:", id);
+        //         console.log("Ghim tin nhắn cho user:", userId);
+        //         io.to(id).emit('receive-pin-message', data);
+        //     });
+        // }
+
+        socket.to(data.conversation.id).emit('receive-pin-message', data);
     });
 
     socket.on('unpin-message', async (data) => {
