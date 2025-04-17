@@ -4,7 +4,7 @@ import { Modal, Pressable, View } from 'react-native';
 import { axiosInstance } from '../../../api/APIClient';
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
-import { getMessagesByConversationId, handlerUpdateReaction, removeAllReaction, sendMessage, setMessages } from '../../redux/slices/MessageSlice';
+import { addMessage, getMessagesByConversationId, handlerUpdateReaction, removeAllReaction, sendMessage, setMessages, updateMessage } from '../../redux/slices/MessageSlice';
 import HeaderComponent from '../../components/chat/HeaderComponent';
 import InputComponent from '../../components/chat/InputComponent';
 import MessageItem from '../../components/chat/MessageItem';
@@ -16,6 +16,7 @@ import { ActivityIndicator } from 'react-native-paper';
 import { MenuComponent } from '../../components/chat/MenuConponent';
 import { showToast } from '../../../utils/AppUtils';
 import { removePin } from '../../redux/slices/ConversationSlice';
+
 
 
 export const ChatScreen = ({ route, navigation }) => {
@@ -54,39 +55,56 @@ export const ChatScreen = ({ route, navigation }) => {
   const handlerSendMessage = async (customInputMessage = null) => {
     const messageData = customInputMessage || inputMessage;
     const { content, messageType, file } = messageData;
-
+  
+    const requestId = Date.now() + Math.random(); 
+  
     const message = {
       senderId: userLogin.id,
       conversationId: conversation.id,
       content,
       messageType,
       timestamp: Date.now(),
-      seen: []
+      seen: [],
+      requestId,
+      status: -1,
+    };
+  
+
+    const newMessageTemp = {
+      ...message,
+      sender: userLogin,
     };
 
+    /// file, image
+    if (messageType === 'file' || messageType === 'image') {
+      newMessageTemp.fileLink = file.uri;
+    } else if (messageType === 'sticker') {
+      newMessageTemp.fileLink = messageData.fileLink;
+      message.fileLink = messageData.fileLink;
+    } 
+  
     try {
-      const response = await dispatch(sendMessage({ message, file })).unwrap().then((res) => {
-        const sentMessage = {
-          ...res.data,
-          sender: userLogin
-        };
-
-        console.log("sentMessage", sentMessage);
-        dispatch(setMessages([...messages, sentMessage]));
-        socket.emit('send-message', {
-          conversation,
-          message: sentMessage
-        });
-
-      })
-
-
+      dispatch(addMessage(newMessageTemp));
+      setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
+  
+      const res = await dispatch(sendMessage({ message, file })).unwrap();
+      const sentMessage = {
+        ...res.data,
+        sender: userLogin, 
+      };
+  
+      dispatch(updateMessage(sentMessage));
+  
+      socket.emit('send-message', {
+        conversation,
+        message: sentMessage,
+      });
+  
     } catch (err) {
       console.error("Error sending message:", err);
     }
-    setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
-
   };
+  
 
 
   const handleSendImage = async (newMessage) => {
@@ -97,17 +115,22 @@ export const ChatScreen = ({ route, navigation }) => {
     handlerSendMessage(newMessage);
   };
   const handleStickerSelect = async (stickerUrl) => {
-    dispatch(setInputMessage({ ...inputMessage, fileLink: stickerUrl, messageType: 'sticker' }))
-    setShowStickerPicker(false);
+    const newMessage = {
+      content: '',
+      messageType: 'sticker',
+      fileLink: stickerUrl,
+    };
+    handlerSendMessage(newMessage);
+    setShowStickerPicker(false);  
   };
 
-  useEffect(() => {
-    if (inputMessage.messageType === 'sticker') {
-      if (inputMessage.fileLink) {
-        handlerSendMessage();
-      }
-    }
-  }, [inputMessage]);
+  // useEffect(() => {
+  //   if (inputMessage.messageType === 'sticker') {
+  //     if (inputMessage.fileLink) {
+       
+  //     }
+  //   }
+  // }, [inputMessage]);
 
   useEffect(() => {
     socket.on('receive-message', (message) => {

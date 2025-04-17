@@ -31,6 +31,7 @@ const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ messag
         });
         return response.data;
     } catch (error) {
+        console.log(error) 
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 });
@@ -95,6 +96,18 @@ const MessageSlice = createSlice({
             if (index !== -1) { 
                 state.messages[index].reaction = updatedReaction; 
             }
+        }, 
+        updateMessage: (state, action) => {
+
+            const index = state.messages.findIndex(message => { 
+                return message.requestId === Number(action.payload.requestId)
+            }); 
+            if (index !== -1) {
+                state.messages[index] = action.payload; 
+            }  
+        },
+        addMessage: (state, action) => { 
+            state.messages.push(action.payload);
         }
     },
     extraReducers: (builder) => {
@@ -153,7 +166,7 @@ const MessageSlice = createSlice({
         });
     }
 });
-
-export const { setMessages, increaseLimit, handlerUpdateReaction } = MessageSlice.actions;
+ 
+export const { setMessages, increaseLimit, handlerUpdateReaction, updateMessage, addMessage } = MessageSlice.actions;
 export { sendMessage, getMessagesByConversationId, updateReaction, removeAllReaction, forwardMessage };
 export default MessageSlice.reducer;

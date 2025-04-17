@@ -267,6 +267,25 @@ exports.getFriendRequests = async (req, res) => {
     }
 }
 
+exports.getFriendRequestsSent = async (req, res) => {
+    try {
+        const userId = req.query.userId;
+        const friendRequestsSent = await friendService.getFriendRequestsSent(userId);
+        return res.json({
+            status: 200,
+            data: friendRequestsSent,
+            message: "Danh sách yêu cầu kết bạn đã gửi."
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
+
 exports.getFriends = async (req, res) => {
     try {
         const userId = req.query.userId;
