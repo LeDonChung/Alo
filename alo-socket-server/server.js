@@ -212,17 +212,19 @@ io.on("connection", (socket) => {
     });
 
     socket.on('pin-message', async (data) => {
-        const members = data.conversation.memberUserIds;
+        // const members = data.conversation.memberUserIds;
 
-        for (const userId of members) {
-            const socketIds = await findSocketIdsByUserId(userId);
-            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
-            filteredSocketIds.forEach(id => {
-                console.log("Đang ghim tin nhắn cho socket id:", id);
-                console.log("Ghim tin nhắn cho user:", userId);
-                io.to(id).emit('receive-pin-message', data);
-            });
-        }
+        // for (const userId of members) {
+        //     const socketIds = await findSocketIdsByUserId(userId);
+        //     const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+        //     filteredSocketIds.forEach(id => {
+        //         console.log("Đang ghim tin nhắn cho socket id:", id);
+        //         console.log("Ghim tin nhắn cho user:", userId);
+        //         io.to(id).emit('receive-pin-message', data);
+        //     });
+        // }
+
+        socket.to(data.conversation.id).emit('receive-pin-message', data);
     });
 
     socket.on('unpin-message', async (data) => {
@@ -240,14 +242,16 @@ io.on("connection", (socket) => {
     socket.on('update-reaction', async (data) => {
         const members = data.conversation.memberUserIds;
         console.log("Cập nhật reaction cho các thành viên trong cuộc trò chuyện:", members, data.conversation.id, data.message);
-        for (const userId of members) {
-            const socketIds = await findSocketIdsByUserId(userId);
-            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
-            filteredSocketIds.forEach(id => {
-                console.log("Cập nhật reaction cho user:", userId);
-                io.to(id).emit('receive-update-reaction', data.message);
-            });
-        }
+        const conversationId = data.conversation.id;
+        socket.to(conversationId).emit('receive-update-reaction', data.message);
+        // for (const userId of members) {
+        //     const socketIds = await findSocketIdsByUserId(userId);
+        //     const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+        //     filteredSocketIds.forEach(id => {
+        //         console.log("Cập nhật reaction cho user:", userId);
+        //         io.to(id).emit('receive-update-reaction', data.message);
+        //     });
+        // }
     })
 
     socket.on('updateMessage', async (data) => {
@@ -275,6 +279,15 @@ io.on("connection", (socket) => {
             messages
         )
         socket.to(conversation.id).emit('receive-seen-message', {conversation, messages});
+    })
+
+
+    socket.on('remove-of-me', async (data) => {
+        const {messageId, userId} = data;
+        const socketIds = (await findSocketIdsByUserId(userId)).filter(id => id !== socket.id);
+        socketIds.forEach(id => {
+            io.to(id).emit('receive-remove-of-me', {messageId, userId});
+        });
     })
 
     // =====================
