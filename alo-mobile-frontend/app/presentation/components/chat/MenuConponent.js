@@ -6,7 +6,6 @@ import { useDispatch, useSelector } from 'react-redux';
 import { createPin } from '../../redux/slices/ConversationSlice';
 import { showToast } from '../../../utils/AppUtils';
 import socket from '../../../utils/socket';
-import { ReactionBar } from './ReactionBar';
 import MessageDetailModal from './MessageDetailModal';
 import ForwardMessageModal from './ForwardMessageModal';
 import * as FileSystem from 'expo-file-system';
@@ -15,6 +14,8 @@ import * as Sharing from 'expo-sharing';
 import { removeOfMe, setMessageRemoveOfMe } from '../../redux/slices/MessageSlice';
 
 export const MenuComponent = ({ message, showMenuComponent, friend }) => {
+    const userLogin = useSelector(state => state.user.userLogin);
+    const isSent = message.senderId === userLogin.id;
     const navigation = useNavigation();
     const dispatch = useDispatch();
     const [reaction, setReaction] = useState([
@@ -31,6 +32,7 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
         try {
             showMenuComponent(false)
             await dispatch(createPin({ conversationId: message.conversationId, messageId: message.id })).unwrap().then((res) => {
+                console.log(res)
                 socket.emit('pin-message', {
                     conversation: conversation,
                     pin: res.data
@@ -47,7 +49,6 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
     const [selectedMessage, setSelectedMessage] = useState(null);
     const handlerClickDetail = (message) => {
         setSelectedMessage(message);
-        console.log('message', message)
         setShowDetailModal(true);
     }
 
@@ -136,6 +137,15 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
     return (
         <ScrollView contentContainerStyle={styles.container}>
             {/* Emoji Bar */}
+            <View style={styles.emojiBar}>
+                {
+                    reaction.map((item, index) => (
+                        <TouchableOpacity key={index} style={styles.emoji}>
+                            <Text style={styles.emoji}>{item.icon}</Text>
+                        </TouchableOpacity>
+                    ))
+                }
+            </View>
             <ReactionBar message={message} onClose={() => showMenuComponent(false)} />
             {/* Action Grid */}
             <View style={styles.actionGrid}>
@@ -145,6 +155,7 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionItem} onPress={() => {
                     setShowForwardModal(true);
+                    // showMenuComponent(false);
                 }}>
                     <Icon name="share" size={24} color="#2563EB" />
                     <Text>Chuyển tiếp</Text>
@@ -163,6 +174,14 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                     <Icon name="redo" size={24} color="#EA580C" />
                     <Text>Thu hồi</Text>
                 </TouchableOpacity>
+                <TouchableOpacity style={styles.actionItem} onPress={() => {
+                    handlerClickDetail(message);
+                    // showMenuComponent(false);
+                }} >
+                    <Icon name="info-circle" size={24} color="#6B7280" />
+                    <Text>Chi tiết</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={styles.actionItem}>
 
                 <TouchableOpacity style={styles.actionItem} onPress={() => handlerRemoveOfMe()}>
                     <Icon name="trash" size={24} color="#DC2626" />
@@ -192,17 +211,18 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
             <MessageDetailModal
                 visible={showDetailModal}
                 onClose={() => {
-                    setShowDetailModal(false);
                     showMenuComponent(false);
+                    setShowDetailModal(false);
                 }}
                 message={selectedMessage}
                 friend={friend}
+                isSent={isSent}
             />
             <ForwardMessageModal
                 visible={showForwardModal}
                 onClose={() => {
-                    showMenuComponent(false);
                     setShowForwardModal(false);
+                    showMenuComponent(false);
                 }}
                 message={message}
             />
@@ -220,7 +240,7 @@ const styles = StyleSheet.create({
     emojiBar: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        backgroundColor: '#fff',
+        backgroundColor: '#E5E7EB',
         borderRadius: 9999,
         padding: 8,
         marginBottom: 16,
