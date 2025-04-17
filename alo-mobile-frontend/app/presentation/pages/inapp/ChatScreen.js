@@ -134,7 +134,6 @@ export const ChatScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     const handlerReceiveMessage = async (message) => {
-      console.log("hiii")
       console.log("MESSAGE", message);
       dispatch(addMessage(message));
       await dispatch(seenOne(message.id)).unwrap().then((res) => {
