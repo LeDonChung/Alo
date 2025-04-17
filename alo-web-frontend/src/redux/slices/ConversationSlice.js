@@ -67,7 +67,7 @@ const ConversationSlice = createSlice({
             let cons = state.conversation;
             if (cons && action.payload?.message) { 
                 cons.pineds.unshift(action.payload);
-                if (cons.pineds.length > 3) {
+                if (cons.pineds.length > 5) {
                     cons.pineds.pop(); 
                 }
             }

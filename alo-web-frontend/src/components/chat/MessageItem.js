@@ -26,6 +26,7 @@ import {
 } from '../../redux/slices/ConversationSlice';
 import socket from '../../utils/socket';
 import ModalForwardMessage from './ModalForwardMessage';
+import showToast from '../../utils/AppUtils';
 
 const MessageItem = ({
   message,
@@ -207,31 +208,6 @@ const MessageItem = ({
     }
   }, [message, userLogin.id, dispatch, conversation]);
 
-  // Socket listeners
-  useEffect(() => {
-    const handleUpdateMessage = async (ms) => {
-      await dispatch(setMessageUpdate({ messageId: ms.id, status: ms.status }));
-    };
-
-    const handlePinMessage = (data) => {
-      dispatch(getConversationById(data.conversation.id));
-    };
-
-    const handleConfirmPinMessage = (data) => {
-      dispatch(addPinToConversation(data.pin));
-    };
-
-    socket.on('receive-update-message', handleUpdateMessage);
-    socket.on('pin-message', handlePinMessage);
-    socket.on('confirm-pin-message', handleConfirmPinMessage);
-
-    return () => {
-      socket.off('receive-update-message', handleUpdateMessage);
-      socket.off('pin-message', handlePinMessage);
-      socket.off('confirm-pin-message', handleConfirmPinMessage);
-    };
-  }, [dispatch]);
-
   // Memoize các hàm xử lý sự kiện
   const handleContextMenu = useCallback(
     (event) => {
@@ -379,20 +355,15 @@ const MessageItem = ({
   const handlePinMessage = useCallback(async () => {
     try {
       setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
-      dispatch(addPinToConversation({ messageId: message.id }));
-      const res = await dispatch(
-        createPin({ conversationId: message.conversationId, messageId: message.id })
-      ).unwrap();
-      socket.emit('pin-message', {
-        conversation,
-        pin: res.data,
-      });
-      if (conversation.pineds.length >= 3) {
-        alert('Đã đạt tối đa 3 ghim. Ghim cũ nhất sẽ bị xóa.');
-      }
+      await dispatch(createPin({ conversationId: message.conversationId, messageId: message.id })).unwrap().then((res) => {
+        socket.emit('pin-message', {
+          conversation: conversation,
+          pin: res.data
+        });
+        showToast("Đã ghim tin nhắn này.", "info");
+      })
     } catch (error) {
       console.error('Error pinning message:', error);
-      dispatch(removePinToConversation({ messageId: message.id }));
     }
   }, [message, conversation, dispatch]);
 
