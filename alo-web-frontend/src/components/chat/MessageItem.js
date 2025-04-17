@@ -234,11 +234,11 @@ const MessageItem = ({
                     <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => { setIsOpenModalForward(true)}}>
                       Chia sẻ
                     </li>
-                    <ModalForwardMessage isOpen={isOpenModalForward} 
-                    onClose={() => {
-                      setIsOpenModalForward(false);
-                      setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
-                    }} 
+                    <ModalForwardMessage isOpen={isOpenModalForward}
+                      onClose={() => {
+                        setIsOpenModalForward(false);
+                        setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
+                      }} 
                     message={message} conversations={conversations} />
                     {message.messageType !== 'file' && message.messageType !== 'sticker' && (
                       <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleCopy}>

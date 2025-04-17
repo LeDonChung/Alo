@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { forwardMessage } from "../../redux/slices/MessageSlice";
 import socket from "../../utils/socket";
+import { removeVietnameseTones } from "../../utils/AppUtils";
 
 
 const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
@@ -11,6 +12,27 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
     const [conversationIds, setConversationIds] = useState([]);
     const [search, setSearch] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [conversationList, setConversationList] = useState(conversations);
+
+    useEffect(() => {
+        if(search === ''){
+            setConversationList(conversations);
+        }else{
+            const searchText = removeVietnameseTones(search);
+            const filteredConversations = conversations.filter((conversation) => {
+                if (conversation.isGroup) {
+                    const groupName = removeVietnameseTones(conversation.name);
+
+                    return groupName.toLowerCase().includes(searchText.toLowerCase());
+                } else {
+                    const friend = conversation.members.find((member) => member.id !== userLogin.id);
+                    const friendName = removeVietnameseTones(friend.fullName);
+                    return friendName.toLowerCase().includes(search.toLowerCase());
+                }
+            });
+            setConversationList(filteredConversations);
+        }
+    }, [search])
 
     const handleForward = async (e) => {
         e.preventDefault();
@@ -58,16 +80,16 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
                         placeholder="Tìm kiếm..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-none"
                     />
                 </div>
 
                 <div>
                     <h3 className="text-sm font-semibold mb-2">Gần đây</h3>
                     <ul className="space-y-2">
-                        {conversations.map((conversation) => (
+                        {conversationList.map((conversation) => (
                             <li key={conversation.id}
-                                className="flex items-center mb-2 hover:bg-gray-100 px-2 py-3 hover:rounded-md cursor-pointer"
+                                className="flex items-center mb-2 hover:bg-gray-100 px-2 py-[5px] hover:rounded-md cursor-pointer"
                                 onClick={() => {
                                     setConversationIds((prev) =>
                                         prev.includes(conversation.id)
