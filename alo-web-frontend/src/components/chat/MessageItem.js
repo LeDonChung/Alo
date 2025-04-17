@@ -355,46 +355,27 @@ const MessageItem = ({
                       <img src={message.fileLink} alt="sticker" className="w-20 h-20" loading="lazy" />
                     )}
                     {message.messageType === 'image' && (
-                      <div onClick={() => setShowLightGallery(true)}>
+                      <LightGallery
+                      plugins={[lgZoom, lgThumbnail, lgVideo]}
+                      mode="lg-fade"
+                      onClose={() => setShowLightGallery(false)}
+                    >
+                      <a href={message.fileLink} data-lg-size="1280-720">
                         {message.fileLink.includes('.mp4') ? (
                           <video
                             src={message.fileLink}
                             controls
                             className="max-w-full max-h-96 cursor-pointer object-cover"
-                            loading="lazy"
                           />
                         ) : (
                           <img
                             src={message.fileLink}
                             alt="Hình ảnh"
                             className="max-w-full max-h-96 cursor-pointer object-cover"
-                            loading="lazy"
                           />
                         )}
-                      </div>
-                    )}
-                    {showLightGallery && message.messageType === 'image' && (
-                      <LightGallery
-                        plugins={[lgZoom, lgThumbnail, lgVideo]}
-                        mode="lg-fade"
-                        onClose={() => setShowLightGallery(false)}
-                      >
-                        <a href={message.fileLink} data-lg-size="1280-720">
-                          {message.fileLink.includes('.mp4') ? (
-                            <video
-                              src={message.fileLink}
-                              controls
-                              className="max-w-full max-h-96 cursor-pointer object-cover"
-                            />
-                          ) : (
-                            <img
-                              src={message.fileLink}
-                              alt="Hình ảnh"
-                              className="max-w-full max-h-96 cursor-pointer object-cover"
-                            />
-                          )}
-                        </a>
-                      </LightGallery>
+                      </a>
+                    </LightGallery>
                     )}
                     {message.messageType === 'file' && (
                       message.fileLink.includes('.mp4') ? (
