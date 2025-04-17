@@ -6,7 +6,7 @@ import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updat
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
 import { getAllConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
-import { addMessage, setMessages, setMessageUpdate, updateSeenAllMessage } from "../redux/slices/MessageSlice";
+import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 export const Navigation = () => {
     const dispatch = useDispatch();
@@ -196,10 +196,6 @@ export const Navigation = () => {
     const conversation = useSelector((state) => state.conversation.conversation);
     useEffect(() => {
         const handleReceiveSeenMessage = async (data) => {
-            console.log(conversation)
-            if (!conversation || (conversation.id !== data.conversation.id)) {
-                return;
-            }
             console.log('receive-seen-message', data);
             dispatch(updateSeenAllMessage(data.messages));
         }
@@ -208,7 +204,17 @@ export const Navigation = () => {
         return () => {
             socket.off('receive-seen-message', handleReceiveSeenMessage);
         }
-    })
+    }, [])
+    useEffect(() => {
+        const handlerRemoveOfMe = async (data) => {
+            const { messageId, userId } = data;
+            dispatch(setMessageRemoveOfMe({ messageId: messageId, userId: userId }));
+        }
+        socket.on('receive-remove-of-me', handlerRemoveOfMe);
+        return () => {
+            socket.off('receive-remove-of-me', handlerRemoveOfMe);
+        }
+    }, [])
     const [menus, setMenus] = useState([
         { id: 1, icon: "./icon/ic_message.png", onPress: () => navigate("/me") },
         { id: 2, icon: "./icon/ic_round-perm-contact-calendar.png", onPress: () => navigate("/contact") },

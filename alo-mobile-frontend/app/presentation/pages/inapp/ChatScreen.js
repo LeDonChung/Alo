@@ -163,6 +163,7 @@ export const ChatScreen = ({ route, navigation }) => {
     const handlerInitMessage = async () => {
       await dispatch(getMessagesByConversationId(conversation.id)).unwrap().then(async (res) => {
 
+        console.log("hi")
         const unseenMessages = res.data.filter((message) => {
           const seen = message.seen || [];
           return !seen.some((seenUser) => seenUser.userId === userLogin.id);
@@ -186,14 +187,12 @@ export const ChatScreen = ({ route, navigation }) => {
 
     handlerInitMessage();
 
-  }, [conversation]);
+  }, []);
 
 // Bắt sự kiện get last logout
   useEffect(() => {
     const handleGetLastLogoutX = async (userId) => {
-      console.log('getLastLogoutX', userId);
-      console.log(getFriend(conversation));
-      if(userId === getFriend(conversation).id) {
+      if(userId === friend.id) {
         console.log('getLastLogout', userId);
         await handleGetLastLogout(userId);
       }
