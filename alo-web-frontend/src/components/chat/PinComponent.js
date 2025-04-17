@@ -1,22 +1,20 @@
-import React, { useState, useCallback } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import React, { useState, useCallback, useEffect } from 'react';
+import { useDispatch } from 'react-redux';
 import { removePin } from '../../redux/slices/ConversationSlice';
 import socket from '../../utils/socket';
 
 const PinComponentWeb = ({ conversation, pins, scrollToMessage }) => {
   const [expanded, setExpanded] = useState(false);
   const [modalVisible, setModalVisible] = useState(false);
+  const [modalPosition, setModalPosition] = useState({ x: 0, y: 0 });
   const [selectedPin, setSelectedPin] = useState(null);
   const dispatch = useDispatch();
-  const userLogin = useSelector((state) => state.user.userLogin);
 
-  // Hàm lấy đuôi file
   const getFileExtension = useCallback((filename = '') => {
     const parts = filename.split('.');
     return parts[parts.length - 1].toLowerCase();
   }, []);
 
-  // Hàm lấy tên file gốc
   const extractOriginalName = useCallback((fileUrl) => {
     const fileNameEncoded = fileUrl.split('/').pop();
     const fileNameDecoded = decodeURIComponent(fileNameEncoded);
@@ -24,7 +22,6 @@ const PinComponentWeb = ({ conversation, pins, scrollToMessage }) => {
     return parts[parts.length - 1];
   }, []);
 
-  // Hàm lấy thông tin thành viên
   const getMember = useCallback(
     (memberId) => {
       return (
@@ -37,12 +34,10 @@ const PinComponentWeb = ({ conversation, pins, scrollToMessage }) => {
     [conversation.members]
   );
 
-  // Xử lý mở rộng/thu gọn danh sách ghim
   const handleToggleExpand = useCallback(() => {
     setExpanded((prev) => !prev);
   }, []);
 
-  // Xử lý xóa ghim
   const handleDeletePin = useCallback(
     async (pin) => {
       try {
@@ -54,6 +49,7 @@ const PinComponentWeb = ({ conversation, pins, scrollToMessage }) => {
           messageId: pin.messageId,
         });
         setModalVisible(false);
+        setSelectedPin(null);
       } catch (error) {
         console.error('Error removing pin:', error);
       }
@@ -61,9 +57,26 @@ const PinComponentWeb = ({ conversation, pins, scrollToMessage }) => {
     [conversation, dispatch]
   );
 
-  // Render một mục ghim
+  const handleContextMenu = useCallback(
+    (e, pin) => {
+      e.preventDefault();
+      setModalPosition({ x: e.clientX, y: e.clientY });
+      setSelectedPin(pin);
+      setModalVisible(true);
+    },
+    []
+  );
+
+  useEffect(() => {
+    const handleClickOutside = () => {
+      setModalVisible(false);
+      setSelectedPin(null);
+    };
+    window.addEventListener('click', handleClickOutside);
+    return () => window.removeEventListener('click', handleClickOutside);
+  }, []);
+
   const renderPinItem = (pinItem, index, showToggle = false) => {
-    // Kiểm tra xem pinItem.message có tồn tại không
     if (!pinItem.message) {
       return (
         <div
@@ -96,17 +109,12 @@ const PinComponentWeb = ({ conversation, pins, scrollToMessage }) => {
     return (
       <div
         key={index}
-        className="flex items-center bg-white mx-2 mt-2 p-3 rounded-lg shadow-md border border-blue-500 cursor-pointer hover:bg-gray-50"
+        className="flex items-center bg-white mx-2 mt-2 p-3 rounded-lg shadow-md border border-blue-500 cursor-pointer pin-item"
         onClick={() => {
           scrollToMessage(pinItem.messageId);
-          setSelectedPin(pinItem);
           handleToggleExpand();
         }}
-        onContextMenu={(e) => {
-          e.preventDefault();
-          setSelectedPin(pinItem);
-          setModalVisible(true);
-        }}
+        onContextMenu={(e) => handleContextMenu(e, pinItem)}
       >
         <svg
           className="w-6 h-6 text-blue-500 mr-2"
@@ -166,7 +174,7 @@ const PinComponentWeb = ({ conversation, pins, scrollToMessage }) => {
           >
             <p className="text-sm font-bold text-gray-800">+{pins.length - 1}</p>
             <svg
-              className={`w-4 h-4 ml-1 text-blue-500 ${expanded ? 'rotate-180' : ''}`}
+              className={`w-4 h-4 ml-1 text-blue-500 toggle-icon ${expanded ? 'expanded' : ''}`}
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -185,17 +193,12 @@ const PinComponentWeb = ({ conversation, pins, scrollToMessage }) => {
   };
 
   return (
-    <div
-      className={`mt-2 ${expanded ? 'bg-white p-2 rounded-lg border border-blue-500 shadow-md' : ''}`}
-    >
+    <div className={`mt-2 pin-container ${expanded ? 'expanded' : ''}`}>
       {expanded && (
-        <p className="text-base font-medium text-gray-800 pl-2">
-          Danh sách ghim
-        </p>
+        <p className="text-base font-medium text-gray-800 pl-2">Danh sách ghim</p>
       )}
       {pins.length > 0 && renderPinItem(pins[0], 0, true)}
-      {expanded &&
-        pins.slice(1).map((pinItem, index) => renderPinItem(pinItem, index + 1))}
+      {expanded && pins.slice(1).map((pinItem, index) => renderPinItem(pinItem, index + 1))}
       {expanded && (
         <div className="flex justify-center mt-4">
           <button
@@ -220,32 +223,42 @@ const PinComponentWeb = ({ conversation, pins, scrollToMessage }) => {
         </div>
       )}
       {modalVisible && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-4 w-full max-w-sm">
-            <p className="text-lg font-semibold mb-4">Tùy chọn ghim</p>
-            <button
-              className="w-full text-left py-2 hover:bg-gray-100"
+        <div
+          className="absolute bg-white border border-gray-200 rounded-md shadow-lg p-2 z-50"
+          style={{ top: modalPosition.y, left: modalPosition.x }}
+          onClick={(e) => e.stopPropagation()}
+        >
+          <ul className="text-sm text-gray-700">
+            <li
+              className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
               onClick={() => {
-                scrollToMessage(selectedPin.messageId);
+                if (selectedPin) {
+                  scrollToMessage(selectedPin.messageId);
+                }
                 setModalVisible(false);
                 if (expanded) handleToggleExpand();
+                setSelectedPin(null);
               }}
             >
               Xem tin nhắn
-            </button>
-            <button
-              className="w-full text-left py-2 text-red-500 hover:bg-gray-100"
+            </li>
+            <li
+              className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-red-500"
               onClick={() => handleDeletePin(selectedPin)}
             >
               Xóa ghim
-            </button>
-            <button
-              className="w-full text-left py-2 mt-2 hover:bg-gray-100"
-              onClick={() => setModalVisible(false)}
+            </li>
+            <li className="border-t border-gray-200 my-1"></li>
+            <li
+              className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
+              onClick={() => {
+                setModalVisible(false);
+                setSelectedPin(null);
+              }}
             >
               Hủy
-            </button>
-          </div>
+            </li>
+          </ul>
         </div>
       )}
     </div>

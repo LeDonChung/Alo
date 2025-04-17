@@ -55,9 +55,9 @@ export const ChatScreen = ({ route, navigation }) => {
   const handlerSendMessage = async (customInputMessage = null) => {
     const messageData = customInputMessage || inputMessage;
     const { content, messageType, file } = messageData;
-  
-    const requestId = Date.now() + Math.random(); 
-  
+
+    const requestId = Date.now() + Math.random();
+
     const message = {
       senderId: userLogin.id,
       conversationId: conversation.id,
@@ -68,7 +68,7 @@ export const ChatScreen = ({ route, navigation }) => {
       requestId,
       status: -1,
     };
-  
+
 
     const newMessageTemp = {
       ...message,
@@ -81,30 +81,30 @@ export const ChatScreen = ({ route, navigation }) => {
     } else if (messageType === 'sticker') {
       newMessageTemp.fileLink = messageData.fileLink;
       message.fileLink = messageData.fileLink;
-    } 
-  
+    }
+
     try {
       dispatch(addMessage(newMessageTemp));
       setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
-  
+
       const res = await dispatch(sendMessage({ message, file })).unwrap();
       const sentMessage = {
         ...res.data,
-        sender: userLogin, 
+        sender: userLogin,
       };
-  
+
       dispatch(updateMessage(sentMessage));
-  
+
       socket.emit('send-message', {
         conversation,
         message: sentMessage,
       });
-  
+
     } catch (err) {
       console.error("Error sending message:", err);
     }
   };
-  
+
 
 
   const handleSendImage = async (newMessage) => {
@@ -121,13 +121,13 @@ export const ChatScreen = ({ route, navigation }) => {
       fileLink: stickerUrl,
     };
     handlerSendMessage(newMessage);
-    setShowStickerPicker(false);  
+    setShowStickerPicker(false);
   };
 
   // useEffect(() => {
   //   if (inputMessage.messageType === 'sticker') {
   //     if (inputMessage.fileLink) {
-       
+
   //     }
   //   }
   // }, [inputMessage]);

@@ -7,6 +7,7 @@ import RightSlidebar from './RightSlideBarChat';
 import ChatHeader from './chat/ChatHeader';
 import ChatContent from './chat/ChatContent';
 import ChatInput from './chat/ChatInput';
+import PinComponentWeb  from './chat/PinComponent';
 
 const ChatWindow = () => {
   const isSending = useSelector(state => state.message.isSending);
@@ -18,6 +19,7 @@ const ChatWindow = () => {
   const messages = useSelector(state => state.message.messages);
   const [lastLogout, setLastLogout] = useState(null);
   const limit = useSelector(state => state.message.limit);
+  const [highlightedId, setHighlightedId] = useState(null); 
   const conversations = useSelector(state => state.conversation.conversations);
   const getLastLoginMessage = (lastLogout) => {
     if (!lastLogout) return 'Chưa truy cập';
@@ -49,6 +51,12 @@ const ChatWindow = () => {
     const messageElement = document.getElementById(`message-${messageId}`);
     if (messageElement) {
       messageElement.scrollIntoView({ behavior: 'smooth' });
+      setHighlightedId(messageId); // Tô sáng tin nhắn
+      setTimeout(() => {
+        setHighlightedId(null); // Xóa tô sáng sau 3 giây
+      }, 3000);
+    } else {
+      console.warn(`Message with ID message-${messageId} not found in the DOM`);
     }
   };
 
@@ -87,6 +95,7 @@ const ChatWindow = () => {
     };
   }, [dispatch]);
 
+
   return (
     <>
       <div className="w-3/4 flex flex-col">
@@ -97,8 +106,16 @@ const ChatWindow = () => {
           getFriend={getFriend}
           getLastLoginMessage={getLastLoginMessage}
           isFriendOnline={isFriendOnline}
-          scrollToMessage={scrollToMessage}
         />
+        {conversation.pineds && conversation.pineds.length > 0 && (
+        <div className="bg-gray-100 px-4">
+          <PinComponentWeb
+            conversation={conversation}
+            pins={conversation.pineds}
+            scrollToMessage={scrollToMessage}
+          />
+        </div>
+      )}
 
         <div className="flex-1 p-4 overflow-y-auto bg-gray-100" style={{ overflowAnchor: 'none' }}>
 
@@ -109,6 +126,7 @@ const ChatWindow = () => {
             userLogin={userLogin}
             getFriend={getFriend}
             conversations={conversations}
+            highlightedId={highlightedId}
           />
         </div>
 
