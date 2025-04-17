@@ -68,7 +68,6 @@ export const ChatScreen = ({ route, navigation }) => {
     seen: [],
     requestId,
     status: -1,
-    messageParent: messageParent ? messageParent.id : null,
   };
 
   if (messageParent && messageType === 'text' && content.trim()) {
@@ -96,13 +95,15 @@ export const ChatScreen = ({ route, navigation }) => {
     dispatch(addMessage(newMessageTemp));
     setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
 
+    if (messageParent && message.messageParent) {
+      dispatch(setMessageParent(null));
+    }
+
     const res = await dispatch(sendMessage({ message, file })).unwrap();
-    console.log("res", res);
-    
     const sentMessage = {
       ...res.data,
       sender: userLogin,
-      messageParent: res.data.messageParent || message.messageParent,
+      messageParent: newMessageTemp.messageParent, 
     };
 
     dispatch(updateMessage(sentMessage));
@@ -111,12 +112,8 @@ export const ChatScreen = ({ route, navigation }) => {
       conversation,
       message: sentMessage,
     });
-
-    if (messageParent) {
-      dispatch(setMessageParent(null));
-    }
   } catch (err) {
-    console.error("Error sending message:", err);
+    console.error("Error sending message:", err);     
   }
 };
   
@@ -148,7 +145,7 @@ export const ChatScreen = ({ route, navigation }) => {
   useEffect(() => {
     socket.on('receive-message', (message) => {
       dispatch(addMessage(message));
-      dispatch(updateLastMessage({ conversationId: conversation.id, message }));
+      dispatch(updateLastMessage({ conversationId: conversation.id, message })); 
     });
     return () => socket.off('receive-message');
   }, [dispatch]);

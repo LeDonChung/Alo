@@ -49,91 +49,46 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
   };
 
   const renderParentMessage = () => {
-    if (!item.messageParent) {
+    if (!item.messageParent || item.status === 1) {
+      console.log('messageParent not found or message recalled:', item); 
       return null;
     }
-  
     const parentMessage = messages.find(msg => msg.id === item.messageParent);
     if (!parentMessage) {
-      return (
-        <TouchableOpacity
-          style={{
-            backgroundColor: isSent ? '#bbdefb' : '#f5f5f5',
-            padding: 10,
-            borderRadius: 5,
-            marginBottom: 5,
-            borderLeftWidth: 4,
-            borderLeftColor: '#6B21A8',
-          }}
-          onPress={() => scrollToMessage(item.messageParent)}
-        >
-          <Text style={{ fontWeight: 'bold', color: '#6B21A8' }}>
-            Không xác định
-          </Text>
-          <Text style={{ color: '#4B5563', fontSize: 14 }} numberOfLines={2}>
-            Tin nhắn không còn tồn tại
-          </Text>
-        </TouchableOpacity>
-      );
+      console.log('parentMessage not found in messages:', item.messageParent); 
+      return null;
     }
-  
+
     return (
       <TouchableOpacity
-        onPress={() => scrollToMessage(parentMessage.id)}
+        onPress={() => {
+          if (parentMessage.id) {
+            scrollToMessage(parentMessage.id);
+          }
+        }}
         style={{
           backgroundColor: isSent ? '#bbdefb' : '#f5f5f5',
           padding: 10,
           borderRadius: 5,
           marginBottom: 5,
-          flexDirection: 'row',
-          alignItems: 'center',
+          borderLeftWidth: 4,
+          borderLeftColor: '#6B21A8',
         }}
       >
-        {parentMessage.status === 0 && parentMessage.messageType === 'image' && (
-          <Image
-            source={{ uri: parentMessage.fileLink }}
-            style={{ width: 44, height: 44, borderRadius: 8, marginRight: 8 }}
-            resizeMode="cover"
-          />
-        )}
-        {parentMessage.status === 0 && parentMessage.messageType === 'sticker' && (
-          <Image
-            source={{ uri: parentMessage.fileLink }}
-            style={{ width: 44, height: 44, borderRadius: 8, marginRight: 8 }}
-            resizeMode="cover"
-          />
-        )}
-        {parentMessage.status === 0 && parentMessage.messageType === 'file' && (
-          parentMessage.fileLink.includes('.mp4') ? (
-            <Video
-              source={{ uri: parentMessage.fileLink }}
-              style={{ width: 44, height: 44, borderRadius: 8, marginRight: 8 }}
-              useNativeControls={false}
-              resizeMode="cover"
-            />
-          ) : (
-            <View style={{ marginRight: 8 }}>
-              {getFileIcon(getFileExtension(parentMessage.fileLink))}
-            </View>
-          )
-        )}
-
-        <View style={{ flex: 1 }}>
-          <Text style={{ fontWeight: 'bold', color: '#6B21A8', fontSize: 14 }}>
-            {parentMessage.senderId === userLogin.id ? 'Bạn' : parentMessage.sender?.fullName}
-          </Text>
-          <Text style={{ color: '#4B5563', fontSize: 14 }} numberOfLines={2}>
-            {parentMessage.status === 1
-              ? 'Tin nhắn đã được thu hồi'
-              : parentMessage.messageType === 'text'
-              ? parentMessage.content
-              : parentMessage.messageType === 'image'
-              ? '[Hình ảnh]'
-              : parentMessage.messageType === 'file'
-              ? `[File] ${extractOriginalName(parentMessage.fileLink)}`
-              : '[Sticker]'}
-          </Text>
-        </View>
+        <Text style={{ fontWeight: 'bold', color: '#6B21A8' }}>
+          {parentMessage.senderId === userLogin.id ? 'Bạn' : parentMessage.sender?.fullName || 'Ẩn danh'}
+        </Text>
+        <Text style={{ color: '#4B5563', fontSize: 14 }} numberOfLines={2}>
+          {parentMessage.status === 1
+            ? 'Tin nhắn đã được thu hồi'
+            : parentMessage.messageType === 'text'
+            ? parentMessage.content
+            : parentMessage.messageType === 'image'
+            ? '[Hình ảnh]'
+            : parentMessage.messageType === 'file'
+            ? '[Tệp đính kèm]'
+            : '[Sticker]'}
+        </Text>
       </TouchableOpacity>
     );
   };

@@ -37,7 +37,7 @@ const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ messag
         });
         return response.data;
     } catch (error) {
-        console.log(error);
+        console.log(error) 
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 });
@@ -78,7 +78,7 @@ const updateReaction = createAsyncThunk('MessageSlice/updateReaction', async ({ 
 
 const removeAllReaction = createAsyncThunk('MessageSlice/removeAllReaction', async ({ messageId }, { rejectWithValue }) => {
     try {
-        const response = await axiosInstance.delete(`/api/message/${messageId}/reaction`);
+        const response = await axiosInstance.delete(`/api/message/${messageId}/reaction`); 
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
@@ -110,34 +110,40 @@ const MessageSlice = createSlice({
         handlerUpdateReaction: (state, action) => {
             const { messageId, updatedReaction } = action.payload;
             const index = state.messages.findIndex(message => message.id === messageId);
-            if (index !== -1) {
-                state.messages[index].reaction = updatedReaction;
+            if (index !== -1) { 
+                state.messages[index].reaction = updatedReaction; 
             }
-        },
-        addMessage: (state, action) => {
-            state.messages.push(action.payload);
-        },
-        setMessageParent: (state, action) => {
-            state.messageParent = action.payload;
-        },
-        setMessageUpdate: (state, action) => {
-            const { messageId, status } = action.payload;
-            const index = state.messages.findIndex(message => message.id === messageId);
-            if (index !== -1) {
-                state.messages[index].status = status;
-            }
-        },
+        }, 
         updateMessage: (state, action) => {
-            const index = state.messages.findIndex(message => {
-                return message.requestId === Number(action.payload.requestId);
-            });
+            const index = state.messages.findIndex(message => { 
+                return message.requestId === Number(action.payload.requestId)
+            }); 
             if (index !== -1) {
-                state.messages[index] = action.payload;
+                state.messages[index] = action.payload; 
+            }  
+        },
+        addMessage: (state, action) => { 
+            const message = action.payload;
+            const index = state.messages.findIndex(msg => msg.id === message.id);
+            if (index !== -1) {
+                state.messages[index] = message;
+            } else {
+                state.messages.push(message); 
             }
         },
         setInputMessage: (state, action) => {
             state.inputMessage = action.payload;
-        },
+        }, 
+        setMessageParent: (state, action) => {
+            state.messageParent = action.payload;
+        }, 
+        setMessageUpdate: (state, action) => {
+            const { messageId, status } = action.payload;
+            const index = state.messages.findIndex(message => message.id === messageId);
+            if (index !== -1) { 
+                state.messages[index].status = status;
+            }
+        }, 
     },
     extraReducers: (builder) => {
         builder.addCase(sendMessage.pending, (state) => {

@@ -20,16 +20,18 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
     if (inputMessage.content.trim()) {
       const messageSend = {
         ...inputMessage,
-        messageParent: messageParent ? messageParent.id : null,
+        messageParent: messageParent ? messageParent.id : null, 
       };
       handlerSendMessage(messageSend);
       setInputMessage({
         messageType: 'text',
         content: '',
       });
+      if (messageParent) {
+        dispatch(setMessageParent(null)); 
+      }
     }
   };
-  
   const handleOptionSelect = (options) => {
     setOptionModalVisible(false);
     if (options === "Tài liệu") {
