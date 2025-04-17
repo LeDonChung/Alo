@@ -12,6 +12,7 @@ import ForwardMessageModal from './ForwardMessageModal';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
+import { removeOfMe, setMessageRemoveOfMe } from '../../redux/slices/MessageSlice';
 
 export const MenuComponent = ({ message, showMenuComponent, friend }) => {
     const navigation = useNavigation();
@@ -87,6 +88,23 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
         }
     }
 
+    const userLogin = useSelector(state => state.user.userLogin);
+    const handlerRemoveOfMe = useCallback(async () => {
+        try {
+
+            dispatch(setMessageRemoveOfMe({ messageId: message.id, userId: userLogin.id }));
+            showMenuComponent(false);
+            await dispatch(removeOfMe(message.id)).unwrap().then((res) => {
+                // Gọi sự kiện socket để thông báo 
+                socket.emit('remove-of-me', {
+                    messageId: message.id, userId: userLogin.id
+                });
+            })
+        } catch (error) {
+            console.error('Error removing message:', error);
+        }
+    }, [])
+
     const handleDownloadFile = async (url) => {
         try {
             if (!url) {
@@ -113,7 +131,7 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
             showToast('error', 'bottoptom', "Thông báo", "Không thể tải file.");
             showMenuComponent(false);
         }
-        
+
     };
     return (
         <ScrollView contentContainerStyle={styles.container}>
@@ -146,9 +164,9 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                     <Text>Thu hồi</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.actionItem}>
+                <TouchableOpacity style={styles.actionItem} onPress={() => handlerRemoveOfMe()}>
                     <Icon name="trash" size={24} color="#DC2626" />
-                    <Text>Xóa</Text>
+                    <Text>Xóa ở phía tôi</Text>
                 </TouchableOpacity>
                 {
                     (message.messageType === 'file' || message.messageType === 'image') && (

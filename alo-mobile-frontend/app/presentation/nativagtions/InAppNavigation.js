@@ -19,7 +19,7 @@ import { addFriend, addFriendRequests, cancelFriend, getFriendByPhoneNumber, get
 import { showToast } from "../../utils/AppUtils";
 import { FlatList } from "react-native-gesture-handler";
 import { ContactStyles } from "../styles/ContactStyle";
-import { handlerUpdateReaction, updateReaction, updateSeenAllMessage } from "../redux/slices/MessageSlice";
+import { handlerUpdateReaction, setMessageRemoveOfMe, updateReaction, updateSeenAllMessage } from "../redux/slices/MessageSlice";
 
 const Tab = createBottomTabNavigator();
 
@@ -27,6 +27,7 @@ export const InAppNavigation = () => {
 
   const [search, setSearch] = useState('');
   const [chooseTab, setChooseTab] = useState('home');
+  const userLogin = useSelector((state) => state.user.userLogin);
 
   const [searchResult, setSearchResult] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -46,7 +47,7 @@ export const InAppNavigation = () => {
   }
   useEffect(() => {
     init();
-  }, []);
+  }, [userLogin?.id]);
   const [isFinding, setIsFinding] = useState(false);
   const handleSearch = async () => {
     if (!search) {
@@ -247,7 +248,6 @@ export const InAppNavigation = () => {
   }, []);
 
   const dispatch = useDispatch();
-  const userLogin = useSelector((state) => state.user.userLogin);
   useEffect(() => {
     socket.emit('login', userLogin?.id);
   }, [userLogin?.id, dispatch, socket, chooseTab]);
@@ -274,6 +274,18 @@ export const InAppNavigation = () => {
     });
 
   }, []);
+
+  useEffect(() => {
+    const handlerRemoveOfMe = async (data) => {
+        const { messageId, userId } = data;
+
+        dispatch(setMessageRemoveOfMe({ messageId: messageId, userId: userId }));
+    }
+    socket.on('receive-remove-of-me', handlerRemoveOfMe);
+    return () => {
+        socket.off('receive-remove-of-me', handlerRemoveOfMe);
+    }
+}, [])
 
   useEffect(() => {
     socket.on('update-last-message', (conversationId, message) => {

@@ -277,6 +277,15 @@ io.on("connection", (socket) => {
         socket.to(conversation.id).emit('receive-seen-message', {conversation, messages});
     })
 
+
+    socket.on('remove-of-me', async (data) => {
+        const {messageId, userId} = data;
+        const socketIds = (await findSocketIdsByUserId(userId)).filter(id => id !== socket.id);
+        socketIds.forEach(id => {
+            io.to(id).emit('receive-remove-of-me', {messageId, userId});
+        });
+    })
+
     // =====================
     // Helper functions
     // =====================

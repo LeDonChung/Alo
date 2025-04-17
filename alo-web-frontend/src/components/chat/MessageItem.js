@@ -7,7 +7,7 @@ import lgZoom from 'lightgallery/plugins/zoom';
 import lgThumbnail from 'lightgallery/plugins/thumbnail';
 import lgVideo from 'lightgallery/plugins/video';
 import { useDispatch } from 'react-redux';
-import { setMessageParent, setMessageUpdate, updateMessageStatus } from '../../redux/slices/MessageSlice';
+import { removeOfMe, setMessageParent, setMessageRemoveOfMe, setMessageUpdate, updateMessageStatus } from '../../redux/slices/MessageSlice';
 import { batch } from 'react-redux';
 import socket from '../../utils/socket';
 
@@ -119,7 +119,7 @@ const MessageItem = ({
   const handleDownload = useCallback(async (url) => {
     try {
       const response = await fetch(url, {
-        mode: 'cors' 
+        mode: 'cors'
       });
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
@@ -161,6 +161,20 @@ const MessageItem = ({
     setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
   }, [message]);
 
+  const handlerRemoveOfMe = useCallback(async () => {
+    try {
+
+      dispatch(setMessageRemoveOfMe({ messageId: message.id, userId: userLogin.id }));
+      await dispatch(removeOfMe(message.id)).unwrap().then((res) => {
+        // Gọi sự kiện socket để thông báo 
+        socket.emit('remove-of-me', {
+          messageId: message.id, userId: userLogin.id
+        });
+      })
+    } catch (error) {
+      console.error('Error removing message:', error);
+    }
+  }, [])
   const handleMessageRecall = useCallback(async () => {
     try {
       setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
@@ -251,7 +265,7 @@ const MessageItem = ({
                   Thu hồi
                 </li>
               )}
-              <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-red-500">Xóa chỉ ở phía tôi</li>
+              <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-red-500" onClick={handlerRemoveOfMe}>Xóa chỉ ở phía tôi</li>
             </ul>
           </div>
         )}

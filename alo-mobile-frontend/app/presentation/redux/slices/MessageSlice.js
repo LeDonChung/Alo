@@ -99,6 +99,14 @@ const seenOne = createAsyncThunk('MessageSlice/seenOne', async (messageId, { rej
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 })
+const removeOfMe = createAsyncThunk('MessageSlice/removeOfMe', async (messageId, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.put(`/api/message/${messageId}/remove-of-me`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
 const MessageSlice = createSlice({
     name: 'MessageSlice',
     initialState: initialState,
@@ -141,6 +149,21 @@ const MessageSlice = createSlice({
                 }
                 return msg;
             });
+        },
+        setMessageRemoveOfMe: (state, action) => {
+            const { messageId, userId } = action.payload;
+            const index = state.messages.findIndex(message => message.id === messageId);
+            console.log("INDEX", index)
+            if (index !== -1) {
+                // Kiểm tra xem removeOfme chứa userId chưa
+                const hasUserId = state.messages[index].removeOfme?.includes(userId);
+                if (!hasUserId) {
+                    state.messages[index].removeOfme = [
+                        ...(state.messages[index].removeOfme || []),
+                        userId
+                    ]
+                }
+            }
         },
     },
     extraReducers: (builder) => {
@@ -210,9 +233,15 @@ const MessageSlice = createSlice({
         });
         builder.addCase(seenOne.rejected, (state, action) => {
         });
+        builder.addCase(removeOfMe.pending, (state) => {
+        });
+        builder.addCase(removeOfMe.fulfilled, (state, action) => {
+        });
+        builder.addCase(removeOfMe.rejected, (state, action) => {
+        });
     }
 });
  
-export const { setMessages, increaseLimit, handlerUpdateReaction, updateMessage, addMessage, updateSeenAllMessage } = MessageSlice.actions;
-export { sendMessage, getMessagesByConversationId, updateReaction, removeAllReaction, forwardMessage, seenAll, seenOne };
+export const { setMessages, increaseLimit, handlerUpdateReaction, updateMessage, addMessage, updateSeenAllMessage, setMessageRemoveOfMe } = MessageSlice.actions;
+export { sendMessage, getMessagesByConversationId, updateReaction, removeAllReaction, forwardMessage, seenAll, seenOne, removeOfMe };
 export default MessageSlice.reducer;

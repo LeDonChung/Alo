@@ -561,3 +561,59 @@ exports.seenAll = async (req, res) => {
 
 
 }
+
+// Xóa tin nhắn ở phía tôi
+exports.removeMessageOfMe = async (req, res) => {
+    try {
+        const { messageId } = req.params;
+
+        // Lấy Authorization từ header
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        // Lấy userId từ token
+        const userId = userService.getUserIdFromToken(token);
+
+        // Tìm tin nhắn theo id
+        const message = await messageService.getMessageById(messageId);
+        if (!message) {
+            return res.status(404).json({
+                status: 404,
+                message: "Không tìm thấy tin nhắn.",
+                data: null
+            });
+        }
+        
+        const removeOfme = message.removeOfme || [];
+        // Kiểm tra xem userId đã có trong danh sách xóa chưa
+        const index = removeOfme.indexOf(userId);
+        if (index === -1) {
+            // Nếu chưa có thì thêm vào
+            removeOfme.push(userId);
+        } else {
+            return res.status(200).json({
+                status: 200,
+                message: "Bạn đã xóa tin nhắn này rồi.",
+                data: null
+            });
+        }
+        // Cập nhật removeOfme
+        await messageService.deleteMessage(messageId, message.timestamp, removeOfme);
+
+        message.removeOfme = removeOfme;
+
+        // Cập nhật tin nhắn cuối cùng của cuộc trò chuyện
+        return res.status(200).json({
+            status: 200,
+            data: message,
+            message: "Xóa tin nhắn thành công."
+        });
+    }
+    catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
