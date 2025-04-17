@@ -102,7 +102,7 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
         return (
           (message && !message.removeOfme?.includes(userLogin.id)) && (
             <div
-              key={message.id}
+              key={message.id + message.timestamp}
               ref={(el) => (messageRefs.current[message.id] = el)} // Lưu ref vào object
             >
               <MessageItem

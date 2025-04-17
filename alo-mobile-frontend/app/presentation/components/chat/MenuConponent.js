@@ -12,8 +12,8 @@ import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
 import { removeOfMe, setMessageRemoveOfMe } from '../../redux/slices/MessageSlice';
-
-export const MenuComponent = ({ message, showMenuComponent, friend }) => {
+import { ReactionBar } from './ReactionBar';
+export const MenuComponent = ({ message, showMenuComponent, friend, setShowDetailModal, setShowForwardModal }) => {
     const userLogin = useSelector(state => state.user.userLogin);
     const isSent = message.senderId === userLogin.id;
     const navigation = useNavigation();
@@ -44,16 +44,11 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
         }
     };
 
-    //Xem chi tiết tin nhắn
-    const [showDetailModal, setShowDetailModal] = useState(false);
-    const [selectedMessage, setSelectedMessage] = useState(null);
-    const handlerClickDetail = (message) => {
-        setSelectedMessage(message);
+    const handlerClickDetail = () => {
+        showMenuComponent(false);
         setShowDetailModal(true);
     }
 
-    //Chuyển tiếp tin nhắn
-    const [showForwardModal, setShowForwardModal] = useState(false);
     const handleDownloadImage = async (url) => {
         try {
             if (!url) {
@@ -89,7 +84,6 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
         }
     }
 
-    const userLogin = useSelector(state => state.user.userLogin);
     const handlerRemoveOfMe = useCallback(async () => {
         try {
 
@@ -136,16 +130,6 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
     };
     return (
         <ScrollView contentContainerStyle={styles.container}>
-            {/* Emoji Bar */}
-            <View style={styles.emojiBar}>
-                {
-                    reaction.map((item, index) => (
-                        <TouchableOpacity key={index} style={styles.emoji}>
-                            <Text style={styles.emoji}>{item.icon}</Text>
-                        </TouchableOpacity>
-                    ))
-                }
-            </View>
             <ReactionBar message={message} onClose={() => showMenuComponent(false)} />
             {/* Action Grid */}
             <View style={styles.actionGrid}>
@@ -154,8 +138,8 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                     <Text>Trả lời</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionItem} onPress={() => {
+                    showMenuComponent(false);
                     setShowForwardModal(true);
-                    // showMenuComponent(false);
                 }}>
                     <Icon name="share" size={24} color="#2563EB" />
                     <Text>Chuyển tiếp</Text>
@@ -174,14 +158,6 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                     <Icon name="redo" size={24} color="#EA580C" />
                     <Text>Thu hồi</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionItem} onPress={() => {
-                    handlerClickDetail(message);
-                    // showMenuComponent(false);
-                }} >
-                    <Icon name="info-circle" size={24} color="#6B7280" />
-                    <Text>Chi tiết</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.actionItem}>
 
                 <TouchableOpacity style={styles.actionItem} onPress={() => handlerRemoveOfMe()}>
                     <Icon name="trash" size={24} color="#DC2626" />
@@ -202,30 +178,13 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                     )
                 }
                 <TouchableOpacity style={styles.actionItem} onPress={() => {
-                    handlerClickDetail(message);
+                    handlerClickDetail();
                 }} >
                     <Icon name="info-circle" size={24} color="#6B7280" />
                     <Text>Chi tiết</Text>
                 </TouchableOpacity>
             </View>
-            <MessageDetailModal
-                visible={showDetailModal}
-                onClose={() => {
-                    showMenuComponent(false);
-                    setShowDetailModal(false);
-                }}
-                message={selectedMessage}
-                friend={friend}
-                isSent={isSent}
-            />
-            <ForwardMessageModal
-                visible={showForwardModal}
-                onClose={() => {
-                    setShowForwardModal(false);
-                    showMenuComponent(false);
-                }}
-                message={message}
-            />
+
         </ScrollView>
 
     )
