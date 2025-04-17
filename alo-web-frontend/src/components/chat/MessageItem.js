@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef, useReducer, use } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, useReducer } from 'react';
 import LightGallery from 'lightgallery/react';
 import 'lightgallery/css/lightgallery.css';
 import 'lightgallery/css/lg-zoom.css';
@@ -7,11 +7,23 @@ import lgZoom from 'lightgallery/plugins/zoom';
 import lgThumbnail from 'lightgallery/plugins/thumbnail';
 import lgVideo from 'lightgallery/plugins/video';
 import { useDispatch } from 'react-redux';
-import { setMessageParent, setMessageUpdate, updateMessageStatus, removeAllReaction, handlerUpdateReaction, updateReaction, removeOfMe, setMessageParent,
-       setMessageRemoveOfMe
-       } from '../../redux/slices/MessageSlice';
+import {
+  setMessageParent,
+  setMessageUpdate,
+  updateMessageStatus,
+  removeAllReaction,
+  handlerUpdateReaction,
+  updateReaction,
+  removeOfMe,
+  setMessageRemoveOfMe,
+} from '../../redux/slices/MessageSlice';
 import { batch } from 'react-redux';
-import {  getConversationById, addPinToConversation, removePinToConversation, createPin   } from '../../redux/slices/ConversationSlice';
+import {
+  getConversationById,
+  addPinToConversation,
+  removePinToConversation,
+  createPin,
+} from '../../redux/slices/ConversationSlice';
 import socket from '../../utils/socket';
 import ModalForwardMessage from './ModalForwardMessage';
 
@@ -28,13 +40,12 @@ const MessageItem = ({
 }) => {
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, messageId: null });
   const [showDetailsModal, setShowDetailsModal] = useState(false);
-  const [showLightGallery, setShowLightGallery] = useState(false);
+  const [showReactionModal, setShowReactionModal] = useState(false);
+  const [selectedReactionTab, setSelectedReactionTab] = useState(null);
+  const [isOpenModalForward, setIsOpenModalForward] = useState(false);
   const showReactionsRef = useRef(false);
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
-  const [showReactionModal, setShowReactionModal] = useState(false); // Thêm state cho modal reaction
-  const [selectedReactionTab, setSelectedReactionTab] = useState(null);
   const dispatch = useDispatch();
-  const [isOpenModalForward, setIsOpenModalForward] = useState(false);
 
   // Memoize danh sách reactions
   const reactions = useMemo(
@@ -58,48 +69,57 @@ const MessageItem = ({
   }, [reactions]);
 
   // Lấy danh sách reaction
-  const extractReactions = useCallback((reactionObj) => {
-    if (!reactionObj) return [];
-    return Object.entries(reactionObj)
-      .map(([type, { quantity }]) => ({
-        type,
-        emoji: emojiMap[type] || '❓',
-        count: quantity,
-      }))
-      .filter((r) => r.count > 0);
-  }, [emojiMap]);
+  const extractReactions = useCallback(
+    (reactionObj) => {
+      if (!reactionObj) return [];
+      return Object.entries(reactionObj)
+        .map(([type, { quantity }]) => ({
+          type,
+          emoji: emojiMap[type] || '❓',
+          count: quantity,
+        }))
+        .filter((r) => r.count > 0);
+    },
+    [emojiMap]
+  );
 
   // Lấy danh sách người dùng đã reaction
-  const getUserReactions = useCallback((reactionObj) => {
-    const userMap = {};
-    if (!reactionObj || typeof reactionObj !== 'object') return [];
+  const getUserReactions = useCallback(
+    (reactionObj) => {
+      const userMap = {};
+      if (!reactionObj || typeof reactionObj !== 'object') return [];
 
-    Object.entries(reactionObj).forEach(([type, { users }]) => {
-      users.forEach((userId) => {
-        if (!userMap[userId]) {
-          userMap[userId] = {
-            id: userId,
-            emojis: [],
-            rawTypes: [],
-          };
-        }
-        userMap[userId].emojis.push(emojiMap[type] || '❓');
-        userMap[userId].rawTypes.push(type);
+      Object.entries(reactionObj).forEach(([type, { users }]) => {
+        users.forEach((userId) => {
+          if (!userMap[userId]) {
+            userMap[userId] = {
+              id: userId,
+              emojis: [],
+              rawTypes: [],
+            };
+          }
+          userMap[userId].emojis.push(emojiMap[type] || '❓');
+          userMap[userId].rawTypes.push(type);
+        });
       });
-    });
 
-    return Object.values(userMap);
-  }, [emojiMap]);
+      return Object.values(userMap);
+    },
+    [emojiMap]
+  );
 
   // Lấy thông tin thành viên
-  const getMember = useCallback((userId) => {
-    return (
-      conversation.members.find((m) => m.id === userId) || {
-        fullName: 'Ẩn danh',
-        avatarLink: 'https://via.placeholder.com/40',
-      }
-    );
-  }, [conversation.members]);
+  const getMember = useCallback(
+    (userId) => {
+      return (
+        conversation.members.find((m) => m.id === userId) || {
+          fullName: 'Ẩn danh',
+          avatarLink: 'https://via.placeholder.com/40',
+        }
+      );
+    },
+    [conversation.members]
+  );
 
   // Lọc danh sách người dùng theo tab
   const userReactions = useMemo(() => {
@@ -109,10 +129,57 @@ const MessageItem = ({
   }, [message.reaction, selectedReactionTab, getUserReactions]);
 
   // Lấy top 3 reaction
-  const extractedReactions = useMemo(() => extractReactions(message.reaction), [message.reaction, extractReactions]);
+  const extractedReactions = useMemo(
+    () => extractReactions(message.reaction),
+    [message.reaction, extractReactions]
+  );
   const topReactions = useMemo(
     () => extractedReactions.sort((a, b) => b.count - a.count).slice(0, 3),
     [extractedReactions]
+  );
+
+  // Lấy reaction của người dùng hiện tại
+  const myReaction = useMemo(
+    () => getUserReactions(message.reaction).find((u) => u.id === userLogin.id),
+    [message.reaction, getUserReactions]
+  );
+
+  // Xử lý gửi reaction
+  const handleSendReaction = useCallback(
+    async (type) => {
+      try {
+        const updatedReaction = { ...(message.reaction || {}) };
+        if (updatedReaction[type]) {
+          const updatedUsers = [...updatedReaction[type].users];
+          if (updatedUsers.includes(userLogin.id)) {
+            updatedReaction[type].users = updatedUsers.filter((userId) => userId !== userLogin.id);
+            updatedReaction[type].quantity -= 1;
+            if (updatedReaction[type].quantity === 0) {
+              delete updatedReaction[type];
+            }
+          } else {
+            updatedReaction[type].users.push(userLogin.id);
+            updatedReaction[type].quantity += 1;
+          }
+        } else {
+          updatedReaction[type] = { quantity: 1, users: [userLogin.id] };
+        }
+
+        dispatch(handlerUpdateReaction({ messageId: message.id, updatedReaction }));
+
+        const res = await dispatch(updateReaction({ messageId: message.id, type })).unwrap();
+        socket.emit('update-reaction', {
+          conversation,
+          message: res.data,
+        });
+      } catch (error) {
+        console.error('Error updating reaction:', error);
+        dispatch(handlerUpdateReaction({ messageId: message.id, updatedReaction: message.reaction || {} }));
+      }
+      showReactionsRef.current = false;
+      forceUpdate();
+    },
+    [message, userLogin.id, dispatch, conversation]
   );
 
   // Xóa tất cả reaction của người dùng hiện tại
@@ -128,87 +195,42 @@ const MessageItem = ({
       });
 
       dispatch(setMessageUpdate({ messageId: message.id, reaction: updatedReaction }));
-
+      setShowReactionModal(false);
       await dispatch(removeAllReaction({ messageId: message.id }))
         .unwrap()
         .then((res) => {
           socket.emit('update-reaction', { conversation, message: res.data });
         });
-      setShowReactionModal(false);
+
     } catch (error) {
       console.error('Error removing reactions:', error);
     }
   }, [message, userLogin.id, dispatch, conversation]);
 
-  // Lấy reaction của người dùng hiện tại
-  const myReaction = useMemo(
-    () => getUserReactions(message.reaction).find((u) => u.id === userLogin.id),
-    [message.reaction, getUserReactions]
-  );
+  // Socket listeners
+  useEffect(() => {
+    const handleUpdateMessage = async (ms) => {
+      await dispatch(setMessageUpdate({ messageId: ms.id, status: ms.status }));
+    };
 
-// Xử lý gửi reaction
-const handleSendReaction = useCallback(
-  async (type) => {
-    try {
-      const updatedReaction = { ...(message.reaction || {}) };
-      if (updatedReaction[type]) {
-        const updatedUsers = [...updatedReaction[type].users];
-        if (updatedUsers.includes(userLogin.id)) {
-          updatedReaction[type].users = updatedUsers.filter((userId) => userId !== userLogin.id);
-          updatedReaction[type].quantity -= 1;
-          if (updatedReaction[type].quantity === 0) {
-            delete updatedReaction[type];
-          }
-        } else {
-          updatedReaction[type].users.push(userLogin.id);
-          updatedReaction[type].quantity += 1;
-        }
-      } else {
-        updatedReaction[type] = { quantity: 1, users: [userLogin.id] };
-      }
+    const handlePinMessage = (data) => {
+      dispatch(getConversationById(data.conversation.id));
+    };
 
-      dispatch(handlerUpdateReaction({ messageId: message.id, updatedReaction }));
+    const handleConfirmPinMessage = (data) => {
+      dispatch(addPinToConversation(data.pin));
+    };
 
-      const res = await dispatch(updateReaction({ messageId: message.id, type })).unwrap();
-      socket.emit('update-reaction', {
-        conversation,
-        message: res.data,
-      });
-    } catch (error) {
-      console.error('Error updating reaction:', error);
-      dispatch(handlerUpdateReaction({ messageId: message.id, updatedReaction: message.reaction || {} }));
-    }
-    showReactionsRef.current = false;
-    forceUpdate({});
-  },
-  [message, userLogin.id, dispatch, conversation]
-);
+    socket.on('receive-update-message', handleUpdateMessage);
+    socket.on('pin-message', handlePinMessage);
+    socket.on('confirm-pin-message', handleConfirmPinMessage);
 
-
-// Socket listeners
-useEffect(() => {
-  const handleUpdateMessage = async (ms) => {
-    await dispatch(setMessageUpdate({ messageId: ms.id, status: ms.status }));
-  };
-
-  const handlePinMessage = (data) => {
-    dispatch(getConversationById(data.conversation.id));
-  };
-
-  const handleConfirmPinMessage = (data) => {
-    dispatch(addPinToConversation(data.pin));
-  };
-
-  socket.on('receive-update-message', handleUpdateMessage);
-  socket.on('pin-message', handlePinMessage);
-  socket.on('confirm-pin-message', handleConfirmPinMessage);
-
-  return () => {
-    socket.off('receive-update-message', handleUpdateMessage);
-    socket.off('pin-message', handlePinMessage);
-    socket.off('confirm-pin-message', handleConfirmPinMessage);
-  };
-}, [dispatch]);
+    return () => {
+      socket.off('receive-update-message', handleUpdateMessage);
+      socket.off('pin-message', handlePinMessage);
+      socket.off('confirm-pin-message', handleConfirmPinMessage);
+    };
+  }, [dispatch]);
 
   // Memoize các hàm xử lý sự kiện
   const handleContextMenu = useCallback(
@@ -286,9 +308,7 @@ useEffect(() => {
 
   const handleDownload = useCallback(async (url) => {
     try {
-      const response = await fetch(url, {
-        mode: 'cors'
-      });
+      const response = await fetch(url, { mode: 'cors' });
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
 
@@ -304,9 +324,6 @@ useEffect(() => {
       alert('Lỗi khi tải file: ' + error.message);
     }
   }, []);
-
-
-
 
   const handleAnswer = useCallback(() => {
     dispatch(setMessageParent(message));
@@ -329,20 +346,22 @@ useEffect(() => {
     setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
   }, [message]);
 
-  const handlerRemoveOfMe = useCallback(async () => {
+  const handleRemoveOfMe = useCallback(async () => {
     try {
-
       dispatch(setMessageRemoveOfMe({ messageId: message.id, userId: userLogin.id }));
-      await dispatch(removeOfMe(message.id)).unwrap().then((res) => {
-        // Gọi sự kiện socket để thông báo 
-        socket.emit('remove-of-me', {
-          messageId: message.id, userId: userLogin.id
+      await dispatch(removeOfMe(message.id))
+        .unwrap()
+        .then(() => {
+          socket.emit('remove-of-me', {
+            messageId: message.id,
+            userId: userLogin.id,
+          });
         });
-      })
     } catch (error) {
       console.error('Error removing message:', error);
     }
-  }, [])
+  }, [message.id, userLogin.id, dispatch]);
+
   const handleMessageRecall = useCallback(async () => {
     try {
       setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
@@ -357,24 +376,13 @@ useEffect(() => {
     }
   }, [message.id, conversation, dispatch]);
 
-  const handleShareMessage = useCallback(() => {
-    // TODO: Thêm logic chia sẻ tin nhắn
-    setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
-  }, []);
-
-  const handleViewDetails = useCallback(() => {
-    setShowDetailsModal(true);
-    setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
-  }, []);
-
-  
-
   const handlePinMessage = useCallback(async () => {
     try {
       setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
-      // Cập nhật giao diện ngay lập tức
       dispatch(addPinToConversation({ messageId: message.id }));
-      const res = await dispatch(createPin({ conversationId: message.conversationId, messageId: message.id })).unwrap();
+      const res = await dispatch(
+        createPin({ conversationId: message.conversationId, messageId: message.id })
+      ).unwrap();
       socket.emit('pin-message', {
         conversation,
         pin: res.data,
@@ -384,7 +392,6 @@ useEffect(() => {
       }
     } catch (error) {
       console.error('Error pinning message:', error);
-      // Rollback nếu API thất bại
       dispatch(removePinToConversation({ messageId: message.id }));
     }
   }, [message, conversation, dispatch]);
@@ -401,7 +408,8 @@ useEffect(() => {
     if (message.senderId === userLogin.id) {
       return {
         fullName: 'Bạn',
-        avatarLink: userLogin.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg',
+        avatarLink:
+          userLogin.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg',
       };
     }
     const sender = conversation?.members?.find((member) => member.id === message.senderId) || message.sender;
@@ -427,49 +435,61 @@ useEffect(() => {
             onClick={(e) => e.stopPropagation()}
           >
             <ul className="text-sm text-gray-700">
-
-              {
-                message.status === 0 && (
-                  <>
-                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleAnswer}>
-                      Trả lời
+              {message.status === 0 && (
+                <>
+                  <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleAnswer}>
+                    Trả lời
+                  </li>
+                  <li
+                    className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => setIsOpenModalForward(true)}
+                  >
+                    Chia sẻ
+                  </li>
+                  <ModalForwardMessage
+                    isOpen={isOpenModalForward}
+                    onClose={() => {
+                      setIsOpenModalForward(false);
+                      setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
+                    }}
+                    message={message}
+                    conversations={conversations}
+                  />
+                  {message.messageType !== 'file' && message.messageType !== 'sticker' && (
+                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleCopy}>
+                      Copy tin nhắn
                     </li>
-                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => { setIsOpenModalForward(true)}}>
-                      Chia sẻ
+                  )}
+                  {message.messageType === 'image' && (
+                    <li
+                      className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => handleDownload(message.fileLink)}
+                    >
+                      Lưu về máy
                     </li>
-                    <ModalForwardMessage isOpen={isOpenModalForward}
-                      onClose={() => {
-                        setIsOpenModalForward(false);
-                        setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
-                      }} 
-                    message={message} conversations={conversations} />
-                    {message.messageType !== 'file' && message.messageType !== 'sticker' && (
-                      <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleCopy}>
-                        Copy tin nhắn
-                      </li>
-                    )}
-                    {message.messageType === 'image' && (
-                      <li
-                        className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
-                        onClick={() => handleDownload(message.fileLink)}
-                      >
-                        Lưu về máy
-                      </li>
-                    )}
-                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Ghim tin nhắn</li>
-                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleViewDetails}>
-                      Xem chi tiết
+                  )}
+                  <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handlePinMessage}>
+                    Ghim tin nhắn
+                  </li>
+                  <li
+                    className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
+                    onClick={() => setShowDetailsModal(true)}
+                  >
+                    Xem chi tiết
+                  </li>
+                  {message.senderId === userLogin.id && (
+                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleMessageRecall}>
+                      Thu hồi
                     </li>
-                    {message.senderId === userLogin.id && (
-                      <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleMessageRecall}>
-                        Thu hồi
-                      </li>
-                    )}
-                  </>
-                )
-              }
-              <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-red-500">Xóa chỉ ở phía tôi</li>
-
+                  )}
+                </>
+              )}
+              <li
+                className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-red-500"
+                onClick={handleRemoveOfMe}
+              >
+                Xóa chỉ ở phía tôi
+              </li>
             </ul>
           </div>
         )}
@@ -479,7 +499,9 @@ useEffect(() => {
           <div className="flex-shrink-0 mr-2" style={{ width: '32px' }}>
             {showAvatar && (
               <img
-                src={message.sender?.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'}
+                src={
+                  message.sender?.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'
+                }
                 alt="avatar"
                 className="w-8 h-8 rounded-full"
                 loading="lazy"
@@ -579,24 +601,21 @@ useEffect(() => {
                       <img src={message.fileLink} alt="sticker" className="w-20 h-20" loading="lazy" />
                     )}
                     {message.messageType === 'image' && (
-
-                      <LightGallery
-                        plugins={[lgZoom, lgThumbnail, lgVideo]}
-                        mode="lg-fade"
-                        onClose={() => setShowLightGallery(false)}
-                      >
+                      <LightGallery plugins={[lgZoom, lgThumbnail, lgVideo]} mode="lg-fade">
                         <a href={message.fileLink} data-lg-size="1280-720">
                           {message.fileLink.includes('.mp4') ? (
                             <video
                               src={message.fileLink}
                               controls
                               className="max-w-full max-h-96 cursor-pointer object-cover"
+                              loading="lazy"
                             />
                           ) : (
                             <img
                               src={message.fileLink}
                               alt="Hình ảnh"
                               className="max-w-full max-h-96 cursor-pointer object-cover"
+                              loading="lazy"
                             />
                           )}
                         </a>
@@ -639,42 +658,18 @@ useEffect(() => {
                         {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     )}
-                    {/* Hiển thị danh sách reaction */}
                     {message.reaction && Object.keys(message.reaction).length > 0 && (
                       <div
                         className="flex items-center space-x-1 mt-1 cursor-pointer"
                         onClick={() => setShowReactionModal(true)}
                       >
                         {topReactions.map(({ emoji, count }, index) => (
-                          <span key={index} className="bg-gray-200 rounded-full px-2 py-1 text-xs">
+                          <span key={index} className={` rounded-full px-2 py-1 text-xs ${isUserMessage ? "bg-white" : "bg-gray-100"}`}>
                             {emoji} {count}
                           </span>
                         ))}
                       </div>
                     )}
-                    {/* Thanh reaction */}
-                    <div
-                      className="absolute bottom-[-10px] right-[-10px] group/reaction hidden group-hover:flex items-center justify-center bg-white rounded-full shadow-lg cursor-pointer transition duration-200"
-                      onMouseEnter={() => {
-                        showReactionsRef.current = true;
-                        forceUpdate();
-                      }}
-                      onMouseLeave={() => {
-                        showReactionsRef.current = false;
-                        forceUpdate();
-                      }}
-                    >
-                      <div className="relative">
-                        <div className="flex items-center justify-center p-1 bg-white rounded-full shadow cursor-pointer transition duration-200">
-                          <img
-                            src="https://res-zalo.zadn.vn/upload/media/2019/1/25/iconlike_1548389696575_103596.png"
-                            width={15}
-                            height={15}
-                            alt="like"
-                            loading="lazy"
-                          />
-                        </div>
-                        </divdiv
                     <div
                       className="absolute bottom-[-10px] right-[-10px] group/reaction hidden group-hover:flex items-center justify-center bg-white rounded-full shadow-lg cursor-pointer transition duration-200"
                       onMouseEnter={() => {
@@ -716,7 +711,6 @@ useEffect(() => {
                               : 'bottom-full left-1/2 -translate-x-1/2 mb-2'
                               } flex items-center justify-center bg-white p-2 rounded-full shadow-lg z-10 w-fit`}
                           >
-
                             {reactions.map((item, index) => {
                               const isSelected = myReaction?.rawTypes?.includes(item.type);
                               return (
@@ -729,7 +723,7 @@ useEffect(() => {
                                   <span className="text-lg">{item.icon}</span>
                                 </div>
                               );
-                            ))}
+                            })}
                           </div>
                         )}
                       </div>
@@ -745,7 +739,6 @@ useEffect(() => {
             </p>
           )}
         </div>
-
 
         {/* Modal danh sách reaction */}
         {showReactionModal && (
@@ -766,8 +759,6 @@ useEffect(() => {
                 </svg>
               </button>
               <h3 className="text-lg font-semibold mb-4">Tương tác</h3>
-
-              {/* Tabs emoji */}
               <div className="flex space-x-2 mb-4 overflow-x-auto">
                 <button
                   className={`px-4 py-2 ${selectedReactionTab === null ? 'border-b-2 border-black font-bold' : ''}`}
@@ -786,8 +777,6 @@ useEffect(() => {
                   </button>
                 ))}
               </div>
-
-              {/* Danh sách user */}
               <div className="space-y-2">
                 {userReactions.length > 0 ? (
                   userReactions.map((user) => {
@@ -799,7 +788,7 @@ useEffect(() => {
                     return (
                       <div key={user.id} className="flex items-center py-2">
                         <img
-                          src={getMember(user.id).avatarLink}
+                          src={getMember(user.id).avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
                           alt="avatar"
                           className="w-10 h-10 rounded-full mr-3"
                           loading="lazy"
@@ -813,8 +802,6 @@ useEffect(() => {
                   <p className="text-center text-gray-500">Không có tương tác nào.</p>
                 )}
               </div>
-
-              {/* Nút xóa tất cả reaction */}
               {myReaction && (
                 <button
                   className="mt-4 w-full bg-red-500 text-white py-2 rounded-lg"
@@ -911,9 +898,11 @@ useEffect(() => {
             <p className="ml-auto rounded-full mt-2 text-center px-5 bg-red-500 text-white text-xs">Lỗi gửi</p>
           ) : (
             <p className="ml-auto rounded-full mt-2 text-center px-5 bg-[#b6bbc5] text-white text-xs">
-              {message.status === -1 ? 'Đang gửi' : (
-                message.status === 0 && message.seen.filter(seen => seen.userId !== userLogin.id).length > 0 ? 'Đã xem' : "Đã nhận"
-              )}
+              {message.status === -1
+                ? 'Đang gửi'
+                : message.status === 0 && message.seen.filter((seen) => seen.userId !== userLogin.id).length > 0
+                  ? 'Đã xem'
+                  : 'Đã nhận'}
             </p>
           )}
         </>
