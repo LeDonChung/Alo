@@ -6,9 +6,21 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const [isScrolledToTop, setIsScrolledToTop] = useState(false);
+  const messageRefs = useRef({}); // Object lưu trữ các ref của từng tin nhắn
+  const [scrollToParent, setScrollToParent] = useState(null); // Lưu tin nhắn cha cần cuộn tới
+  const [highlightedMessage, setHighlightedMessage] = useState(null); // Lưu tin nhắn cần làm nổi bật
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Cuộn tới tin nhắn cụ thể
+  const scrollToMessage = (messageId) => {
+    const messageRef = messageRefs.current[messageId];
+    if (messageRef) {
+      messageRef.scrollIntoView({ behavior: "smooth", block: "center" });
+      setHighlightedMessage(messageId); // Đánh dấu tin nhắn đã cuộn tới
+    }
   };
 
   const handleScroll = () => {
@@ -26,6 +38,21 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
       }
     }
   };
+
+  useEffect(() => {
+    if (scrollToParent) {
+      scrollToMessage(scrollToParent);
+      setScrollToParent(null); // Reset sau khi cuộn
+    }
+  }, [scrollToParent]);
+
+  // Xóa highlight sau khi nháy 3-5 lần
+  useEffect(() => {
+    if (highlightedMessage) {
+      const timer = setTimeout(() => setHighlightedMessage(null), 3000); // Xóa highlight sau 3 giây
+      return () => clearTimeout(timer);
+    }
+  }, [highlightedMessage]);
 
   useEffect(() => {
     scrollToBottom();
@@ -66,19 +93,30 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
     <div
       ref={chatContainerRef} // Thêm style để scroll
     >
-      {messages.map((message, index) => {
+      {messages.map((message, index) => {        
         const isUserMessage = message.sender.id === userLogin.id;
-        const isLastMessage = index === messages.length - 1 || messages[index + 1].sender.id  !== message.sender.id;
-        const showAvatar = index === 0 || messages[index - 1].sender.id  !== message.sender.id ;
+        const isLastMessage = index === messages.length - 1 || messages[index + 1]?.sender.id !== message.sender.id;
+        
+        const showAvatar = index === 0 || messages[index - 1]?.sender.id !== message.sender.id;
 
         return (
-          <MessageItem
-            key={index}
-            message={message}
-            isUserMessage={isUserMessage}
-            isLastMessage={isLastMessage}
-            showAvatar={showAvatar}
-          />
+          <div
+            key={message.id}
+            ref={(el) => (messageRefs.current[message.id] = el)} // Lưu ref vào object
+          >
+            <MessageItem
+              message={message}
+              isUserMessage={isUserMessage}
+              isLastMessage={isLastMessage}
+              showAvatar={showAvatar}
+              isHighlighted={highlightedMessage === message.id} // Kiểm tra xem tin nhắn có được làm nổi bật không
+              onClickParent={() => {
+                if (message.messageParent?.id) {
+                  setScrollToParent(message.messageParent.id); // Đặt tin nhắn cha cần cuộn tới
+                }
+              }}
+            />
+          </div>
         );
       })}
 
