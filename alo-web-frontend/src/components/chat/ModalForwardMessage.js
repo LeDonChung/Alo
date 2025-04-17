@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { addMessage, forwardMessage } from "../../redux/slices/MessageSlice";
 import socket from "../../utils/socket";
+import { removeVietnameseTones } from "../../utils/AppUtils";
+
 import { useSelector } from "react-redux";
 import showToast from "../../utils/AppUtils";
 const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
@@ -11,12 +13,82 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
     const [conversationIds, setConversationIds] = useState([]);
     const [search, setSearch] = useState("");
 
+    const [conversationList, setConversationList] = useState(conversations);
+
+    useEffect(() => {
+        if (search === '') {
+            setConversationList(conversations);
+        } else {
+            const searchText = removeVietnameseTones(search);
+            const filteredConversations = conversations.filter((conversation) => {
+                if (conversation.isGroup) {
+                    const groupName = removeVietnameseTones(conversation.name);
+
+                    return groupName.toLowerCase().includes(searchText.toLowerCase());
+                } else {
+                    const friend = conversation.members.find((member) => member.id !== userLogin.id);
+                    const friendName = removeVietnameseTones(friend.fullName);
+                    return friendName.toLowerCase().includes(search.toLowerCase());
+                }
+            });
+            setConversationList(filteredConversations);
+        }
+    }, [search])
+
+    const getFileIcon = useCallback((extension) => {
+        switch (extension) {
+            case 'pdf':
+                return <img src="/icon/ic_pdf.png" alt="PDF" loading="lazy" />;
+            case 'xls':
+            case 'xlsx':
+                return <img src="/icon/ic_excel.png" alt="EXCEL" loading="lazy" />;
+            case 'doc':
+            case 'docx':
+                return <img src="/icon/ic_work.png" alt="WORD" loading="lazy" />;
+            case 'ppt':
+            case 'pptx':
+                return <img src="/icon/ic_ppt.png" alt="PPT" loading="lazy" />;
+            case 'zip':
+            case 'rar':
+                return <img src="/icon/ic_zip.png" alt="ZIP" loading="lazy" />;
+            case 'txt':
+                return <img src="/icon/ic_txt.png" alt="TXT" loading="lazy" />;
+            case 'mp4':
+                return <img src="/icon/ic_video.png" alt="VIDEO" loading="lazy" />;
+            default:
+                return (
+                    <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        className="flex-shrink-0"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <rect x="3" y="3" width="18" height="18" rx="2" fill="#999" />
+                        <text x="12" y="16" fill="#fff" fontSize="10" fontWeight="bold" textAnchor="middle">
+                            FILE
+                        </text>
+                    </svg>
+                );
+        }
+    }, []);
+
+    const getFileExtension = useCallback((filename = '') => {
+        const parts = filename.split('.');
+        return parts[parts.length - 1].toLowerCase();
+    }, []);
+
+    const extractOriginalName = useCallback((fileUrl) => {
+        const fileNameEncoded = fileUrl.split('/').pop();
+        const fileNameDecoded = decodeURIComponent(fileNameEncoded);
+        const parts = fileNameDecoded.split(' - ');
+        return parts[parts.length - 1];
+    }, []);
+
     const conversation = useSelector(state => state.conversation.conversation);
     const handleForward = async (e) => {
         e.preventDefault();
-        console.log("Forwarding message to:", selectedConversations);
-        console.log("Message content:", message);
-        console.log("conversationIds: ", conversationIds);
         if (conversationIds.length === 0) {
             showToast("Vui lòng chọn ít nhất một cuộc trò chuyện để chia sẻ.", "success");
             return;
@@ -52,7 +124,6 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
                     });
                 })
             });
-
         } catch (error) {
             console.error("Error forwarding message:", error);
         } finally {
@@ -80,16 +151,16 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
                         placeholder="Tìm kiếm..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-none"
                     />
                 </div>
 
                 <div>
                     <h3 className="text-sm font-semibold mb-2">Gần đây</h3>
                     <ul className="space-y-2">
-                        {conversations.map((conversation) => (
+                        {conversationList.map((conversation) => (
                             <li key={conversation.id}
-                                className="flex items-center mb-2 hover:bg-gray-100 px-2 py-3 hover:rounded-md cursor-pointer"
+                                className="flex items-center mb-2 hover:bg-gray-100 px-2 py-[5px] hover:rounded-md cursor-pointer"
                                 onClick={() => {
                                     setConversationIds((prev) =>
                                         prev.includes(conversation.id)
@@ -151,9 +222,20 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
                                 <span className="text-sm text-gray-600">{message.content}</span>
                             </div>
                         ) : (
-                            <div className="flex items-center mt-2">
-                                <img src={message.fileLink} alt="Shared content" className="w-36 h-36 rounded-lg" />
-                            </div>
+                            <>
+                                {
+                                    message.messageType === 'file' ? (
+                                        <div className="flex items-center mt-2">
+                                            {getFileIcon(getFileExtension(message.fileLink))}
+                                            <span className="text-sm text-gray-600 ml-2">{extractOriginalName(message.fileLink)}</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center mt-2">
+                                            <img src={message.fileLink} alt="Shared content" className="w-36 h-36 rounded-lg" />
+                                        </div>
+                                    )
+                                }
+                            </>
                         )
                     }
 
@@ -171,7 +253,6 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
                             type="button"
                             className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-400 cursor-pointer"
                             disabled={selectedConversations.length === 0}>
-
                             Chia sẻ
                         </button>
                     </div>
