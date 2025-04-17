@@ -4,7 +4,7 @@ import { Modal, Pressable, View } from 'react-native';
 import { axiosInstance } from '../../../api/APIClient';
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
-import { addMessage, getMessagesByConversationId, handlerUpdateReaction, removeAllReaction, sendMessage, setMessages, updateMessage, setMessageUpdate, updateMessageStatus } from '../../redux/slices/MessageSlice'; 
+import { addMessage, getMessagesByConversationId, handlerUpdateReaction, removeAllReaction, sendMessage, setMessages, updateMessage, setMessageUpdate, updateMessageStatus, setMessageParent } from '../../redux/slices/MessageSlice'; 
 import HeaderComponent from '../../components/chat/HeaderComponent';
 import InputComponent from '../../components/chat/InputComponent';
 import MessageItem from '../../components/chat/MessageItem';
@@ -15,7 +15,7 @@ import StickerPicker from '../../components/chat/StickerPicker';
 import { ActivityIndicator } from 'react-native-paper';
 import { MenuComponent } from '../../components/chat/MenuConponent';
 import { showToast } from '../../../utils/AppUtils';
-import { removePin, updateLastMessage } from '../../redux/slices/ConversationSlice';
+import { removePin, updateLastMessage, updateConversationFromSocket } from '../../redux/slices/ConversationSlice';
 
 
 
@@ -54,64 +54,72 @@ export const ChatScreen = ({ route, navigation }) => {
   };
 
   const handlerSendMessage = async (customInputMessage = null) => {
-    const messageData = customInputMessage || inputMessage;
-    const { content, messageType, file } = messageData;
-  
-    const requestId = Date.now() + Math.random(); 
-  
-    const message = {
-      senderId: userLogin.id,
-      conversationId: conversation.id,
-      content,
-      messageType,
-      timestamp: Date.now(),
-      seen: [],
-      requestId,
-      status: -1,
-    };
-    if (messageParent) {
-      message.messageParent = messageParent.id; 
-    }
+  const messageData = customInputMessage || inputMessage;
+  const { content, messageType, file } = messageData;
 
-    const newMessageTemp = {
-      ...message,
-      sender: userLogin,
-    };
+  const requestId = Date.now() + Math.random(); 
 
-    /// file, image
-    if (messageType === 'file' || messageType === 'image') {
-      newMessageTemp.fileLink = file.uri;
-    } else if (messageType === 'sticker') {
-      newMessageTemp.fileLink = messageData.fileLink;
-      message.fileLink = messageData.fileLink;
-    } 
-  
-    try {
-      dispatch(addMessage(newMessageTemp));
-      setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
-      if (messageParent) {
-        dispatch(setMessageParent(null));
-      }
-      const res = await dispatch(sendMessage({ message, file })).unwrap();
-      const sentMessage = {
-        ...res.data,
-        sender: userLogin, 
-      };
-  
-      dispatch(updateMessage(sentMessage));
-  
-      socket.emit('send-message', {
-        conversation,
-        message: sentMessage,
-      });
-  
-    } catch (err) {
-      console.error("Error sending message:", err);
-    }
+  const message = {
+    senderId: userLogin.id,
+    conversationId: conversation.id,
+    content,
+    messageType,
+    timestamp: Date.now(),
+    seen: [],
+    requestId,
+    status: -1,
+    messageParent: messageParent ? messageParent.id : null,
   };
+
+  if (messageParent && messageType === 'text' && content.trim()) {
+    if (messageParent.status === 1) {
+      showToast('error', 'bottom', 'Thông báo', 'Tin nhắn gốc đã bị thu hồi, không thể trả lời.', 2000);
+      dispatch(setMessageParent(null));
+      return;
+    }
+    message.messageParent = messageParent.id;
+  }
   
+  const newMessageTemp = {
+    ...message,
+    sender: userLogin,
+  };
 
+  if (messageType === 'file' || messageType === 'image') {
+    newMessageTemp.fileLink = file.uri;
+  } else if (messageType === 'sticker') {
+    newMessageTemp.fileLink = messageData.fileLink;
+    message.fileLink = messageData.fileLink;
+  } 
 
+  try {
+    dispatch(addMessage(newMessageTemp));
+    setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
+
+    const res = await dispatch(sendMessage({ message, file })).unwrap();
+    console.log("res", res);
+    
+    const sentMessage = {
+      ...res.data,
+      sender: userLogin,
+      messageParent: res.data.messageParent || message.messageParent,
+    };
+
+    dispatch(updateMessage(sentMessage));
+
+    socket.emit('send-message', {
+      conversation,
+      message: sentMessage,
+    });
+
+    if (messageParent) {
+      dispatch(setMessageParent(null));
+    }
+  } catch (err) {
+    console.error("Error sending message:", err);
+  }
+};
+  
   const handleSendImage = async (newMessage) => {
     handlerSendMessage(newMessage);
   };
@@ -139,7 +147,8 @@ export const ChatScreen = ({ route, navigation }) => {
 
   useEffect(() => {
     socket.on('receive-message', (message) => {
-      dispatch(addMessage(message)); 
+      dispatch(addMessage(message));
+      dispatch(updateLastMessage({ conversationId: conversation.id, message }));
     });
     return () => socket.off('receive-message');
   }, [dispatch]);
@@ -147,7 +156,8 @@ export const ChatScreen = ({ route, navigation }) => {
   useEffect(() => {
     socket.on('receive-update-message', (data) => {
       const { message, conversation } = data;
-      dispatch(setMessageUpdate({ messageId: message.id, status: message.status }));
+      dispatch(setMessageUpdate({ messageId: message.id, status: message.status })); 
+      dispatch(addMessage(message)); 
       dispatch(updateLastMessage({ conversationId: conversation.id, message })); 
     });
     return () => socket.off('receive-update-message');
@@ -343,6 +353,9 @@ export const ChatScreen = ({ route, navigation }) => {
                 setSelectedMessage={setSelectedMessage}
                 isHighlighted={highlightedId === item.id}
                 handlerRemoveAllAction={handlerRemoveAllAction}
+                flatListRef={flatListRef}
+                messages={messages} 
+                scrollToMessage={scrollToMessage}
               />
             )}
             keyExtractor={(item, index) => item.id?.toString() || item.requestId?.toString() || index.toString()}
@@ -364,6 +377,9 @@ export const ChatScreen = ({ route, navigation }) => {
         handlerSendMessage={handlerSendMessage}
         handleSendFile={handleSendFile}
         handlerSendImage={handleSendImage}
+        messageParent={messageParent} 
+        clearMessageParent={() => dispatch(setMessageParent(null))} 
+        friend={friend}
       />
       {isStickerPickerVisible && (
         <StickerPicker onStickerSelect={handleStickerSelect} />

@@ -3,14 +3,14 @@ import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, Toa
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { useDispatch, useSelector } from 'react-redux';
-import { createPin } from '../../redux/slices/ConversationSlice';
+import { createPin, updateLastMessage } from '../../redux/slices/ConversationSlice';
 import { showToast } from '../../../utils/AppUtils';
 import socket from '../../../utils/socket';
 import { ReactionBar } from './ReactionBar';
 import MessageDetailModal from './MessageDetailModal';
 import ForwardMessageModal from './ForwardMessageModal';
 import * as Clipboard from 'expo-clipboard';
-import { setMessageParent, updateMessageStatus } from '../../redux/slices/MessageSlice';
+import { setMessageParent, updateMessageStatus, setMessageUpdate } from '../../redux/slices/MessageSlice';
 export const MenuComponent = ({ message, showMenuComponent, friend }) => {
     const navigation = useNavigation();
     const dispatch = useDispatch();
@@ -70,21 +70,32 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                 content = 'Không thể sao chép nội dung này.';
         }
 
-        await Clipboard.setStringAsync(content);
-        showMenuComponent(false);
-        showToast('success', 'bottom', 'Thông báo', 'Đã sao chép vào clipboard!', 2000);
-    };
+        try {
+            await Clipboard.setStringAsync(content);
+            showToast('success', 'bottom', 'Thông báo', 'Đã sao chép vào clipboard!', 2000);
+          } catch (error) {
+            console.error('Lỗi khi sao chép:', error);
+            showToast('error', 'bottom', 'Thông báo', 'Không thể sao chép nội dung.', 2000);
+          }
+          showMenuComponent(false);
+        };
 
     // Thu hồi tin nhắn
     const handleMessageRecall = async () => {
+        if (message.senderId !== userLogin.id) {
+          showToast('error', 'bottom', 'Thông báo', 'Bạn chỉ có thể thu hồi tin nhắn của mình.', 2000); 
+          showMenuComponent(false);
+          return;
+        }
+    
         const messageTime = new Date(message.timestamp);
         const currentTime = new Date();
-        const timeDiff = (currentTime - messageTime) / (1000 * 60); // Tính khoảng cách thời gian (phút)
-
+        const timeDiff = (currentTime - messageTime) / (1000 * 60);
+      
         if (timeDiff > 2) {
-            showToast('error', 'bottom', 'Thông báo', 'Không thể thu hồi tin nhắn sau 2 phút.', 2000);
-            showMenuComponent(false);
-            return;
+          showToast('error', 'bottom', 'Thông báo', 'Không thể thu hồi tin nhắn sau 2 phút.', 2000);
+          showMenuComponent(false);
+          return;
         }
 
         try {
@@ -92,18 +103,19 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
             const resp = await dispatch(updateMessageStatus({ messageId: message.id, status: 1 })).unwrap();
             const messageUpdate = resp.data;
             dispatch(setMessageUpdate({ messageId: messageUpdate.id, status: messageUpdate.status }));
-            socket.emit('updateMessage', { message: messageUpdate, conversation });
-            showToast('success', 'bottom', 'Thông báo', 'Đã thu hồi tin nhắn!', 2000);
-        } catch (error) {
-            showToast('error', 'bottom', 'Thông báo', 'Không thể thu hồi tin nhắn.', 2000);
-        }
-    };
+            socket.emit('updateMessage', { message: messageUpdate, conversation }); 
+            showToast('success', 'bottom', 'Thông báo', 'Tin nhắn đã được thu hồi.', 2000); 
+          } catch (error) {
+            console.error('Lỗi khi thu hồi tin nhắn:', error);
+            showToast('error', 'bottom', 'Thông báo', error.message || 'Không thể thu hồi tin nhắn.', 2000);
+          }
+        };
 
     // Trả lời tin nhắn
     const handleReply = () => {
-        dispatch(setMessageParent(message));
-        showMenuComponent(false);
-    };
+        dispatch(setMessageParent(message)); 
+        showMenuComponent(false); 
+      };
     return (
         <ScrollView contentContainerStyle={styles.container}>
             {/* Emoji Bar */}
@@ -115,7 +127,7 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                         <Icon name="undo" size={24} color="#EA580C" />
                         <Text>Thu hồi</Text>
                     </TouchableOpacity>
-                )} // Cập nhật để chỉ hiển thị thu hồi cho tin nhắn của người gửi và chưa thu hồi
+                )} 
                 <TouchableOpacity style={styles.actionItem} onPress={handleReply}>
                     <Icon name="reply" size={24} color="#6B21A8" />
                     <Text>Trả lời</Text>

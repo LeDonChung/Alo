@@ -14,7 +14,22 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
   const [isOptionModalVisible, setOptionModalVisible] = useState(false);
   const dispatch = useDispatch(); 
   const messageParent = useSelector(state => state.message.messageParent);
+  const userLogin = useSelector(state => state.user.userLogin);
 
+  const handleSend = () => {
+    if (inputMessage.content.trim()) {
+      const messageSend = {
+        ...inputMessage,
+        messageParent: messageParent ? messageParent.id : null,
+      };
+      handlerSendMessage(messageSend);
+      setInputMessage({
+        messageType: 'text',
+        content: '',
+      });
+    }
+  };
+  
   const handleOptionSelect = (options) => {
     setOptionModalVisible(false);
     if (options === "Tài liệu") {
@@ -42,13 +57,17 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
         type: asset.mimeType || 'application/octet-stream',
       };
       const newMessage = {
-        content: '',
-        messageType: 'file',
-        file: file,
-      };
+          content: '',
+          messageType: 'file',
+          file: file,
+          messageParent: messageParent ? messageParent.id : null,
+        };
       console.log('file', file);
 
       await handleSendFile(newMessage);
+      if (messageParent) {
+        dispatch(setMessageParent(null));
+      }
     }
 
     setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
@@ -87,32 +106,61 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
           messageType: 'image',
           file: file,
           fileLink: imageUrl,
+          messageParent: messageParent ? messageParent.id : null,
         };
 
 
 
         handlerSendImage(newMessage);
-
+        if (messageParent) {
+          dispatch(setMessageParent(null));
+          break; 
+        }
         // Delay nhỏ tránh gửi quá nhanh
         await new Promise(resolve => setTimeout(resolve, 500));
 
       }
     }
   };
+  const renderParentMessage = () => {
+    if (!messageParent) return null;
+    return (
+      <View style={{ 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        marginBottom: 10, 
+        backgroundColor: '#F1F5F9', 
+        padding: 10, 
+        borderRadius: 8, 
+        width: '100%',
+        borderLeftWidth: 4,
+        borderLeftColor: '#6B21A8', 
+      }}>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
+            <Text style={{ fontWeight: 'bold', color: '#6B21A8', fontSize: 14 }}>
+              Đang trả lời tin nhắn
+            </Text>
+          </View>
+          <Text style={{ color: '#4B5563', fontSize: 14 }} numberOfLines={2}>
+            {messageParent.status === 1 ? 'Tin nhắn đã bị thu hồi' : 
+              messageParent.messageType === 'text' ? messageParent.content : 
+              messageParent.messageType === 'image' ? '[Hình ảnh]' : 
+              messageParent.messageType === 'file' ? '[Tệp đính kèm]' : 
+              '[Sticker]'} 
+          </Text>
+        </View>
+        <TouchableOpacity onPress={() => dispatch(setMessageParent(null))}>
+          <Icon name="times" size={18} color="#999" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
 
   return (
     <View style={{ backgroundColor: 'white', padding: 10, flexDirection: 'column', alignItems: 'center', borderTopWidth: 1, borderColor: '#EDEDED' }}>
-      {messageParent && (
-        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10, backgroundColor: '#f5f5f5', padding: 10, borderRadius: 5, width: '100%' }}>
-          <Text style={{ flex: 1 }}>
-            Đang trả lời: {messageParent.status === 1 ? 'Tin nhắn đã được thu hồi' : messageParent.content || `[${messageParent.messageType}]`}
-          </Text>
-          <TouchableOpacity onPress={() => dispatch(setMessageParent(null))}>
-            <Text style={{ color: 'blue' }}>Hủy</Text>
-          </TouchableOpacity>
-        </View>
-      )} 
+      {renderParentMessage()} 
 
       <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
         <TouchableOpacity
@@ -129,7 +177,7 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
         />
 
         {inputMessage.content.trim() ? (
-          <TouchableOpacity onPress={() => handlerSendMessage(inputMessage)} style={{ paddingHorizontal: 10 }}>
+          <TouchableOpacity onPress={(handleSend)} style={{ paddingHorizontal: 10 }}>
             <IconMI name="send" size={20} color="blue" />
           </TouchableOpacity>
         ) : (

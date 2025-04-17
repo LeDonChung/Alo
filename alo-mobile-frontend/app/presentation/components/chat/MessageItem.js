@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { Video } from 'expo-av';
 import { ReactionListComponent } from './ReactionListComponent';
-const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted, handlerRemoveAllAction, flatListRef }) => {
 
+const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted, handlerRemoveAllAction, flatListRef, messages, scrollToMessage }) => {
   const isSent = item.senderId === userLogin.id;
   const messageType = item.messageType;
   const fileLink = item.fileLink;
@@ -48,6 +48,96 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
     setIsShowMenuInMessage(true);
   };
 
+  const renderParentMessage = () => {
+    if (!item.messageParent) {
+      return null;
+    }
+  
+    const parentMessage = messages.find(msg => msg.id === item.messageParent);
+    if (!parentMessage) {
+      return (
+        <TouchableOpacity
+          style={{
+            backgroundColor: isSent ? '#bbdefb' : '#f5f5f5',
+            padding: 10,
+            borderRadius: 5,
+            marginBottom: 5,
+            borderLeftWidth: 4,
+            borderLeftColor: '#6B21A8',
+          }}
+          onPress={() => scrollToMessage(item.messageParent)}
+        >
+          <Text style={{ fontWeight: 'bold', color: '#6B21A8' }}>
+            Không xác định
+          </Text>
+          <Text style={{ color: '#4B5563', fontSize: 14 }} numberOfLines={2}>
+            Tin nhắn không còn tồn tại
+          </Text>
+        </TouchableOpacity>
+      );
+    }
+  
+    return (
+      <TouchableOpacity
+        onPress={() => scrollToMessage(parentMessage.id)}
+        style={{
+          backgroundColor: isSent ? '#bbdefb' : '#f5f5f5',
+          padding: 10,
+          borderRadius: 5,
+          marginBottom: 5,
+          flexDirection: 'row',
+          alignItems: 'center',
+        }}
+      >
+        {parentMessage.status === 0 && parentMessage.messageType === 'image' && (
+          <Image
+            source={{ uri: parentMessage.fileLink }}
+            style={{ width: 44, height: 44, borderRadius: 8, marginRight: 8 }}
+            resizeMode="cover"
+          />
+        )}
+        {parentMessage.status === 0 && parentMessage.messageType === 'sticker' && (
+          <Image
+            source={{ uri: parentMessage.fileLink }}
+            style={{ width: 44, height: 44, borderRadius: 8, marginRight: 8 }}
+            resizeMode="cover"
+          />
+        )}
+        {parentMessage.status === 0 && parentMessage.messageType === 'file' && (
+          parentMessage.fileLink.includes('.mp4') ? (
+            <Video
+              source={{ uri: parentMessage.fileLink }}
+              style={{ width: 44, height: 44, borderRadius: 8, marginRight: 8 }}
+              useNativeControls={false}
+              resizeMode="cover"
+            />
+          ) : (
+            <View style={{ marginRight: 8 }}>
+              {getFileIcon(getFileExtension(parentMessage.fileLink))}
+            </View>
+          )
+        )}
+
+        <View style={{ flex: 1 }}>
+          <Text style={{ fontWeight: 'bold', color: '#6B21A8', fontSize: 14 }}>
+            {parentMessage.senderId === userLogin.id ? 'Bạn' : parentMessage.sender?.fullName}
+          </Text>
+          <Text style={{ color: '#4B5563', fontSize: 14 }} numberOfLines={2}>
+            {parentMessage.status === 1
+              ? 'Tin nhắn đã được thu hồi'
+              : parentMessage.messageType === 'text'
+              ? parentMessage.content
+              : parentMessage.messageType === 'image'
+              ? '[Hình ảnh]'
+              : parentMessage.messageType === 'file'
+              ? `[File] ${extractOriginalName(parentMessage.fileLink)}`
+              : '[Sticker]'}
+          </Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
+
   return (
     <View
       style={{
@@ -68,42 +158,22 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
         </TouchableOpacity>
       )}
 
-    <View style={{ flexDirection: 'column' }}>
+      <View style={{ flexDirection: 'column' }}>
         <TouchableOpacity
           style={[{ borderRadius: 10, maxWidth: '90%', minWidth: '40%', flexDirection: 'column' }, isHighlighted && { backgroundColor: '#fef08a' }]}
           onLongPress={() => handleLongPress(item)}
         >
-          {item.messageParent && item.status === 0 && (
-            <TouchableOpacity
-              onPress={() => {
-                if (item.messageParent?.id) {
-                  const index = flatListRef.current?.props?.data?.findIndex(msg => msg.id === item.messageParent.id);
-                  if (index !== -1 && flatListRef.current) {
-                    flatListRef.current.scrollToIndex({ index, animated: true });
-                  }
-                }
-              }}
-              style={{
-                backgroundColor: isSent ? '#bbdefb' : '#f5f5f5',
-                padding: 10,
-                borderRadius: 5,
-                marginBottom: 5,
-              }}
-            >
-              <Text style={{ fontWeight: 'bold' }}>{item.messageParent.sender?.fullName || 'Ẩn danh'}</Text>
-              <Text>
-                {item.messageParent.status === 1
-                  ? 'Tin nhắn đã được thu hồi'
-                  : item.messageParent.messageType === 'text'
-                  ? item.messageParent.content
-                  : `[${item.messageParent.messageType}]`}
-              </Text>
-            </TouchableOpacity>
-          )} 
-
+          {renderParentMessage()}
           {item.status === 1 ? (
-            <View style={{ backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
-              <Text style={{ color: 'gray' }}>Tin nhắn đã được thu hồi</Text>
+            <View style={{ 
+              backgroundColor: isSent ? '#dbeafe' : 'white', 
+              padding: 10, 
+              borderRadius: 10,
+              opacity: 0.7, 
+            }}>
+              <Text style={{ color: 'gray', fontStyle: 'italic' }}>
+                Tin nhắn đã được thu hồi 
+              </Text>
             </View>
           ) : (
             <>
@@ -205,7 +275,7 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
                 </View>
               )}
             </>
-          )} {/* Bổ sung để hỗ trợ thu hồi tin nhắn */}
+          )}
 
           {item.reaction && Object.keys(item.reaction).length > 0 && (
             <ReactionListComponent message={item} isSent={isSent} handlerRemoveAllAction={handlerRemoveAllAction} />
@@ -227,10 +297,9 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
                 Đang gửi
               </Text> : (
                 <Text style={{ marginLeft: 'auto', marginRight: 10, width: 70, textAlign: 'center', padding: 3, borderRadius: 100, backgroundColor: '#b6bbc5', fontSize: 12, color: '#fff' }}>
-                  Đã nhận 
+                  Đã nhận
                 </Text>
               )
-
           )
         }
       </View>
