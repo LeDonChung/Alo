@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { blockFriend, getFriends, removeFriend, setFriends, unblockFriend, unfriend } from '../redux/slices/FriendSlice';
 import showToast, { removeVietnameseTones } from '../utils/AppUtils';
 import socket from '../utils/socket';
+import ModalConfirmUnfriend from './friend/ModalShowInfoFriend';
 
 const categoryList = [
   { id: 1, name: "Bạn thân", color: "#ff6347" },
@@ -47,7 +48,6 @@ export default function FriendsOfUser() {
 
   const [isUnfriend, setIsUnfriend] = useState(false);
   const friends = useSelector(state => state.friend.friends);
-  console.log("friends", friends);
   const handleUnfriend = async (item) => {
     try {
       if (isOpenConfirm) {
@@ -73,11 +73,6 @@ export default function FriendsOfUser() {
       showToast("Đã xảy ra lỗi khi xóa kết bạn. Vui lòng thử lại.", "error");
     }
   };
-
-
-
-
-
 
   const handleBlockFriend = async (id) => {
     try {
@@ -357,7 +352,6 @@ export default function FriendsOfUser() {
               </div>
 
               <div className="flex flex-col w-full mx-auto mb-5 px-2">
-
                 {
                   !loading ? (
 
@@ -397,7 +391,7 @@ export default function FriendsOfUser() {
                                   >
                                     <FontAwesomeIcon icon={faEllipsis} />
                                   </button>
-                                  {openDetail && detailFriend.friendId === friend.friendId && (
+                                  {openDetail && detailFriend.friendInfo.id === friend.friendInfo.id && (
                                     <div className="absolute left-[-200px] mt-1 w-[200px] bg-white rounded-lg shadow-lg">
                                       <button className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
                                         <span className="">Xem thông tin</span>
@@ -493,6 +487,7 @@ export default function FriendsOfUser() {
                                           </div>
                                         )}
                                       </>
+
                                     </div>
 
 

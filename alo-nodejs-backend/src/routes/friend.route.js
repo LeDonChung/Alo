@@ -12,6 +12,10 @@ router.get('/get-friend-request',
     middleware.authenticateToken,
     friendController.getFriendRequests);
 
+router.get('/get-friend-requests-sent',
+    middleware.authenticateToken,
+    friendController.getFriendRequestsSent);
+
 router.post('/accept-friend-request',
     middleware.authenticateToken,
     friendController.acceptFriendRequest);

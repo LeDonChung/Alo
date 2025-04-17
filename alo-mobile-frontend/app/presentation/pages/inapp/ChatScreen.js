@@ -4,7 +4,7 @@ import { Modal, Pressable, View } from 'react-native';
 import { axiosInstance } from '../../../api/APIClient';
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
-import { getMessagesByConversationId, handlerUpdateReaction, removeAllReaction, sendMessage, setMessages } from '../../redux/slices/MessageSlice';
+import { addMessage, getMessagesByConversationId, handlerUpdateReaction, removeAllReaction, seenAll, seenOne, sendMessage, setMessages, updateMessage, updateSeenAllMessage } from '../../redux/slices/MessageSlice';
 import HeaderComponent from '../../components/chat/HeaderComponent';
 import InputComponent from '../../components/chat/InputComponent';
 import MessageItem from '../../components/chat/MessageItem';
@@ -16,6 +16,7 @@ import { ActivityIndicator } from 'react-native-paper';
 import { MenuComponent } from '../../components/chat/MenuConponent';
 import { showToast } from '../../../utils/AppUtils';
 import { removePin } from '../../redux/slices/ConversationSlice';
+
 
 
 export const ChatScreen = ({ route, navigation }) => {
@@ -54,42 +55,56 @@ export const ChatScreen = ({ route, navigation }) => {
   const handlerSendMessage = async (customInputMessage = null) => {
     const messageData = customInputMessage || inputMessage;
     const { content, messageType, file } = messageData;
-
-    // Lấy fileLink nếu có
-    const fileLink = messageData.fileLink || (file ? file.uri : '');
-
+  
+    const requestId = Date.now() + Math.random(); 
+  
     const message = {
       senderId: userLogin.id,
       conversationId: conversation.id,
       content,
       messageType,
-      fileLink,
       timestamp: Date.now(),
-      seen: []
+      seen: [],
+      requestId,
+      status: -1,
+    };
+  
+
+    const newMessageTemp = {
+      ...message,
+      sender: userLogin,
     };
 
+    /// file, image
+    if (messageType === 'file' || messageType === 'image') {
+      newMessageTemp.fileLink = file.uri;
+    } else if (messageType === 'sticker') {
+      newMessageTemp.fileLink = messageData.fileLink;
+      message.fileLink = messageData.fileLink;
+    } 
+  
     try {
-      const response = await dispatch(sendMessage({ message, file })).then((res) => {
-        const sentMessage = {
-          ...res.payload.data,
-          sender: userLogin
-        };
-
-        dispatch(setMessages([...messages, sentMessage]));
-        socket.emit('send-message', {
-          conversation,
-          message: sentMessage
-        });
-
-      })
-
-
+      dispatch(addMessage(newMessageTemp));
+      setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
+  
+      const res = await dispatch(sendMessage({ message, file })).unwrap();
+      const sentMessage = {
+        ...res.data,
+        sender: userLogin, 
+      };
+  
+      dispatch(updateMessage(sentMessage));
+  
+      socket.emit('send-message', {
+        conversation,
+        message: sentMessage,
+      });
+  
     } catch (err) {
       console.error("Error sending message:", err);
     }
-    setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
-
   };
+  
 
 
   const handleSendImage = async (newMessage) => {
@@ -100,23 +115,42 @@ export const ChatScreen = ({ route, navigation }) => {
     handlerSendMessage(newMessage);
   };
   const handleStickerSelect = async (stickerUrl) => {
-    dispatch(setInputMessage({ ...inputMessage, fileLink: stickerUrl, messageType: 'sticker' }))
-    setShowStickerPicker(false);
+    const newMessage = {
+      content: '',
+      messageType: 'sticker',
+      fileLink: stickerUrl,
+    };
+    handlerSendMessage(newMessage);
+    setShowStickerPicker(false);  
   };
 
-  useEffect(() => {
-    if (inputMessage.messageType === 'sticker') {
-      if (inputMessage.fileLink) {
-        handlerSendMessage();
-      }
-    }
-  }, [inputMessage]);
+  // useEffect(() => {
+  //   if (inputMessage.messageType === 'sticker') {
+  //     if (inputMessage.fileLink) {
+       
+  //     }
+  //   }
+  // }, [inputMessage]);
 
   useEffect(() => {
-    socket.on('receive-message', (message) => {
-      dispatch(setMessages([...messages, message]));
-    });
-  }, [messages, dispatch]);
+    const handlerReceiveMessage = async (message) => {
+      console.log("MESSAGE", message);
+      dispatch(addMessage(message));
+      await dispatch(seenOne(message.id)).unwrap().then((res) => {
+        const data = res.data;
+        // emit seen message
+        socket.emit('seen-message', {
+          messages: [data],
+          conversation: conversation
+        });
+      })
+    }
+    socket.on('receive-message', handlerReceiveMessage);
+
+    return () => {
+      socket.off('receive-message', handlerReceiveMessage);
+    }
+  }, [conversation.id]);
 
 
   useEffect(() => {
@@ -126,8 +160,68 @@ export const ChatScreen = ({ route, navigation }) => {
   }, []);
 
   useEffect(() => {
-    dispatch(getMessagesByConversationId(conversation.id));
-  }, [conversation.id, limit, dispatch]);
+    const handlerInitMessage = async () => {
+      await dispatch(getMessagesByConversationId(conversation.id)).unwrap().then(async (res) => {
+
+        console.log("hi")
+        const unseenMessages = res.data.filter((message) => {
+          const seen = message.seen || [];
+          return !seen.some((seenUser) => seenUser.userId === userLogin.id);
+        }).map((message) => message.id);
+
+        if (unseenMessages.length > 0) {
+          await dispatch(seenAll(unseenMessages)).unwrap().then((res) => {
+            const data = res.data;
+            dispatch(updateSeenAllMessage(data))
+            // emit seen message
+            socket.emit('seen-message', {
+              messages: data,
+              conversation: conversation
+            })
+          })
+        }
+
+
+      });
+    }
+
+    handlerInitMessage();
+
+  }, []);
+
+// Bắt sự kiện get last logout
+  useEffect(() => {
+    const handleGetLastLogoutX = async (userId) => {
+      if(userId === friend.id) {
+        console.log('getLastLogout', userId);
+        await handleGetLastLogout(userId);
+      }
+    }
+    socket.on('user-offline', handleGetLastLogoutX);
+
+    return () => {
+      socket.off('user-offline', handleGetLastLogoutX);
+    }
+
+  }, []);
+
+  // Bắt sự kiện get last logout
+  useEffect(() => {
+    const handleGetLastLogoutX = async (userId) => {
+      console.log('getLastLogoutX', userId);
+      console.log(friend.id);
+      if(userId === friend.id) {
+        console.log('getLastLogout', userId);
+        await handleGetLastLogout(userId);
+      }
+    }
+    socket.on('user-offline', handleGetLastLogoutX);
+
+    return () => {
+      socket.off('user-offline', handleGetLastLogoutX);
+    }
+
+  }, []);
 
   const getLastLoginMessage = (lastLogout) => {
     if (!lastLogout) return 'Chưa truy cập';

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getFriendByPhone, sendFriendRequest, unblockFriend, unfriend, cancelFriendRequest, rejectFriendRequest, acceptFriendRequest } from "../redux/slices/FriendSlice";
+import { getFriendByPhone, sendFriendRequest, unblockFriend, unfriend, cancelFriendRequest, rejectFriendRequest, acceptFriendRequest, addFriendRequestSent, cancelFriendRequestSent } from "../redux/slices/FriendSlice";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import showToast from "../utils/AppUtils";
@@ -25,33 +25,12 @@ export const SearchByPhone = (isOpenAdd) => {
     useEffect(() => {
     }, [info, isOpenAdd]);
 
-    useEffect(() => {
-        const handleRejectFriendRequest = (data) => {
-            if (data.friendId === userLogin.id) {
-                handleSearch();
-            }
-        };
-        socket.on("receive-reject-friend", handleRejectFriendRequest);
-        return () => {
-            socket.off("receive-reject-friend", handleRejectFriendRequest);
-        };
-    }, []);
-
-    useEffect(() => {
-        const handleAcceptFriendRequest = (data) => {
-            if (data.friendId === userLogin.id) {
-                handleSearch();
-            }
-        };
-        socket.on("receive-accept-friend", handleAcceptFriendRequest);
-        return () => {
-            socket.off("receive-accept-friend", handleAcceptFriendRequest);
-        };
-    }, []);
-
     const handleSearch = async () => {
         setIsLoadingPhone(true);
-        if (!phoneNumber) return;
+        if (!phoneNumber) {
+            setIsLoadingPhone(false);
+            return;
+        };
         try {
             const result = await dispatch(getFriendByPhone(phoneNumber));
             const user = result.payload?.data?.phoneNumber ? result.payload.data : null;
@@ -62,6 +41,53 @@ export const SearchByPhone = (isOpenAdd) => {
         }
         setIsLoadingPhone(false);
     };
+
+    useEffect(() => {
+        const handleRejectFriendRequest = async (data) => {
+            if (data.friendId === userLogin.id) {
+                setInfo(null); // Đặt dữ liệu người dùng vào state
+                setIsShowInfo(false); // Hiển thị thông tin nguoi dùng
+                await handleSearch();
+            }
+        };
+        socket.on("receive-reject-friend", handleRejectFriendRequest);
+        return () => {
+            socket.off("receive-reject-friend", handleRejectFriendRequest);
+        };
+    }, [handleSearch, userLogin.id, phoneNumber]);
+
+    useEffect(() => {
+        const handleAcceptFriendRequest = async (data) => {
+            if (data.friendId === userLogin.id) {       
+                setInfo(null); // Đặt dữ liệu người dùng vào state
+                setIsShowInfo(false); // Hiển thị thông tin nguoi dùng
+                await handleSearch();
+            }
+        };
+        socket.on("receive-accept-friend", handleAcceptFriendRequest);
+        return () => {
+            socket.off("receive-accept-friend", handleAcceptFriendRequest);
+        };
+    }, [handleSearch, userLogin.id, phoneNumber]);
+
+    useEffect(() => {
+        const handleCancelFriendRequest = async (data) => {
+            if(data.userId === userLogin.id) {
+                await dispatch(cancelFriendRequestSent(data)); // Cập nhật lại danh sách bạn bè đã gửi lời mời
+            }
+            if (data.friendId === userLogin.id) {
+                setInfo(null); // Đặt dữ liệu người dùng vào state
+                setIsShowInfo(false); // Hiển thị thông tin nguoi dùng
+                await handleSearch();
+            }
+        };
+        socket.on("receive-cancle-friend-request", handleCancelFriendRequest);
+        return () => {
+            socket.off("receive-cancle-friend-request", handleCancelFriendRequest);
+        };
+    }, [handleSearch, userLogin.id, phoneNumber, dispatch]);
+
+
 
     const sendFriend = async () => {
         setIsLoading(true);
@@ -76,6 +102,7 @@ export const SearchByPhone = (isOpenAdd) => {
             const friendResult = result.payload.data ? result.payload.data : null;
             if (friendResult && friendResult.status === 0) {
                 socket.emit("send-friend-request", friendResult)
+                await dispatch(addFriendRequestSent(friendResult));
                 setIsOpenModalContent(false);
                 setContentInvite('Mình tìm kiếm bạn qua số điện thoại. Kết bạn với mình nhé!');
                 setIsShowInfo(false); // Hiển thị thông tin nguoi dùng
@@ -320,13 +347,13 @@ export const SearchByPhone = (isOpenAdd) => {
                                                     onClick={() => handleClick()}
                                                 >
                                                     {isLoading && info?.status !== -1 && info?.status !== 2 && info?.status !== 4 ? (
-                                                                <div className="flex justify-center items-center">
-                                                                    <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
-                                                                </div>
-                                                            ) : (
-                                                                info?.status === -1 ? "Gửi lời mời kết bạn" : info?.status === 3 ? "Mở chặn" : info?.status === 0 ? (info.senderId === userLogin.id ? "Hủy lời mời" : " Từ chối") : info?.status === 2 ? "Gửi lời mời kết bạn" : info?.status === 4 ? "Gửi lời mời kết bạn" : "Hủy kết bạn"
-                                                            )}
-                                                    
+                                                        <div className="flex justify-center items-center">
+                                                            <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                                                        </div>
+                                                    ) : (
+                                                        info?.status === -1 ? "Gửi lời mời kết bạn" : info?.status === 3 ? "Mở chặn" : info?.status === 0 ? (info.senderId === userLogin.id ? "Hủy lời mời" : " Từ chối") : info?.status === 2 ? "Gửi lời mời kết bạn" : info?.status === 4 ? "Gửi lời mời kết bạn" : "Hủy kết bạn"
+                                                    )}
+
                                                 </button>
 
                                                 {

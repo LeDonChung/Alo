@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { axiosInstance } from '../api/APIClient';
 import socket from '../utils/socket';
-import { getMessagesByConversationId, sendMessage, setInputMessage, setMessages } from '../redux/slices/MessageSlice';
+import { getMessagesByConversationId, seenAll, seenOne, setMessages, updateSeenAllMessage } from '../redux/slices/MessageSlice';
 import RightSlidebar from './RightSlideBarChat';
 import ChatHeader from './chat/ChatHeader';
 import ChatContent from './chat/ChatContent';
@@ -18,6 +18,8 @@ const ChatWindow = () => {
   const messages = useSelector(state => state.message.messages);
   const [lastLogout, setLastLogout] = useState(null);
   const limit = useSelector(state => state.message.limit);
+  const conversations = useSelector(state => state.conversation.conversations);
+
   const getLastLoginMessage = (lastLogout) => {
     if (!lastLogout) return 'Chưa truy cập';
     const now = new Date();
@@ -40,14 +42,28 @@ const ChatWindow = () => {
 
   const handleGetLastLogout = async (userId) => {
     await axiosInstance.get(`/api/user/get-profile/${userId}`).then((res) => {
+      console.log("getLastLoginMessage", res.data.data);
       setLastLogout(res.data.data.lastLogout);
     });
   };
 
-  
+  // Bắt sự kiện get last logout
+  useEffect(() => {
+    const handleGetLastLogoutX = async (userId) => {
+      console.log('getLastLogoutX', userId);
+      console.log(getFriend(conversation));
+      if (userId === getFriend(conversation).id) {
+        console.log('getLastLogout', userId);
+        await handleGetLastLogout(userId);
+      }
+    }
+    socket.on('user-offline', handleGetLastLogoutX);
 
+    return () => {
+      socket.off('user-offline', handleGetLastLogoutX);
+    }
 
-  
+  }, []);
 
   useEffect(() => {
     socket.emit("join_conversation", conversation.id);
@@ -58,14 +74,60 @@ const ChatWindow = () => {
     }
   }, [conversation, userLogin.id]);
 
-  
+  useEffect(() => {
+    const handlerReceiveMessage = async (message) => {
+      console.log("hiii")
+      dispatch(setMessages([...messages, message]));
+      await dispatch(seenOne(message.id)).unwrap().then((res) => {
+        const data = res.data;
+        // emit seen message
+        socket.emit('seen-message', {
+          messages: [data],
+          conversation: conversation
+        });
+      })
+    }
+    socket.on('receive-message', handlerReceiveMessage);
+
+    return () => {
+      socket.off('receive-message', handlerReceiveMessage);
+    }
+  }, [conversation.id]);
+
 
   useEffect(() => {
-    dispatch(getMessagesByConversationId(conversation.id));
-  }, [conversation, limit, dispatch]);
+    const handlerInitMessage = async () => {
+      await dispatch(getMessagesByConversationId(conversation.id)).unwrap().then(async (res) => {
+
+        const unseenMessages = res.data.filter((message) => {
+          const seen = message.seen || [];
+          return !seen.some((seenUser) => seenUser.userId === userLogin.id);
+        }).map((message) => message.id);
+
+        if (unseenMessages.length > 0) {
+          await dispatch(seenAll(unseenMessages)).unwrap().then((res) => {
+            const data = res.data;
+            dispatch(updateSeenAllMessage(data))
+            // emit seen message
+            socket.emit('seen-message', {
+              messages: data,
+              conversation: conversation
+            })
+          })
+        }
+
+
+      });
+    }
+
+    handlerInitMessage();
+
+  }, [conversation]);
   const isFriendOnline = (userId) => {
     return userOnlines.includes(userId);
   };
+
+
 
   return (
     <>
@@ -87,6 +149,7 @@ const ChatWindow = () => {
             conversation={conversation}
             userLogin={userLogin}
             getFriend={getFriend}
+            conversations={conversations}
           />
         </div>
 

@@ -6,6 +6,7 @@ const initialState = {
     friend: null,
     error: null,
     friendsRequest: [],
+    friendsRequestSent: [],
 };
 
 const getFriends = createAsyncThunk('FriendSlice/getFriends', async (_, { rejectWithValue }) => {
@@ -22,7 +23,6 @@ const getFriends = createAsyncThunk('FriendSlice/getFriends', async (_, { reject
 const unfriend = createAsyncThunk('FriendSlice/unfriend', async (request, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.post('/api/friend/unfriend', request);
-        console.log("response", response.data);
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
@@ -94,6 +94,16 @@ const getFriendsRequest = createAsyncThunk('FriendSlice/getFriendsRequest', asyn
     }
 });
 
+const getFriendsRequestSent = createAsyncThunk('FriendSlice/getFriendsRequestSent', async (_, { rejectWithValue }) => {
+    try {
+        const userLogin = JSON.parse(localStorage.getItem('userLogin'));
+        const response = await axiosInstance.get('/api/friend/get-friend-requests-sent?userId=' + userLogin.id);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
 const getFriendByPhone = createAsyncThunk('FriendSlice/getFriendByPhone', async (phoneNumber, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.get('api/friend/get-friend-by-phone-number?phoneNumber=' + phoneNumber);
@@ -133,6 +143,15 @@ const FriendSlice = createSlice({
             state.friendsRequest = state.friendsRequest.filter(
                 (f) => !(f.userId === userId && f.friendId === friendId)
             );
+        },
+        cancelFriendRequestSent: (state, action) => {
+            const { userId, friendId } = action.payload;
+            state.friendsRequestSent = state.friendsRequestSent.filter(
+                (f) => !(f.userId === userId && f.friendId === friendId)
+            );
+        },
+        addFriendRequestSent: (state, action) => {
+            state.friendsRequestSent.push(action.payload);
         } 
     },
     extraReducers: (builder) => {
@@ -238,6 +257,17 @@ const FriendSlice = createSlice({
             state.friendsRequest = [];
         });
 
+        // getFriendsRequestSent
+        builder.addCase(getFriendsRequestSent.pending, (state) => {
+            state.friendsRequestSent = [];
+        });
+        builder.addCase(getFriendsRequestSent.fulfilled, (state, action) => {
+            state.friendsRequestSent = action.payload.data;
+        });
+        builder.addCase(getFriendsRequestSent.rejected, (state, action) => {
+            state.friendsRequestSent = [];
+        });
+
         // getFriendByPhone
         builder.addCase(getFriendByPhone.pending, (state) => {
             state.friend = null;
@@ -252,6 +282,6 @@ const FriendSlice = createSlice({
     }
 });
 
-export const { setFriendsRequest, setFriends, addFriend, removeFriend, removeFriendRequest, addFriendsRequest } = FriendSlice.actions;
-export { getFriends, unfriend, blockFriend, sendFriendRequest, acceptFriendRequest, cancelFriendRequest, rejectFriendRequest, getFriendsRequest, unblockFriend, getFriendByPhone };
+export const { setFriendsRequest, setFriends, addFriend, removeFriend, removeFriendRequest, addFriendsRequest, cancelFriendRequestSent, addFriendRequestSent } = FriendSlice.actions;
+export { getFriends, unfriend, blockFriend, sendFriendRequest, acceptFriendRequest, cancelFriendRequest, rejectFriendRequest, getFriendsRequest, unblockFriend, getFriendByPhone, getFriendsRequestSent };
 export default FriendSlice.reducer;
