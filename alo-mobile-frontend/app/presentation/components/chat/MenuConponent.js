@@ -9,7 +9,8 @@ import socket from '../../../utils/socket';
 import MessageDetailModal from './MessageDetailModal';
 import ForwardMessageModal from './ForwardMessageModal';
 export const MenuComponent = ({ message, showMenuComponent, friend }) => {
-    
+    const userLogin = useSelector(state => state.user.userLogin);
+    const isSent = message.senderId === userLogin.id;
     const navigation = useNavigation();
     const dispatch = useDispatch();
     const [reaction, setReaction] = useState([
@@ -43,7 +44,6 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
     const [selectedMessage, setSelectedMessage] = useState(null);
     const handlerClickDetail = (message) => {
         setSelectedMessage(message);
-        console.log('message',message)
         setShowDetailModal(true);
     }
 
@@ -70,6 +70,7 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionItem} onPress={() => {
                     setShowForwardModal(true);
+                    // showMenuComponent(false);
                 }}>
                     <Icon name="share" size={24} color="#2563EB" />
                     <Text>Chuyển tiếp</Text>
@@ -90,6 +91,7 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionItem} onPress={() => {
                     handlerClickDetail(message);
+                    // showMenuComponent(false);
                 }} >
                     <Icon name="info-circle" size={24} color="#6B7280" />
                     <Text>Chi tiết</Text>
@@ -110,17 +112,18 @@ export const MenuComponent = ({ message, showMenuComponent, friend }) => {
             <MessageDetailModal
                 visible={showDetailModal}
                 onClose={() => {
-                    setShowDetailModal(false);
                     showMenuComponent(false);
+                    setShowDetailModal(false);
                 } }
                 message={selectedMessage}
                 friend={friend}
+                isSent={isSent}
             />
             <ForwardMessageModal
                 visible={showForwardModal}
                 onClose={() => {
-                    showMenuComponent(false);
                     setShowForwardModal(false);
+                    showMenuComponent(false);
                 }}
                 message={message}
             />
