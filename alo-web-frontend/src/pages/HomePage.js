@@ -18,8 +18,8 @@ import SentFriendRequest from "../components/SentFriendRequest";
 const menu = [
     { id: 1, name: "Danh sách bạn bè", icon: "./icon/ic_friend_list.png", showView: () => <FriendsOfUser /> },
     { id: 2, name: "Danh sách nhóm và cộng đồng", icon: "./icon/ic_community_list.png", showView: () => <GroupsOfUser /> },
-    { id: 3, name: "Lời mời kết bạn", icon: "./icon/ic_invitation_friend.png", showView: () => <InvitationFriend /> },
-    { id: 4, name: "Lời mời kết bạn đã gửi", icon: "./icon/ic_invitation_community.png", showView: () => <SentFriendRequest /> },
+    { id: 3, name: "Lời mời kết bạn", icon: "   ./icon/ic_invitation_friend.png", showView: () => <InvitationFriend /> },
+    { id: 4, name: "Lời mời vào nhóm và cộng đồng", icon: "./icon/ic_invitation_community.png", showView: () => <InvitationGroup /> },
 ];
 
 

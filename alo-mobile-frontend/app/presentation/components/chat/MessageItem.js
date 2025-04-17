@@ -200,9 +200,17 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
               <Text style={{ marginLeft: 'auto', marginRight: 10, width: 70, textAlign: 'center', padding: 3, borderRadius: 100, backgroundColor: '#b6bbc5', fontSize: 12, color: '#fff' }}>
                 Đang gửi
               </Text> : (
-                <Text style={{ marginLeft: 'auto', marginRight: 10, width: 70, textAlign: 'center', padding: 3, borderRadius: 100, backgroundColor: '#b6bbc5', fontSize: 12, color: '#fff' }}>
-                  Đã nhận 
-                </Text>
+                item.status === 0 && item.seen.filter(seen => seen.userId !== userLogin.id).length > 0 ? (
+                  <Text style={{ marginLeft: 'auto', marginRight: 10, width: 70, textAlign: 'center', padding: 3, borderRadius: 100, backgroundColor: '#b6bbc5', fontSize: 12, color: '#fff' }}>
+                    Đã xem
+                  </Text>
+                ) : (
+                  <Text style={{ marginLeft: 'auto', marginRight: 10, width: 70, textAlign: 'center', padding: 3, borderRadius: 100, backgroundColor: '#b6bbc5', fontSize: 12, color: '#fff' }}>
+                    Đã nhận
+                  </Text>
+                )
+
+
               )
 
           )
