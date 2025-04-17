@@ -21,7 +21,7 @@ const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ messag
         }
 
         const response = await axiosInstance.post('/api/message/create-message', formData, {
-            headers: { 
+            headers: {
                 "Content-Type": "multipart/form-data"
             }
         });
@@ -44,7 +44,7 @@ const getMessagesByConversationId = createAsyncThunk('MessageSlice/getMessagesBy
 const updateMessageStatus = createAsyncThunk('MessageSlice/updateMessageStatus', async ({ messageId, status }, { rejectWithValue }) => {
     try {
         console.log(messageId, status);
-        
+
         const response = await axiosInstance.put(`/api/message/${messageId}/status?status=${status}`);
         return response.data;
     } catch (error) {
@@ -52,6 +52,25 @@ const updateMessageStatus = createAsyncThunk('MessageSlice/updateMessageStatus',
     }
 });
 
+const seenAll = createAsyncThunk('MessageSlice/seenAll', async (messageIds, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.put(`/api/message/seen-messages`, {
+            messageIds
+        });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
+const seenOne = createAsyncThunk('MessageSlice/seenOne', async (messageId, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.put(`/api/message/${messageId}/seen`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
 const MessageSlice = createSlice({
     name: 'MessageSlice',
     initialState: initialState,
@@ -69,21 +88,37 @@ const MessageSlice = createSlice({
             state.messageParent = action.payload;
         },
         setMessageUpdate: (state, action) => {
-            const {messageId, status} = action.payload;
+            const { messageId, status } = action.payload;
             const index = state.messages.findIndex(message => message.id === messageId);
-            if (index !== -1) { 
-                state.messages[index].status = status; 
+            if (index !== -1) {
+                state.messages[index].status = status;
             }
         },
         updateMessage: (state, action) => {
 
-            const index = state.messages.findIndex(message => { 
+            const index = state.messages.findIndex(message => {
                 return message.requestId === Number(action.payload.requestId)
-            }); 
+            });
             if (index !== -1) {
-                state.messages[index] = action.payload; 
-            }  
+                state.messages[index] = action.payload;
+            }
         },
+        updateSeenAllMessage: (state, action) => {
+            const messageSeens = action.payload;
+
+            state.messages = state.messages.map((msg) => {
+                const updated = messageSeens.find((m) => m.id === msg.id);
+                if (updated) {
+                    return {
+                        ...msg,
+                        seen: updated.seen, // Chỉ update trường seen
+                    };
+                }
+                return msg;
+            });
+        },
+
+
     },
     extraReducers: (builder) => {
 
@@ -118,9 +153,23 @@ const MessageSlice = createSlice({
         builder.addCase(updateMessageStatus.rejected, (state, action) => {
             state.messageUpdate = null;
         });
+
+        builder.addCase(seenAll.pending, (state) => {
+        });
+        builder.addCase(seenAll.fulfilled, (state, action) => {
+        });
+        builder.addCase(seenAll.rejected, (state, action) => {
+        });
+
+        builder.addCase(seenOne.pending, (state) => {
+        });
+        builder.addCase(seenOne.fulfilled, (state, action) => {
+        });
+        builder.addCase(seenOne.rejected, (state, action) => {
+        });
     }
 });
 
-export const { setMessages, increaseLimit, addMessage, setMessageParent, setMessageUpdate, updateMessage } = MessageSlice.actions;
-export { sendMessage, getMessagesByConversationId, updateMessageStatus };
+export const { setMessages, increaseLimit, addMessage, setMessageParent, setMessageUpdate, updateMessage, updateSeenAllMessage } = MessageSlice.actions;
+export { sendMessage, getMessagesByConversationId, updateMessageStatus, seenAll, seenOne };
 export default MessageSlice.reducer;
