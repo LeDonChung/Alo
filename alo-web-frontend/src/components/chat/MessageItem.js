@@ -118,21 +118,27 @@ const MessageItem = ({
 
   const handleDownload = useCallback(async (url) => {
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        mode: 'cors' 
+      });
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
+
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = url.split('/').pop();
+      link.download = url.split('/').pop()?.split('?')[0] || 'image.jpg';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error('Error downloading file:', error);
-      alert('Lỗi khi tải file.');
+      alert('Lỗi khi tải file: ' + error.message);
     }
   }, []);
+
+
+
 
   const handleAnswer = useCallback(() => {
     dispatch(setMessageParent(message));
@@ -355,25 +361,6 @@ const MessageItem = ({
                       <img src={message.fileLink} alt="sticker" className="w-20 h-20" loading="lazy" />
                     )}
                     {message.messageType === 'image' && (
-                      <div onClick={() => setShowLightGallery(true)}>
-                        {message.fileLink.includes('.mp4') ? (
-                          <video
-                            src={message.fileLink}
-                            controls
-                            className="max-w-full max-h-96 cursor-pointer object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <img
-                            src={message.fileLink}
-                            alt="Hình ảnh"
-                            className="max-w-full max-h-96 cursor-pointer object-cover"
-                            loading="lazy"
-                          />
-                        )}
-                      </div>
-                    )}
-                    {showLightGallery && message.messageType === 'image' && (
                       <LightGallery
                         plugins={[lgZoom, lgThumbnail, lgVideo]}
                         mode="lg-fade"
@@ -470,8 +457,8 @@ const MessageItem = ({
                         {showReactionsRef.current && (
                           <div
                             className={`absolute ${isUserMessage
-                                ? 'right-full mr-2 top-1/2 -translate-y-1/2'
-                                : 'bottom-full left-1/2 -translate-x-1/2 mb-2'
+                              ? 'right-full mr-2 top-1/2 -translate-y-1/2'
+                              : 'bottom-full left-1/2 -translate-x-1/2 mb-2'
                               } flex items-center justify-center bg-white p-2 rounded-full shadow-lg z-10 w-fit`}
                           >
                             {reactions.map((item, index) => (
