@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
 import { forwardMessage } from "../../redux/slices/MessageSlice";
 import socket from "../../utils/socket";
@@ -15,9 +15,9 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
     const [conversationList, setConversationList] = useState(conversations);
 
     useEffect(() => {
-        if(search === ''){
+        if (search === '') {
             setConversationList(conversations);
-        }else{
+        } else {
             const searchText = removeVietnameseTones(search);
             const filteredConversations = conversations.filter((conversation) => {
                 if (conversation.isGroup) {
@@ -34,13 +34,64 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
         }
     }, [search])
 
+    const getFileIcon = useCallback((extension) => {
+        switch (extension) {
+            case 'pdf':
+                return <img src="/icon/ic_pdf.png" alt="PDF" loading="lazy" />;
+            case 'xls':
+            case 'xlsx':
+                return <img src="/icon/ic_excel.png" alt="EXCEL" loading="lazy" />;
+            case 'doc':
+            case 'docx':
+                return <img src="/icon/ic_work.png" alt="WORD" loading="lazy" />;
+            case 'ppt':
+            case 'pptx':
+                return <img src="/icon/ic_ppt.png" alt="PPT" loading="lazy" />;
+            case 'zip':
+            case 'rar':
+                return <img src="/icon/ic_zip.png" alt="ZIP" loading="lazy" />;
+            case 'txt':
+                return <img src="/icon/ic_txt.png" alt="TXT" loading="lazy" />;
+            case 'mp4':
+                return <img src="/icon/ic_video.png" alt="VIDEO" loading="lazy" />;
+            default:
+                return (
+                    <svg
+                        width="24"
+                        height="24"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        className="flex-shrink-0"
+                        xmlns="http://www.w3.org/2000/svg"
+                    >
+                        <rect x="3" y="3" width="18" height="18" rx="2" fill="#999" />
+                        <text x="12" y="16" fill="#fff" fontSize="10" fontWeight="bold" textAnchor="middle">
+                            FILE
+                        </text>
+                    </svg>
+                );
+        }
+    }, []);
+
+    const getFileExtension = useCallback((filename = '') => {
+        const parts = filename.split('.');
+        return parts[parts.length - 1].toLowerCase();
+    }, []);
+
+    const extractOriginalName = useCallback((fileUrl) => {
+        const fileNameEncoded = fileUrl.split('/').pop();
+        const fileNameDecoded = decodeURIComponent(fileNameEncoded);
+        const parts = fileNameDecoded.split(' - ');
+        return parts[parts.length - 1];
+    }, []);
+
     const handleForward = async (e) => {
         e.preventDefault();
         setIsLoading(true);
         console.log("Forwarding message to:", selectedConversations);
         console.log("Message content:", message);
-        console.log("conversationIds: ", conversationIds); 
-        
+        console.log("conversationIds: ", conversationIds);
+
         try {
             const newMessages = await dispatch(forwardMessage({
                 messageId: message.id,
@@ -52,13 +103,13 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
             }
 
             socket.emit("forward-message", dataSocket);
-        } catch (error) {            
+        } catch (error) {
             console.error("Error forwarding message:", error);
         } finally {
             setIsLoading(false);
             onClose();
         }
-        
+
     }
 
 
@@ -151,9 +202,20 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
                                 <span className="text-sm text-gray-600">{message.content}</span>
                             </div>
                         ) : (
-                            <div className="flex items-center mt-2">
-                                <img src={message.fileLink} alt="Shared content" className="w-36 h-36 rounded-lg" />
-                            </div>
+                            <>
+                                {
+                                    message.messageType === 'file' ? (
+                                        <div className="flex items-center mt-2">
+                                            {getFileIcon(getFileExtension(message.fileLink))}
+                                            <span className="text-sm text-gray-600 ml-2">{extractOriginalName(message.fileLink)}</span>
+                                        </div>
+                                    ) : (
+                                        <div className="flex items-center mt-2">
+                                            <img src={message.fileLink} alt="Shared content" className="w-36 h-36 rounded-lg" />
+                                        </div>
+                                    )
+                                }
+                            </>
                         )
                     }
 
@@ -167,9 +229,9 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
                         >
                             Hủy
                         </button>
-                        <button onClick={(e) => handleForward(e)} 
-                        className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-400" 
-                        disabled={selectedConversations.length === 0}>
+                        <button onClick={(e) => handleForward(e)}
+                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-400"
+                            disabled={selectedConversations.length === 0}>
                             {
                                 isLoading ? (
                                     <div className="flex items-center">
