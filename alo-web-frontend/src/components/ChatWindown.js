@@ -45,6 +45,13 @@ const ChatWindow = () => {
     });
   };  
 
+  const scrollToMessage = (messageId) => {
+    const messageElement = document.getElementById(`message-${messageId}`);
+    if (messageElement) {
+      messageElement.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
+
   useEffect(() => {
     socket.emit("join_conversation", conversation.id);
 
@@ -77,6 +84,7 @@ const ChatWindow = () => {
           getFriend={getFriend}
           getLastLoginMessage={getLastLoginMessage}
           isFriendOnline={isFriendOnline}
+          scrollToMessage={scrollToMessage}
         />
 
         <div className="flex-1 p-4 overflow-y-auto bg-gray-100" style={{ overflowAnchor: 'none' }}>

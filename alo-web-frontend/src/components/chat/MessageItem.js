@@ -7,8 +7,9 @@ import lgZoom from 'lightgallery/plugins/zoom';
 import lgThumbnail from 'lightgallery/plugins/thumbnail';
 import lgVideo from 'lightgallery/plugins/video';
 import { useDispatch } from 'react-redux';
-import { setMessageParent, setMessageUpdate, updateMessageStatus } from '../../redux/slices/MessageSlice';
+import { setMessageParent, setMessageUpdate, updateMessageStatus, removeAllReaction, handlerUpdateReaction, updateReaction } from '../../redux/slices/MessageSlice';
 import { batch } from 'react-redux';
+import {  getConversationById,   } from '../../redux/slices/ConversationSlice';
 import socket from '../../utils/socket';
 
 const MessageItem = ({
@@ -27,6 +28,8 @@ const MessageItem = ({
   const [showLightGallery, setShowLightGallery] = useState(false);
   const showReactionsRef = useRef(false);
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
+  const [showReactionModal, setShowReactionModal] = useState(false); // Thêm state cho modal reaction
+  const [selectedReactionTab, setSelectedReactionTab] = useState(null);
   const dispatch = useDispatch();
 
   // Memoize danh sách reactions
@@ -41,6 +44,175 @@ const MessageItem = ({
     ],
     []
   );
+
+  // Tạo emoji map
+  const emojiMap = useMemo(() => {
+    return reactions.reduce((map, r) => {
+      map[r.type] = r.icon;
+      return map;
+    }, {});
+  }, [reactions]);
+
+  // Lấy danh sách reaction
+  const extractReactions = useCallback((reactionObj) => {
+    if (!reactionObj) return [];
+    return Object.entries(reactionObj)
+      .map(([type, { quantity }]) => ({
+        type,
+        emoji: emojiMap[type] || '❓',
+        count: quantity,
+      }))
+      .filter((r) => r.count > 0);
+  }, [emojiMap]);
+
+  // Lấy danh sách người dùng đã reaction
+  const getUserReactions = useCallback((reactionObj) => {
+    const userMap = {};
+    if (!reactionObj || typeof reactionObj !== 'object') return [];
+
+    Object.entries(reactionObj).forEach(([type, { users }]) => {
+      users.forEach((userId) => {
+        if (!userMap[userId]) {
+          userMap[userId] = {
+            id: userId,
+            emojis: [],
+            rawTypes: [],
+          };
+        }
+        userMap[userId].emojis.push(emojiMap[type] || '❓');
+        userMap[userId].rawTypes.push(type);
+      });
+    });
+
+    return Object.values(userMap);
+  }, [emojiMap]);
+
+  // Lấy thông tin thành viên
+  const getMember = useCallback((userId) => {
+    return (
+      conversation.members.find((m) => m.id === userId) || {
+        fullName: 'Ẩn danh',
+        avatarLink: 'https://via.placeholder.com/40',
+      }
+    );
+  }, [conversation.members]);
+
+  // Lọc danh sách người dùng theo tab
+  const userReactions = useMemo(() => {
+    return getUserReactions(message.reaction).filter(
+      (user) => !selectedReactionTab || user.rawTypes.includes(selectedReactionTab)
+    );
+  }, [message.reaction, selectedReactionTab, getUserReactions]);
+
+  // Lấy top 3 reaction
+  const extractedReactions = useMemo(() => extractReactions(message.reaction), [message.reaction, extractReactions]);
+  const topReactions = useMemo(
+    () => extractedReactions.sort((a, b) => b.count - a.count).slice(0, 3),
+    [extractedReactions]
+  );
+
+  // Xóa tất cả reaction của người dùng hiện tại
+  const handleRemoveAllReactions = useCallback(async () => {
+    try {
+      const updatedReaction = {};
+      Object.entries(message.reaction || {}).forEach(([type, data]) => {
+        const filteredUsers = data.users.filter((userId) => userId !== userLogin.id);
+        const quantity = filteredUsers.length;
+        if (quantity > 0) {
+          updatedReaction[type] = { quantity, users: filteredUsers };
+        }
+      });
+
+      dispatch(setMessageUpdate({ messageId: message.id, reaction: updatedReaction }));
+
+      await dispatch(removeAllReaction({ messageId: message.id }))
+        .unwrap()
+        .then((res) => {
+          socket.emit('update-reaction', { conversation, message: res.data });
+        });
+      setShowReactionModal(false);
+    } catch (error) {
+      console.error('Error removing reactions:', error);
+    }
+  }, [message, userLogin.id, dispatch, conversation]);
+
+  // Xử lý gửi reaction
+  const handleSendReaction = useCallback(
+    async (type) => {
+      try {
+        const updatedReaction = { ...(message.reaction || {}) }; 
+        if (updatedReaction[type]) {
+          const updatedUsers = [...updatedReaction[type].users];
+          if (updatedUsers.includes(userLogin.id)) {
+            updatedReaction[type].users = updatedUsers.filter((userId) => userId !== userLogin.id);
+            updatedReaction[type].quantity -= 1;
+            if (updatedReaction[type].quantity === 0) {
+              delete updatedReaction[type];
+            }
+          } else {
+            updatedReaction[type].users.push(userLogin.id);
+            updatedReaction[type].quantity += 1;
+          }
+        } else {
+          updatedReaction[type] = { quantity: 1, users: [userLogin.id] };
+        }
+
+        dispatch(handlerUpdateReaction({ messageId: message.id, updatedReaction }));
+
+        await dispatch(updateReaction({ messageId: message.id, type }))
+          .unwrap()
+          .then((res) => {
+            socket.emit('update-reaction', {
+              conversation,
+              message: res.data,
+            });
+          });
+      } catch (error) {
+        console.error('Error updating reaction:', error);
+        dispatch(handlerUpdateReaction({ messageId: message.id, updatedReaction: message.reaction || {} }));
+      }
+      showReactionsRef.current = false;
+      forceUpdate();
+    },
+    [message, userLogin.id, dispatch, conversation]
+  );
+
+  // Lấy reaction của người dùng hiện tại
+  const myReaction = useMemo(
+    () => getUserReactions(message.reaction).find((u) => u.id === userLogin.id),
+    [message.reaction, getUserReactions]
+  );
+
+//socket
+  useEffect(() => {
+    const handleUpdateMessage = async (ms) => {
+      await dispatch(setMessageUpdate({ messageId: ms.id, status: ms.status }));
+    };
+
+    const handleUpdateReaction = (data) => {
+      dispatch(setMessageUpdate({ messageId: data.message.id, reaction: data.message.reaction }));
+    };
+
+    // const handlePinMessage = (data) => {
+    //   dispatch(getConversationById(data.conversation.id));
+    // };
+
+    // const handleConfirmPinMessage = (data) => {
+    //   dispatch(addPinToConversation(data.pin));
+    // };
+
+    socket.on('receive-update-message', handleUpdateMessage);
+    socket.on('update-reaction', handleUpdateReaction);
+    // socket.on('pin-message', handlePinMessage);
+    // socket.on('confirm-pin-message', handleConfirmPinMessage);
+
+    return () => {
+      socket.off('receive-update-message', handleUpdateMessage);
+      socket.off('update-reaction', handleUpdateReaction);
+      // socket.off('pin-message', handlePinMessage);
+      // socket.off('confirm-pin-message', handleConfirmPinMessage);
+    };
+  }, [dispatch]);
 
   // Memoize các hàm xử lý sự kiện
   const handleContextMenu = useCallback(
@@ -179,6 +351,28 @@ const MessageItem = ({
     setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
   }, []);
 
+  
+
+  // const handlePinMessage = useCallback(async () => {
+  //   try {
+  //     setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
+  //     // Cập nhật giao diện ngay lập tức
+  //     dispatch(addPinToConversation({ messageId: message.id }));
+  //     const res = await dispatch(createPin({ conversationId: message.conversationId, messageId: message.id })).unwrap();
+  //     socket.emit('pin-message', {
+  //       conversation,
+  //       pin: res.data,
+  //     });
+  //     if (conversation.pineds.length >= 3) {
+  //       alert('Đã đạt tối đa 3 ghim. Ghim cũ nhất sẽ bị xóa.');
+  //     }
+  //   } catch (error) {
+  //     console.error('Error pinning message:', error);
+  //     // Rollback nếu API thất bại
+  //     dispatch(removePinToConversation({ messageId: message.id }));
+  //   }
+  // }, [message, conversation, dispatch]);
+
   const formatMessageDateTime = useCallback((timestamp) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -266,11 +460,9 @@ const MessageItem = ({
 
         {/* Nội dung tin nhắn */}
         <div
-          className={`flex flex-col relative items-start max-w-[50%] ${
-            message.messageType !== 'image' && 'p-3'
-          } rounded-lg shadow-md ${isUserMessage ? 'bg-blue-100' : 'bg-white'} ${
-            isHighlighted && 'border-2 border-yellow-500 animate-flash'
-          }`}
+          className={`flex flex-col relative items-start max-w-[50%] ${message.messageType !== 'image' && 'p-3'
+            } rounded-lg shadow-md ${isUserMessage ? 'bg-blue-100' : 'bg-white'} ${isHighlighted && 'border-2 border-yellow-500 animate-flash'
+            }`}
         >
           {showAvatar && !isUserMessage && (
             <p className="text-sm text-gray-500 font-medium max-w-xs mb-3">{message.sender?.fullName}</p>
@@ -329,171 +521,198 @@ const MessageItem = ({
             message.status === -1 ||
             message.status === 'uploading' ||
             message.status === 'error') && (
-            <>
-              {message.status === 'uploading' && (
-                <div className="flex items-center">
-                  <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
-                    <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                    <path d="M4 12a8 8 0 018-8" fill="currentColor" />
-                  </svg>
-                  <span>Đang gửi {message.fileName || 'nội dung'}...</span>
-                  {message.messageType === 'image' && (
-                    <img
-                      src={message.fileLink}
-                      alt={message.fileName || 'Hình ảnh'}
-                      className="w-20 h-20 object-cover rounded-lg ml-2"
-                      loading="lazy"
-                    />
-                  )}
-                </div>
-              )}
-              {message.status === 'error' && (
-                <div className="text-red-500">Lỗi gửi {message.fileName || 'nội dung'}</div>
-              )}
-              {(message.status === 0 || message.status === -1) && (
-                <>
-                  {message.messageType === 'text' && <p className="text-sm text-gray-800">{message.content}</p>}
-                  {message.messageType === 'sticker' && (
-                    <img src={message.fileLink} alt="sticker" className="w-20 h-20" loading="lazy" />
-                  )}
-                  {message.messageType === 'image' && (
-                    <div onClick={() => setShowLightGallery(true)}>
-                      {message.fileLink.includes('.mp4') ? (
-                        <video
-                          src={message.fileLink}
-                          controls
-                          className="max-w-full max-h-96 cursor-pointer object-cover"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <img
-                          src={message.fileLink}
-                          alt="Hình ảnh"
-                          className="max-w-full max-h-96 cursor-pointer object-cover"
-                          loading="lazy"
-                        />
-                      )}
-                    </div>
-                  )}
-                  {showLightGallery && message.messageType === 'image' && (
-                    <LightGallery
-                      plugins={[lgZoom, lgThumbnail, lgVideo]}
-                      mode="lg-fade"
-                      onClose={() => setShowLightGallery(false)}
-                    >
-                      <a href={message.fileLink} data-lg-size="1280-720">
+              <>
+                {message.status === 'uploading' && (
+                  <div className="flex items-center">
+                    <svg className="animate-spin h-5 w-5 mr-2" viewBox="0 0 24 24">
+                      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                      <path d="M4 12a8 8 0 018-8" fill="currentColor" />
+                    </svg>
+                    <span>Đang gửi {message.fileName || 'nội dung'}...</span>
+                    {message.messageType === 'image' && (
+                      <img
+                        src={message.fileLink}
+                        alt={message.fileName || 'Hình ảnh'}
+                        className="w-20 h-20 object-cover rounded-lg ml-2"
+                        loading="lazy"
+                      />
+                    )}
+                  </div>
+                )}
+                {message.status === 'error' && (
+                  <div className="text-red-500">Lỗi gửi {message.fileName || 'nội dung'}</div>
+                )}
+                {(message.status === 0 || message.status === -1) && (
+                  <>
+                    {message.messageType === 'text' && <p className="text-sm text-gray-800">{message.content}</p>}
+                    {message.messageType === 'sticker' && (
+                      <img src={message.fileLink} alt="sticker" className="w-20 h-20" loading="lazy" />
+                    )}
+                    {message.messageType === 'image' && (
+                      <div onClick={() => setShowLightGallery(true)}>
                         {message.fileLink.includes('.mp4') ? (
-                          <video
-                            src={message.fileLink}
-                            controls
-                            className="max-w-full max-h-96 cursor-pointer object-cover"
-                          />
-                        ) : (
-                          <img
-                            src={message.fileLink}
-                            alt="Hình ảnh"
-                            className="max-w-full max-h-96 cursor-pointer object-cover"
-                          />
-                        )}
-                      </a>
-                    </LightGallery>
-                  )}
-                  {message.messageType === 'file' && (
-                    message.fileLink.includes('.mp4') ? (
-                      <div className="flex items-center space-x-3 rounded-lg w-full max-w-sm cursor-pointer">
-                        <a href={message.fileLink} data-lg-size="1280-720">
                           <video
                             src={message.fileLink}
                             controls
                             className="max-w-full max-h-96 cursor-pointer object-cover"
                             loading="lazy"
                           />
-                        </a>
+                        ) : (
+                          <img
+                            src={message.fileLink}
+                            alt="Hình ảnh"
+                            className="max-w-full max-h-96 cursor-pointer object-cover"
+                            loading="lazy"
+                          />
+                        )}
                       </div>
-                    ) : (
-                      <div className="flex items-center space-x-3 rounded-lg w-full max-w-sm cursor-pointer">
-                        {getFileIcon(getFileExtension(message.fileLink))}
-                        <div className="flex-1 min-w-0">
-                          <div className="text-gray-900 font-semibold truncate max-w-full">
-                            {extractOriginalName(message.fileLink)}
+                    )}
+                    {showLightGallery && message.messageType === 'image' && (
+                      <LightGallery
+                        plugins={[lgZoom, lgThumbnail, lgVideo]}
+                        mode="lg-fade"
+                        onClose={() => setShowLightGallery(false)}
+                      >
+                        <a href={message.fileLink} data-lg-size="1280-720">
+                          {message.fileLink.includes('.mp4') ? (
+                            <video
+                              src={message.fileLink}
+                              controls
+                              className="max-w-full max-h-96 cursor-pointer object-cover"
+                            />
+                          ) : (
+                            <img
+                              src={message.fileLink}
+                              alt="Hình ảnh"
+                              className="max-w-full max-h-96 cursor-pointer object-cover"
+                            />
+                          )}
+                        </a>
+                      </LightGallery>
+                    )}
+                    {message.messageType === 'file' && (
+                      message.fileLink.includes('.mp4') ? (
+                        <div className="flex items-center space-x-3 rounded-lg w-full max-w-sm cursor-pointer">
+                          <a href={message.fileLink} data-lg-size="1280-720">
+                            <video
+                              src={message.fileLink}
+                              controls
+                              className="max-w-full max-h-96 cursor-pointer object-cover"
+                              loading="lazy"
+                            />
+                          </a>
+                        </div>
+                      ) : (
+                        <div className="flex items-center space-x-3 rounded-lg w-full max-w-sm cursor-pointer">
+                          {getFileIcon(getFileExtension(message.fileLink))}
+                          <div className="flex-1 min-w-0">
+                            <div className="text-gray-900 font-semibold truncate max-w-full">
+                              {extractOriginalName(message.fileLink)}
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => handleDownload(message.fileLink)}
+                              className="rounded-sm bg-white transition"
+                              title="Tải xuống"
+                            >
+                              <img src="/icon/ic_download.png" alt="Tải xuống" loading="lazy" />
+                            </button>
                           </div>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            onClick={() => handleDownload(message.fileLink)}
-                            className="rounded-sm bg-white transition"
-                            title="Tải xuống"
-                          >
-                            <img src="/icon/ic_download.png" alt="Tải xuống" loading="lazy" />
-                          </button>
-                        </div>
+                      )
+                    )}
+                    {isLastMessage && (
+                      <div className={`text-xs text-gray-400 mt-2 ${message.messageType === 'image' && 'mx-2 mb-2'}`}>
+                        {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
-                    )
-                  )}
-                  {isLastMessage && (
-                    <div className={`text-xs text-gray-400 mt-2 ${message.messageType === 'image' && 'mx-2 mb-2'}`}>
-                      {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </div>
-                  )}
-                  <div
-                    className="absolute bottom-[-10px] right-[-10px] group/reaction hidden group-hover:flex items-center justify-center bg-white rounded-full shadow-lg cursor-pointer transition duration-200"
-                    onMouseEnter={() => {
-                      showReactionsRef.current = true;
-                      forceUpdate();
-                    }}
-                    onMouseLeave={() => {
-                      showReactionsRef.current = false;
-                      forceUpdate();
-                    }}
-                  >
-                    <div className="relative">
-                      <div className="flex items-center justify-center p-1 bg-white rounded-full shadow cursor-pointer transition duration-200">
-                        <img
-                          src="https://res-zalo.zadn.vn/upload/media/2019/1/25/iconlike_1548389696575_103596.png"
-                          width={15}
-                          height={15}
-                          alt="like"
-                          loading="lazy"
-                        />
-                      </div>
+                    )}
+
+                    {/* Hiển thị danh sách reaction */}
+                    {message.reaction && Object.keys(message.reaction).length > 0 && (
                       <div
-                        className="absolute"
-                        style={{
-                          top: isUserMessage ? '50%' : 'auto',
-                          bottom: isUserMessage ? 'auto' : '100%',
-                          left: isUserMessage ? 'auto' : '50%',
-                          right: isUserMessage ? '100%' : 'auto',
-                          transform: isUserMessage ? 'translateY(-50%)' : 'translateX(-50%)',
-                          width: '30px',
-                          height: '20px',
-                          zIndex: 5,
-                        }}
-                      ></div>
-                      {showReactionsRef.current && (
+                        className="flex items-center space-x-1 mt-1 cursor-pointer"
+                        onClick={() => setShowReactionModal(true)}
+                      >
+                        {topReactions.map(({ emoji, count }, index) => (
+                          <span key={index} className="bg-gray-200 rounded-full px-2 py-1 text-xs">
+                            {emoji} {count}
+                          </span>
+                        ))}
+                      </div>
+                    )}
+                    {/* Thanh reaction */}
+                    <div
+                      className="absolute bottom-[-10px] right-[-10px] group/reaction hidden group-hover:flex items-center justify-center bg-white rounded-full shadow-lg cursor-pointer transition duration-200"
+                      onMouseEnter={() => {
+                        showReactionsRef.current = true;
+                        forceUpdate();
+                      }}
+                      onMouseLeave={() => {
+                        showReactionsRef.current = false;
+                        forceUpdate();
+                      }}
+                    >
+                      <div className="relative">
+                        <div className="flex items-center justify-center p-1 bg-white rounded-full shadow cursor-pointer transition duration-200">
+                          <img
+                            src="https://res-zalo.zadn.vn/upload/media/2019/1/25/iconlike_1548389696575_103596.png"
+                            width={15}
+                            height={15}
+                            alt="like"
+                            loading="lazy"
+                          />
+                        </div>
                         <div
-                          className={`absolute ${
-                            isUserMessage
+                          className="absolute"
+                          style={{
+                            top: isUserMessage ? '50%' : 'auto',
+                            bottom: isUserMessage ? 'auto' : '100%',
+                            left: isUserMessage ? 'auto' : '50%',
+                            right: isUserMessage ? '100%' : 'auto',
+                            transform: isUserMessage ? 'translateY(-50%)' : 'translateX(-50%)',
+                            width: '30px',
+                            height: '20px',
+                            zIndex: 5,
+                          }}
+                        ></div>
+                        {showReactionsRef.current && (
+                          <div
+                            className={`absolute ${isUserMessage
                               ? 'right-full mr-2 top-1/2 -translate-y-1/2'
                               : 'bottom-full left-1/2 -translate-x-1/2 mb-2'
-                          } flex items-center justify-center bg-white p-2 rounded-full shadow-lg z-10 w-fit`}
-                        >
-                          {reactions.map((item, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-200 cursor-pointer"
-                              onClick={() => console.log(item.type)}
-                            >
-                              <span className="text-lg">{item.icon}</span>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+                              } flex items-center justify-center bg-white p-2 rounded-full shadow-lg z-10 w-fit`}
+                          >
+                            {/* {reactions.map((item, index) => (
+                              <div
+                                key={index}
+                                className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-200 cursor-pointer"
+                                onClick={() => console.log(item.type)}
+                              >
+                                <span className="text-lg">{item.icon}</span>
+                              </div>
+                            ))} */}
+                            {reactions.map((item, index) => {
+                              const isSelected = myReaction?.rawTypes?.includes(item.type);
+                              return (
+                                <div
+                                  key={index}
+                                  className={`flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-200 cursor-pointer ${isSelected ? 'bg-gray-200' : ''
+                                    }`}
+                                  onClick={() => handleSendReaction(item.type)}
+                                >
+                                  <span className="text-lg">{item.icon}</span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </>
-              )}
-            </>
-          )}
+                  </>
+                )}
+              </>
+            )}
 
           {message.status === 1 && (
             <p className={`text-sm text-gray-400 max-w-xs ${message.messageType !== 'text' ? 'p-3' : ''}`}>
@@ -502,6 +721,88 @@ const MessageItem = ({
           )}
         </div>
 
+
+        {/* Modal danh sách reaction */}
+        {showReactionModal && (
+          <div
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20"
+            onClick={() => setShowReactionModal(false)}
+          >
+            <div
+              className="bg-white rounded-lg shadow-lg w-full max-w-md p-4 relative max-h-[70vh] overflow-y-auto"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
+                onClick={() => setShowReactionModal(false)}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+              <h3 className="text-lg font-semibold mb-4">Tương tác</h3>
+
+              {/* Tabs emoji */}
+              <div className="flex space-x-2 mb-4 overflow-x-auto">
+                <button
+                  className={`px-4 py-2 ${selectedReactionTab === null ? 'border-b-2 border-black font-bold' : ''}`}
+                  onClick={() => setSelectedReactionTab(null)}
+                >
+                  Tất cả ({extractedReactions.reduce((total, { count }) => total + count, 0)})
+                </button>
+                {extractedReactions.map(({ type, emoji, count }) => (
+                  <button
+                    key={type}
+                    className={`px-4 py-2 flex items-center ${selectedReactionTab === type ? 'border-b-2 border-black font-bold' : ''
+                      }`}
+                    onClick={() => setSelectedReactionTab(type)}
+                  >
+                    {emoji} {count}
+                  </button>
+                ))}
+              </div>
+
+              {/* Danh sách user */}
+              <div className="space-y-2">
+                {userReactions.length > 0 ? (
+                  userReactions.map((user) => {
+                    const displayedEmojis = selectedReactionTab
+                      ? user.rawTypes.includes(selectedReactionTab)
+                        ? [emojiMap[selectedReactionTab]]
+                        : []
+                      : user.emojis;
+                    return (
+                      <div key={user.id} className="flex items-center py-2">
+                        <img
+                          src={getMember(user.id).avatarLink}
+                          alt="avatar"
+                          className="w-10 h-10 rounded-full mr-3"
+                          loading="lazy"
+                        />
+                        <p className="flex-1 text-sm">{getMember(user.id).fullName}</p>
+                        <p className="text-sm">{displayedEmojis.join(' ')}</p>
+                      </div>
+                    );
+                  })
+                ) : (
+                  <p className="text-center text-gray-500">Không có tương tác nào.</p>
+                )}
+              </div>
+
+              {/* Nút xóa tất cả reaction */}
+              {myReaction && (
+                <button
+                  className="mt-4 w-full bg-red-500 text-white py-2 rounded-lg"
+                  onClick={handleRemoveAllReactions}
+                >
+                  Xóa tất cả tương tác của bạn
+                </button>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Modal chi tiết tin nhắn */}
         {showDetailsModal && (
           <div
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20"

@@ -1,8 +1,11 @@
-const ChatHeader = ({ conversation, userLogin, lastLogout, getFriend, getLastLoginMessage, isFriendOnline }) => {
-    if (conversation.isGroup) return null;
-  
-    return (
-      <div className="bg-white border-b border-gray-200 p-4 flex items-center">
+import React from "react";
+// import PinComponentWeb from "./PinComponent";
+const ChatHeader = ({ conversation, userLogin, lastLogout, getFriend, getLastLoginMessage, isFriendOnline, scrollToMessage }) => {
+  if (conversation.isGroup) return null;
+
+  return (
+    <div className="bg-white border-b border-gray-200 p-4 flex items-center">
+      {/* <div className="p-4 flex items-center"> */}
         <img
           src={getFriend(conversation).avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'}
           alt="Avatar"
@@ -11,8 +14,8 @@ const ChatHeader = ({ conversation, userLogin, lastLogout, getFriend, getLastLog
         <div>
           <p className="font-semibold">{getFriend(conversation).fullName}</p>
           <p className="text-sm text-gray-500">
-            {isFriendOnline(conversation.memberUserIds.find(v => v !== userLogin.id)) 
-              ? 'Đang hoạt động' 
+            {isFriendOnline(conversation.memberUserIds.find(v => v !== userLogin.id))
+              ? 'Đang hoạt động'
               : getLastLoginMessage(lastLogout)}
           </p>
         </div>
@@ -33,8 +36,19 @@ const ChatHeader = ({ conversation, userLogin, lastLogout, getFriend, getLastLog
             </svg>
           </button>
         </div>
-      </div>
-    );
-  };
-  
-  export default ChatHeader;
+      {/* </div> */}
+      {/* Danh sách ghim
+      {conversation.pineds && conversation.pineds.length > 0 && (
+        <div className="border-t border-gray-200 pt-2">
+          <PinComponentWeb
+            conversation={conversation}
+            pins={conversation.pineds}
+            scrollToMessage={scrollToMessage}
+          />
+        </div>
+      )} */}
+    </div>
+  );
+};
+
+export default ChatHeader;
