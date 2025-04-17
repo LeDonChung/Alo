@@ -140,11 +140,37 @@ const updateSeenMessage = async (messageId, timestamp, seen) => {
     }
 }
 
+const deleteMessage = async (messageId, timestamp, removeOfme) => {
+    try {
+        const params = {
+            TableName: 'Messages',
+            Key: {
+                id: messageId,
+                timestamp: timestamp
+            },
+            UpdateExpression: 'set #removeOfme = :removeOfme',
+            ExpressionAttributeNames: {
+                '#removeOfme': 'removeOfme'
+            },
+            ExpressionAttributeValues: {
+                ':removeOfme': removeOfme
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+
+        const result = await client.update(params).promise();
+        return result.Attributes;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
 module.exports = {
     createMessage,
     getMessagesByConversationId,
     updateMessageStatus,
     getMessageById,
     updateMessageReaction,
-    updateSeenMessage
+    updateSeenMessage,
+    deleteMessage
 };

@@ -3,12 +3,15 @@ import { Modal, View, Text, StyleSheet, TouchableOpacity, Image } from 'react-na
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { Video } from 'expo-av';
 
-const MessageDetailModal = ({ visible, onClose, message, friend }) => {
+const MessageDetailModal = ({ visible, onClose, message, friend, isSent }) => {
     if (!message || !friend) return null;
 
     const formatDateTime = (timestamp) => {
         const date = new Date(timestamp);
-        return `${date.toLocaleDateString()} - ${date.toLocaleTimeString()}`;
+        const now = new Date();
+        const isToday = date.toDateString() === now.toDateString();
+        const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        return isToday ? `Hôm nay • ${time}` : `${date.toLocaleDateString()} • ${time}`;
     };
 
     const getFileExtension = (url = '') => {
@@ -19,7 +22,7 @@ const MessageDetailModal = ({ visible, onClose, message, friend }) => {
         const fileNameEncoded = url.split("/").pop();
         const fileNameDecoded = decodeURIComponent(fileNameEncoded);
         const parts = fileNameDecoded.split(" - ");
-        return parts[parts.length - 1]; // Lấy tên gốc phía sau dấu " - "
+        return parts[parts.length - 1];
     };
 
     const renderContent = () => {
@@ -66,20 +69,37 @@ const MessageDetailModal = ({ visible, onClose, message, friend }) => {
         return <Text>(Không thể hiển thị nội dung)</Text>;
     };
 
+    const avatarIcon = (
+        <Image
+            source={{
+                uri: message.sender?.avatarLink
+                    ? message.sender.avatarLink
+                    : 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg',
+            }}
+            style={styles.avatarImage}
+        />
+    );
+
     return (
         <Modal visible={visible} transparent animationType="slide">
             <View style={styles.overlay}>
                 <View style={styles.modalContainer}>
-                    <Text style={styles.title}>Chi tiết tin nhắn</Text>
+                    <Text style={styles.title}>Thông tin tin nhắn</Text>
 
-                    <Text style={styles.label}>Nội dung:</Text>
-                    <View style={{ marginBottom: 10 }}>{renderContent()}</View>
+                    <View style={[styles.messageRow, isSent ? styles.alignRight : styles.alignLeft]}>
+                        {!isSent && avatarIcon}
 
-                    <Text><Text style={styles.label}>Người gửi:</Text> {message.sender?.fullName}</Text>
-                    <Text><Text style={styles.label}>Thời gian:</Text> {formatDateTime(message.timestamp)}</Text>
+                        <View style={[styles.messageBubble, isSent ? styles.bubbleRight : styles.bubbleLeft]}>
+                            <Text style={styles.senderName}>{message.sender?.fullName}</Text>
+                            <Text style={styles.timestamp}>{formatDateTime(message.timestamp)}</Text>
+                            <View style={{ marginTop: 10 }}>{renderContent()}</View>
+                        </View>
+
+                        {isSent && avatarIcon}
+                    </View>
 
                     <TouchableOpacity style={styles.closeButton} onPress={onClose}>
-                        <Text style={{ color: '#fff' }}>Đóng</Text>
+                        <Icon name="times" size={20} color="gray" />
                     </TouchableOpacity>
                 </View>
             </View>
@@ -98,24 +118,20 @@ const styles = StyleSheet.create({
         backgroundColor: 'white',
         borderRadius: 8,
         padding: 20,
-        width: '85%',
+        width: '90%',
         elevation: 5,
+        position: 'relative',
     },
     title: {
         fontSize: 18,
         fontWeight: 'bold',
         marginBottom: 12,
     },
-    label: {
-        fontWeight: 'bold',
-        marginBottom: 4
-    },
     closeButton: {
-        marginTop: 20,
-        backgroundColor: '#2563EB',
-        padding: 10,
-        borderRadius: 5,
-        alignItems: 'center',
+        position: 'absolute',
+        top: 10,
+        right: 10,
+        justifyContent: 'center',
     },
     image: {
         width: 200,
@@ -139,6 +155,48 @@ const styles = StyleSheet.create({
         backgroundColor: '#F0F4FF',
         padding: 10,
         borderRadius: 10,
+    },
+    messageRow: {
+        flexDirection: 'row',
+        alignItems: 'flex-start',
+        marginTop: 10,
+    },
+    alignLeft: {
+        justifyContent: 'flex-start',
+    },
+    alignRight: {
+        justifyContent: 'flex-end',
+    },
+    messageBubble: {
+        maxWidth: '75%',
+        padding: 10,
+        borderRadius: 10,
+    },
+    bubbleLeft: {
+        backgroundColor: '#f1f1f1',
+        marginLeft: 10,
+        borderTopLeftRadius: 0,
+    },
+    bubbleRight: {
+        backgroundColor: '#dbeafe',
+        marginRight: 10,
+        borderTopRightRadius: 0,
+        alignItems: 'flex-end',
+    },
+    senderName: {
+        fontWeight: 'bold',
+        marginBottom: 2,
+    },
+    timestamp: {
+        fontSize: 12,
+        color: 'gray',
+    },
+    avatarImage: {
+        width: 36,
+        height: 36,
+        borderRadius: 18,
+        marginHorizontal: 6,
+        backgroundColor: '#ccc',
     },
 });
 

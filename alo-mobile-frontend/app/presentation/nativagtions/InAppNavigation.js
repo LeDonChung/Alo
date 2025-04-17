@@ -19,7 +19,7 @@ import { addFriend, addFriendRequests, cancelFriend, getFriendByPhoneNumber, get
 import { showToast } from "../../utils/AppUtils";
 import { FlatList } from "react-native-gesture-handler";
 import { ContactStyles } from "../styles/ContactStyle";
-import { handlerUpdateReaction, updateReaction, updateSeenAllMessage } from "../redux/slices/MessageSlice";
+import { handlerUpdateReaction, setMessageRemoveOfMe, updateReaction, updateSeenAllMessage } from "../redux/slices/MessageSlice";
 
 const Tab = createBottomTabNavigator();
 
@@ -27,6 +27,7 @@ export const InAppNavigation = () => {
 
   const [search, setSearch] = useState('');
   const [chooseTab, setChooseTab] = useState('home');
+  const userLogin = useSelector((state) => state.user.userLogin);
 
   const [searchResult, setSearchResult] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -46,7 +47,7 @@ export const InAppNavigation = () => {
   }
   useEffect(() => {
     init();
-  }, []);
+  }, [userLogin?.id]);
   const [isFinding, setIsFinding] = useState(false);
   const handleSearch = async () => {
     if (!search) {
@@ -149,16 +150,17 @@ export const InAppNavigation = () => {
 
   useEffect(() => {
     const handlerReceiveReaction = (data) => {
+      console.log("Received reaction:", data);
+
       dispatch(handlerUpdateReaction({
         messageId: data.id,
         updatedReaction: data.reaction
       }))
-      console.log("Received reaction:", data);
 
     }
-    socket.on("receice-update-reaction", handlerReceiveReaction);
+    socket.on("receive-update-reaction", handlerReceiveReaction);
     return () => {
-      socket.off("receice-update-reaction", handlerReceiveReaction);
+      socket.off("receive-update-reaction", handlerReceiveReaction);
     }
   })
 
@@ -247,7 +249,6 @@ export const InAppNavigation = () => {
   }, []);
 
   const dispatch = useDispatch();
-  const userLogin = useSelector((state) => state.user.userLogin);
   useEffect(() => {
     socket.emit('login', userLogin?.id);
   }, [userLogin?.id, dispatch, socket, chooseTab]);
@@ -274,6 +275,18 @@ export const InAppNavigation = () => {
     });
 
   }, []);
+
+  useEffect(() => {
+    const handlerRemoveOfMe = async (data) => {
+        const { messageId, userId } = data;
+
+        dispatch(setMessageRemoveOfMe({ messageId: messageId, userId: userId }));
+    }
+    socket.on('receive-remove-of-me', handlerRemoveOfMe);
+    return () => {
+        socket.off('receive-remove-of-me', handlerRemoveOfMe);
+    }
+}, [])
 
   useEffect(() => {
     socket.on('update-last-message', (conversationId, message) => {
@@ -348,7 +361,7 @@ export const InAppNavigation = () => {
   return (
     <SafeAreaView style={{ flex: 1, flexDirection: "column" }}>
       {(chooseTab === "home" || chooseTab === "contact") && (
-        <View
+        <SafeAreaView
           style={{
             backgroundColor: "#007AFF",
             padding: 5,
@@ -378,7 +391,7 @@ export const InAppNavigation = () => {
           <TouchableOpacity>
             <Icon name="plus" size={18} color="white" style={{ marginHorizontal: 10 }} />
           </TouchableOpacity>
-        </View>
+        </SafeAreaView>
       )}
 
       {search.length > 0 && (

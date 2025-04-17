@@ -70,4 +70,10 @@ router.put(
     middleware.authenticateToken,
     messageController.seenAll
 );
+
+router.put(
+    '/:messageId/remove-of-me',
+    middleware.authenticateToken,
+    messageController.removeMessageOfMe
+);
 module.exports = router;

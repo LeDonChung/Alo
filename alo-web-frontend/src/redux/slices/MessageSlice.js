@@ -80,8 +80,16 @@ const forwardMessage = createAsyncThunk('MessageSlice/forwardMessage', async ({ 
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
-});
+})
 
+const removeOfMe = createAsyncThunk('MessageSlice/removeOfMe', async (messageId, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.put(`/api/message/${messageId}/remove-of-me`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
 const MessageSlice = createSlice({
     name: 'MessageSlice',
     initialState: initialState,
@@ -103,6 +111,21 @@ const MessageSlice = createSlice({
             const index = state.messages.findIndex(message => message.id === messageId);
             if (index !== -1) {
                 state.messages[index].status = status;
+            }
+        },
+        setMessageRemoveOfMe: (state, action) => {
+            const { messageId, userId } = action.payload;
+            const index = state.messages.findIndex(message => message.id === messageId);
+            console.log("INDEX", index)
+            if (index !== -1) {
+                // Kiểm tra xem removeOfme chứa userId chưa
+                const hasUserId = state.messages[index].removeOfme?.includes(userId);
+                if (!hasUserId) {
+                    state.messages[index].removeOfme = [
+                        ...(state.messages[index].removeOfme || []),
+                        userId
+                    ]
+                }
             }
         },
         setConversationsShareMessage: (state, action) => {
@@ -193,9 +216,17 @@ const MessageSlice = createSlice({
             state.isSending = false;
 
         });
+      
+       builder.addCase(removeOfMe.pending, (state) => {
+        });
+        builder.addCase(removeOfMe.fulfilled, (state, action) => {
+        });
+        builder.addCase(removeOfMe.rejected, (state, action) => {
+        });
     }
 });
 
-export const { setMessages, increaseLimit, addMessage, setMessageParent, setMessageUpdate, updateMessage, updateSeenAllMessage } = MessageSlice.actions;
-export { sendMessage, getMessagesByConversationId, updateMessageStatus, seenAll, seenOne, forwardMessage };
+
+export const { setMessages, increaseLimit, addMessage, setMessageParent, setMessageUpdate, updateMessage, updateSeenAllMessage, setMessageRemoveOfMe } = MessageSlice.actions;
+export { sendMessage, getMessagesByConversationId, updateMessageStatus, seenAll, seenOne, removeOfMe, forwardMessage };
 export default MessageSlice.reducer;
