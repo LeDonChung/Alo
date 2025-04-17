@@ -240,14 +240,16 @@ io.on("connection", (socket) => {
     socket.on('update-reaction', async (data) => {
         const members = data.conversation.memberUserIds;
         console.log("Cập nhật reaction cho các thành viên trong cuộc trò chuyện:", members, data.conversation.id, data.message);
-        for (const userId of members) {
-            const socketIds = await findSocketIdsByUserId(userId);
-            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
-            filteredSocketIds.forEach(id => {
-                console.log("Cập nhật reaction cho user:", userId);
-                io.to(id).emit('receive-update-reaction', data.message);
-            });
-        }
+        const conversationId = data.conversation.id;
+        socket.to(conversationId).emit('receive-update-reaction', data.message);
+        // for (const userId of members) {
+        //     const socketIds = await findSocketIdsByUserId(userId);
+        //     const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+        //     filteredSocketIds.forEach(id => {
+        //         console.log("Cập nhật reaction cho user:", userId);
+        //         io.to(id).emit('receive-update-reaction', data.message);
+        //     });
+        // }
     })
 
     socket.on('updateMessage', async (data) => {

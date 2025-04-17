@@ -150,16 +150,17 @@ export const InAppNavigation = () => {
 
   useEffect(() => {
     const handlerReceiveReaction = (data) => {
+      console.log("Received reaction:", data);
+
       dispatch(handlerUpdateReaction({
         messageId: data.id,
         updatedReaction: data.reaction
       }))
-      console.log("Received reaction:", data);
 
     }
-    socket.on("receice-update-reaction", handlerReceiveReaction);
+    socket.on("receive-update-reaction", handlerReceiveReaction);
     return () => {
-      socket.off("receice-update-reaction", handlerReceiveReaction);
+      socket.off("receive-update-reaction", handlerReceiveReaction);
     }
   })
 
@@ -360,7 +361,7 @@ export const InAppNavigation = () => {
   return (
     <SafeAreaView style={{ flex: 1, flexDirection: "column" }}>
       {(chooseTab === "home" || chooseTab === "contact") && (
-        <View
+        <SafeAreaView
           style={{
             backgroundColor: "#007AFF",
             padding: 5,
@@ -390,7 +391,7 @@ export const InAppNavigation = () => {
           <TouchableOpacity>
             <Icon name="plus" size={18} color="white" style={{ marginHorizontal: 10 }} />
           </TouchableOpacity>
-        </View>
+        </SafeAreaView>
       )}
 
       {search.length > 0 && (
