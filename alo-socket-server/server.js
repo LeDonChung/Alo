@@ -5,6 +5,7 @@ const cors = require("cors");
 require("dotenv").config();
 
 const redis = require('./src/config/RedisClient');
+const { updateLastLogout } = require("./src/service/user.service");
 
 const app = express();
 app.use(cors());
@@ -184,12 +185,25 @@ io.on("connection", (socket) => {
         console.log("Socket ngắt kết nối: " + socket.id);
 
         const keys = await redis.keys('socket:*');
+        let userId = null;
         for (const key of keys) {
             const sessions = await redis.smembers(key);
             const updated = sessions.filter(session => JSON.parse(session).socketId !== socket.id);
+
+            if (sessions.length !== updated.length) {
+                // Tìm thấy socketId trong session, lấy userId
+                userId = key.split(':')[1];
+            }
+
             await redis.del(key);
             if (updated.length > 0) {
                 await redis.sadd(key, ...updated);
+            } else if (userId) {
+                await updateLastLogout(userId);
+                const socketIds = await findAllSocketId();
+                socketIds.forEach(id => {
+                    io.to(id).emit('user-offline', userId);
+                });
             }
         }
 
@@ -198,17 +212,19 @@ io.on("connection", (socket) => {
     });
 
     socket.on('pin-message', async (data) => {
-        const members = data.conversation.memberUserIds;
+        // const members = data.conversation.memberUserIds;
 
-        for (const userId of members) {
-            const socketIds = await findSocketIdsByUserId(userId);
-            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
-            filteredSocketIds.forEach(id => {
-                console.log("Đang ghim tin nhắn cho socket id:", id);
-                console.log("Ghim tin nhắn cho user:", userId);
-                io.to(id).emit('receive-pin-message', data);
-            });
-        }
+        // for (const userId of members) {
+        //     const socketIds = await findSocketIdsByUserId(userId);
+        //     const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+        //     filteredSocketIds.forEach(id => {
+        //         console.log("Đang ghim tin nhắn cho socket id:", id);
+        //         console.log("Ghim tin nhắn cho user:", userId);
+        //         io.to(id).emit('receive-pin-message', data);
+        //     });
+        // }
+
+        socket.to(data.conversation.id).emit('receive-pin-message', data);
     });
 
     socket.on('unpin-message', async (data) => {
@@ -226,14 +242,16 @@ io.on("connection", (socket) => {
     socket.on('update-reaction', async (data) => {
         const members = data.conversation.memberUserIds;
         console.log("Cập nhật reaction cho các thành viên trong cuộc trò chuyện:", members, data.conversation.id, data.message);
-        for (const userId of members) {
-            const socketIds = await findSocketIdsByUserId(userId);
-            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
-            filteredSocketIds.forEach(id => {
-                console.log("Cập nhật reaction cho user:", userId);
-                io.to(id).emit('receive-update-reaction', data.message);
-            });
-        }
+        const conversationId = data.conversation.id;
+        socket.to(conversationId).emit('receive-update-reaction', data.message);
+        // for (const userId of members) {
+        //     const socketIds = await findSocketIdsByUserId(userId);
+        //     const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+        //     filteredSocketIds.forEach(id => {
+        //         console.log("Cập nhật reaction cho user:", userId);
+        //         io.to(id).emit('receive-update-reaction', data.message);
+        //     });
+        // }
     })
 
     socket.on('updateMessage', async (data) => {
@@ -250,10 +268,65 @@ io.on("connection", (socket) => {
         }
     })
 
+    socket.on('seen-message', async (data) => {
+        const messages = data.messages;
+        const conversation = data.conversation;
+        // send to all members in conversation
+        console.log(
+            "Cập nhật đã xem tin nhắn cho các thành viên trong cuộc trò chuyện:",
+            conversation.memberUserIds,
+            conversation.id,
+            messages
+        )
+        socket.to(conversation.id).emit('receive-seen-message', { conversation, messages });
+    })
+
+    socket.on('forward-message', async (data) => {
+        const messages = data.messages;
+        const conversations = data.conversations;
+        for (const message of messages) {
+            const conversationId = message.conversationId;
+            for (const conversation of conversations) {
+                if (conversation.id === conversationId) {
+                    const members = conversation.memberUserIds;
+                    for (const userId of members) {
+                        const socketIds = await findSocketIdsByUserId(userId);
+                        const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+                        filteredSocketIds.forEach(id => {
+                            io.to(id).emit('receive-forward-message', { conversation, message });
+                        });
+                    }
+                    io.to(socket.id).emit('receive-forward-message', { conversation, message });
+                    handleUpdateLastMessage(conversation, message);
+                }
+            }
+        }
+    })
+
+
+    socket.on('remove-of-me', async (data) => {
+        const { messageId, userId } = data;
+        const socketIds = (await findSocketIdsByUserId(userId)).filter(id => id !== socket.id);
+        socketIds.forEach(id => {
+            io.to(id).emit('receive-remove-of-me', { messageId, userId });
+        });
+    })
+
     // =====================
     // Helper functions
     // =====================
 
+    const findAllSocketId = async () => {
+        const keys = await redis.keys('socket:*');
+        const allSocketIds = [];
+        for (const key of keys) {
+            const sessions = await redis.smembers(key);
+            sessions.forEach(session => {
+                allSocketIds.push(JSON.parse(session).socketId);
+            });
+        }
+        return allSocketIds;
+    }
     const getUserOnline = async () => {
         const keys = await redis.keys('socket:*');
         return keys.map(key => key.split(':')[1]);

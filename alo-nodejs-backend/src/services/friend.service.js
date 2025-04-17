@@ -315,7 +315,7 @@ const getFriendRequests = async (friendId) => {
             // thong tin ket ban
             const friendRequest = result.Items[i];
 
-            const params = {
+            const paramsUser = {
                 TableName: 'Users',
                 Key: {
                     id: friendRequest.senderId
@@ -323,7 +323,7 @@ const getFriendRequests = async (friendId) => {
             };
 
             // thong tin nguoi gui loi moi ket ban
-            const userResult = await client.get(params).promise();
+            const userResult = await client.get(paramsUser).promise();
             const userSendRequest = userResult.Item;
 
             // thong tin ket ban tra ve cho client
@@ -340,6 +340,62 @@ const getFriendRequests = async (friendId) => {
 
         }
 
+        return friendRequests;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
+
+const getFriendRequestsSent = async (userId) => {
+    try {
+        //find friend with status = 0
+        const params = {
+            TableName: 'Friends',
+            FilterExpression: '#status = :status and #senderId = :userId',
+            ExpressionAttributeNames: {
+                '#status': 'status',
+                '#senderId': 'senderId'
+            },
+            ExpressionAttributeValues: {
+                ':userId': userId,
+                ':status': 0
+            }
+        };
+        const result = await client.scan(params).promise();
+        const friendRequests = [];
+
+        for (let i = 0; i < result.Items.length; i++) {
+            // thong tin ket ban
+            const friendRequest = result.Items[i];
+
+            const friendInfoId = friendRequest.friendId === friendRequest.senderId ? friendRequest.userId : friendRequest.friendId;
+
+            const paramsUser = {
+                TableName: 'Users',
+                Key: {
+                    id: friendInfoId
+                }
+            };
+
+            // thong tin nguoi gui loi moi ket ban
+            const userResult = await client.get(paramsUser).promise();
+            const userSendRequest = userResult.Item;
+
+            // thong tin ket ban tra ve cho client
+            const friendRequestResult = {
+                userId: friendRequest.senderId,
+                fullName: userSendRequest.fullName,
+                avatarLink: userSendRequest.avatarLink,
+                friendId: friendInfoId,
+                status: friendRequest.status,
+                requestDate: friendRequest.requestDate,
+                contentRequest: friendRequest.contentRequest
+            };
+            friendRequests.push(friendRequestResult);
+        }
+        console.log("Friend requests sent: ", friendRequests);
+        
         return friendRequests;
     } catch (err) {
         console.error(err);
@@ -511,5 +567,6 @@ module.exports = {
     blockFriendRequest,
     getFriendByPhoneNumber,
     unblockFriendRequest,
-    cancelFriendRequest
+    cancelFriendRequest,
+    getFriendRequestsSent
 };

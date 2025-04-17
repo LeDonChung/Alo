@@ -5,16 +5,16 @@ import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
 import FriendsOfUser from "../components/FriendsOfUser";
 import GroupsOfUser from "../components/GroupsOfUser";
 import InvitationFriend from "../components/InvitationFriend";
-import InvitationGroup from "../components/InvitationGroup";
 import { SearchByPhone } from "../components/SearchByPhone";
 import socket from "../utils/socket";
 import { useDispatch, useSelector } from "react-redux";
+import SentFriendRequest from "../components/SentFriendRequest";
 
 const menu = [
     { id: 1, name: "Danh sách bạn bè", icon: "./icon/ic_friend_list.png", showView: () => <FriendsOfUser /> },
     { id: 2, name: "Danh sách nhóm và cộng đồng", icon: "./icon/ic_community_list.png", showView: () => <GroupsOfUser /> },
     { id: 3, name: "Lời mời kết bạn", icon: "./icon/ic_invitation_friend.png", showView: () => <InvitationFriend /> },
-    { id: 4, name: "Lời mời đã gửi", icon: "./icon/ic_invitation_community.png", showView: () => <InvitationGroup /> },
+    { id: 4, name: "Lời mời kết bạn đã gửi", icon: "./icon/ic_invitation_community.png", showView: () => <SentFriendRequest /> },
 ];
 
 export default function ContactPage() {
@@ -25,7 +25,7 @@ export default function ContactPage() {
 
     useEffect(() => {
         const handleReceiveFriendRequest = (data) => {
-            if (data.senderId !== userLogin.id) {
+            if (data.senderId !== userLogin.id && selectMenu.id !== 3) {
                 setNumFriendRequest((prev) => prev + 1);
             }
         };

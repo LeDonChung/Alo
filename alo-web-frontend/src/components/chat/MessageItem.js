@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef, useReducer } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, useReducer, use } from 'react';
 import LightGallery from 'lightgallery/react';
 import 'lightgallery/css/lightgallery.css';
 import 'lightgallery/css/lg-zoom.css';
@@ -7,10 +7,13 @@ import lgZoom from 'lightgallery/plugins/zoom';
 import lgThumbnail from 'lightgallery/plugins/thumbnail';
 import lgVideo from 'lightgallery/plugins/video';
 import { useDispatch } from 'react-redux';
-import { setMessageParent, setMessageUpdate, updateMessageStatus, removeAllReaction, handlerUpdateReaction, updateReaction } from '../../redux/slices/MessageSlice';
+import { setMessageParent, setMessageUpdate, updateMessageStatus, removeAllReaction, handlerUpdateReaction, updateReaction, removeOfMe, setMessageParent,
+       setMessageRemoveOfMe
+       } from '../../redux/slices/MessageSlice';
 import { batch } from 'react-redux';
 import {  getConversationById, addPinToConversation, removePinToConversation, createPin   } from '../../redux/slices/ConversationSlice';
 import socket from '../../utils/socket';
+import ModalForwardMessage from './ModalForwardMessage';
 
 const MessageItem = ({
   message,
@@ -31,6 +34,7 @@ const MessageItem = ({
   const [showReactionModal, setShowReactionModal] = useState(false); // Thêm state cho modal reaction
   const [selectedReactionTab, setSelectedReactionTab] = useState(null);
   const dispatch = useDispatch();
+  const [isOpenModalForward, setIsOpenModalForward] = useState(false);
 
   // Memoize danh sách reactions
   const reactions = useMemo(
@@ -282,21 +286,27 @@ useEffect(() => {
 
   const handleDownload = useCallback(async (url) => {
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        mode: 'cors'
+      });
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
+
       const link = document.createElement('a');
       link.href = blobUrl;
-      link.download = url.split('/').pop();
+      link.download = url.split('/').pop()?.split('?')[0] || 'image.jpg';
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(blobUrl);
     } catch (error) {
       console.error('Error downloading file:', error);
-      alert('Lỗi khi tải file.');
+      alert('Lỗi khi tải file: ' + error.message);
     }
   }, []);
+
+
+
 
   const handleAnswer = useCallback(() => {
     dispatch(setMessageParent(message));
@@ -319,6 +329,20 @@ useEffect(() => {
     setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
   }, [message]);
 
+  const handlerRemoveOfMe = useCallback(async () => {
+    try {
+
+      dispatch(setMessageRemoveOfMe({ messageId: message.id, userId: userLogin.id }));
+      await dispatch(removeOfMe(message.id)).unwrap().then((res) => {
+        // Gọi sự kiện socket để thông báo 
+        socket.emit('remove-of-me', {
+          messageId: message.id, userId: userLogin.id
+        });
+      })
+    } catch (error) {
+      console.error('Error removing message:', error);
+    }
+  }, [])
   const handleMessageRecall = useCallback(async () => {
     try {
       setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
@@ -403,35 +427,49 @@ useEffect(() => {
             onClick={(e) => e.stopPropagation()}
           >
             <ul className="text-sm text-gray-700">
-              <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleAnswer}>
-                Trả lời
-              </li>
-              <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleShareMessage}>
-                Chia sẻ
-              </li>
-              {message.messageType !== 'file' && message.messageType !== 'sticker' && (
-                <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleCopy}>
-                  Copy tin nhắn
-                </li>
-              )}
-              {message.messageType === 'image' && (
-                <li
-                  className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => handleDownload(message.fileLink)}
-                >
-                  Lưu về máy
-                </li>
-              )}
-              <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handlePinMessage}>Ghim tin nhắn</li>
-              <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleViewDetails}>
-                Xem chi tiết
-              </li>
-              {message.senderId === userLogin.id && (
-                <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleMessageRecall}>
-                  Thu hồi
-                </li>
-              )}
+
+              {
+                message.status === 0 && (
+                  <>
+                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleAnswer}>
+                      Trả lời
+                    </li>
+                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => { setIsOpenModalForward(true)}}>
+                      Chia sẻ
+                    </li>
+                    <ModalForwardMessage isOpen={isOpenModalForward}
+                      onClose={() => {
+                        setIsOpenModalForward(false);
+                        setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
+                      }} 
+                    message={message} conversations={conversations} />
+                    {message.messageType !== 'file' && message.messageType !== 'sticker' && (
+                      <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleCopy}>
+                        Copy tin nhắn
+                      </li>
+                    )}
+                    {message.messageType === 'image' && (
+                      <li
+                        className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => handleDownload(message.fileLink)}
+                      >
+                        Lưu về máy
+                      </li>
+                    )}
+                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Ghim tin nhắn</li>
+                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleViewDetails}>
+                      Xem chi tiết
+                    </li>
+                    {message.senderId === userLogin.id && (
+                      <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleMessageRecall}>
+                        Thu hồi
+                      </li>
+                    )}
+                  </>
+                )
+              }
               <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-red-500">Xóa chỉ ở phía tôi</li>
+
             </ul>
           </div>
         )}
@@ -541,25 +579,7 @@ useEffect(() => {
                       <img src={message.fileLink} alt="sticker" className="w-20 h-20" loading="lazy" />
                     )}
                     {message.messageType === 'image' && (
-                      <div onClick={() => setShowLightGallery(true)}>
-                        {message.fileLink.includes('.mp4') ? (
-                          <video
-                            src={message.fileLink}
-                            controls
-                            className="max-w-full max-h-96 cursor-pointer object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <img
-                            src={message.fileLink}
-                            alt="Hình ảnh"
-                            className="max-w-full max-h-96 cursor-pointer object-cover"
-                            loading="lazy"
-                          />
-                        )}
-                      </div>
-                    )}
-                    {showLightGallery && message.messageType === 'image' && (
+
                       <LightGallery
                         plugins={[lgZoom, lgThumbnail, lgVideo]}
                         mode="lg-fade"
@@ -619,7 +639,6 @@ useEffect(() => {
                         {new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                       </div>
                     )}
-
                     {/* Hiển thị danh sách reaction */}
                     {message.reaction && Object.keys(message.reaction).length > 0 && (
                       <div
@@ -634,6 +653,28 @@ useEffect(() => {
                       </div>
                     )}
                     {/* Thanh reaction */}
+                    <div
+                      className="absolute bottom-[-10px] right-[-10px] group/reaction hidden group-hover:flex items-center justify-center bg-white rounded-full shadow-lg cursor-pointer transition duration-200"
+                      onMouseEnter={() => {
+                        showReactionsRef.current = true;
+                        forceUpdate();
+                      }}
+                      onMouseLeave={() => {
+                        showReactionsRef.current = false;
+                        forceUpdate();
+                      }}
+                    >
+                      <div className="relative">
+                        <div className="flex items-center justify-center p-1 bg-white rounded-full shadow cursor-pointer transition duration-200">
+                          <img
+                            src="https://res-zalo.zadn.vn/upload/media/2019/1/25/iconlike_1548389696575_103596.png"
+                            width={15}
+                            height={15}
+                            alt="like"
+                            loading="lazy"
+                          />
+                        </div>
+                        </divdiv
                     <div
                       className="absolute bottom-[-10px] right-[-10px] group/reaction hidden group-hover:flex items-center justify-center bg-white rounded-full shadow-lg cursor-pointer transition duration-200"
                       onMouseEnter={() => {
@@ -675,15 +716,7 @@ useEffect(() => {
                               : 'bottom-full left-1/2 -translate-x-1/2 mb-2'
                               } flex items-center justify-center bg-white p-2 rounded-full shadow-lg z-10 w-fit`}
                           >
-                            {/* {reactions.map((item, index) => (
-                              <div
-                                key={index}
-                                className="flex items-center justify-center w-8 h-8 rounded-full hover:bg-gray-200 cursor-pointer"
-                                onClick={() => console.log(item.type)}
-                              >
-                                <span className="text-lg">{item.icon}</span>
-                              </div>
-                            ))} */}
+
                             {reactions.map((item, index) => {
                               const isSelected = myReaction?.rawTypes?.includes(item.type);
                               return (
@@ -696,7 +729,7 @@ useEffect(() => {
                                   <span className="text-lg">{item.icon}</span>
                                 </div>
                               );
-                            })}
+                            ))}
                           </div>
                         )}
                       </div>
@@ -878,7 +911,9 @@ useEffect(() => {
             <p className="ml-auto rounded-full mt-2 text-center px-5 bg-red-500 text-white text-xs">Lỗi gửi</p>
           ) : (
             <p className="ml-auto rounded-full mt-2 text-center px-5 bg-[#b6bbc5] text-white text-xs">
-              {message.status === -1 ? 'Đang gửi' : 'Đã nhận'}
+              {message.status === -1 ? 'Đang gửi' : (
+                message.status === 0 && message.seen.filter(seen => seen.userId !== userLogin.id).length > 0 ? 'Đã xem' : "Đã nhận"
+              )}
             </p>
           )}
         </>

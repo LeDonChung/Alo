@@ -4,9 +4,28 @@ import Icon from 'react-native-vector-icons/FontAwesome5';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import { useSelector } from 'react-redux';
 import { PinComponent } from './PinComponent';
+import { useState } from 'react';
+import { useEffect } from 'react';
 
 const HeaderComponent = ({ friend, isFriendOnline, getLastLoginMessage, lastLogout, navigation, socket, conversation, scrollToMessage, onDeletePin }) => {
   const userLogin = useSelector(state => state.user.userLogin);
+  const [timeDisplay, setTimeDisplay] = useState('Chưa truy cập');
+
+  // Cập nhật timeDisplay mỗi phút dựa trên lastLogout
+  useEffect(() => {
+    const updateTimeDisplay = () => {
+      setTimeDisplay(getLastLoginMessage(lastLogout));
+    };
+ 
+    // Gọi lần đầu
+    updateTimeDisplay();
+
+    // Cập nhật mỗi phút
+    const intervalId = setInterval(updateTimeDisplay, 60 * 1000);
+
+    // Cleanup interval
+    return () => clearInterval(intervalId);
+  }, [lastLogout]);
   return (
     <View>
       <View style={{ backgroundColor: '#007AFF', padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
@@ -17,7 +36,7 @@ const HeaderComponent = ({ friend, isFriendOnline, getLastLoginMessage, lastLogo
             <Text style={{ color: 'white', fontSize: 12 }}>
               {isFriendOnline(conversation.memberUserIds.find(v => v !== userLogin.id))
                 ? 'Đang hoạt động'
-                : getLastLoginMessage(lastLogout)}
+                : timeDisplay}
             </Text>
           </View>
         </View>
