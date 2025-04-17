@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo, useRef, useReducer } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, useRef, useReducer, use } from 'react';
 import LightGallery from 'lightgallery/react';
 import 'lightgallery/css/lightgallery.css';
 import 'lightgallery/css/lg-zoom.css';
@@ -10,6 +10,7 @@ import { useDispatch } from 'react-redux';
 import { setMessageParent, setMessageUpdate, updateMessageStatus } from '../../redux/slices/MessageSlice';
 import { batch } from 'react-redux';
 import socket from '../../utils/socket';
+import ModalForwardMessage from './ModalForwardMessage';
 
 const MessageItem = ({
   message,
@@ -28,6 +29,7 @@ const MessageItem = ({
   const showReactionsRef = useRef(false);
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
   const dispatch = useDispatch();
+  const [isOpenModalForward, setIsOpenModalForward] = useState(false);
 
   // Memoize danh sách reactions
   const reactions = useMemo(
@@ -119,7 +121,7 @@ const MessageItem = ({
   const handleDownload = useCallback(async (url) => {
     try {
       const response = await fetch(url, {
-        mode: 'cors' 
+        mode: 'cors'
       });
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
@@ -223,34 +225,46 @@ const MessageItem = ({
             onClick={(e) => e.stopPropagation()}
           >
             <ul className="text-sm text-gray-700">
-              <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleAnswer}>
-                Trả lời
-              </li>
-              <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleShareMessage}>
-                Chia sẻ
-              </li>
-              {message.messageType !== 'file' && message.messageType !== 'sticker' && (
-                <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleCopy}>
-                  Copy tin nhắn
-                </li>
-              )}
-              {message.messageType === 'image' && (
-                <li
-                  className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
-                  onClick={() => handleDownload(message.fileLink)}
-                >
-                  Lưu về máy
-                </li>
-              )}
-              <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Ghim tin nhắn</li>
-              <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleViewDetails}>
-                Xem chi tiết
-              </li>
-              {message.senderId === userLogin.id && (
-                <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleMessageRecall}>
-                  Thu hồi
-                </li>
-              )}
+              {
+                message.status === 0 && (
+                  <>
+                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleAnswer}>
+                      Trả lời
+                    </li>
+                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={() => { setIsOpenModalForward(true)}}>
+                      Chia sẻ
+                    </li>
+                    <ModalForwardMessage isOpen={isOpenModalForward} 
+                    onClose={() => {
+                      setIsOpenModalForward(false);
+                      setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
+                    }} 
+                    message={message} conversations={conversations} />
+                    {message.messageType !== 'file' && message.messageType !== 'sticker' && (
+                      <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleCopy}>
+                        Copy tin nhắn
+                      </li>
+                    )}
+                    {message.messageType === 'image' && (
+                      <li
+                        className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
+                        onClick={() => handleDownload(message.fileLink)}
+                      >
+                        Lưu về máy
+                      </li>
+                    )}
+                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer">Ghim tin nhắn</li>
+                    <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleViewDetails}>
+                      Xem chi tiết
+                    </li>
+                    {message.senderId === userLogin.id && (
+                      <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleMessageRecall}>
+                        Thu hồi
+                      </li>
+                    )}
+                  </>
+                )
+              }
               <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-red-500">Xóa chỉ ở phía tôi</li>
             </ul>
           </div>

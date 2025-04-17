@@ -6,7 +6,7 @@ import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updat
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
 import { getAllConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
-import { setMessages, setMessageUpdate, updateSeenAllMessage } from "../redux/slices/MessageSlice";
+import { addMessage, setMessages, setMessageUpdate, updateSeenAllMessage } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 export const Navigation = () => {
     const dispatch = useDispatch();
@@ -78,6 +78,17 @@ export const Navigation = () => {
             socket.off('receive-update-message', handleUpdateMessage);
         };
     }, [userLogin?.id, dispatch]);
+
+    useEffect(() => {
+        const handleForwardMessage = async ({conversation, message}) => {
+            // await dispatch(addMessage(message));
+            await dispatch(updateLastMessage({ conversationId: conversation.id, message }));
+        }
+        socket.on('receive-forward-message', handleForwardMessage);
+        return () => {
+            socket.off('receive-forward-message', handleForwardMessage);
+        };
+    }, [dispatch]);
 
 
     const friends = useSelector((state) => state.friend.friends);
@@ -154,6 +165,8 @@ export const Navigation = () => {
             dispatch(setMessages([...messages, message]));
         });
     }, [messages, dispatch]);
+
+    
     const friendsRequest = useSelector((state) => state.friend.friendsRequest);
     useEffect(() => {
         const handleReceiveFriendRequest = async (data) => {
