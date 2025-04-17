@@ -7,6 +7,7 @@ const initialState = {
     limit: 20,
     messageParent: null,
     messageUpdate: null,
+    conversationsShareMessage: [],
 };
 
 const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ message, file }, { rejectWithValue }) => {
@@ -93,6 +94,9 @@ const MessageSlice = createSlice({
             if (index !== -1) {
                 state.messages[index].status = status;
             }
+        },
+        setConversationsShareMessage: (state, action) => {
+            state.conversationsShareMessage = action.payload;
         },
         updateMessage: (state, action) => {
 
