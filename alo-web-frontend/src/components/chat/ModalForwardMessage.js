@@ -1,17 +1,18 @@
 import { useCallback, useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { forwardMessage } from "../../redux/slices/MessageSlice";
+import { addMessage, forwardMessage } from "../../redux/slices/MessageSlice";
 import socket from "../../utils/socket";
 import { removeVietnameseTones } from "../../utils/AppUtils";
 
-
+import { useSelector } from "react-redux";
+import showToast from "../../utils/AppUtils";
 const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
     const dispatch = useDispatch();
     const userLogin = JSON.parse(localStorage.getItem("userLogin"));
     const [selectedConversations, setSelectedConversations] = useState([]);
     const [conversationIds, setConversationIds] = useState([]);
     const [search, setSearch] = useState("");
-    const [isLoading, setIsLoading] = useState(false);
+
     const [conversationList, setConversationList] = useState(conversations);
 
     useEffect(() => {
@@ -85,29 +86,48 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
         return parts[parts.length - 1];
     }, []);
 
+    const conversation = useSelector(state => state.conversation.conversation);
     const handleForward = async (e) => {
         e.preventDefault();
-        setIsLoading(true);
-        console.log("Forwarding message to:", selectedConversations);
-        console.log("Message content:", message);
-        console.log("conversationIds: ", conversationIds);
+        if (conversationIds.length === 0) {
+            showToast("Vui lòng chọn ít nhất một cuộc trò chuyện để chia sẻ.", "success");
+            return;
+        }
+        // Kiểm tra nếu message ở cuộc trò chuyện hiện tại thì addMessage
+        const index = conversationIds.findIndex((id) => id === conversation.id);
 
+        if (index !== -1) {
+            dispatch(addMessage({
+                ...message,
+                senderId: userLogin.id,
+                sender: userLogin,
+                reaction: [],
+                seen: [{
+                    userId: userLogin.id,
+                    seenTime: new Date().getTime(),
+                }],
+                timestamp: new Date().getTime(),
+            }));
+        }
+        onClose();
         try {
-            const newMessages = await dispatch(forwardMessage({
+            await dispatch(forwardMessage({
                 messageId: message.id,
                 conversationIds: conversationIds
-            }));
-            const dataSocket = {
-                messages: newMessages.payload.data,
-                conversations: selectedConversations,
-            }
-
-            socket.emit("forward-message", dataSocket);
+            })).unwrap().then((res) => {
+                const messages = res.data;
+                messages.forEach((message) => {
+                    const conversationFind = conversations.find((conversation) => conversation.id === message.conversationId)
+                    socket.emit("send-message", {
+                        conversation: conversationFind,
+                        message: message,
+                    });
+                })
+            });
         } catch (error) {
             console.error("Error forwarding message:", error);
         } finally {
-            setIsLoading(false);
-            onClose();
+
         }
 
     }
@@ -225,41 +245,15 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
                     <div className="flex justify-end mt-4">
                         <button
                             onClick={onClose}
-                            className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg mr-2 hover:bg-gray-200"
+                            className="bg-gray-300 text-gray-800 px-4 py-2 rounded-lg mr-2 hover:bg-gray-200 cursor-pointer"
                         >
                             Hủy
                         </button>
                         <button onClick={(e) => handleForward(e)}
-                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-400"
+                            type="button"
+                            className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-400 cursor-pointer"
                             disabled={selectedConversations.length === 0}>
-                            {
-                                isLoading ? (
-                                    <div className="flex items-center">
-                                        <svg
-                                            className="animate-spin h-5 w-5 mr-3 text-white"
-                                            xmlns="http://www.w3.org/2000/svg"
-                                            viewBox="0 0 24 24"
-                                        >
-                                            <circle
-                                                className="opacity-25"
-                                                cx="12"
-                                                cy="12"
-                                                r="10"
-                                                stroke="currentColor"
-                                                strokeWidth="4"
-                                            ></circle>
-                                            <path
-                                                className="opacity-75"
-                                                fill="currentColor"
-                                                d="M4 12a8 8 0 1 1 16 0A8 8 0 0 1 4 12z"
-                                            ></path>
-                                        </svg>
-                                        Đang gửi...
-                                    </div>
-                                ) : (
-                                    "Chia sẻ"
-                                )
-                            }
+                            Chia sẻ
                         </button>
                     </div>
                 </div>

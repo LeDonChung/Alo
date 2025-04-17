@@ -79,16 +79,6 @@ export const Navigation = () => {
         };
     }, [userLogin?.id, dispatch]);
 
-    useEffect(() => {
-        const handleForwardMessage = async ({conversation, message}) => {
-            // await dispatch(addMessage(message));
-            await dispatch(updateLastMessage({ conversationId: conversation.id, message }));
-        }
-        socket.on('receive-forward-message', handleForwardMessage);
-        return () => {
-            socket.off('receive-forward-message', handleForwardMessage);
-        };
-    }, [dispatch]);
 
 
     const friends = useSelector((state) => state.friend.friends);

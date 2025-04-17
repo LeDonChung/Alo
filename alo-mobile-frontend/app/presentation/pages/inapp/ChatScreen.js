@@ -13,9 +13,11 @@ import ImageViewerComponent from '../../components/chat/ImageViewComponent';
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
 import StickerPicker from '../../components/chat/StickerPicker';
 import { ActivityIndicator } from 'react-native-paper';
-import { MenuComponent } from '../../components/chat/MenuConponent';
 import { showToast } from '../../../utils/AppUtils';
 import { removePin } from '../../redux/slices/ConversationSlice';
+import { MenuComponent } from '../../components/chat/MenuConponent';
+import MessageDetailModal from '../../components/chat/MessageDetailModal';
+import ForwardMessageModal from '../../components/chat/ForwardMessageModal';
 
 
 
@@ -55,9 +57,9 @@ export const ChatScreen = ({ route, navigation }) => {
   const handlerSendMessage = async (customInputMessage = null) => {
     const messageData = customInputMessage || inputMessage;
     const { content, messageType, file } = messageData;
-  
-    const requestId = Date.now() + Math.random(); 
-  
+
+    const requestId = Date.now() + Math.random();
+
     const message = {
       senderId: userLogin.id,
       conversationId: conversation.id,
@@ -68,7 +70,7 @@ export const ChatScreen = ({ route, navigation }) => {
       requestId,
       status: -1,
     };
-  
+
 
     const newMessageTemp = {
       ...message,
@@ -81,30 +83,30 @@ export const ChatScreen = ({ route, navigation }) => {
     } else if (messageType === 'sticker') {
       newMessageTemp.fileLink = messageData.fileLink;
       message.fileLink = messageData.fileLink;
-    } 
-  
+    }
+
     try {
       dispatch(addMessage(newMessageTemp));
       setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
-  
+
       const res = await dispatch(sendMessage({ message, file })).unwrap();
       const sentMessage = {
         ...res.data,
-        sender: userLogin, 
+        sender: userLogin,
       };
-  
+
       dispatch(updateMessage(sentMessage));
-  
+
       socket.emit('send-message', {
         conversation,
         message: sentMessage,
       });
-  
+
     } catch (err) {
       console.error("Error sending message:", err);
     }
   };
-  
+
 
 
   const handleSendImage = async (newMessage) => {
@@ -121,13 +123,13 @@ export const ChatScreen = ({ route, navigation }) => {
       fileLink: stickerUrl,
     };
     handlerSendMessage(newMessage);
-    setShowStickerPicker(false);  
+    setShowStickerPicker(false);
   };
 
   // useEffect(() => {
   //   if (inputMessage.messageType === 'sticker') {
   //     if (inputMessage.fileLink) {
-       
+
   //     }
   //   }
   // }, [inputMessage]);
@@ -189,10 +191,10 @@ export const ChatScreen = ({ route, navigation }) => {
 
   }, []);
 
-// Bắt sự kiện get last logout
+  // Bắt sự kiện get last logout
   useEffect(() => {
     const handleGetLastLogoutX = async (userId) => {
-      if(userId === friend.id) {
+      if (userId === friend.id) {
         console.log('getLastLogout', userId);
         await handleGetLastLogout(userId);
       }
@@ -210,7 +212,7 @@ export const ChatScreen = ({ route, navigation }) => {
     const handleGetLastLogoutX = async (userId) => {
       console.log('getLastLogoutX', userId);
       console.log(friend.id);
-      if(userId === friend.id) {
+      if (userId === friend.id) {
         console.log('getLastLogout', userId);
         await handleGetLastLogout(userId);
       }
@@ -366,6 +368,8 @@ export const ChatScreen = ({ route, navigation }) => {
     }
   };
 
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showForwardModal, setShowForwardModal] = useState(false);
   return (
 
     <View style={{ flex: 1, backgroundColor: '#F3F3F3', position: 'relative' }}>
@@ -405,7 +409,7 @@ export const ChatScreen = ({ route, navigation }) => {
                 handlerRemoveAllAction={handlerRemoveAllAction}
               />
             )}
-            keyExtractor={(item, index) => item.id?.toString() || item.timestamp?.toString() || index.toString()}
+            keyExtractor={(item, index) => item.id?.toString() + item.timestamp?.toString() || index.toString()}
             contentContainerStyle={{ paddingVertical: 10 }}
             inverted
           />
@@ -443,12 +447,32 @@ export const ChatScreen = ({ route, navigation }) => {
               <MenuComponent
                 message={selectedMessage}
                 showMenuComponent={setIsShowMenuInMessage}
+                setShowDetailModal={setShowDetailModal}
+                setShowForwardModal={setShowForwardModal}
                 friend={friend}
               />
             </Pressable>
           </Modal>
         )
       }
+
+      <MessageDetailModal
+        visible={showDetailModal}
+        onClose={() => {
+          setIsShowMenuInMessage(false);
+          setShowDetailModal(false);
+        }}
+        message={selectedMessage}
+        friend={friend}
+      />
+      <ForwardMessageModal
+        visible={showForwardModal}
+        onClose={() => {
+          setShowForwardModal(false);
+          setIsShowMenuInMessage(false);
+        }}
+        message={selectedMessage}
+      />
     </View>
   );
 };

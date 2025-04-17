@@ -51,6 +51,9 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
 
   return (
     (item && !item.removeOfme?.includes(userLogin.id)) && (
+
+      
+
       <View
         style={{
           flexDirection: 'row',
@@ -217,7 +220,7 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
             )
           }
         </View>
-
+        
       </View>
     )
 
