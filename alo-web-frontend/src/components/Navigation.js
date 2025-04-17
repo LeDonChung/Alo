@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
-import { getAllConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
+import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
 import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 export const Navigation = () => {
@@ -229,6 +229,35 @@ export const Navigation = () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
+
+    useEffect(() => {
+        const handleUnPinMessage = (data) => {
+          const { conversation, pin } = data;
+          console.log("Received unpin message:", conversation, pin);
+          dispatch(removePinToConversation(pin));
+        }
+        socket.on("receive-unpin-message", handleUnPinMessage);
+    
+        return () => {
+          socket.off("receive-unpin-message", handleUnPinMessage);
+        }
+      }, []);
+
+      useEffect(() => {
+        const handleReceivePinMessage = (data) => {
+          console.log("Received pin message:", data);
+          const { conversation, pin } = data;
+          console.log("Received pin message:", conversation, pin);
+    
+          dispatch(addPinToConversation(pin));
+          showToast("Đã có ghim mới.", "info");
+        }
+        socket.on("receive-pin-message", handleReceivePinMessage);
+    
+        return () => {
+          socket.off("receive-pin-message", handleReceivePinMessage);
+        }
+      }, []);
 
     return (
         <>

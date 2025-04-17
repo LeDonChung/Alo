@@ -65,12 +65,6 @@ const ChatWindow = () => {
 
   }, []);
 
-  const scrollToMessage = (messageId) => {
-    const messageElement = document.getElementById(`message-${messageId}`);
-    if (messageElement) {
-      messageElement.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
 
   useEffect(() => {
     socket.emit("join_conversation", conversation.id);
@@ -125,11 +119,11 @@ const ChatWindow = () => {
 
 
       });
+      
     }
 
     handlerInitMessage();
-
-  }, [conversation]);
+  }, []);
   const isFriendOnline = (userId) => {
     return userOnlines.includes(userId);
   };
@@ -146,6 +140,17 @@ const ChatWindow = () => {
       socket.off('receive-update-reaction');
     };
   }, [dispatch]);
+
+  const messageRefs = useRef({}); // Object lưu trữ các ref của từng tin nhắn
+ 
+  // Cuộn tới tin nhắn cụ thể
+  const scrollToMessage = (messageId) => {
+    const messageRef = messageRefs.current[messageId];
+    console.log("Cuộn tới tin nhắn:", messageId, messageRef);
+    if (messageRef) {
+      messageRef.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  };
 
   return (
     <>
@@ -169,6 +174,8 @@ const ChatWindow = () => {
             userLogin={userLogin}
             getFriend={getFriend}
             conversations={conversations}
+            messageRefs={messageRefs}
+            scrollToMessage={scrollToMessage}
           />
         </div>
 
