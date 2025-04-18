@@ -4,30 +4,42 @@ import { Modal, Pressable, View } from 'react-native';
 import { axiosInstance } from '../../../api/APIClient';
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
-import { addMessage, getMessagesByConversationId, handlerUpdateReaction, removeAllReaction, seenAll, seenOne, sendMessage, setMessages, updateMessage, updateSeenAllMessage } from '../../redux/slices/MessageSlice';
+import {
+  addMessage,
+  getMessagesByConversationId,
+  handlerUpdateReaction,
+  removeAllReaction,
+  seenAll,
+  seenOne,
+  sendMessage,
+  setMessages,
+  updateMessage,
+  setMessageUpdate,
+  updateMessageStatus,
+  setMessageParent,
+  updateSeenAllMessage
+} from '../../redux/slices/MessageSlice';
+import { removePin, updateLastMessage } from '../../redux/slices/ConversationSlice';
 import HeaderComponent from '../../components/chat/HeaderComponent';
 import InputComponent from '../../components/chat/InputComponent';
 import MessageItem from '../../components/chat/MessageItem';
 import ImageViewerComponent from '../../components/chat/ImageViewComponent';
-
 import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
 import StickerPicker from '../../components/chat/StickerPicker';
 import { ActivityIndicator } from 'react-native-paper';
 import { showToast } from '../../../utils/AppUtils';
-import { removePin } from '../../redux/slices/ConversationSlice';
-import { MenuComponent } from '../../components/chat/MenuConponent';
+import { MenuComponent } from '../../components/chat/MenuComponent';
 import MessageDetailModal from '../../components/chat/MessageDetailModal';
 import ForwardMessageModal from '../../components/chat/ForwardMessageModal';
-
-
 
 export const ChatScreen = ({ route, navigation }) => {
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
-  const [isStickerPickerVisible, setIsStickerPickerVisible] = useState(false); // State cho StickerPicker
+  const [isStickerPickerVisible, setIsStickerPickerVisible] = useState(false);
   const isLoadMessage = useSelector(state => state.message.isLoadMessage);
   const limit = useSelector(state => state.message.limit);
   const messages = useSelector(state => state.message.messages);
+  const messageParent = useSelector(state => state.message.messageParent);
   const [inputMessage, setInputMessage] = useState({
     messageType: 'text',
     content: '',
@@ -71,13 +83,20 @@ export const ChatScreen = ({ route, navigation }) => {
       status: -1,
     };
 
+    if (messageParent && messageType === 'text' && content.trim()) {
+      if (messageParent.status === 1) {
+        showToast('error', 'bottom', 'Thông báo', 'Tin nhắn gốc đã bị thu hồi, không thể trả lời.', 2000);
+        dispatch(setMessageParent(null));
+        return;
+      }
+      message.messageParent = messageParent.id;
+    }
 
     const newMessageTemp = {
       ...message,
       sender: userLogin,
     };
 
-    /// file, image
     if (messageType === 'file' || messageType === 'image') {
       newMessageTemp.fileLink = file.uri;
     } else if (messageType === 'sticker') {
@@ -89,10 +108,15 @@ export const ChatScreen = ({ route, navigation }) => {
       dispatch(addMessage(newMessageTemp));
       setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
 
+      if (messageParent && message.messageParent) {
+        dispatch(setMessageParent(null));
+      }
+
       const res = await dispatch(sendMessage({ message, file })).unwrap();
       const sentMessage = {
         ...res.data,
         sender: userLogin,
+        messageParent: newMessageTemp.messageParent,
       };
 
       dispatch(updateMessage(sentMessage));
@@ -101,21 +125,20 @@ export const ChatScreen = ({ route, navigation }) => {
         conversation,
         message: sentMessage,
       });
-
     } catch (err) {
       console.error("Error sending message:", err);
     }
   };
 
-
-
   const handleSendImage = async (newMessage) => {
     handlerSendMessage(newMessage);
   };
+
   const handleSendFile = async (newMessage) => {
     console.log("newMessage", newMessage);
     handlerSendMessage(newMessage);
   };
+
   const handleStickerSelect = async (stickerUrl) => {
     const newMessage = {
       content: '',
@@ -123,16 +146,8 @@ export const ChatScreen = ({ route, navigation }) => {
       fileLink: stickerUrl,
     };
     handlerSendMessage(newMessage);
-    setShowStickerPicker(false);
+    setIsStickerPickerVisible(false);
   };
-
-  // useEffect(() => {
-  //   if (inputMessage.messageType === 'sticker') {
-  //     if (inputMessage.fileLink) {
-
-  //     }
-  //   }
-  // }, [inputMessage]);
 
   useEffect(() => {
     const handlerReceiveMessage = async (message) => {
@@ -140,20 +155,28 @@ export const ChatScreen = ({ route, navigation }) => {
       dispatch(addMessage(message));
       await dispatch(seenOne(message.id)).unwrap().then((res) => {
         const data = res.data;
-        // emit seen message
         socket.emit('seen-message', {
           messages: [data],
           conversation: conversation
         });
-      })
-    }
+      });
+    };
     socket.on('receive-message', handlerReceiveMessage);
 
     return () => {
       socket.off('receive-message', handlerReceiveMessage);
-    }
+    };
   }, [conversation.id]);
 
+  useEffect(() => {
+    socket.on('receive-update-message', (data) => {
+      const { message, conversation } = data;
+      dispatch(setMessageUpdate({ messageId: message.id, status: message.status }));
+      dispatch(addMessage(message));
+      dispatch(updateLastMessage({ conversationId: conversation.id, message }));
+    });
+    return () => socket.off('receive-update-message');
+  }, [dispatch]);
 
   useEffect(() => {
     socket.on("users-online", ({ userIds }) => {
@@ -164,8 +187,7 @@ export const ChatScreen = ({ route, navigation }) => {
   useEffect(() => {
     const handlerInitMessage = async () => {
       await dispatch(getMessagesByConversationId(conversation.id)).unwrap().then(async (res) => {
-
-        console.log("hi")
+        console.log("hi");
         const unseenMessages = res.data.filter((message) => {
           const seen = message.seen || [];
           return !seen.some((seenUser) => seenUser.userId === userLogin.id);
@@ -174,55 +196,31 @@ export const ChatScreen = ({ route, navigation }) => {
         if (unseenMessages.length > 0) {
           await dispatch(seenAll(unseenMessages)).unwrap().then((res) => {
             const data = res.data;
-            dispatch(updateSeenAllMessage(data))
-            // emit seen message
+            dispatch(updateSeenAllMessage(data));
             socket.emit('seen-message', {
               messages: data,
               conversation: conversation
-            })
-          })
+            });
+          });
         }
-
-
       });
-    }
+    };
 
     handlerInitMessage();
-
   }, []);
 
-  // Bắt sự kiện get last logout
   useEffect(() => {
     const handleGetLastLogoutX = async (userId) => {
       if (userId === friend.id) {
         console.log('getLastLogout', userId);
         await handleGetLastLogout(userId);
       }
-    }
+    };
     socket.on('user-offline', handleGetLastLogoutX);
 
     return () => {
       socket.off('user-offline', handleGetLastLogoutX);
-    }
-
-  }, []);
-
-  // Bắt sự kiện get last logout
-  useEffect(() => {
-    const handleGetLastLogoutX = async (userId) => {
-      console.log('getLastLogoutX', userId);
-      console.log(friend.id);
-      if (userId === friend.id) {
-        console.log('getLastLogout', userId);
-        await handleGetLastLogout(userId);
-      }
-    }
-    socket.on('user-offline', handleGetLastLogoutX);
-
-    return () => {
-      socket.off('user-offline', handleGetLastLogoutX);
-    }
-
+    };
   }, []);
 
   const getLastLoginMessage = (lastLogout) => {
@@ -262,7 +260,7 @@ export const ChatScreen = ({ route, navigation }) => {
   const [messageSort, setMessageSort] = useState([]);
 
   useEffect(() => {
-    const sortedMessages = [...messages].sort((a, b) => b.timestamp - a.timestamp); // Sắp xếp từ mới đến cũ
+    const sortedMessages = [...messages].sort((a, b) => b.timestamp - a.timestamp);
     setMessageSort(sortedMessages);
   }, [messages]);
 
@@ -287,7 +285,6 @@ export const ChatScreen = ({ route, navigation }) => {
     return nextMessage.senderId !== messageSort[index].senderId;
   };
 
-
   const [highlightedId, setHighlightedId] = useState(null);
   const flatListRef = useRef(null);
   const scrollToMessage = (messageId) => {
@@ -300,7 +297,6 @@ export const ChatScreen = ({ route, navigation }) => {
       setTimeout(() => {
         setHighlightedId(null);
       }, 3000);
-
     }
   };
 
@@ -315,24 +311,21 @@ export const ChatScreen = ({ route, navigation }) => {
           conversation: conversation,
           pin: res.payload.data
         });
-        showToast('success', 'bottom', "Thông báo", res.payload.message)
-
-      })
-
+        showToast('success', 'bottom', "Thông báo", res.payload.message);
+      });
     } catch (error) {
-      showToast('error', 'bottom', "Thông báo", error.message)
+      showToast('error', 'bottom', "Thông báo", error.message);
     }
-  }
+  };
+
   const handlerRemoveAllAction = (message) => {
     try {
       const updatedReaction = {};
 
       Object.entries(message.reaction || {}).forEach(([type, data]) => {
-        // Clone users để tránh mutate
         const filteredUsers = data.users.filter(userId => userId !== userLogin.id);
         const quantity = filteredUsers.length;
 
-        // Nếu sau khi lọc vẫn còn user khác => giữ lại reaction
         if (quantity > 0) {
           updatedReaction[type] = {
             quantity,
@@ -348,7 +341,6 @@ export const ChatScreen = ({ route, navigation }) => {
         updatedReaction
       }));
 
-      // Gửi lên server nếu cần
       dispatch(removeAllReaction({
         messageId: message.id,
       }))
@@ -362,7 +354,6 @@ export const ChatScreen = ({ route, navigation }) => {
         .catch(err => {
           console.error("Error while removing all reactions:", err);
         });
-
     } catch (error) {
       console.error("Error in handlerRemoveAllAction:", error);
     }
@@ -370,8 +361,8 @@ export const ChatScreen = ({ route, navigation }) => {
 
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showForwardModal, setShowForwardModal] = useState(false);
-  return (
 
+  return (
     <View style={{ flex: 1, backgroundColor: '#F3F3F3', position: 'relative' }}>
       <HeaderComponent
         friend={friend}
@@ -385,36 +376,37 @@ export const ChatScreen = ({ route, navigation }) => {
         scrollToMessage={scrollToMessage}
         onDeletePin={onDeletePin}
       />
-      {
-        isLoadMessage ? (
-          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#0000ff" />
-          </View>
-        ) : (
-          <FlatList
-            ref={flatListRef}
-            data={messageSort}
-            renderItem={({ item, index }) => (
-              <MessageItem
-                item={item}
-                userLogin={userLogin}
-                friend={friend}
-                setSelectedImage={setSelectedImage}
-                setIsImageViewVisible={setIsImageViewVisible}
-                showAvatar={() => showAvatar(index)}
-                showTime={() => showTime(index)}
-                setIsShowMenuInMessage={setIsShowMenuInMessage}
-                setSelectedMessage={setSelectedMessage}
-                isHighlighted={highlightedId === item.id}
-                handlerRemoveAllAction={handlerRemoveAllAction}
-              />
-            )}
-            keyExtractor={(item, index) => item.id?.toString() + item.timestamp?.toString() || index.toString()}
-            contentContainerStyle={{ paddingVertical: 10 }}
-            inverted
-          />
-        )
-      }
+      {isLoadMessage ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#0000ff" />
+        </View>
+      ) : (
+        <FlatList
+          ref={flatListRef}
+          data={messageSort}
+          renderItem={({ item, index }) => (
+            <MessageItem
+              item={item}
+              userLogin={userLogin}
+              friend={friend}
+              setSelectedImage={setSelectedImage}
+              setIsImageViewVisible={setIsImageViewVisible}
+              showAvatar={() => showAvatar(index)}
+              showTime={() => showTime(index)}
+              setIsShowMenuInMessage={setIsShowMenuInMessage}
+              setSelectedMessage={setSelectedMessage}
+              isHighlighted={highlightedId === item.id}
+              handlerRemoveAllAction={handlerRemoveAllAction}
+              flatListRef={flatListRef}
+              messages={messages}
+              scrollToMessage={scrollToMessage}
+            />
+          )}
+          keyExtractor={(item, index) => item.id?.toString() + item.timestamp?.toString() || index.toString()}
+          contentContainerStyle={{ paddingVertical: 10 }}
+          inverted
+        />
+      )}
       <ImageViewerComponent
         isImageViewVisible={isImageViewVisible}
         selectedImage={selectedImage}
@@ -428,34 +420,33 @@ export const ChatScreen = ({ route, navigation }) => {
         handlerSendMessage={handlerSendMessage}
         handleSendFile={handleSendFile}
         handlerSendImage={handleSendImage}
+        messageParent={messageParent}
+        clearMessageParent={() => dispatch(setMessageParent(null))}
+        friend={friend}
       />
       {isStickerPickerVisible && (
         <StickerPicker onStickerSelect={handleStickerSelect} />
       )}
-
-      {
-        isShowMenuInMessage && (
-          <Modal
-            visible={isShowMenuInMessage}
-            transparent={true}
-            animationType="none"
+      {isShowMenuInMessage && (
+        <Modal
+          visible={isShowMenuInMessage}
+          transparent={true}
+          animationType="none"
+        >
+          <Pressable
+            style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' }}
+            onPress={() => setIsShowMenuInMessage(false)}
           >
-            <Pressable
-              style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' }}
-              onPress={() => setIsShowMenuInMessage(false)}
-            >
-              <MenuComponent
-                message={selectedMessage}
-                showMenuComponent={setIsShowMenuInMessage}
-                setShowDetailModal={setShowDetailModal}
-                setShowForwardModal={setShowForwardModal}
-                friend={friend}
-              />
-            </Pressable>
-          </Modal>
-        )
-      }
-
+            <MenuComponent
+              message={selectedMessage}
+              showMenuComponent={setIsShowMenuInMessage}
+              setShowDetailModal={setShowDetailModal}
+              setShowForwardModal={setShowForwardModal}
+              friend={friend}
+            />
+          </Pressable>
+        </Modal>
+      )}
       <MessageDetailModal
         visible={showDetailModal}
         onClose={() => {

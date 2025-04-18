@@ -7,9 +7,31 @@ import * as DocumentPicker from 'expo-document-picker';
 import * as Permissions from 'expo-permissions';
 import OptionModal from './OptionModal';
 import { showToast } from '../../../utils/AppUtils';
+import { useDispatch, useSelector } from 'react-redux';
+import { setMessageParent } from '../../redux/slices/MessageSlice';
 
 const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isStickerPickerVisible, setIsStickerPickerVisible, handleSendFile, handlerSendImage }) => {
   const [isOptionModalVisible, setOptionModalVisible] = useState(false);
+  const dispatch = useDispatch(); 
+  const messageParent = useSelector(state => state.message.messageParent);
+  const userLogin = useSelector(state => state.user.userLogin);
+
+  const handleSend = () => {
+    if (inputMessage.content.trim()) {
+      const messageSend = {
+        ...inputMessage,
+        messageParent: messageParent ? messageParent.id : null, 
+      };
+      handlerSendMessage(messageSend);
+      setInputMessage({
+        messageType: 'text',
+        content: '',
+      });
+      if (messageParent) {
+        dispatch(setMessageParent(null)); 
+      }
+    }
+  };
   const handleOptionSelect = (options) => {
     setOptionModalVisible(false);
     if (options === "Tài liệu") {
@@ -37,13 +59,17 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
         type: asset.mimeType || 'application/octet-stream',
       };
       const newMessage = {
-        content: '',
-        messageType: 'file',
-        file: file,
-      };
+          content: '',
+          messageType: 'file',
+          file: file,
+          messageParent: messageParent ? messageParent.id : null,
+        };
       console.log('file', file);
 
       await handleSendFile(newMessage);
+      if (messageParent) {
+        dispatch(setMessageParent(null));
+      }
     }
 
     setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
@@ -82,54 +108,94 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
           messageType: 'image',
           file: file,
           fileLink: imageUrl,
+          messageParent: messageParent ? messageParent.id : null,
         };
 
 
 
         handlerSendImage(newMessage);
-
+        if (messageParent) {
+          dispatch(setMessageParent(null));
+          break; 
+        }
         // Delay nhỏ tránh gửi quá nhanh
         await new Promise(resolve => setTimeout(resolve, 500));
 
       }
     }
   };
+  const renderParentMessage = () => {
+    if (!messageParent) return null;
+    return (
+      <View style={{ 
+        flexDirection: 'row', 
+        alignItems: 'center', 
+        marginBottom: 10, 
+        backgroundColor: '#F1F5F9', 
+        padding: 10, 
+        borderRadius: 8, 
+        width: '100%',
+        borderLeftWidth: 4,
+        borderLeftColor: '#6B21A8', 
+      }}>
+        <View style={{ flex: 1 }}>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
+            <Text style={{ fontWeight: 'bold', color: '#6B21A8', fontSize: 14 }}>
+              Đang trả lời tin nhắn
+            </Text>
+          </View>
+          <Text style={{ color: '#4B5563', fontSize: 14 }} numberOfLines={2}>
+            {messageParent.status === 1 ? 'Tin nhắn đã bị thu hồi' : 
+              messageParent.messageType === 'text' ? messageParent.content : 
+              messageParent.messageType === 'image' ? '[Hình ảnh]' : 
+              messageParent.messageType === 'file' ? '[Tệp đính kèm]' : 
+              '[Sticker]'} 
+          </Text>
+        </View>
+        <TouchableOpacity onPress={() => dispatch(setMessageParent(null))}>
+          <Icon name="times" size={18} color="#999" />
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
 
   return (
-    <View style={{ backgroundColor: 'white', padding: 10, flexDirection: 'row', alignItems: 'center', borderTopWidth: 1, borderColor: '#EDEDED' }}>
-      <TouchableOpacity
-        onPress={() => setIsStickerPickerVisible(!isStickerPickerVisible)}
-      >
-        <Icon name="smile" size={20} color="gray" />
-      </TouchableOpacity>
+    <View style={{ backgroundColor: 'white', padding: 10, flexDirection: 'column', alignItems: 'center', borderTopWidth: 1, borderColor: '#EDEDED' }}>
+      {renderParentMessage()} 
 
-      <TextInput
-        placeholder="Tin nhắn"
-        value={inputMessage.content}
-        onChangeText={(text) => setInputMessage({ ...inputMessage, content: text })}
-        style={{ flex: 1, backgroundColor: 'white', padding: 10, borderRadius: 20, marginHorizontal: 10 }}
-      />
-
-      {inputMessage.content.trim() ? (
-        <TouchableOpacity onPress={() => {
-          handlerSendMessage(inputMessage);
-        }} style={{ paddingHorizontal: 10 }}>
-          <IconMI name="send" size={20} color="blue" />
+      <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
+        <TouchableOpacity
+          onPress={() => setIsStickerPickerVisible(!isStickerPickerVisible)}
+        >
+          <Icon name="smile" size={20} color="gray" />
         </TouchableOpacity>
-      ) : (
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-          <TouchableOpacity onPress={() => setOptionModalVisible(true)} style={{ marginHorizontal: 10 }}>
-            <Icon name="ellipsis-h" size={20} color="gray" />
+
+        <TextInput
+          placeholder="Tin nhắn"
+          value={inputMessage.content}
+          onChangeText={(text) => setInputMessage({ ...inputMessage, content: text })}
+          style={{ flex: 1, backgroundColor: 'white', padding: 10, borderRadius: 20, marginHorizontal: 10 }}
+        />
+
+        {inputMessage.content.trim() ? (
+          <TouchableOpacity onPress={(handleSend)} style={{ paddingHorizontal: 10 }}>
+            <IconMI name="send" size={20} color="blue" />
           </TouchableOpacity>
-          <TouchableOpacity style={{ marginHorizontal: 10 }}>
-            <Icon name="microphone" size={20} color="gray" />
-          </TouchableOpacity>
-          <TouchableOpacity onPress={openImageLibrary} style={{ marginHorizontal: 10 }}>
-            <Icon name="image" size={20} color="gray" />
-          </TouchableOpacity>
-        </View>
-      )}
+        ) : (
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity onPress={() => setOptionModalVisible(true)} style={{ marginHorizontal: 10 }}>
+              <Icon name="ellipsis-h" size={20} color="gray" />
+            </TouchableOpacity>
+            <TouchableOpacity style={{ marginHorizontal: 10 }}>
+              <Icon name="microphone" size={20} color="gray" />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={openImageLibrary} style={{ marginHorizontal: 10 }}>
+              <Icon name="image" size={20} color="gray" />
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
       <OptionModal
         visible={isOptionModalVisible}
         onClose={() => setOptionModalVisible(false)}

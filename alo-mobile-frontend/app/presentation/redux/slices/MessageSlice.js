@@ -6,7 +6,13 @@ const initialState = {
     isSending: false,
     isLoadMessage: false,
     messages: [],
-    limit: 20
+    limit: 20,
+    inputMessage: {
+        messageType: 'text',
+        content: '',
+    },
+    messageParent: null,
+    messageUpdate: null,
 };
 
 const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ message, file }, { rejectWithValue }) => {
@@ -31,7 +37,7 @@ const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ messag
         });
         return response.data;
     } catch (error) {
-        console.log(error) 
+        console.log(error);
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 });
@@ -48,16 +54,16 @@ const getMessagesByConversationId = createAsyncThunk('MessageSlice/getMessagesBy
 const forwardMessage = createAsyncThunk(
     'MessageSlice/forwardMessage',
     async ({ messageId, conversationIds }, { rejectWithValue }) => {
-      try {
-        const response = await axiosInstance.post(`/api/message/${messageId}/send-continue`, {
-          conversationIds: conversationIds,
-        });
-        return response.data;
-      } catch (error) {
-        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
-      }
+        try {
+            const response = await axiosInstance.post(`/api/message/${messageId}/send-continue`, {
+                conversationIds: conversationIds,
+            });
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+        }
     }
-  );
+);
 
 const updateReaction = createAsyncThunk('MessageSlice/updateReaction', async ({ messageId, type }, { rejectWithValue }) => {
     try {
@@ -68,17 +74,28 @@ const updateReaction = createAsyncThunk('MessageSlice/updateReaction', async ({ 
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
-})
+});
 
 const removeAllReaction = createAsyncThunk('MessageSlice/removeAllReaction', async ({ messageId }, { rejectWithValue }) => {
     try {
-        const response = await axiosInstance.delete(`/api/message/${messageId}/reaction`); 
+        const response = await axiosInstance.delete(`/api/message/${messageId}/reaction`);
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
-})
- 
+});
+
+const updateMessageStatus = createAsyncThunk(
+    'MessageSlice/updateMessageStatus',
+    async ({ messageId, status }, { rejectWithValue }) => {
+        try {
+            const response = await axiosInstance.put(`/api/message/${messageId}/status?status=${status}`);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+        }
+    }
+);
 
 const seenAll = createAsyncThunk('MessageSlice/seenAll', async (messageIds, { rejectWithValue }) => {
     try {
@@ -98,7 +115,8 @@ const seenOne = createAsyncThunk('MessageSlice/seenOne', async (messageId, { rej
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
-})
+});
+
 const removeOfMe = createAsyncThunk('MessageSlice/removeOfMe', async (messageId, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.put(`/api/message/${messageId}/remove-of-me`);
@@ -107,6 +125,7 @@ const removeOfMe = createAsyncThunk('MessageSlice/removeOfMe', async (messageId,
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 });
+
 const MessageSlice = createSlice({
     name: 'MessageSlice',
     initialState: initialState,
@@ -120,31 +139,48 @@ const MessageSlice = createSlice({
         handlerUpdateReaction: (state, action) => {
             const { messageId, updatedReaction } = action.payload;
             const index = state.messages.findIndex(message => message.id === messageId);
-            if (index !== -1) { 
-                state.messages[index].reaction = updatedReaction; 
-            }
-        }, 
-        updateMessage: (state, action) => {
-
-            const index = state.messages.findIndex(message => { 
-                return message.requestId === Number(action.payload.requestId)
-            }); 
             if (index !== -1) {
-                state.messages[index] = action.payload; 
-            }  
+                state.messages[index].reaction = updatedReaction;
+            }
         },
-        addMessage: (state, action) => { 
-            state.messages.push(action.payload);
+        updateMessage: (state, action) => {
+            const index = state.messages.findIndex(message => {
+                return message.requestId === Number(action.payload.requestId);
+            });
+            if (index !== -1) {
+                state.messages[index] = action.payload;
+            }
+        },
+        addMessage: (state, action) => {
+            const message = action.payload;
+            const index = state.messages.findIndex(msg => msg.id === message.id || msg.requestId === message.requestId);
+            if (index !== -1) {
+                state.messages[index] = message;
+            } else {
+                state.messages.push(message);
+            }
+        },
+        setInputMessage: (state, action) => {
+            state.inputMessage = action.payload;
+        },
+        setMessageParent: (state, action) => {
+            state.messageParent = action.payload;
+        },
+        setMessageUpdate: (state, action) => {
+            const { messageId, status } = action.payload;
+            const index = state.messages.findIndex(message => message.id === messageId);
+            if (index !== -1) {
+                state.messages[index].status = status;
+            }
         },
         updateSeenAllMessage: (state, action) => {
             const messageSeens = action.payload;
-
             state.messages = state.messages.map((msg) => {
                 const updated = messageSeens.find((m) => m.id === msg.id);
                 if (updated) {
                     return {
                         ...msg,
-                        seen: updated.seen, // Chỉ update trường seen
+                        seen: updated.seen,
                     };
                 }
                 return msg;
@@ -153,29 +189,26 @@ const MessageSlice = createSlice({
         setMessageRemoveOfMe: (state, action) => {
             const { messageId, userId } = action.payload;
             const index = state.messages.findIndex(message => message.id === messageId);
-            console.log("INDEX", index)
             if (index !== -1) {
-                // Kiểm tra xem removeOfme chứa userId chưa
                 const hasUserId = state.messages[index].removeOfme?.includes(userId);
                 if (!hasUserId) {
                     state.messages[index].removeOfme = [
                         ...(state.messages[index].removeOfme || []),
                         userId
-                    ]
+                    ];
                 }
             }
         },
     },
     extraReducers: (builder) => {
-
         builder.addCase(sendMessage.pending, (state) => {
             state.isSending = true;
         });
         builder.addCase(sendMessage.fulfilled, (state, action) => {
-            state.isSending = false
+            state.isSending = false;
         });
         builder.addCase(sendMessage.rejected, (state, action) => {
-            state.isSending = false
+            state.isSending = false;
         });
 
         builder.addCase(getMessagesByConversationId.pending, (state) => {
@@ -187,61 +220,79 @@ const MessageSlice = createSlice({
             state.isLoadMessage = false;
         });
         builder.addCase(getMessagesByConversationId.rejected, (state, action) => {
-            state.isLoadMessage = false
+            state.isLoadMessage = false;
         });
+
         builder.addCase(forwardMessage.pending, (state) => {
             state.isSending = true;
         });
         builder.addCase(forwardMessage.fulfilled, (state, action) => {
-            state.isSending = false
+            state.isSending = false;
         });
         builder.addCase(forwardMessage.rejected, (state, action) => {
-            state.isSending = false
+            state.isSending = false;
         });
 
-        builder.addCase(updateReaction.pending, (state) => {
+        builder.addCase(updateReaction.pending, (state) => {});
+        builder.addCase(updateReaction.fulfilled, (state, action) => {});
+        builder.addCase(updateReaction.rejected, (state, action) => {});
+
+        builder.addCase(removeAllReaction.pending, (state) => {});
+        builder.addCase(removeAllReaction.fulfilled, (state, action) => {});
+        builder.addCase(removeAllReaction.rejected, (state, action) => {});
+
+        builder.addCase(updateMessageStatus.pending, (state) => {
+            state.messageUpdate = null;
+        });
+        builder.addCase(updateMessageStatus.fulfilled, (state, action) => {
+            const updatedMessage = action.payload.data;
+            const index = state.messages.findIndex(message => message.id === updatedMessage.id);
+            if (index !== -1) {
+                state.messages[index] = { ...state.messages[index], status: updatedMessage.status };
+            }
+            state.messageUpdate = updatedMessage;
+        });
+        builder.addCase(updateMessageStatus.rejected, (state, action) => {
+            state.messageUpdate = null;
         });
 
-        builder.addCase(updateReaction.fulfilled, (state, action) => {
-            
-        });
+        builder.addCase(seenAll.pending, (state) => {});
+        builder.addCase(seenAll.fulfilled, (state, action) => {});
+        builder.addCase(seenAll.rejected, (state, action) => {});
 
+        builder.addCase(seenOne.pending, (state) => {});
+        builder.addCase(seenOne.fulfilled, (state, action) => {});
+        builder.addCase(seenOne.rejected, (state, action) => {});
 
-        builder.addCase(updateReaction.rejected, (state, action) => {
-        });
-
-        builder.addCase(removeAllReaction.pending, (state) => {
-        });
-
-        builder.addCase(removeAllReaction.fulfilled, (state, action) => {
-            
-        });
-
-
-        builder.addCase(removeAllReaction.rejected, (state, action) => {
-        });
-        builder.addCase(seenAll.pending, (state) => {
-        });
-        builder.addCase(seenAll.fulfilled, (state, action) => {
-        });
-        builder.addCase(seenAll.rejected, (state, action) => {
-        });
-
-        builder.addCase(seenOne.pending, (state) => {
-        });
-        builder.addCase(seenOne.fulfilled, (state, action) => {
-        });
-        builder.addCase(seenOne.rejected, (state, action) => {
-        });
-        builder.addCase(removeOfMe.pending, (state) => {
-        });
-        builder.addCase(removeOfMe.fulfilled, (state, action) => {
-        });
-        builder.addCase(removeOfMe.rejected, (state, action) => {
-        });
+        builder.addCase(removeOfMe.pending, (state) => {});
+        builder.addCase(removeOfMe.fulfilled, (state, action) => {});
+        builder.addCase(removeOfMe.rejected, (state, action) => {});
     }
 });
- 
-export const { setMessages, increaseLimit, handlerUpdateReaction, updateMessage, addMessage, updateSeenAllMessage, setMessageRemoveOfMe } = MessageSlice.actions;
-export { sendMessage, getMessagesByConversationId, updateReaction, removeAllReaction, forwardMessage, seenAll, seenOne, removeOfMe };
+
+export const {
+    setMessages,
+    increaseLimit,
+    handlerUpdateReaction,
+    updateMessage,
+    addMessage,
+    setInputMessage,
+    setMessageParent,
+    setMessageUpdate,
+    updateSeenAllMessage,
+    setMessageRemoveOfMe
+} = MessageSlice.actions;
+
+export {
+    sendMessage,
+    getMessagesByConversationId,
+    updateReaction,
+    removeAllReaction,
+    forwardMessage,
+    updateMessageStatus,
+    seenAll,
+    seenOne,
+    removeOfMe
+};
+
 export default MessageSlice.reducer;

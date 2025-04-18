@@ -3,21 +3,23 @@ import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, Toa
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { useDispatch, useSelector } from 'react-redux';
-import { createPin } from '../../redux/slices/ConversationSlice';
+import { createPin, updateLastMessage } from '../../redux/slices/ConversationSlice';
 import { showToast } from '../../../utils/AppUtils';
 import socket from '../../../utils/socket';
-import MessageDetailModal from './MessageDetailModal';
-import ForwardMessageModal from './ForwardMessageModal';
+import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
-import { removeOfMe, setMessageRemoveOfMe } from '../../redux/slices/MessageSlice';
+import { setMessageParent, updateMessageStatus, setMessageUpdate, removeOfMe, setMessageRemoveOfMe } from '../../redux/slices/MessageSlice';
 import { ReactionBar } from './ReactionBar';
+
 export const MenuComponent = ({ message, showMenuComponent, friend, setShowDetailModal, setShowForwardModal }) => {
-    const userLogin = useSelector(state => state.user.userLogin);
-    const isSent = message.senderId === userLogin.id;
     const navigation = useNavigation();
     const dispatch = useDispatch();
+    const conversation = useSelector(state => state.conversation.conversation);
+    const userLogin = useSelector(state => state.user.userLogin);
+    const isSent = message.senderId === userLogin.id;
+
     const [reaction, setReaction] = useState([
         { type: 'like', icon: '👍' },
         { type: 'love', icon: '❤️' },
@@ -27,18 +29,17 @@ export const MenuComponent = ({ message, showMenuComponent, friend, setShowDetai
         { type: 'angry', icon: '😠' },
     ]);
 
-    const conversation = useSelector(state => state.conversation.conversation);
     const handlerClickPin = async (message) => {
         try {
-            showMenuComponent(false)
+            showMenuComponent(false);
             await dispatch(createPin({ conversationId: message.conversationId, messageId: message.id })).unwrap().then((res) => {
-                console.log(res)
+                console.log(res);
                 socket.emit('pin-message', {
                     conversation: conversation,
                     pin: res.data
                 });
                 showToast('info', 'bottom', "Thông báo", "Đã ghim tin nhắn này.", 2000);
-            })
+            });
         } catch (error) {
             showToast('error', 'bottom', "Thông báo", error.message || "Ghim tin nhắn không thành công.", 2000);
         }
@@ -47,16 +48,15 @@ export const MenuComponent = ({ message, showMenuComponent, friend, setShowDetai
     const handlerClickDetail = () => {
         showMenuComponent(false);
         setShowDetailModal(true);
-    }
+    };
 
     const handleDownloadImage = async (url) => {
         try {
             if (!url) {
-                showToast('error', 'bottoptom', "Thông báo", "Không thể tải file.");
+                showToast('error', 'bottom', "Thông báo", "Không thể tải file.");
                 return;
             }
 
-            // Kiểm tra quyền trước
             const permission = await MediaLibrary.getPermissionsAsync();
             if (!permission.granted) {
                 const request = await MediaLibrary.requestPermissionsAsync();
@@ -67,7 +67,6 @@ export const MenuComponent = ({ message, showMenuComponent, friend, setShowDetai
             }
 
             showMenuComponent(false);
-
 
             const fileName = url.split('/').pop()?.split('?')[0] || 'downloaded.jpg';
             const fileUri = FileSystem.documentDirectory + fileName;
@@ -80,30 +79,14 @@ export const MenuComponent = ({ message, showMenuComponent, friend, setShowDetai
             showToast('success', 'top', "Thông báo", "Tải file thành công.");
         } catch (error) {
             console.error('Lỗi tải file:', error);
-            showToast('error', 'bottoptom', "Thông báo", "Không thể tải file.");
+            showToast('error', 'bottom', "Thông báo", "Không thể tải file.");
         }
-    }
-
-    const handlerRemoveOfMe = useCallback(async () => {
-        try {
-
-            dispatch(setMessageRemoveOfMe({ messageId: message.id, userId: userLogin.id }));
-            showMenuComponent(false);
-            await dispatch(removeOfMe(message.id)).unwrap().then((res) => {
-                // Gọi sự kiện socket để thông báo 
-                socket.emit('remove-of-me', {
-                    messageId: message.id, userId: userLogin.id
-                });
-            })
-        } catch (error) {
-            console.error('Error removing message:', error);
-        }
-    }, [])
+    };
 
     const handleDownloadFile = async (url) => {
         try {
             if (!url) {
-                showToast('error', 'bottoptom', "Thông báo", "Không thể tải file.");
+                showToast('error', 'bottom', "Thông báo", "Không thể tải file.");
                 return;
             }
 
@@ -113,7 +96,6 @@ export const MenuComponent = ({ message, showMenuComponent, friend, setShowDetai
             const downloadRes = await FileSystem.downloadAsync(url, fileUri);
             console.log("Downloaded to", downloadRes.uri);
 
-            // Kiểm tra có thể chia sẻ không
             const isAvailable = await Sharing.isAvailableAsync();
             if (isAvailable) {
                 await Sharing.shareAsync(downloadRes.uri);
@@ -123,17 +105,97 @@ export const MenuComponent = ({ message, showMenuComponent, friend, setShowDetai
             showMenuComponent(false);
         } catch (err) {
             console.error("Lỗi khi tải file:", err);
-            showToast('error', 'bottoptom', "Thông báo", "Không thể tải file.");
+            showToast('error', 'bottom', "Thông báo", "Không thể tải file.");
+        }
+    };
+
+    const handlerRemoveOfMe = useCallback(async () => {
+        try {
+            dispatch(setMessageRemoveOfMe({ messageId: message.id, userId: userLogin.id }));
             showMenuComponent(false);
+            await dispatch(removeOfMe(message.id)).unwrap().then((res) => {
+                socket.emit('remove-of-me', {
+                    messageId: message.id, userId: userLogin.id
+                });
+            });
+        } catch (error) {
+            console.error('Error removing message:', error);
+        }
+    }, []);
+
+    const handleCopy = async () => {
+        let content = '';
+        switch (message.messageType) {
+            case 'text':
+                content = message.content;
+                break;
+            case 'image':
+            case 'file':
+                content = message.fileLink;
+                break;
+            case 'sticker':
+                content = `[Sticker] ${message.fileLink}`;
+                break;
+            default:
+                content = 'Không thể sao chép nội dung này.';
         }
 
+        try {
+            await Clipboard.setStringAsync(content);
+            showToast('success', 'bottom', 'Thông báo', 'Đã sao chép vào clipboard!', 2000);
+        } catch (error) {
+            console.error('Lỗi khi sao chép:', error);
+            showToast('error', 'bottom', 'Thông báo', 'Không thể sao chép nội dung.', 2000);
+        }
+        showMenuComponent(false);
     };
+
+    const handleMessageRecall = async () => {
+        if (message.senderId !== userLogin.id) {
+            showToast('error', 'bottom', 'Thông báo', 'Bạn chỉ có thể thu hồi tin nhắn của mình.', 2000);
+            showMenuComponent(false);
+            return;
+        }
+
+        const messageTime = new Date(message.timestamp);
+        const currentTime = new Date();
+        const timeDiff = (currentTime - messageTime) / (1000 * 60);
+
+        if (timeDiff > 2) {
+            showToast('error', 'bottom', 'Thông báo', 'Không thể thu hồi tin nhắn sau 2 phút.', 2000);
+            showMenuComponent(false);
+            return;
+        }
+
+        try {
+            showMenuComponent(false);
+            const resp = await dispatch(updateMessageStatus({ messageId: message.id, status: 1 })).unwrap();
+            const messageUpdate = resp.data;
+            dispatch(setMessageUpdate({ messageId: messageUpdate.id, status: messageUpdate.status }));
+            socket.emit('updateMessage', { message: messageUpdate, conversation });
+            showToast('success', 'bottom', 'Thông báo', 'Tin nhắn đã được thu hồi.', 2000);
+        } catch (error) {
+            console.error('Lỗi khi thu hồi tin nhắn:', error);
+            showToast('error', 'bottom', 'Thông báo', error.message || 'Không thể thu hồi tin nhắn.', 2000);
+        }
+    };
+
+    const handleReply = () => {
+        dispatch(setMessageParent(message));
+        showMenuComponent(false);
+    };
+
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <ReactionBar message={message} onClose={() => showMenuComponent(false)} />
-            {/* Action Grid */}
             <View style={styles.actionGrid}>
-                <TouchableOpacity style={styles.actionItem}>
+                {isSent && message.status === 0 && (
+                    <TouchableOpacity style={styles.actionItem} onPress={handleMessageRecall}>
+                        <Icon name="undo" size={24} color="#EA580C" />
+                        <Text>Thu hồi</Text>
+                    </TouchableOpacity>
+                )}
+                <TouchableOpacity style={styles.actionItem} onPress={handleReply}>
                     <Icon name="reply" size={24} color="#6B21A8" />
                     <Text>Trả lời</Text>
                 </TouchableOpacity>
@@ -144,7 +206,7 @@ export const MenuComponent = ({ message, showMenuComponent, friend, setShowDetai
                     <Icon name="share" size={24} color="#2563EB" />
                     <Text>Chuyển tiếp</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionItem}>
+                <TouchableOpacity style={styles.actionItem} onPress={handleCopy}>
                     <Icon name="copy" size={24} color="#2563EB" />
                     <Text>Sao chép</Text>
                 </TouchableOpacity>
@@ -154,41 +216,32 @@ export const MenuComponent = ({ message, showMenuComponent, friend, setShowDetai
                     <Icon name="thumbtack" size={24} color="#EA580C" />
                     <Text>Ghim</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionItem}>
-                    <Icon name="redo" size={24} color="#EA580C" />
-                    <Text>Thu hồi</Text>
-                </TouchableOpacity>
-
                 <TouchableOpacity style={styles.actionItem} onPress={() => handlerRemoveOfMe()}>
                     <Icon name="trash" size={24} color="#DC2626" />
                     <Text>Xóa ở phía tôi</Text>
                 </TouchableOpacity>
-                {
-                    (message.messageType === 'file' || message.messageType === 'image') && (
-                        <TouchableOpacity onPress={() => {
-                            if (message.messageType === 'image') {
-                                handleDownloadImage(message.fileLink);
-                            } else if (message.messageType === 'file') {
-                                handleDownloadFile(message.fileLink);
-                            }
-                        }} style={styles.actionItem}>
-                            <Icon name="cloud-download-alt" size={24} color="#DC2626" />
-                            <Text>Tải xuống</Text>
-                        </TouchableOpacity>
-                    )
-                }
+                {(message.messageType === 'file' || message.messageType === 'image') && (
+                    <TouchableOpacity onPress={() => {
+                        if (message.messageType === 'image') {
+                            handleDownloadImage(message.fileLink);
+                        } else if (message.messageType === 'file') {
+                            handleDownloadFile(message.fileLink);
+                        }
+                    }} style={styles.actionItem}>
+                        <Icon name="cloud-download-alt" size={24} color="#DC2626" />
+                        <Text>Tải xuống</Text>
+                    </TouchableOpacity>
+                )}
                 <TouchableOpacity style={styles.actionItem} onPress={() => {
                     handlerClickDetail();
-                }} >
+                }}>
                     <Icon name="info-circle" size={24} color="#6B7280" />
                     <Text>Chi tiết</Text>
                 </TouchableOpacity>
             </View>
-
         </ScrollView>
-
-    )
-}
+    );
+};
 
 const styles = StyleSheet.create({
     container: {
@@ -209,7 +262,6 @@ const styles = StyleSheet.create({
         width: 24,
         height: 24,
         fontSize: 20,
-
     },
     actionGrid: {
         flexDirection: 'row',
