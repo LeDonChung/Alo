@@ -816,3 +816,5 @@ const UpdateProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
     );
 };
 
+
+export default ProfileModal;

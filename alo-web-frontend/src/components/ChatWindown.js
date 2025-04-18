@@ -123,7 +123,7 @@ const ChatWindow = () => {
     }
 
     handlerInitMessage();
-  }, []);
+  }, [conversation]);
   const isFriendOnline = (userId) => {
     return userOnlines.includes(userId);
   };
