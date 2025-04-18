@@ -28,7 +28,7 @@ import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
 import StickerPicker from '../../components/chat/StickerPicker';
 import { ActivityIndicator } from 'react-native-paper';
 import { showToast } from '../../../utils/AppUtils';
-import { MenuComponent } from '../../components/chat/MenuComponent';
+import { MenuComponent } from '../../components/chat/MenuConponent';
 import MessageDetailModal from '../../components/chat/MessageDetailModal';
 import ForwardMessageModal from '../../components/chat/ForwardMessageModal';
 
@@ -83,7 +83,7 @@ export const ChatScreen = ({ route, navigation }) => {
       status: -1,
     };
 
-    if (messageParent && messageType === 'text' && content.trim()) {
+    if (messageParent) {
       if (messageParent.status === 1) {
         showToast('error', 'bottom', 'Thông báo', 'Tin nhắn gốc đã bị thu hồi, không thể trả lời.', 2000);
         dispatch(setMessageParent(null));
@@ -97,6 +97,10 @@ export const ChatScreen = ({ route, navigation }) => {
       sender: userLogin,
     };
 
+    if (messageParent) {
+      newMessageTemp.messageParent = messageParent;
+    }
+
     if (messageType === 'file' || messageType === 'image') {
       newMessageTemp.fileLink = file.uri;
     } else if (messageType === 'sticker') {
@@ -106,25 +110,23 @@ export const ChatScreen = ({ route, navigation }) => {
 
     try {
       dispatch(addMessage(newMessageTemp));
+      dispatch(setMessageParent(null));
       setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
-
-      if (messageParent && message.messageParent) {
-        dispatch(setMessageParent(null));
-      }
 
       const res = await dispatch(sendMessage({ message, file })).unwrap();
       const sentMessage = {
         ...res.data,
         sender: userLogin,
-        messageParent: newMessageTemp.messageParent,
       };
 
-      dispatch(updateMessage(sentMessage));
 
       socket.emit('send-message', {
         conversation,
         message: sentMessage,
       });
+
+      dispatch(updateMessage(sentMessage));
+
     } catch (err) {
       console.error("Error sending message:", err);
     }
@@ -167,16 +169,6 @@ export const ChatScreen = ({ route, navigation }) => {
       socket.off('receive-message', handlerReceiveMessage);
     };
   }, [conversation.id]);
-
-  useEffect(() => {
-    socket.on('receive-update-message', (data) => {
-      const { message, conversation } = data;
-      dispatch(setMessageUpdate({ messageId: message.id, status: message.status }));
-      dispatch(addMessage(message));
-      dispatch(updateLastMessage({ conversationId: conversation.id, message }));
-    });
-    return () => socket.off('receive-update-message');
-  }, [dispatch]);
 
   useEffect(() => {
     socket.on("users-online", ({ userIds }) => {

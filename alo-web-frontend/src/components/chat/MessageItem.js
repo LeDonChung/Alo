@@ -341,11 +341,10 @@ const MessageItem = ({
   const handleMessageRecall = useCallback(async () => {
     try {
       setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
+      dispatch(setMessageUpdate({ messageId: message.id, status: 1 }));
       const resp = await dispatch(updateMessageStatus({ messageId: message.id, status: 1 }));
       const messageUpdate = resp.payload.data;
-      batch(() => {
-        dispatch(setMessageUpdate({ messageId: messageUpdate.id, status: messageUpdate.status }));
-      });
+      
       socket.emit('updateMessage', { message: messageUpdate, conversation });
     } catch (error) {
       console.error('Error recalling message:', error);

@@ -9,7 +9,7 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
   const fileLink = item.fileLink;
 
   const getFileExtension = (filename = '') => filename.split('.').pop().toLowerCase();
-  
+
   const extractOriginalName = (fileUrl) => {
     const fileNameEncoded = fileUrl.split("/").pop();
     const fileNameDecoded = decodeURIComponent(fileNameEncoded);
@@ -50,20 +50,15 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
 
   const renderParentMessage = () => {
     if (!item.messageParent || item.status === 1) {
-      console.log('messageParent not found or message recalled:', item); 
       return null;
     }
-    const parentMessage = messages.find(msg => msg.id === item.messageParent);
-    if (!parentMessage) {
-      console.log('parentMessage not found in messages:', item.messageParent); 
-      return null;
-    }
+    const messageParent = item.messageParent;
 
     return (
       <TouchableOpacity
         onPress={() => {
-          if (parentMessage.id) {
-            scrollToMessage(parentMessage.id);
+          if (messageParent.id) {
+            scrollToMessage(messageParent.id);
           }
         }}
         style={{
@@ -75,20 +70,39 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
           borderLeftColor: '#6B21A8',
         }}
       >
-        <Text style={{ fontWeight: 'bold', color: '#6B21A8' }}>
-          {parentMessage.senderId === userLogin.id ? 'Bạn' : parentMessage.sender?.fullName || 'Ẩn danh'}
+        <Text style={{ fontWeight: 'bold', color: '#6B21A8', fontSize: 14, marginBottom: 4 }}>
+          {messageParent.senderId === userLogin.id ? 'Bạn' : messageParent.sender?.fullName || 'Ẩn danh'}
         </Text>
-        <Text style={{ color: '#4B5563', fontSize: 14 }} numberOfLines={2}>
-          {parentMessage.status === 1
-            ? 'Tin nhắn đã được thu hồi'
-            : parentMessage.messageType === 'text'
-            ? parentMessage.content
-            : parentMessage.messageType === 'image'
-            ? '[Hình ảnh]'
-            : parentMessage.messageType === 'file'
-            ? '[Tệp đính kèm]'
-            : '[Sticker]'}
-        </Text>
+        {messageParent.status === 1 ? (
+          <Text style={{ color: '#4B5563', fontSize: 14, fontStyle: 'italic' }}>
+            Tin nhắn đã được thu hồi
+          </Text>
+        ) : messageParent.messageType === 'text' ? (
+          <Text style={{ color: '#4B5563', fontSize: 14 }} numberOfLines={2} ellipsizeMode="tail">
+            {messageParent.content}
+          </Text>
+        ) : messageParent.messageType === 'image' || messageParent.messageType === 'sticker' ? (
+          <Image
+            source={{ uri: messageParent.fileLink }}
+            style={{ width: 50, height: 50, borderRadius: 5, marginTop: 4 }}
+            resizeMode={messageParent.messageType === 'sticker' ? 'cover' : 'contain'}
+          />
+        ) : messageParent.messageType === 'file' ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+            {getFileIcon(getFileExtension(messageParent.fileLink))}
+            <Text
+              style={{ color: '#4B5563', fontSize: 14, marginLeft: 8, flex: 1 }}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              {messageParent.fileLink ? extractOriginalName(messageParent.fileLink) : 'Tệp không xác định'}
+            </Text>
+          </View>
+        ) : (
+          <Text style={{ color: '#4B5563', fontSize: 14, fontStyle: 'italic' }}>
+            [Nội dung không hỗ trợ]
+          </Text>
+        )}
       </TouchableOpacity>
     );
   };
@@ -119,16 +133,16 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
             style={[{ borderRadius: 10, maxWidth: '90%', minWidth: '40%', flexDirection: 'column' }, isHighlighted && { backgroundColor: '#fef08a' }]}
             onLongPress={() => handleLongPress(item)}
           >
-            {renderParentMessage()}
+            {item?.messageParent && renderParentMessage()}
             {item.status === 1 ? (
-              <View style={{ 
-                backgroundColor: isSent ? '#dbeafe' : 'white', 
-                padding: 10, 
+              <View style={{
+                backgroundColor: isSent ? '#dbeafe' : 'white',
+                padding: 10,
                 borderRadius: 10,
-                opacity: 0.7, 
+                opacity: 0.7,
               }}>
                 <Text style={{ color: 'gray', fontStyle: 'italic' }}>
-                  Tin nhắn đã được thu hồi 
+                  Tin nhắn đã được thu hồi
                 </Text>
               </View>
             ) : (

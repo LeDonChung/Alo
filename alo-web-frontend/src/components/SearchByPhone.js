@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faArrowLeft } from "@fortawesome/free-solid-svg-icons";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
-import ProfileModal from "./Navigation";
+import { ProfileModal, UpdateProfileModal } from "./Navigation";
 export const SearchByPhone = (isOpenAdd) => {
     const [phoneNumber, setPhoneNumber] = useState('');
     const friend = useSelector(state => state.friend.friend);
@@ -273,201 +273,209 @@ export const SearchByPhone = (isOpenAdd) => {
             {
                 showProfileModal ? (
                     <ProfileModal setShowProfileModal={setShowProfileModal} setShowUpdateModal={setShowUpdateModal} />
-
                 ) : (
                     <>
-                        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                            <div className="bg-white rounded-lg p-4 shadow-lg w-[400px]">
-                                <div className="flex items-center justify-between">
-
-                                    {
-                                        isShowInfo && (
-                                            <button onClick={() => setIsShowInfo(false)} className="hover:text-white hover:bg-gray-500 w-6 h-6 flex items-center justify-center rounded-full">
-                                                <FontAwesomeIcon icon={faArrowLeft} />
-                                            </button>
-                                        )
-                                    }
-
-                                    <p className="text-start text-[18px] font-medium text-gray-800">{isShowInfo ? "Thông tin người dùng" : "Thêm bạn"} </p>
-                                    <button onClick={() => isOpenAdd.onClose()} className="hover:text-white hover:bg-gray-500 w-6 h-6 flex items-center justify-center rounded-full">
-                                        X
-                                    </button>
-                                </div>
-
-                                {
-                                    !isShowInfo && !isOpenModalContent && (
-                                        <>
-                                            <input
-                                                className="w-full border-b border-gray-300 focus:outline-none focus:border-gray-400 mt-4"
-                                                placeholder="Nhập số điện thoại"
-                                                value={phoneNumber}
-                                                onChange={(e) => setPhoneNumber(e.target.value)}
-                                            />
-                                            <div className="flex justify-between mt-4">
-                                                <button
-                                                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                                                    onClick={() => isOpenAdd.onClose()}
-                                                >
-                                                    Hủy
-                                                </button>
-                                                <button
-                                                    className="px-4 py-2 bg-blue-500 text-gray-800 rounded  hover:bg-blue-600 text-white"
-                                                    onClick={() => handleSearch()}
-                                                >
-                                                    {isLoadingPhone ? (
-                                                        <div className="flex justify-center items-center">
-                                                            <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
-                                                        </div>
-                                                    ) : (
-                                                        "Tìm kiếm"
-                                                    )}
-                                                </button>
-                                            </div>
-                                        </>
-                                    )
-                                }
-                                {
-                                    isShowInfo && !isOpenModalContent && (
-                                        <>
-                                            {
-                                                info !== null && (
-                                                    <>
-                                                        <div className="flex items-center justify-center">
-                                                            <img src={info.avatarLink ? info.avatarLink : "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"} alt="avatar" className="w-20 h-20 rounded-full" />
-                                                        </div>
-                                                        <p className="text-center text-gray-800 font-semibold mt-2">{info.fullName}</p>
-                                                        <p className="text-center text-gray-500 mt-1">{info.phoneNumber}</p>
-                                                    </>
-                                                )
-                                            }
-                                            {
-                                                info === null && (
-                                                    <p className="text-center text-gray-800 font-semibold mt-2">Không tìm thấy người dùng</p>
-                                                )
-                                            }
-                                            <div className="flex justify-between mt-4">
+                        {
+                            showUpdateModal ? (
+                                <UpdateProfileModal setShowUpdateModal={setShowUpdateModal} setShowProfileModal={setShowProfileModal} />
+                            ) : (
+                                <>
+                                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                                        <div className="bg-white rounded-lg p-4 shadow-lg w-[400px]">
+                                            <div className="flex items-center justify-between">
 
                                                 {
-                                                    info !== null && (
+                                                    isShowInfo && (
+                                                        <button onClick={() => setIsShowInfo(false)} className="hover:text-white hover:bg-gray-500 w-6 h-6 flex items-center justify-center rounded-full">
+                                                            <FontAwesomeIcon icon={faArrowLeft} />
+                                                        </button>
+                                                    )
+                                                }
 
-                                                        <>
+                                                <p className="text-start text-[18px] font-medium text-gray-800">{isShowInfo ? "Thông tin người dùng" : "Thêm bạn"} </p>
+                                                <button onClick={() => isOpenAdd.onClose()} className="hover:text-white hover:bg-gray-500 w-6 h-6 flex items-center justify-center rounded-full">
+                                                    X
+                                                </button>
+                                            </div>
+
+                                            {
+                                                !isShowInfo && !isOpenModalContent && (
+                                                    <>
+                                                        <input
+                                                            className="w-full border-b border-gray-300 focus:outline-none focus:border-gray-400 mt-4"
+                                                            placeholder="Nhập số điện thoại"
+                                                            value={phoneNumber}
+                                                            onChange={(e) => setPhoneNumber(e.target.value)}
+                                                        />
+                                                        <div className="flex justify-between mt-4">
                                                             <button
-                                                                className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-                                                                onClick={() => { }}
+                                                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                                                onClick={() => isOpenAdd.onClose()}
                                                             >
-                                                                Nhắn tin
+                                                                Hủy
                                                             </button>
                                                             <button
-                                                                className={`px-4 py-2 ${info?.status === -1 ? 'bg-blue-500' : info?.status === 3 ? 'bg-sky-500' : info?.status === 0 ? "bg-red-700" :
-                                                                    info?.status === 2 ? "bg-blue-500" : info?.status === 4 ? "bg-blue-500" : 'bg-red-700'} text-gray-800 rounded 
-                                                    hover:${info?.status === -1 ? 'bg-blue-700' : info?.status === 3 ? 'bg-sky-800' : info?.status === 0 ? "bg-red-800" :
-                                                                        info?.status === 2 ? "bg-blue-700" : info?.status === 4 ? "bg-blue-700" : 'bg-red-800'} text-white`}
-                                                                onClick={() => handleClick()}
+                                                                className="px-4 py-2 bg-blue-500 text-gray-800 rounded  hover:bg-blue-600 text-white"
+                                                                onClick={() => handleSearch()}
                                                             >
-                                                                {isLoading && info?.status !== -1 && info?.status !== 2 && info?.status !== 4 ? (
+                                                                {isLoadingPhone ? (
                                                                     <div className="flex justify-center items-center">
                                                                         <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
                                                                     </div>
                                                                 ) : (
-                                                                    info?.status === -1 ? "Gửi lời mời kết bạn" : info?.status === 3 ? "Mở chặn" : info?.status === 0 ? (info.senderId === userLogin.id ? "Hủy lời mời" : " Từ chối") : info?.status === 2 ? "Gửi lời mời kết bạn" : info?.status === 4 ? "Gửi lời mời kết bạn" : "Hủy kết bạn"
+                                                                    "Tìm kiếm"
                                                                 )}
-
                                                             </button>
+                                                        </div>
+                                                    </>
+                                                )
+                                            }
+                                            {
+                                                isShowInfo && !isOpenModalContent && (
+                                                    <>
+                                                        {
+                                                            info !== null && (
+                                                                <>
+                                                                    <div className="flex items-center justify-center">
+                                                                        <img src={info.avatarLink ? info.avatarLink : "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"} alt="avatar" className="w-20 h-20 rounded-full" />
+                                                                    </div>
+                                                                    <p className="text-center text-gray-800 font-semibold mt-2">{info.fullName}</p>
+                                                                    <p className="text-center text-gray-500 mt-1">{info.phoneNumber}</p>
+                                                                </>
+                                                            )
+                                                        }
+                                                        {
+                                                            info === null && (
+                                                                <p className="text-center text-gray-800 font-semibold mt-2">Không tìm thấy người dùng</p>
+                                                            )
+                                                        }
+                                                        <div className="flex justify-between mt-4">
 
                                                             {
-                                                                info?.status === 0 && info.senderId !== userLogin.id && (
-                                                                    <button
-                                                                        className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
-                                                                        onClick={() => handleAcceptFriend(info.friendId)}
-                                                                    >
-                                                                        {isLoading ? (
-                                                                            <div className="flex justify-center items-center">
-                                                                                <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
-                                                                            </div>
-                                                                        ) : (
-                                                                            "Đồng ý"
-                                                                        )}
-                                                                    </button>
+                                                                info !== null && (
+
+                                                                    <>
+                                                                        <button
+                                                                            className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+                                                                            onClick={() => { }}
+                                                                        >
+                                                                            Nhắn tin
+                                                                        </button>
+                                                                        <button
+                                                                            className={`px-4 py-2 ${info?.status === -1 ? 'bg-blue-500' : info?.status === 3 ? 'bg-sky-500' : info?.status === 0 ? "bg-red-700" :
+                                                                                info?.status === 2 ? "bg-blue-500" : info?.status === 4 ? "bg-blue-500" : 'bg-red-700'} text-gray-800 rounded 
+                                                    hover:${info?.status === -1 ? 'bg-blue-700' : info?.status === 3 ? 'bg-sky-800' : info?.status === 0 ? "bg-red-800" :
+                                                                                    info?.status === 2 ? "bg-blue-700" : info?.status === 4 ? "bg-blue-700" : 'bg-red-800'} text-white`}
+                                                                            onClick={() => handleClick()}
+                                                                        >
+                                                                            {isLoading && info?.status !== -1 && info?.status !== 2 && info?.status !== 4 ? (
+                                                                                <div className="flex justify-center items-center">
+                                                                                    <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                                                                                </div>
+                                                                            ) : (
+                                                                                info?.status === -1 ? "Gửi lời mời kết bạn" : info?.status === 3 ? "Mở chặn" : info?.status === 0 ? (info.senderId === userLogin.id ? "Hủy lời mời" : " Từ chối") : info?.status === 2 ? "Gửi lời mời kết bạn" : info?.status === 4 ? "Gửi lời mời kết bạn" : "Hủy kết bạn"
+                                                                            )}
+
+                                                                        </button>
+
+                                                                        {
+                                                                            info?.status === 0 && info.senderId !== userLogin.id && (
+                                                                                <button
+                                                                                    className="px-4 py-2 bg-gray-400 text-white rounded hover:bg-gray-500"
+                                                                                    onClick={() => handleAcceptFriend(info.friendId)}
+                                                                                >
+                                                                                    {isLoading ? (
+                                                                                        <div className="flex justify-center items-center">
+                                                                                            <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        "Đồng ý"
+                                                                                    )}
+                                                                                </button>
+                                                                            )
+                                                                        }
+                                                                    </>
                                                                 )
                                                             }
-                                                        </>
-                                                    )
-                                                }
-                                            </div>
-                                        </>
-                                    )
-                                }
-
-                                {
-                                    isOpenModalContent && !isShowInfo && (
-                                        <>
-                                            <p className="text-center text-gray-800 font-semibold mt-2">Nội dung lời mời kết bạn</p>
-                                            <textarea
-                                                className="w-full border-b border-gray-300 focus:outline-none focus:border-gray-400 mt-4"
-                                                placeholder="Nhập nội dung lời mời kết bạn"
-                                                value={contentInvite}
-                                                onChange={(e) => setContentInvite(e.target.value)}
-                                            />
-                                            <div className="flex justify-between mt-4">
-                                                <button
-                                                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                                                    onClick={() => {
-                                                        setIsOpenModalContent(false);
-                                                        setContentInvite('');
-                                                        setIsShowInfo(true);
-                                                    }}
-                                                >
-                                                    Hủy
-                                                </button>
-                                                <button
-                                                    className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
-                                                    onClick={() => sendFriend()}
-                                                >
-                                                    {isLoading ? (
-                                                        <div className="flex justify-center items-center">
-                                                            <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
                                                         </div>
-                                                    ) : (
-                                                        "Gửi lời mời"
-                                                    )}
-                                                </button>
-                                            </div>
-                                        </>
-                                    )
-                                }
+                                                    </>
+                                                )
+                                            }
 
-                            </div>
-                        </div>
+                                            {
+                                                isOpenModalContent && !isShowInfo && (
+                                                    <>
+                                                        <p className="text-center text-gray-800 font-semibold mt-2">Nội dung lời mời kết bạn</p>
+                                                        <textarea
+                                                            className="w-full border-b border-gray-300 focus:outline-none focus:border-gray-400 mt-4"
+                                                            placeholder="Nhập nội dung lời mời kết bạn"
+                                                            value={contentInvite}
+                                                            onChange={(e) => setContentInvite(e.target.value)}
+                                                        />
+                                                        <div className="flex justify-between mt-4">
+                                                            <button
+                                                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                                                onClick={() => {
+                                                                    setIsOpenModalContent(false);
+                                                                    setContentInvite('');
+                                                                    setIsShowInfo(true);
+                                                                }}
+                                                            >
+                                                                Hủy
+                                                            </button>
+                                                            <button
+                                                                className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                                                                onClick={() => sendFriend()}
+                                                            >
+                                                                {isLoading ? (
+                                                                    <div className="flex justify-center items-center">
+                                                                        <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                                                                    </div>
+                                                                ) : (
+                                                                    "Gửi lời mời"
+                                                                )}
+                                                            </button>
+                                                        </div>
+                                                    </>
+                                                )
+                                            }
 
-                        {
-                            isOpenConfirm && (
-                                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-                                    <div className="bg-white rounded-lg p-4 shadow-lg w-[300px]">
-                                        <p className="text-center text-gray-800">{`Bạn có chắc chắn muốn hủy kết bạn với ${info.fullName}`}</p>
-                                        <div className="flex justify-between mt-4">
-                                            <button
-                                                className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
-                                                onClick={() => handleUnfriend(info.friendId)}
-                                            >
-                                                {isLoading ? (
-                                                    <div className="flex justify-center items-center">
-                                                        <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
-                                                    </div>
-                                                ) : (
-                                                    "Đồng ý"
-                                                )}
-                                            </button>
-                                            <button
-                                                className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
-                                                onClick={() => setIsOpenConfirm(false)}
-                                            >
-                                                Hủy
-                                            </button>
                                         </div>
                                     </div>
-                                </div>
+
+                                    {
+                                        isOpenConfirm && (
+                                            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                                                <div className="bg-white rounded-lg p-4 shadow-lg w-[300px]">
+                                                    <p className="text-center text-gray-800">{`Bạn có chắc chắn muốn hủy kết bạn với ${info.fullName}`}</p>
+                                                    <div className="flex justify-between mt-4">
+                                                        <button
+                                                            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                                            onClick={() => handleUnfriend(info.friendId)}
+                                                        >
+                                                            {isLoading ? (
+                                                                <div className="flex justify-center items-center">
+                                                                    <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                                                                </div>
+                                                            ) : (
+                                                                "Đồng ý"
+                                                            )}
+                                                        </button>
+                                                        <button
+                                                            className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400"
+                                                            onClick={() => setIsOpenConfirm(false)}
+                                                        >
+                                                            Hủy
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    }
+                                </>
                             )
                         }
+
                     </>
                 )
             }

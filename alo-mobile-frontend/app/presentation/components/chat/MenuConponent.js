@@ -2,7 +2,7 @@ import React, { useCallback, useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TouchableOpacity, Alert, ToastAndroid } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
-import { useDispatch, useSelector } from 'react-redux';
+import { batch, useDispatch, useSelector } from 'react-redux';
 import { createPin, updateLastMessage } from '../../redux/slices/ConversationSlice';
 import { showToast } from '../../../utils/AppUtils';
 import socket from '../../../utils/socket';
@@ -169,11 +169,13 @@ export const MenuComponent = ({ message, showMenuComponent, friend, setShowDetai
 
         try {
             showMenuComponent(false);
-            const resp = await dispatch(updateMessageStatus({ messageId: message.id, status: 1 })).unwrap();
-            const messageUpdate = resp.data;
-            dispatch(setMessageUpdate({ messageId: messageUpdate.id, status: messageUpdate.status }));
+            dispatch(setMessageUpdate({ messageId: message.id, status: 1 }));
+            const resp = await dispatch(updateMessageStatus({ messageId: message.id, status: 1 }))
+            const messageUpdate = resp.payload.data;
             socket.emit('updateMessage', { message: messageUpdate, conversation });
             showToast('success', 'bottom', 'Thông báo', 'Tin nhắn đã được thu hồi.', 2000);
+
+
         } catch (error) {
             console.error('Lỗi khi thu hồi tin nhắn:', error);
             showToast('error', 'bottom', 'Thông báo', error.message || 'Không thể thu hồi tin nhắn.', 2000);

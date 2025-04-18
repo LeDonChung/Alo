@@ -12,7 +12,7 @@ import { setMessageParent } from '../../redux/slices/MessageSlice';
 
 const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isStickerPickerVisible, setIsStickerPickerVisible, handleSendFile, handlerSendImage }) => {
   const [isOptionModalVisible, setOptionModalVisible] = useState(false);
-  const dispatch = useDispatch(); 
+  const dispatch = useDispatch();
   const messageParent = useSelector(state => state.message.messageParent);
   const userLogin = useSelector(state => state.user.userLogin);
 
@@ -20,16 +20,8 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
     if (inputMessage.content.trim()) {
       const messageSend = {
         ...inputMessage,
-        messageParent: messageParent ? messageParent.id : null, 
       };
       handlerSendMessage(messageSend);
-      setInputMessage({
-        messageType: 'text',
-        content: '',
-      });
-      if (messageParent) {
-        dispatch(setMessageParent(null)); 
-      }
     }
   };
   const handleOptionSelect = (options) => {
@@ -42,37 +34,32 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
   const openFilePicker = async () => {
     try {
       const result = await DocumentPicker.getDocumentAsync({ type: '*/*' });
-    console.log('result', result);
+      console.log('result', result);
 
-    if (!result.canceled && result.assets && result.assets.length > 0) {
-      const asset = result.assets[0];
-      const fileExtension = asset.uri.split('.').pop().toLowerCase();
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        const fileExtension = asset.uri.split('.').pop().toLowerCase();
 
-      if (!allowedExtensions.includes(fileExtension)) {
-        alert('Chỉ chấp nhận các loại tệp: pdf, doc, docx, txt, xls, xlsx, ppt, pptx, zip, rar, mp4');
-        return;
-      }
+        if (!allowedExtensions.includes(fileExtension)) {
+          alert('Chỉ chấp nhận các loại tệp: pdf, doc, docx, txt, xls, xlsx, ppt, pptx, zip, rar, mp4');
+          return;
+        }
 
-      const file = {
-        uri: asset.uri,
-        name: asset.name,
-        type: asset.mimeType || 'application/octet-stream',
-      };
-      const newMessage = {
+        const file = {
+          uri: asset.uri,
+          name: asset.name,
+          type: asset.mimeType || 'application/octet-stream',
+        };
+        const newMessage = {
           content: '',
           messageType: 'file',
           file: file,
-          messageParent: messageParent ? messageParent.id : null,
         };
-      console.log('file', file);
 
-      await handleSendFile(newMessage);
-      if (messageParent) {
-        dispatch(setMessageParent(null));
+        handleSendFile(newMessage);
       }
-    }
 
-    setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
+      setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
     } catch (error) {
       showToast('error', "top", "Lỗi", 'Không hỗ trợ loại tệp này');
     }
@@ -108,16 +95,11 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
           messageType: 'image',
           file: file,
           fileLink: imageUrl,
-          messageParent: messageParent ? messageParent.id : null,
         };
 
 
 
         handlerSendImage(newMessage);
-        if (messageParent) {
-          dispatch(setMessageParent(null));
-          break; 
-        }
         // Delay nhỏ tránh gửi quá nhanh
         await new Promise(resolve => setTimeout(resolve, 500));
 
@@ -127,16 +109,16 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
   const renderParentMessage = () => {
     if (!messageParent) return null;
     return (
-      <View style={{ 
-        flexDirection: 'row', 
-        alignItems: 'center', 
-        marginBottom: 10, 
-        backgroundColor: '#F1F5F9', 
-        padding: 10, 
-        borderRadius: 8, 
+      <View style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 10,
+        backgroundColor: '#F1F5F9',
+        padding: 10,
+        borderRadius: 8,
         width: '100%',
         borderLeftWidth: 4,
-        borderLeftColor: '#6B21A8', 
+        borderLeftColor: '#6B21A8',
       }}>
         <View style={{ flex: 1 }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 5 }}>
@@ -145,11 +127,11 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
             </Text>
           </View>
           <Text style={{ color: '#4B5563', fontSize: 14 }} numberOfLines={2}>
-            {messageParent.status === 1 ? 'Tin nhắn đã bị thu hồi' : 
-              messageParent.messageType === 'text' ? messageParent.content : 
-              messageParent.messageType === 'image' ? '[Hình ảnh]' : 
-              messageParent.messageType === 'file' ? '[Tệp đính kèm]' : 
-              '[Sticker]'} 
+            {messageParent.status === 1 ? 'Tin nhắn đã bị thu hồi' :
+              messageParent.messageType === 'text' ? messageParent.content :
+                messageParent.messageType === 'image' ? '[Hình ảnh]' :
+                  messageParent.messageType === 'file' ? '[Tệp đính kèm]' :
+                    '[Sticker]'}
           </Text>
         </View>
         <TouchableOpacity onPress={() => dispatch(setMessageParent(null))}>
@@ -162,7 +144,7 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
 
   return (
     <View style={{ backgroundColor: 'white', padding: 10, flexDirection: 'column', alignItems: 'center', borderTopWidth: 1, borderColor: '#EDEDED' }}>
-      {renderParentMessage()} 
+      {messageParent && renderParentMessage()}
 
       <View style={{ flexDirection: 'row', alignItems: 'center', width: '100%' }}>
         <TouchableOpacity

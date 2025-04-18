@@ -517,7 +517,7 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
     );
 };
 
-const ProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
+export const ProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
     const dispatch = useDispatch();
     const userLogin = useSelector((state) => state.user.userLogin);
     const [isLoading, setIsLoading] = useState(false);
@@ -635,7 +635,7 @@ const ProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
 
 }
 
-const UpdateProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
+export const UpdateProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
     const [isLoading, setIsLoading] = useState(false);
     const dispatch = useDispatch();
     const userLogin = useSelector((state) => state.user.userLogin);
@@ -815,6 +815,3 @@ const UpdateProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
         </>
     );
 };
-
-
-export default ProfileModal;

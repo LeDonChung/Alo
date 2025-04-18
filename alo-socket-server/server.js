@@ -264,7 +264,7 @@ io.on("connection", (socket) => {
             filteredSocketIds.forEach(id => {
                 io.to(id).emit('receive-update-message', data);
             });
-            io.to(socket.id).emit('receive-update-message', data);
+            
         }
     })
 
