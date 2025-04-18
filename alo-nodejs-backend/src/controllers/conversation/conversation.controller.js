@@ -43,10 +43,15 @@ exports.getConversationsByUserId = async (req, res) => {
                         pinedMessages.push({ ...pined, message });
                     }
                 }
+
+                // Lấy message cuối cùng trong cuộc trò chuyện
+                const lastMessage = await messageService.getLastMessageByConversationId(conversation.id);
+                console.log("lastMessage: ", lastMessage)
                 return {
                     ...conversation,
                     members,
                     pineds: pinedMessages,
+                    lastMessage
                 };
             })
         );
