@@ -53,6 +53,7 @@ const ChatInput = ({ isSending, getFriend }) => {
     const messageData = customInputMessage || inputMessage;
   
     if (messageData.messageType === 'text' && (!messageData.content || !messageData.content.trim())) {
+      return;
     }
   
     setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
@@ -127,6 +128,7 @@ const ChatInput = ({ isSending, getFriend }) => {
         }
   
         dispatch(addMessage(newMessageTemp));
+        dispatch(setMessageParent(null));
   
         const res = await dispatch(sendMessage({ message, file })).unwrap();
         const sentMessage = {
@@ -142,7 +144,6 @@ const ChatInput = ({ isSending, getFriend }) => {
         });
       }
   
-      dispatch(setMessageParent(null));
     } catch (err) {
       console.error('Error sending message:', err);
     }

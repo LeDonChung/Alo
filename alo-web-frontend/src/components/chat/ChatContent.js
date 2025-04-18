@@ -6,26 +6,22 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const [isScrolledToTop, setIsScrolledToTop] = useState(false);
-  const [scrollToParent, setScrollToParent] = useState(null); // Lưu tin nhắn cha cần cuộn tới
-  const [highlightedMessage, setHighlightedMessage] = useState(null); // Lưu tin nhắn cần làm nổi bật
+  const [scrollToParent, setScrollToParent] = useState(null);
+  const [highlightedMessage, setHighlightedMessage] = useState(null);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
-  // Cuộn tới tin nhắn cụ thể
   const scrollToMessages = (messageId) => {
     scrollToMessage(messageId);
-    setHighlightedMessage(messageId); 
+    setHighlightedMessage(messageId);
   };
 
   const handleScroll = () => {
     console.log("Scrolling");
     if (chatContainerRef.current) {
       const { scrollTop } = chatContainerRef.current;
-      // Nếu cuộn đến gần đầu
-      console.log('Cuộn đến đầu');
-
       if (scrollTop === 0) {
         setIsScrolledToTop(true);
         console.log('Cuộn đến đầu');
@@ -38,14 +34,13 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
   useEffect(() => {
     if (scrollToParent) {
       scrollToMessages(scrollToParent);
-      setScrollToParent(null); // Reset sau khi cuộn
+      setScrollToParent(null);
     }
   }, [scrollToParent]);
 
-  // Xóa highlight sau khi nháy 3-5 lần
   useEffect(() => {
     if (highlightedMessage) {
-      const timer = setTimeout(() => setHighlightedMessage(null), 3000); // Xóa highlight sau 3 giây
+      const timer = setTimeout(() => setHighlightedMessage(null), 3000);
       return () => clearTimeout(timer);
     }
   }, [highlightedMessage]);
@@ -55,13 +50,10 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
   }, [messages]);
 
   useEffect(() => {
-    // Thêm sự kiện scroll khi component được mount
     const container = chatContainerRef.current;
     if (container) {
       container.addEventListener('scroll', handleScroll);
     }
-
-    // Cleanup khi component unmount
     return () => {
       if (container) {
         container.removeEventListener('scroll', handleScroll);
@@ -86,20 +78,17 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
   }
 
   return (
-    <div
-      ref={chatContainerRef} // Thêm style để scroll
-    >
+    <div ref={chatContainerRef}>
       {messages.map((message, index) => {
         const isUserMessage = message.sender.id === userLogin.id;
         const isLastMessage = index === messages.length - 1 || messages[index + 1]?.sender.id !== message.sender.id;
-
         const showAvatar = index === 0 || messages[index - 1]?.sender.id !== message.sender.id;
 
         return (
           (message && !message.removeOfme?.includes(userLogin.id)) && (
             <div
-              key={message.id + message.timestamp}
-              ref={(el) => (messageRefs.current[message.id] = el)} // Lưu ref vào object
+              key={message.id + message.timestamp + Math.random()}
+              ref={(el) => (messageRefs.current[message.id] = el)}
             >
               <MessageItem
                 message={message}
@@ -109,10 +98,10 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
                 conversation={conversation}
                 userLogin={userLogin}
                 conversations={conversations}
-                isHighlighted={highlightedMessage === message.id} // Kiểm tra xem tin nhắn có được làm nổi bật không
+                isHighlighted={highlightedMessage === message.id}
                 onClickParent={() => {
                   if (message.messageParent?.id) {
-                    setScrollToParent(message.messageParent.id); // Đặt tin nhắn cha cần cuộn tới
+                    setScrollToParent(message.messageParent.id);
                   }
                 }}
               />
@@ -120,7 +109,6 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
           )
         );
       })}
-
       <div ref={messagesEndRef} />
     </div>
   );

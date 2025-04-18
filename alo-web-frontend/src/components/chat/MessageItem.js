@@ -26,6 +26,7 @@ import {
 } from '../../redux/slices/ConversationSlice';
 import socket from '../../utils/socket';
 import ModalForwardMessage from './ModalForwardMessage';
+import ModalReaction from './ModalReaction'; // Import component mới
 import showToast from '../../utils/AppUtils';
 
 const MessageItem = ({
@@ -42,7 +43,6 @@ const MessageItem = ({
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, messageId: null });
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showReactionModal, setShowReactionModal] = useState(false);
-  const [selectedReactionTab, setSelectedReactionTab] = useState(null);
   const [isOpenModalForward, setIsOpenModalForward] = useState(false);
   const showReactionsRef = useRef(false);
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
@@ -122,13 +122,6 @@ const MessageItem = ({
     [conversation.members]
   );
 
-  // Lọc danh sách người dùng theo tab
-  const userReactions = useMemo(() => {
-    return getUserReactions(message.reaction).filter(
-      (user) => !selectedReactionTab || user.rawTypes.includes(selectedReactionTab)
-    );
-  }, [message.reaction, selectedReactionTab, getUserReactions]);
-
   // Lấy top 3 reaction
   const extractedReactions = useMemo(
     () => extractReactions(message.reaction),
@@ -182,31 +175,6 @@ const MessageItem = ({
     },
     [message, userLogin.id, dispatch, conversation]
   );
-
-  // Xóa tất cả reaction của người dùng hiện tại
-  const handleRemoveAllReactions = useCallback(async () => {
-    try {
-      const updatedReaction = {};
-      Object.entries(message.reaction || {}).forEach(([type, data]) => {
-        const filteredUsers = data.users.filter((userId) => userId !== userLogin.id);
-        const quantity = filteredUsers.length;
-        if (quantity > 0) {
-          updatedReaction[type] = { quantity, users: filteredUsers };
-        }
-      });
-
-      dispatch(setMessageUpdate({ messageId: message.id, reaction: updatedReaction }));
-      setShowReactionModal(false);
-      await dispatch(removeAllReaction({ messageId: message.id }))
-        .unwrap()
-        .then((res) => {
-          socket.emit('update-reaction', { conversation, message: res.data });
-        });
-
-    } catch (error) {
-      console.error('Error removing reactions:', error);
-    }
-  }, [message, userLogin.id, dispatch, conversation]);
 
   // Memoize các hàm xử lý sự kiện
   const handleContextMenu = useCallback(
@@ -407,7 +375,9 @@ const MessageItem = ({
             <ul className="text-sm text-gray-700">
               {message.status === 0 && (
                 <>
-                  <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleAnswer}>
+                  <
+
+li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleAnswer}>
                     Trả lời
                   </li>
                   <li
@@ -711,78 +681,13 @@ const MessageItem = ({
         </div>
 
         {/* Modal danh sách reaction */}
-        {showReactionModal && (
-          <div
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-20"
-            onClick={() => setShowReactionModal(false)}
-          >
-            <div
-              className="bg-white rounded-lg shadow-lg w-full max-w-md p-4 relative max-h-[70vh] overflow-y-auto"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <button
-                className="absolute top-2 right-2 text-gray-500 hover:text-gray-700"
-                onClick={() => setShowReactionModal(false)}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-              <h3 className="text-lg font-semibold mb-4">Tương tác</h3>
-              <div className="flex space-x-2 mb-4 overflow-x-auto">
-                <button
-                  className={`px-4 py-2 ${selectedReactionTab === null ? 'border-b-2 border-black font-bold' : ''}`}
-                  onClick={() => setSelectedReactionTab(null)}
-                >
-                  Tất cả ({extractedReactions.reduce((total, { count }) => total + count, 0)})
-                </button>
-                {extractedReactions.map(({ type, emoji, count }) => (
-                  <button
-                    key={type}
-                    className={`px-4 py-2 flex items-center ${selectedReactionTab === type ? 'border-b-2 border-black font-bold' : ''
-                      }`}
-                    onClick={() => setSelectedReactionTab(type)}
-                  >
-                    {emoji} {count}
-                  </button>
-                ))}
-              </div>
-              <div className="space-y-2">
-                {userReactions.length > 0 ? (
-                  userReactions.map((user) => {
-                    const displayedEmojis = selectedReactionTab
-                      ? user.rawTypes.includes(selectedReactionTab)
-                        ? [emojiMap[selectedReactionTab]]
-                        : []
-                      : user.emojis;
-                    return (
-                      <div key={user.id} className="flex items-center py-2">
-                        <img
-                          src={getMember(user.id).avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
-                          alt="avatar"
-                          className="w-10 h-10 rounded-full mr-3"
-                          loading="lazy"
-                        />
-                        <p className="flex-1 text-sm">{getMember(user.id).fullName}</p>
-                        <p className="text-sm">{displayedEmojis.join(' ')}</p>
-                      </div>
-                    );
-                  })
-                ) : (
-                  <p className="text-center text-gray-500">Không có tương tác nào.</p>
-                )}
-              </div>
-              {myReaction && (
-                <button
-                  className="mt-4 w-full bg-red-500 text-white py-2 rounded-lg"
-                  onClick={handleRemoveAllReactions}
-                >
-                  Xóa tất cả tương tác của bạn
-                </button>
-              )}
-            </div>
-          </div>
-        )}
+        <ModalReaction
+          message={message}
+          conversation={conversation}
+          userLogin={userLogin}
+          isOpen={showReactionModal}
+          onClose={() => setShowReactionModal(false)}
+        />
 
         {/* Modal chi tiết tin nhắn */}
         {showDetailsModal && (

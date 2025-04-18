@@ -6,7 +6,7 @@ import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updat
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
 import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
-import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage } from "../redux/slices/MessageSlice";
+import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage, seenOne } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 export const Navigation = () => {
     const dispatch = useDispatch();
@@ -151,12 +151,12 @@ export const Navigation = () => {
     }, []);
     const messages = useSelector((state) => state.message.messages);
     useEffect(() => {
-        socket.on('receive-message', (message) => {
-            dispatch(setMessages([...messages, message]));
-        });
-    }, [messages, dispatch]);
+        console.log("Messages", messages);
+    }, [messages]);
 
     
+
+
     const friendsRequest = useSelector((state) => state.friend.friendsRequest);
     useEffect(() => {
         const handleReceiveFriendRequest = async (data) => {
@@ -232,32 +232,32 @@ export const Navigation = () => {
 
     useEffect(() => {
         const handleUnPinMessage = (data) => {
-          const { conversation, pin } = data;
-          console.log("Received unpin message:", conversation, pin);
-          dispatch(removePinToConversation(pin));
+            const { conversation, pin } = data;
+            console.log("Received unpin message:", conversation, pin);
+            dispatch(removePinToConversation(pin));
         }
         socket.on("receive-unpin-message", handleUnPinMessage);
-    
-        return () => {
-          socket.off("receive-unpin-message", handleUnPinMessage);
-        }
-      }, []);
 
-      useEffect(() => {
+        return () => {
+            socket.off("receive-unpin-message", handleUnPinMessage);
+        }
+    }, []);
+
+    useEffect(() => {
         const handleReceivePinMessage = (data) => {
-          console.log("Received pin message:", data);
-          const { conversation, pin } = data;
-          console.log("Received pin message:", conversation, pin);
-    
-          dispatch(addPinToConversation(pin));
-          showToast("Đã có ghim mới.", "info");
+            console.log("Received pin message:", data);
+            const { conversation, pin } = data;
+            console.log("Received pin message:", conversation, pin);
+
+            dispatch(addPinToConversation(pin));
+            showToast("Đã có ghim mới.", "info");
         }
         socket.on("receive-pin-message", handleReceivePinMessage);
-    
+
         return () => {
-          socket.off("receive-pin-message", handleReceivePinMessage);
+            socket.off("receive-pin-message", handleReceivePinMessage);
         }
-      }, []);
+    }, []);
 
     return (
         <>

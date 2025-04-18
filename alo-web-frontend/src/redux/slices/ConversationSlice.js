@@ -64,21 +64,20 @@ const ConversationSlice = createSlice({
             }
         },
         addPinToConversation: (state, action) => {
-            let cons = state.conversation;
-            if (cons && action.payload?.message) { 
-                cons.pineds.unshift(action.payload);
-                if (cons.pineds.length > 5) {
-                    cons.pineds.pop(); 
+            if (state.conversation && action.payload?.message) {
+                state.conversation.pineds = state.conversation.pineds || [];
+                state.conversation.pineds.unshift(action.payload);
+                if (state.conversation.pineds.length > 5) {
+                    state.conversation.pineds.pop();
                 }
             }
-            state.conversation = {...cons}; 
         },
         removePinToConversation: (state, action) => {
-            let cons = state.conversation;
-            if (cons) {
-                cons.pineds = cons.pineds.filter(pin => pin.messageId !== action.payload.messageId);
-            } 
-            state.conversation = {...cons};
+            if (state.conversation && state.conversation.pineds) {
+                state.conversation.pineds = state.conversation.pineds.filter(
+                    (pin) => pin.messageId !== action.payload.messageId
+                );
+            }
         }
     },
     extraReducers: (builder) => {
@@ -134,6 +133,6 @@ const ConversationSlice = createSlice({
     }
 });
 
-export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation  } = ConversationSlice.actions;
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation } = ConversationSlice.actions;
 export { getAllConversation, getConversationById, createPin, removePin };
 export default ConversationSlice.reducer;

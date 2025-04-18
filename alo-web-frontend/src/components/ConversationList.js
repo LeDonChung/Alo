@@ -77,7 +77,7 @@ const ConversationList = () => {
   return (
     <div className=" bg-white border-r border-gray-200 py-4 overflow-y-auto max-h-[2000px] scrollable">
       <div>
-        {conversations && conversations.map((conversation) => (
+        {(conversations && conversations.length > 0) ? conversations.map((conversation) => (
           !conversation.isGroup &&
           <div
             key={conversations.id}
@@ -112,7 +112,14 @@ const ConversationList = () => {
               }</p>
             </div>
           </div>
-        ))}
+        )) : (
+          <>
+            <div className="flex justify-center items-center">
+              <div className="animate-spin rounded-full border-t-2 border-b-2 border-blue-600 w-4 h-4"></div>
+            </div>
+          </>
+        )
+        }
       </div>
     </div>
   );

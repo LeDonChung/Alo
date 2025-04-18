@@ -105,13 +105,13 @@ const MessageSlice = createSlice({
     initialState,
     reducers: {
         setMessages: (state, action) => {
+            console.log("setMessages", action.payload);
             state.messages = action.payload;
         },
         increaseLimit: (state, action) => {
             state.limit += action.payload;
         },
         addMessage: (state, action) => {
-            console.log("addMessage", action.payload);
             state.messages.push(action.payload);
         },
         setMessageParent: (state, action) => {
@@ -160,12 +160,11 @@ const MessageSlice = createSlice({
         },
         updateSeenAllMessage: (state, action) => {
             const messageSeens = action.payload;
-            state.messages = state.messages.map((msg) => {
-                const updated = messageSeens.find((m) => m.id === msg.id);
-                if (updated) {
-                    return { ...msg, seen: updated.seen };
+            messageSeens.forEach((updated) => {
+                const index = state.messages.findIndex((msg) => msg.id === updated.id);
+                if (index !== -1) {
+                    state.messages[index].seen = updated.seen; // Cập nhật trực tiếp tại index
                 }
-                return msg;
             });
         },
         setConversationsShareMessage: (state, action) => {
@@ -200,14 +199,14 @@ const MessageSlice = createSlice({
                 state.messageUpdate = null;
             })
 
-            .addCase(updateReaction.fulfilled, () => {})
-            .addCase(removeAllReaction.fulfilled, () => {})
-            .addCase(seenAll.fulfilled, () => {})
-            .addCase(seenOne.fulfilled, () => {})
+            .addCase(updateReaction.fulfilled, () => { })
+            .addCase(removeAllReaction.fulfilled, () => { })
+            .addCase(seenAll.fulfilled, () => { })
+            .addCase(seenOne.fulfilled, () => { })
             .addCase(forwardMessage.pending, (state) => { state.isSending = true; })
             .addCase(forwardMessage.fulfilled, (state) => { state.isSending = false; })
             .addCase(forwardMessage.rejected, (state) => { state.isSending = false; })
-            .addCase(removeOfMe.fulfilled, () => {});
+            .addCase(removeOfMe.fulfilled, () => { });
     }
 });
 
