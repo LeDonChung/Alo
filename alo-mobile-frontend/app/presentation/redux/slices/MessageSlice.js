@@ -37,7 +37,7 @@ const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ messag
         });
         return response.data;
     } catch (error) {
-        console.log(error) 
+        console.log(error);
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 });
@@ -54,14 +54,14 @@ const getMessagesByConversationId = createAsyncThunk('MessageSlice/getMessagesBy
 const forwardMessage = createAsyncThunk(
     'MessageSlice/forwardMessage',
     async ({ messageId, conversationIds }, { rejectWithValue }) => {
-      try {
-        const response = await axiosInstance.post(`/api/message/${messageId}/send-continue`, {
-          conversationIds: conversationIds,
-        });
-        return response.data;
-      } catch (error) {
-        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
-      }
+        try {
+            const response = await axiosInstance.post(`/api/message/${messageId}/send-continue`, {
+                conversationIds: conversationIds,
+            });
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+        }
     }
 );
 
@@ -78,7 +78,7 @@ const updateReaction = createAsyncThunk('MessageSlice/updateReaction', async ({ 
 
 const removeAllReaction = createAsyncThunk('MessageSlice/removeAllReaction', async ({ messageId }, { rejectWithValue }) => {
     try {
-        const response = await axiosInstance.delete(`/api/message/${messageId}/reaction`); 
+        const response = await axiosInstance.delete(`/api/message/${messageId}/reaction`);
         return response.data;
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
@@ -97,6 +97,35 @@ const updateMessageStatus = createAsyncThunk(
     }
 );
 
+const seenAll = createAsyncThunk('MessageSlice/seenAll', async (messageIds, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.put(`/api/message/seen-messages`, {
+            messageIds
+        });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
+const seenOne = createAsyncThunk('MessageSlice/seenOne', async (messageId, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.put(`/api/message/${messageId}/seen`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
+const removeOfMe = createAsyncThunk('MessageSlice/removeOfMe', async (messageId, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.put(`/api/message/${messageId}/remove-of-me`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
 const MessageSlice = createSlice({
     name: 'MessageSlice',
     initialState: initialState,
@@ -110,40 +139,66 @@ const MessageSlice = createSlice({
         handlerUpdateReaction: (state, action) => {
             const { messageId, updatedReaction } = action.payload;
             const index = state.messages.findIndex(message => message.id === messageId);
-            if (index !== -1) { 
-                state.messages[index].reaction = updatedReaction; 
-            }
-        }, 
-        updateMessage: (state, action) => {
-            const index = state.messages.findIndex(message => { 
-                return message.requestId === Number(action.payload.requestId)
-            }); 
             if (index !== -1) {
-                state.messages[index] = action.payload; 
-            }  
+                state.messages[index].reaction = updatedReaction;
+            }
         },
-        addMessage: (state, action) => { 
+        updateMessage: (state, action) => {
+            const index = state.messages.findIndex(message => {
+                return message.requestId === Number(action.payload.requestId);
+            });
+            if (index !== -1) {
+                state.messages[index] = action.payload;
+            }
+        },
+        addMessage: (state, action) => {
             const message = action.payload;
-            const index = state.messages.findIndex(msg => msg.id === message.id);
+            const index = state.messages.findIndex(msg => msg.id === message.id || msg.requestId === message.requestId);
             if (index !== -1) {
                 state.messages[index] = message;
             } else {
-                state.messages.push(message); 
+                state.messages.push(message);
             }
         },
         setInputMessage: (state, action) => {
             state.inputMessage = action.payload;
-        }, 
+        },
         setMessageParent: (state, action) => {
             state.messageParent = action.payload;
-        }, 
+        },
         setMessageUpdate: (state, action) => {
             const { messageId, status } = action.payload;
             const index = state.messages.findIndex(message => message.id === messageId);
-            if (index !== -1) { 
+            if (index !== -1) {
                 state.messages[index].status = status;
             }
-        }, 
+        },
+        updateSeenAllMessage: (state, action) => {
+            const messageSeens = action.payload;
+            state.messages = state.messages.map((msg) => {
+                const updated = messageSeens.find((m) => m.id === msg.id);
+                if (updated) {
+                    return {
+                        ...msg,
+                        seen: updated.seen,
+                    };
+                }
+                return msg;
+            });
+        },
+        setMessageRemoveOfMe: (state, action) => {
+            const { messageId, userId } = action.payload;
+            const index = state.messages.findIndex(message => message.id === messageId);
+            if (index !== -1) {
+                const hasUserId = state.messages[index].removeOfme?.includes(userId);
+                if (!hasUserId) {
+                    state.messages[index].removeOfme = [
+                        ...(state.messages[index].removeOfme || []),
+                        userId
+                    ];
+                }
+            }
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(sendMessage.pending, (state) => {
@@ -200,9 +255,44 @@ const MessageSlice = createSlice({
         builder.addCase(updateMessageStatus.rejected, (state, action) => {
             state.messageUpdate = null;
         });
+
+        builder.addCase(seenAll.pending, (state) => {});
+        builder.addCase(seenAll.fulfilled, (state, action) => {});
+        builder.addCase(seenAll.rejected, (state, action) => {});
+
+        builder.addCase(seenOne.pending, (state) => {});
+        builder.addCase(seenOne.fulfilled, (state, action) => {});
+        builder.addCase(seenOne.rejected, (state, action) => {});
+
+        builder.addCase(removeOfMe.pending, (state) => {});
+        builder.addCase(removeOfMe.fulfilled, (state, action) => {});
+        builder.addCase(removeOfMe.rejected, (state, action) => {});
     }
 });
 
-export const { setMessages, increaseLimit, handlerUpdateReaction, updateMessage, addMessage, setInputMessage, setMessageParent, setMessageUpdate } = MessageSlice.actions;
-export { sendMessage, getMessagesByConversationId, updateReaction, removeAllReaction, forwardMessage, updateMessageStatus };
+export const {
+    setMessages,
+    increaseLimit,
+    handlerUpdateReaction,
+    updateMessage,
+    addMessage,
+    setInputMessage,
+    setMessageParent,
+    setMessageUpdate,
+    updateSeenAllMessage,
+    setMessageRemoveOfMe
+} = MessageSlice.actions;
+
+export {
+    sendMessage,
+    getMessagesByConversationId,
+    updateReaction,
+    removeAllReaction,
+    forwardMessage,
+    updateMessageStatus,
+    seenAll,
+    seenOne,
+    removeOfMe
+};
+
 export default MessageSlice.reducer;

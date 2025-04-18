@@ -9,7 +9,7 @@ const fileService = require('../../services/file.service');
 exports.createMessage = async (req, res) => {
     try {
         console.log('Request body:', req.body);
-        
+
         const { senderId, conversationId, content, messageType, fileLink, requestId } = req.body;
 
         // Kiểm tra conversation có tồn tại
@@ -20,24 +20,27 @@ exports.createMessage = async (req, res) => {
                 message: "Cuộc trò chuyện không tồn tại.",
                 data: null
             });
-        } 
+        }
 
         // Khởi tạo request
         const request = {
-            id: uuidv4(), 
+            id: uuidv4(),
             senderId,
             conversationId,
             content,
             messageType,
             timestamp: Date.now(),
-            seen: [senderId],
+            seen: [{
+                userId: senderId,
+                timestamp: Date.now()
+            }],
             status: 0
         };
 
-        if((messageType === 'image' && fileLink) || messageType === 'sticker'){
+        if ((messageType === 'image' && fileLink) || messageType === 'sticker') {
             request.fileLink = fileLink;
-        } 
-        
+        }
+
         if ((!fileLink || fileLink === '') && ['image', 'file'].includes(messageType)) {
             request.fileLink = await fileService.uploadFile(req.file);
         }
@@ -50,7 +53,7 @@ exports.createMessage = async (req, res) => {
                 data: null
             });
         }
-        
+
         if (req.body.messageParent) {
             // Kiểm tra messageParent có tồn tại
             const messageParentExists = await messageService.getMessageById(req.body.messageParent);
@@ -61,7 +64,7 @@ exports.createMessage = async (req, res) => {
                     data: null
                 });
             }
-            
+
             const sender = await userService.getUserById(messageParentExists.senderId);
             if (!sender) {
                 return res.status(400).json({
@@ -112,7 +115,7 @@ exports.getMessagesByConversationId = async (req, res) => {
     try {
         const conversationId = req.params.conversationId;
         const messages = await messageService.getMessagesByConversationId(conversationId);
-        let senders = {}; 
+        let senders = {};
 
         const senderPromises = messages.map(async (message) => {
             const senderId = message.senderId;
@@ -121,7 +124,7 @@ exports.getMessagesByConversationId = async (req, res) => {
                 try {
                     const sender = await userService.getUserById(senderId);
                     if (!sender) {
-                        senders[senderId] = {}; 
+                        senders[senderId] = {};
                     } else {
                         senders[senderId] = sender;
                     }
@@ -177,12 +180,12 @@ exports.updateMessageStatus = async (req, res) => {
         }
 
         console.log('Message:', message);
-        
+
         await conversationService.updateLastMessage(conversation.id, message);
         return res.status(200).json({
             status: 200,
             data: message,
-            message: "Cập nhật trạng thái tin nhắn thành công." 
+            message: "Cập nhật trạng thái tin nhắn thành công."
         });
 
     } catch (err) {
@@ -370,16 +373,22 @@ exports.updateSeenMessage = async (req, res) => {
         }
 
         const seen = message.seen || [];
-        if (seen.includes(userId)) {
+
+        // Kiểm tra xem userId đã có trong danh sách đã xem chưa
+        const index = seen.findIndex((seen) => seen.userId === userId);
+        if (index !== -1) {
             return res.status(200).json({
                 status: 200,
                 message: "Người dùng đã xem tin nhắn.",
-                data: null
+                data: message
             });
         }
 
         // Nếu chưa xem thì thêm vào danh sách đã xem
-        seen.push(userId);
+        seen.push({
+            userId: userId,
+            timestamp: Date.now()
+        });
 
         // Cập nhật người đã xem tin nhắn
         await messageService.updateSeenMessage(messageId, message.timestamp, seen);
@@ -496,3 +505,115 @@ exports.forwardMessage = async (req, res) => {
         });
     }
 };
+
+// Seen ALL message
+exports.seenAll = async (req, res) => {
+    try {
+        // Lấy userId từ token
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        const userId = userService.getUserIdFromToken(token);
+
+        // Lấy danh sách messageId
+        const { messageIds } = req.body;
+
+        // Lấy ra danh sách messages dựa vào messageIds
+        let messages = [];
+        for (const messageId of messageIds) {
+            const message = await messageService.getMessageById(messageId);
+            if (message) {
+                messages.push(message);
+            }
+        }
+
+        // Kiểm tra userId có tồn tại trong seen của message chưa, nếu chưa thì thêm vào
+        let messagesSeen = [];
+        for (const message of messages) {
+            let seens = message.seen;
+
+            const index = seens.findIndex((seen) => seen.userId === userId);
+            if (index === -1) {
+                seens.push({
+                    userId: userId,
+                    timestamp: Date.now()
+                });
+            }
+            // Cập nhật lại message
+            const messageNew = await messageService.updateSeenMessage(message.id, message.timestamp, seens);
+            messagesSeen.push(messageNew);
+        }
+
+        return res.json({
+            status: 200,
+            message: "Đánh dấu đã đọc tất cả tin nhắn thành công.",
+            data: messagesSeen
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+
+
+
+
+}
+
+// Xóa tin nhắn ở phía tôi
+exports.removeMessageOfMe = async (req, res) => {
+    try {
+        const { messageId } = req.params;
+
+        // Lấy Authorization từ header
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        // Lấy userId từ token
+        const userId = userService.getUserIdFromToken(token);
+
+        // Tìm tin nhắn theo id
+        const message = await messageService.getMessageById(messageId);
+        if (!message) {
+            return res.status(404).json({
+                status: 404,
+                message: "Không tìm thấy tin nhắn.",
+                data: null
+            });
+        }
+        
+        const removeOfme = message.removeOfme || [];
+        // Kiểm tra xem userId đã có trong danh sách xóa chưa
+        const index = removeOfme.indexOf(userId);
+        if (index === -1) {
+            // Nếu chưa có thì thêm vào
+            removeOfme.push(userId);
+        } else {
+            return res.status(200).json({
+                status: 200,
+                message: "Bạn đã xóa tin nhắn này rồi.",
+                data: null
+            });
+        }
+        // Cập nhật removeOfme
+        await messageService.deleteMessage(messageId, message.timestamp, removeOfme);
+
+        message.removeOfme = removeOfme;
+
+        // Cập nhật tin nhắn cuối cùng của cuộc trò chuyện
+        return res.status(200).json({
+            status: 200,
+            data: message,
+            message: "Xóa tin nhắn thành công."
+        });
+    }
+    catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}

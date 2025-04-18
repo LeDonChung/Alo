@@ -5,6 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { blockFriend, getFriends, removeFriend, setFriends, unblockFriend, unfriend } from '../redux/slices/FriendSlice';
 import showToast, { removeVietnameseTones } from '../utils/AppUtils';
 import socket from '../utils/socket';
+import ModalConfirmUnfriend from './friend/ModalShowInfoFriend';
 
 const categoryList = [
   { id: 1, name: "Bạn thân", color: "#ff6347" },
@@ -47,7 +48,6 @@ export default function FriendsOfUser() {
 
   const [isUnfriend, setIsUnfriend] = useState(false);
   const friends = useSelector(state => state.friend.friends);
-  console.log("friends", friends);
   const handleUnfriend = async (item) => {
     try {
       if (isOpenConfirm) {
@@ -487,6 +487,7 @@ export default function FriendsOfUser() {
                                           </div>
                                         )}
                                       </>
+
                                     </div>
 
 

@@ -5,8 +5,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
-import { getAllConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
-import { setMessages, setMessageUpdate } from "../redux/slices/MessageSlice";
+import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
+import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 export const Navigation = () => {
     const dispatch = useDispatch();
@@ -78,6 +78,7 @@ export const Navigation = () => {
             socket.off('receive-update-message', handleUpdateMessage);
         };
     }, [userLogin?.id, dispatch]);
+
 
 
     const friends = useSelector((state) => state.friend.friends);
@@ -154,6 +155,8 @@ export const Navigation = () => {
             dispatch(setMessages([...messages, message]));
         });
     }, [messages, dispatch]);
+
+    
     const friendsRequest = useSelector((state) => state.friend.friendsRequest);
     useEffect(() => {
         const handleReceiveFriendRequest = async (data) => {
@@ -180,6 +183,28 @@ export const Navigation = () => {
             socket.off("receive-cancle-friend-request", handleCancleFriendRequest);
         };
     }, []);
+    const conversation = useSelector((state) => state.conversation.conversation);
+    useEffect(() => {
+        const handleReceiveSeenMessage = async (data) => {
+            console.log('receive-seen-message', data);
+            dispatch(updateSeenAllMessage(data.messages));
+        }
+        socket.on('receive-seen-message', handleReceiveSeenMessage);
+
+        return () => {
+            socket.off('receive-seen-message', handleReceiveSeenMessage);
+        }
+    }, [])
+    useEffect(() => {
+        const handlerRemoveOfMe = async (data) => {
+            const { messageId, userId } = data;
+            dispatch(setMessageRemoveOfMe({ messageId: messageId, userId: userId }));
+        }
+        socket.on('receive-remove-of-me', handlerRemoveOfMe);
+        return () => {
+            socket.off('receive-remove-of-me', handlerRemoveOfMe);
+        }
+    }, [])
     const [menus, setMenus] = useState([
         { id: 1, icon: "./icon/ic_message.png", onPress: () => navigate("/me") },
         { id: 2, icon: "./icon/ic_round-perm-contact-calendar.png", onPress: () => navigate("/contact") },
@@ -204,6 +229,35 @@ export const Navigation = () => {
             document.removeEventListener("mousedown", handleClickOutside);
         };
     }, []);
+
+    useEffect(() => {
+        const handleUnPinMessage = (data) => {
+          const { conversation, pin } = data;
+          console.log("Received unpin message:", conversation, pin);
+          dispatch(removePinToConversation(pin));
+        }
+        socket.on("receive-unpin-message", handleUnPinMessage);
+    
+        return () => {
+          socket.off("receive-unpin-message", handleUnPinMessage);
+        }
+      }, []);
+
+      useEffect(() => {
+        const handleReceivePinMessage = (data) => {
+          console.log("Received pin message:", data);
+          const { conversation, pin } = data;
+          console.log("Received pin message:", conversation, pin);
+    
+          dispatch(addPinToConversation(pin));
+          showToast("Đã có ghim mới.", "info");
+        }
+        socket.on("receive-pin-message", handleReceivePinMessage);
+    
+        return () => {
+          socket.off("receive-pin-message", handleReceivePinMessage);
+        }
+      }, []);
 
     return (
         <>
