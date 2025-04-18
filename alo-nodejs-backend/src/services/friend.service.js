@@ -461,16 +461,31 @@ const getFriends = async (userId) => {
                 console.log("User not found: ", friendId);
                 continue;
             }
+
+            //thong tin account
+            const paramsAccount = {
+                TableName: 'Accounts',
+                Key: {
+                    accountId: user.accountId
+                }
+            }
+
+            const accountResult = await client.get(paramsAccount).promise();
+            const account = accountResult?.Item;
+
             const response = {
                 userId: userId,
                 friendId: friendId,
                 friendInfo: {
                     fullName: user.fullName,
                     status: friend.status,
-                    accountId: user.accountId,
+                    accountId: account.accountId,
                     requestDate: friend.requestDate,
                     avatarLink: user.avatarLink,
-                    id: user.id
+                    id: user.id,
+                    phoneNumber: account.phoneNumber,
+                    birthday: user.birthDay,
+                    gender: user.gender
                 }
             }
             listResult.push(response);

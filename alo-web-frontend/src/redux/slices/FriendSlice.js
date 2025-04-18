@@ -152,6 +152,15 @@ const FriendSlice = createSlice({
         },
         addFriendRequestSent: (state, action) => {
             state.friendsRequestSent.push(action.payload);
+        },
+        updateFriend: (state, action) => {
+            const { userId, friendId, status } = action.payload;
+            const friendIndex = state.friends.findIndex(
+                (f) => f.userId === userId && f.friendId === friendId
+            );
+            if (friendIndex !== -1) {
+                state.friends[friendIndex].status = status;
+            }
         } 
     },
     extraReducers: (builder) => {
@@ -282,6 +291,6 @@ const FriendSlice = createSlice({
     }
 });
 
-export const { setFriendsRequest, setFriends, addFriend, removeFriend, removeFriendRequest, addFriendsRequest, cancelFriendRequestSent, addFriendRequestSent } = FriendSlice.actions;
+export const { setFriendsRequest, updateFriend, setFriends, addFriend, removeFriend, removeFriendRequest, addFriendsRequest, cancelFriendRequestSent, addFriendRequestSent } = FriendSlice.actions;
 export { getFriends, unfriend, blockFriend, sendFriendRequest, acceptFriendRequest, cancelFriendRequest, rejectFriendRequest, getFriendsRequest, unblockFriend, getFriendByPhone, getFriendsRequestSent };
 export default FriendSlice.reducer;
