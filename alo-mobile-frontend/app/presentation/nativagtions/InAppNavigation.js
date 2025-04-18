@@ -373,7 +373,7 @@ export const InAppNavigation = () => {
   return (
     <SafeAreaView style={{ flex: 1, flexDirection: "column" }}>
       {(chooseTab === "home" || chooseTab === "contact") && (
-        <SafeAreaView
+        <View
           style={{
             backgroundColor: "#007AFF",
             padding: 5,
@@ -403,7 +403,7 @@ export const InAppNavigation = () => {
           <TouchableOpacity>
             <Icon name="plus" size={18} color="white" style={{ marginHorizontal: 10 }} />
           </TouchableOpacity>
-        </SafeAreaView>
+        </View>
       )}
 
       {search.length > 0 && (

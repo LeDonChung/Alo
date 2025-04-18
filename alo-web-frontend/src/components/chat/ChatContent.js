@@ -52,7 +52,7 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
 
   useEffect(() => {
     scrollToBottom();
-  }, []);
+  }, [messages]);
 
   useEffect(() => {
     // Thêm sự kiện scroll khi component được mount
