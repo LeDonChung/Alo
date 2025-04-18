@@ -152,7 +152,7 @@ const PinComponentWeb = ({ conversation, pins, scrollToMessage }) => {
             </div>
           )}
           {pinItem.message.messageType === 'text' && (
-            <p className="text-sm text-gray-800 truncate">{pinItem.message.content}</p>
+            <p className="text-sm text-gray-800 max-w-full" >{pinItem.message.content}</p>
           )}
           <p className="text-xs text-gray-500">
             Tin nhắn của {getMember(pinItem.message.senderId)?.fullName}

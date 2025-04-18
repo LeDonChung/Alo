@@ -111,6 +111,7 @@ const MessageSlice = createSlice({
             state.limit += action.payload;
         },
         addMessage: (state, action) => {
+            console.log("addMessage", action.payload);
             state.messages.push(action.payload);
         },
         setMessageParent: (state, action) => {
@@ -142,8 +143,11 @@ const MessageSlice = createSlice({
             }
         },
         updateMessage: (state, action) => {
-            const index = state.messages.findIndex(message => message.requestId === Number(action.payload.requestId));
+            const index = state.messages.findIndex(message => {
+                return message.requestId === Number(action.payload.requestId);
+            });
             if (index !== -1) {
+                console.log("updateMessage", action.payload);
                 state.messages[index] = action.payload;
             }
         },

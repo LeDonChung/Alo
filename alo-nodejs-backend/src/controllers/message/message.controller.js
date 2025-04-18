@@ -91,7 +91,7 @@ exports.createMessage = async (req, res) => {
         const sender = await userService.getUserById(senderId);
         message.sender = sender;
         // Cập nhật tin nhắn cuối cùng của cuộc trò chuyện
-        await conversationService.updateLastMessage(conversation.id, message);
+        // await conversationService.updateLastMessage(conversation.id, message);
 
         message.requestId = requestId;
         console.log('Tin nhắn đã được tạo:', message);
@@ -181,7 +181,7 @@ exports.updateMessageStatus = async (req, res) => {
 
         console.log('Message:', message);
 
-        await conversationService.updateLastMessage(conversation.id, message);
+        // await conversationService.updateLastMessage(conversation.id, message);
         return res.status(200).json({
             status: 200,
             data: message,
@@ -480,7 +480,7 @@ exports.forwardMessage = async (req, res) => {
             newMessages.push(newMessage);
 
             // Cập nhật tin nhắn cuối cùng của cuộc trò chuyện
-            await conversationService.updateLastMessage(conversationId, newMessage);
+            // await conversationService.updateLastMessage(conversationId, newMessage);
         }
 
         if (newMessages.length === 0) {
@@ -582,7 +582,7 @@ exports.removeMessageOfMe = async (req, res) => {
                 data: null
             });
         }
-        
+
         const removeOfme = message.removeOfme || [];
         // Kiểm tra xem userId đã có trong danh sách xóa chưa
         const index = removeOfme.indexOf(userId);

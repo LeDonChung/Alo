@@ -35,7 +35,7 @@ const getMessagesByConversationId = async (conversationId) => {
 
         const messages = await client.scan(params).promise();
         return messages.Items
-        
+
     } catch (err) {
         console.error(err);
         throw new Error(err);
@@ -75,7 +75,7 @@ const updateMessageReaction = async (messageId, timestamp, reaction) => {
             TableName: 'Messages',
             Key: {
                 id: messageId,
-                timestamp:  timestamp
+                timestamp: timestamp
             },
             UpdateExpression: 'set reaction = :reaction',
             ExpressionAttributeValues: {
@@ -165,6 +165,27 @@ const deleteMessage = async (messageId, timestamp, removeOfme) => {
         throw new Error(err);
     }
 }
+
+const getLastMessageByConversationId = async (conversationId) => {
+    try {
+        const params = {
+            TableName: 'Messages',
+            IndexName: 'conversationId-timestamp-index',
+            KeyConditionExpression: 'conversationId = :conversationId',
+            ExpressionAttributeValues: {
+                ':conversationId': conversationId
+            },
+            ScanIndexForward: false,
+            Limit: 1
+        };
+
+        const result = await client.query(params).promise();
+        return result.Items[0];
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
 module.exports = {
     createMessage,
     getMessagesByConversationId,
@@ -172,5 +193,6 @@ module.exports = {
     getMessageById,
     updateMessageReaction,
     updateSeenMessage,
-    deleteMessage
+    deleteMessage,
+    getLastMessageByConversationId
 };
