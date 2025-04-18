@@ -47,7 +47,7 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, []);
 
   useEffect(() => {
     const container = chatContainerRef.current;

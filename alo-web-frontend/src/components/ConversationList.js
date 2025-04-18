@@ -31,13 +31,13 @@ const ConversationList = () => {
       let messageStatus = conversation.lastMessage.status;
 
       if (conversation.lastMessage.messageType === 'sticker') {
-        message = 'Sticker';
+        message = '[Sticker]';
       } else if (conversation.lastMessage.messageType === 'image') {
-        message = 'Hình ảnh';
+        message = '[Hình ảnh]';
       } else if (conversation.lastMessage.messageType === 'file') {
-        message = 'Tệp tin';
+        message = '[Tệp tin]';
       } else if (conversation.lastMessage.messageType === 'video') {
-        message = 'Video';
+        message = '[Video]';
       }
       if (conversation.lastMessage.senderId === userLogin.id) {
         return "Bạn: " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi");

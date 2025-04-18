@@ -543,7 +543,7 @@ li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleAnswer}
                     {message.messageType === 'image' && (
                       <LightGallery plugins={[lgZoom, lgThumbnail, lgVideo]} mode="lg-fade">
                         <a href={message.fileLink} data-lg-size="1280-720">
-                          {message.fileLink.includes('.mp4') ? (
+                          {message?.fileLink.includes('.mp4') ? (
                             <video
                               src={message.fileLink}
                               controls
@@ -552,7 +552,7 @@ li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleAnswer}
                             />
                           ) : (
                             <img
-                              src={message.fileLink}
+                              src={message?.fileLink}
                               alt="Hình ảnh"
                               className="max-w-full max-h-96 cursor-pointer object-cover"
                               loading="lazy"

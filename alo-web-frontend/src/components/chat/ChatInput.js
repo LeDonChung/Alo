@@ -21,22 +21,31 @@ const ChatInput = ({ isSending, getFriend }) => {
   const [images, setImages] = useState([]); // Lưu hình ảnh từ URL
   const [inputMessage, setInputMessage] = useState({ content: '', messageType: 'text', fileLink: '', file: null });
   const handlePaste = async (event) => {
-    setInputMessage({ ...inputMessage, content: '', messageType: 'text', fileLink: '' });
+    event.preventDefault(); // Ngăn hành vi mặc định
+  
     const clipboardData = event.clipboardData || window.clipboardData;
     const pastedData = clipboardData.getData("text"); // Lấy dữ liệu dạng text từ clipboard
-
-    // Kiểm tra nếu dữ liệu dán là URL và có đuôi định dạng hình ảnh
+  
     const imageFormats = [".png", ".jpg", ".jpeg", ".gif", ".bmp", ".webp"];
     const isImageURL = imageFormats.some((format) =>
       pastedData.toLowerCase().endsWith(format)
     );
-
+  
     if (isImageURL) {
       setImages(prevImages => [...prevImages, pastedData]); // Lưu URL hình ảnh
+      setInputMessage({ ...inputMessage, content: '', messageType: 'image', fileLink: pastedData }); // Optionally update messageType
     } else {
-      console.log('Pasted data is not an image URL:', pastedData);
+      // Nếu không phải image, thì dán như text bình thường và nối chuỗi vào nếu muốn
+      const modifiedText = pastedData + " - pasted"; // 👈 nối chuỗi ở đây nếu muốn
+      setInputMessage(prev => ({
+        ...prev,
+        content: prev.content + modifiedText,
+        messageType: 'text',
+        fileLink: ''
+      }));
     }
   };
+  
 
   const handlerSendImagesCopy = async () => {
     for (const image of images) {
@@ -51,14 +60,14 @@ const ChatInput = ({ isSending, getFriend }) => {
 
   const handlerSendMessage = async (customInputMessage = null) => {
     const messageData = customInputMessage || inputMessage;
-  
+
     if (messageData.messageType === 'text' && (!messageData.content || !messageData.content.trim())) {
       return;
     }
-  
+
     setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
     const { content, messageType, file, isCopy } = messageData;
-  
+
     // Function to create a message object
     const createMessage = (contentChunk, requestId) => ({
       id: requestId,
@@ -72,14 +81,14 @@ const ChatInput = ({ isSending, getFriend }) => {
       status: -1,
       ...(messageParent ? { messageParent: messageParent.id } : {}),
     });
-  
+
     // Function to create a temporary message for UI
     const createTempMessage = (message) => ({
       ...message,
       sender: userLogin,
       ...(messageParent ? { messageParent } : {}),
     });
-  
+
     try {
       // Handle text messages: split if > 3000 characters
       if (messageType === 'text' && content.length > 3000) {
@@ -87,22 +96,22 @@ const ChatInput = ({ isSending, getFriend }) => {
         for (let i = 0; i < content.length; i += 3000) {
           chunks.push(content.slice(i, i + 3000));
         }
-  
+
         for (const chunk of chunks) {
           const requestId = Date.now() + Math.random();
           const message = createMessage(chunk, requestId);
           const newMessageTemp = createTempMessage(message);
-  
+
           dispatch(addMessage(newMessageTemp));
-  
+
           const res = await dispatch(sendMessage({ message, file: null })).unwrap();
           const sentMessage = {
             ...res.data,
             sender: userLogin,
           };
-  
+
           dispatch(updateMessage(sentMessage));
-  
+
           socket.emit('send-message', {
             conversation,
             message: sentMessage,
@@ -112,7 +121,7 @@ const ChatInput = ({ isSending, getFriend }) => {
         const requestId = Date.now() + Math.random();
         const message = createMessage(content, requestId);
         const newMessageTemp = createTempMessage(message);
-  
+
         if (messageType === 'image') {
           if (isCopy) {
             newMessageTemp.fileLink = messageData.fileLink;
@@ -126,24 +135,24 @@ const ChatInput = ({ isSending, getFriend }) => {
           newMessageTemp.fileLink = messageData.fileLink;
           message.fileLink = messageData.fileLink;
         }
-  
+
         dispatch(addMessage(newMessageTemp));
         dispatch(setMessageParent(null));
-  
+
         const res = await dispatch(sendMessage({ message, file })).unwrap();
         const sentMessage = {
           ...res.data,
           sender: userLogin,
         };
-  
+
         dispatch(updateMessage(sentMessage));
-  
+
         socket.emit('send-message', {
           conversation,
           message: sentMessage,
         });
       }
-  
+
     } catch (err) {
       console.error('Error sending message:', err);
     }
@@ -196,6 +205,7 @@ const ChatInput = ({ isSending, getFriend }) => {
   const inputRef = useRef(null);
   const handleEmojiClick = (emojiData, event) => {
     setInputMessage({ ...inputMessage, content: inputMessage.content + emojiData.emoji });
+    setShowEmojiPicker(false);
   };
 
   const [showStickerPicker, setShowStickerPicker] = useState(false);
@@ -450,6 +460,16 @@ const ChatInput = ({ isSending, getFriend }) => {
           onPaste={(e) => handlePaste(e)}
           value={images && images.length > 0 ? '' : inputMessage.content}
           onChange={(e) => setInputMessage({ ...inputMessage, content: e.target.value })}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault(); // Prevent default Enter behavior (e.g., adding a newline)
+              if (images && images.length > 0) {
+                handlerSendImagesCopy(); // Send images if there are copied images
+              } else {
+                handlerSendMessage(); // Send text message if no images
+              }
+            }
+          }}
           placeholder="Nhập tin nhắn..."
           className="flex-1 p-2 border rounded-lg focus:outline-none focus:ring-0"
           ref={inputRef}
