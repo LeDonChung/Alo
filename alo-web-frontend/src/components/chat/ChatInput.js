@@ -51,72 +51,103 @@ const ChatInput = ({ isSending, getFriend }) => {
 
   const handlerSendMessage = async (customInputMessage = null) => {
     const messageData = customInputMessage || inputMessage;
+  
+    if (messageData.messageType === 'text' && (!messageData.content || !messageData.content.trim())) {
+    }
+  
     setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
     const { content, messageType, file, isCopy } = messageData;
-
-    const requestId = Date.now() + Math.random();
-
-    const message = {
+  
+    // Function to create a message object
+    const createMessage = (contentChunk, requestId) => ({
+      id: requestId,
       senderId: userLogin.id,
       conversationId: conversation.id,
-      content,
+      content: contentChunk,
       messageType,
       timestamp: Date.now(),
       seen: [],
       requestId,
       status: -1,
-    };
-
-    if (messageParent) {
-      message.messageParent = messageParent.id;
-    }
-    const newMessageTemp = {
+      ...(messageParent ? { messageParent: messageParent.id } : {}),
+    });
+  
+    // Function to create a temporary message for UI
+    const createTempMessage = (message) => ({
       ...message,
       sender: userLogin,
-    };
-    if (messageParent) {
-      newMessageTemp.messageParent = messageParent;
-    }
-
-
-    /// file, image
-    if (messageType === 'image') {
-      if (isCopy) {
-        newMessageTemp.fileLink = messageData.fileLink;
-        message.fileLink = messageData.fileLink;
-      } else {
-        newMessageTemp.fileLink = URL.createObjectURL(file);
-
-      }
-    } else if (messageType === 'file') {
-      newMessageTemp.fileLink = file.name;
-    } else if (messageType === 'sticker') {
-      newMessageTemp.fileLink = messageData.fileLink;
-      message.fileLink = messageData.fileLink;
-    }
-
+      ...(messageParent ? { messageParent } : {}),
+    });
+  
     try {
-
-      dispatch(addMessage(newMessageTemp));
+      // Handle text messages: split if > 3000 characters
+      if (messageType === 'text' && content.length > 3000) {
+        const chunks = [];
+        for (let i = 0; i < content.length; i += 3000) {
+          chunks.push(content.slice(i, i + 3000));
+        }
+  
+        for (const chunk of chunks) {
+          const requestId = Date.now() + Math.random();
+          const message = createMessage(chunk, requestId);
+          const newMessageTemp = createTempMessage(message);
+  
+          dispatch(addMessage(newMessageTemp));
+  
+          const res = await dispatch(sendMessage({ message, file: null })).unwrap();
+          const sentMessage = {
+            ...res.data,
+            sender: userLogin,
+          };
+  
+          dispatch(updateMessage(sentMessage));
+  
+          socket.emit('send-message', {
+            conversation,
+            message: sentMessage,
+          });
+        }
+      } else {
+        const requestId = Date.now() + Math.random();
+        const message = createMessage(content, requestId);
+        const newMessageTemp = createTempMessage(message);
+  
+        if (messageType === 'image') {
+          if (isCopy) {
+            newMessageTemp.fileLink = messageData.fileLink;
+            message.fileLink = messageData.fileLink;
+          } else {
+            newMessageTemp.fileLink = URL.createObjectURL(file);
+          }
+        } else if (messageType === 'file') {
+          newMessageTemp.fileLink = file.name;
+        } else if (messageType === 'sticker') {
+          newMessageTemp.fileLink = messageData.fileLink;
+          message.fileLink = messageData.fileLink;
+        }
+  
+        dispatch(addMessage(newMessageTemp));
+  
+        const res = await dispatch(sendMessage({ message, file })).unwrap();
+        const sentMessage = {
+          ...res.data,
+          sender: userLogin,
+        };
+  
+        dispatch(updateMessage(sentMessage));
+  
+        socket.emit('send-message', {
+          conversation,
+          message: sentMessage,
+        });
+      }
+  
       dispatch(setMessageParent(null));
-
-
-      const res = await dispatch(sendMessage({ message, file })).unwrap();
-      const sentMessage = {
-        ...res.data,
-        sender: userLogin,
-      };
-
-      dispatch(updateMessage(sentMessage));
-
-      socket.emit('send-message', {
-        conversation,
-        message: sentMessage,
-      });
-
     } catch (err) {
-      console.error("Error sending message:", err);
+      console.error('Error sending message:', err);
     }
+
+    setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
   };
 
   // const handlerSendMessage = async (messageNew) => {
