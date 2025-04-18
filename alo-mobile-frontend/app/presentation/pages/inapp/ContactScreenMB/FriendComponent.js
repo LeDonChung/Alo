@@ -6,6 +6,8 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import { ContactStyles } from "../../../styles/ContactStyle";
 import socket from "../../../../utils/socket";
 import { showToast } from "../../../../utils/AppUtils";
+import { setConversation } from "../../../redux/slices/ConversationSlice";
+import { useNavigation } from "@react-navigation/native";
 
 export const FriendComponent = () => {
     const [refreshing, setRefreshing] = useState(false);
@@ -52,6 +54,28 @@ export const FriendComponent = () => {
         }
     };
 
+    const conversations = useSelector(state => state.conversation.conversations);
+    const navigation = useNavigation();
+    const handlerActionChat = async (item) => {
+        try {
+            // Tìm conversation đã có giữa người dùng và bạn bè chỉ có 2 [...,...]
+            const friendId = [item.friendId, item.userId].filter((id) => id !== userLogin.id)[0];
+            const conversation = conversations.find(conversation => {
+                return conversation.memberUserIds.includes(userLogin.id, friendId) && conversation.memberUserIds.length === 2;
+            })
+            dispatch(setConversation(conversation));
+            const friend = conversation.members.find(member => member.id !== userLogin.id);
+            console.log("friend", friend);
+            navigation.navigate("chat", {
+                friend: friend,
+            })
+        } catch (error) {
+            console.error("Error navigating to chat:", error);
+            // Hiển thị thông báo lỗi
+            showToast("error", "top", "Lỗi", "Đã xảy ra lỗi khi mở cuộc trò chuyện. Vui lòng thử lại.");
+        }
+    }
+
     return (
         friends && (
             <>
@@ -66,6 +90,7 @@ export const FriendComponent = () => {
                     renderItem={({ item }) => (
                         <TouchableOpacity
                             style={[ContactStyles.contactItem, { paddingVertical: 15 }]}
+                            onPress={() => handlerActionChat(item)}
                             onLongPress={() => {
                                 setModalVisible(true);
                             }}
@@ -135,6 +160,7 @@ export const FriendComponent = () => {
                                                 )}
                                             </TouchableOpacity>
                                             <TouchableOpacity
+                                                onPress={() => handlerActionChat(item)}
                                                 style={{
                                                     backgroundColor: '#007bff',
                                                     padding: 12,

@@ -66,31 +66,29 @@ const ContactScreen = ({ navigation }) => {
         );
         dispatch(setFriendRequests(updatedFriendsRequest));
 
-        // Cập nhật danh sách bạn bè (đảm bảo không bị ghi đè)
         dispatch(addFriend({
           ...friendUpdate,
           friendInfo: {
             id: item.senderId,
             fullName: item.fullName,
             avatarLink: item.avatarLink,
-          }
+          },
+          status: 1,
         }));
 
         showToast("info", "top", "Thông báo", "Giờ đây các bạn đã trở thành bạn bè.");
 
-        // Gửi thông báo đến các socketId của userLogin và yêu cầu cập nhật danh sách bạn bè, danh sách lời mời
         socket.emit('accept-friend-request-for-me', {
           userId: userLogin.id,
           friendId: friendId,
-          updatedFriendsRequest: updatedFriendsRequest, // để cập nhật danh sách lời mời
-          friendInfo: { // để cập nhật danh sách bạn bè
+          updatedFriendsRequest: updatedFriendsRequest, 
+          friendInfo: { 
             id: item.senderId,
             fullName: item.fullName,
             avatarLink: item.avatarLink,
           }
 
         });
-        // Gửi thông báo đến friendId
         socket.emit('accept-friend-request', {
           userId: friendUpdate.userId,
           friendId: friendUpdate.friendId,
@@ -118,12 +116,10 @@ const ContactScreen = ({ navigation }) => {
       const res = await dispatch(rejectFriendRequest(friendUpdate)).unwrap();
       if (res.data) {
 
-        // Cập nhật danh sách lời mời
         const updatedFriendsRequest = friendsRequest.filter(
           (value) => !(item.friendId === value.friendId && item.userId === value.userId)
         );
         dispatch(setFriendRequests(updatedFriendsRequest));
-        // dispatch(removeFriendRequest(res.data));
         socket.emit('reject-friend-request-for-me', {
           userId: userLogin.id,
           friendId: friendId,

@@ -370,6 +370,7 @@ export const InAppNavigation = () => {
       console.error("Lỗi khi gửi lời mời kết bạn:", error);
     }
   }
+
   return (
     <SafeAreaView style={{ flex: 1, flexDirection: "column" }}>
       {(chooseTab === "home" || chooseTab === "contact") && (
