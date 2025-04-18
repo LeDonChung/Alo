@@ -152,13 +152,7 @@ const MessageSlice = createSlice({
             }
         },
         addMessage: (state, action) => {
-            const message = action.payload;
-            const index = state.messages.findIndex(msg => msg.id === message.id || msg.requestId === message.requestId);
-            if (index !== -1) {
-                state.messages[index] = message;
-            } else {
-                state.messages.push(message);
-            }
+            state.messages.push(action.payload);
         },
         setInputMessage: (state, action) => {
             state.inputMessage = action.payload;
@@ -167,10 +161,15 @@ const MessageSlice = createSlice({
             state.messageParent = action.payload;
         },
         setMessageUpdate: (state, action) => {
-            const { messageId, status } = action.payload;
+            const { messageId, status, reaction } = action.payload;
             const index = state.messages.findIndex(message => message.id === messageId);
             if (index !== -1) {
-                state.messages[index].status = status;
+                if (status !== undefined) {
+                    state.messages[index].status = status;
+                }
+                if (reaction !== undefined) {
+                    state.messages[index].reaction = reaction || {};
+                }
             }
         },
         updateSeenAllMessage: (state, action) => {
@@ -233,13 +232,13 @@ const MessageSlice = createSlice({
             state.isSending = false;
         });
 
-        builder.addCase(updateReaction.pending, (state) => {});
-        builder.addCase(updateReaction.fulfilled, (state, action) => {});
-        builder.addCase(updateReaction.rejected, (state, action) => {});
+        builder.addCase(updateReaction.pending, (state) => { });
+        builder.addCase(updateReaction.fulfilled, (state, action) => { });
+        builder.addCase(updateReaction.rejected, (state, action) => { });
 
-        builder.addCase(removeAllReaction.pending, (state) => {});
-        builder.addCase(removeAllReaction.fulfilled, (state, action) => {});
-        builder.addCase(removeAllReaction.rejected, (state, action) => {});
+        builder.addCase(removeAllReaction.pending, (state) => { });
+        builder.addCase(removeAllReaction.fulfilled, (state, action) => { });
+        builder.addCase(removeAllReaction.rejected, (state, action) => { });
 
         builder.addCase(updateMessageStatus.pending, (state) => {
             state.messageUpdate = null;
@@ -256,17 +255,17 @@ const MessageSlice = createSlice({
             state.messageUpdate = null;
         });
 
-        builder.addCase(seenAll.pending, (state) => {});
-        builder.addCase(seenAll.fulfilled, (state, action) => {});
-        builder.addCase(seenAll.rejected, (state, action) => {});
+        builder.addCase(seenAll.pending, (state) => { });
+        builder.addCase(seenAll.fulfilled, (state, action) => { });
+        builder.addCase(seenAll.rejected, (state, action) => { });
 
-        builder.addCase(seenOne.pending, (state) => {});
-        builder.addCase(seenOne.fulfilled, (state, action) => {});
-        builder.addCase(seenOne.rejected, (state, action) => {});
+        builder.addCase(seenOne.pending, (state) => { });
+        builder.addCase(seenOne.fulfilled, (state, action) => { });
+        builder.addCase(seenOne.rejected, (state, action) => { });
 
-        builder.addCase(removeOfMe.pending, (state) => {});
-        builder.addCase(removeOfMe.fulfilled, (state, action) => {});
-        builder.addCase(removeOfMe.rejected, (state, action) => {});
+        builder.addCase(removeOfMe.pending, (state) => { });
+        builder.addCase(removeOfMe.fulfilled, (state, action) => { });
+        builder.addCase(removeOfMe.rejected, (state, action) => { });
     }
 });
 

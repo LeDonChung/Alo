@@ -19,7 +19,7 @@ import { addFriend, addFriendRequests, cancelFriend, getFriendByPhoneNumber, get
 import { showToast } from "../../utils/AppUtils";
 import { FlatList } from "react-native-gesture-handler";
 import { ContactStyles } from "../styles/ContactStyle";
-import { handlerUpdateReaction, setMessageRemoveOfMe, updateReaction, updateSeenAllMessage } from "../redux/slices/MessageSlice";
+import { handlerUpdateReaction, setMessageRemoveOfMe, setMessageUpdate, updateReaction, updateSeenAllMessage } from "../redux/slices/MessageSlice";
 
 const Tab = createBottomTabNavigator();
 
@@ -54,7 +54,7 @@ export const InAppNavigation = () => {
       setSearchResult([]);
       setShowBackIcon(false);
       return;
-  }
+    }
     setIsSearching(true);
     if (isPhoneNumber(search)) {
       try {
@@ -106,7 +106,7 @@ export const InAppNavigation = () => {
 
   useEffect(() => {
     if (search.length > 0) handleSearch();
-  }, [search]); 
+  }, [search]);
 
 
   const friendRequests = useSelector((state) => state.friend.friendRequests);
@@ -134,7 +134,19 @@ export const InAppNavigation = () => {
       socket.off("receive-pin-message", handleReceivePinMessage);
     }
   }, []);
-
+  useEffect(() => {
+    const handleUpdateMessage = async (data) => {
+      console.log("Received update message:", data);
+      const ms = data.message;
+      const cvt = data.conversation;
+      await dispatch(setMessageUpdate({ messageId: ms.id, status: ms.status }));
+      await dispatch(updateLastMessage({ conversationId: cvt.id, message: ms }));
+    }
+    socket.on('receive-update-message', handleUpdateMessage);
+    return () => {
+      socket.off('receive-update-message', handleUpdateMessage);
+    };
+  }, [userLogin?.id, dispatch]);
   useEffect(() => {
     const handleUnPinMessage = (data) => {
       const { conversation, pin } = data;
@@ -167,19 +179,19 @@ export const InAppNavigation = () => {
   const conversation = useSelector((state) => state.conversation.conversation);
   useEffect(() => {
     const handleReceiveSeenMessage = async (data) => {
-        console.log(conversation)
-        if (!conversation || (conversation.id !== data.conversation.id)) {
-            return;
-        }
-        console.log('receive-seen-message', data);
-        dispatch(updateSeenAllMessage(data.messages));
+      console.log(conversation)
+      if (!conversation || (conversation.id !== data.conversation.id)) {
+        return;
+      }
+      console.log('receive-seen-message', data);
+      dispatch(updateSeenAllMessage(data.messages));
     }
     socket.on('receive-seen-message', handleReceiveSeenMessage);
 
     return () => {
-        socket.off('receive-seen-message', handleReceiveSeenMessage);
+      socket.off('receive-seen-message', handleReceiveSeenMessage);
     }
-})
+  })
 
   // =============== HANDLE SOCKET FRIEND REQUEST ===============
   useEffect(() => {
@@ -278,15 +290,15 @@ export const InAppNavigation = () => {
 
   useEffect(() => {
     const handlerRemoveOfMe = async (data) => {
-        const { messageId, userId } = data;
+      const { messageId, userId } = data;
 
-        dispatch(setMessageRemoveOfMe({ messageId: messageId, userId: userId }));
+      dispatch(setMessageRemoveOfMe({ messageId: messageId, userId: userId }));
     }
     socket.on('receive-remove-of-me', handlerRemoveOfMe);
     return () => {
-        socket.off('receive-remove-of-me', handlerRemoveOfMe);
+      socket.off('receive-remove-of-me', handlerRemoveOfMe);
     }
-}, [])
+  }, [])
 
   useEffect(() => {
     socket.on('update-last-message', (conversationId, message) => {
