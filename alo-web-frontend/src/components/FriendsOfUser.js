@@ -2,10 +2,13 @@ import { React, useState, useEffect, useRef, use } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMagnifyingGlass, faChevronDown, faChevronRight, faTag, faCircleXmark, faEllipsis } from "@fortawesome/free-solid-svg-icons";
 import { useDispatch, useSelector } from 'react-redux';
-import { blockFriend, getFriends, removeFriend, setFriends, unblockFriend, unfriend } from '../redux/slices/FriendSlice';
+import { blockFriend, getFriends, removeFriend, setFriends, unblockFriend, unfriend, updateFriend } from '../redux/slices/FriendSlice';
 import showToast, { removeVietnameseTones } from '../utils/AppUtils';
 import socket from '../utils/socket';
 import ModalConfirmUnfriend from './friend/ModalShowInfoFriend';
+import ModalShowInfoFriend from './friend/ModalShowInfoFriend';
+import { setConversation } from '../redux/slices/ConversationSlice';
+import { useNavigate } from 'react-router-dom';
 
 const categoryList = [
   { id: 1, name: "Bạn thân", color: "#ff6347" },
@@ -32,8 +35,10 @@ const details = [
 
 export default function FriendsOfUser() {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const listFr = useSelector(state => state.friend.friends);
   const friend = useSelector(state => state.friend.friend);
+  const conversations = useSelector((state) => state.conversation.conversations);
   const userLogin = localStorage.getItem("userLogin") ? JSON.parse(localStorage.getItem("userLogin")) : null;
   const [listCategory, setListCategory] = useState(categoryList);
   const [listTypeFilter, setListTypeFilter] = useState(typeFilter);
@@ -44,10 +49,28 @@ export default function FriendsOfUser() {
   const [detailFriend, setDetailFriend] = useState(null);
   const [isOpenConfirm, setIsOpenConfirm] = useState(false);
 
+  const [isShowInfoFriend, setIsShowInfoFriend] = useState(false);
+
   const [loading, setLoading] = useState(false);
 
   const [isUnfriend, setIsUnfriend] = useState(false);
   const friends = useSelector(state => state.friend.friends);
+
+  const handleNavigateChat = async (e, friendInfo) => {
+          e.preventDefault();             
+          try {
+              const conversation = conversations.find((conversation) => {
+                  return conversation.memberUserIds.includes(userLogin.id) && conversation.memberUserIds.includes(friendInfo.id) && conversation.memberUserIds.length === 2;
+              });    
+              await dispatch(setConversation(conversation));
+              navigate('/me')
+          } catch (error) {
+              console.error("Error navigating to chat:", error);
+              showToast("Đã xảy ra lỗi khi mở cuộc trò chuyện. Vui lòng thử lại.", "error");
+          }
+      }
+
+
   const handleUnfriend = async (item) => {
     try {
       if (isOpenConfirm) {
@@ -80,11 +103,12 @@ export default function FriendsOfUser() {
         userId: userLogin.id,
         friendId: id
       }
-
       // Chặn bạn
       const friendResp = await dispatch(blockFriend(friendUpdate));
       const friendResult = friendResp.payload.data ? friendResp.payload.data : null;
       if (friendResult && friendResult.status === 3) {
+        // Cập nhật danh sách bạn bè trong Redux
+        await dispatch(updateFriend({ friendId: id, status: 3, userId: userLogin.id }));
         setOpenDetail(false);
         // socket
         socket.emit("block-request", friendUpdate);
@@ -269,7 +293,6 @@ export default function FriendsOfUser() {
                   value={selectFilter?.id}
                   onChange={(e) => {
                     const selectedItem = listTypeFilter.find((item) => item.id === parseInt(e.target.value));
-
                     setSelectFilter(selectedItem); // Cập nhật state
                   }}
                 >
@@ -363,8 +386,10 @@ export default function FriendsOfUser() {
                         <div className="flex flex-col">
                           {
                             group.list && group.list.map((friend) => (
-                              <div key={friend.friendId} className="flex items-center justify-between w-full hover:bg-gray-100 rounded-md p-2">
-                                <div className="flex items-center">
+                              <div key={friend.friendId} 
+                              
+                              className="flex items-center justify-between w-full hover:bg-gray-100 rounded-md p-2">
+                                <div className="flex items-center cursor-pointer w-[98%]" onClick={(e) => handleNavigateChat(e, friend.friendInfo)}> 
                                   <img src={friend.friendInfo.avatarLink ? friend.friendInfo.avatarLink : "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"} className="w-[40px] h-[40px] rounded-full" />
                                   <div className="flex flex-col ml-2">
                                     <span className="font-semibold">{friend.friendInfo.fullName}</span>
@@ -393,9 +418,29 @@ export default function FriendsOfUser() {
                                   </button>
                                   {openDetail && detailFriend.friendInfo.id === friend.friendInfo.id && (
                                     <div className="absolute left-[-200px] mt-1 w-[200px] bg-white rounded-lg shadow-lg">
-                                      <button className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
+                                      <button
+                                      onClick={() => {
+                                        console.log("Xem thông tin bạn bè", friend.friendInfo); 
+                                        setIsShowInfoFriend(true);                                       
+                                      }}
+                                      className="w-full flex items-center justify-start px-4 py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
                                         <span className="">Xem thông tin</span>
                                       </button>
+                                      {
+                                        isShowInfoFriend && (
+                                          <ModalShowInfoFriend 
+                                            isOpen={isShowInfoFriend} 
+                                            onClose={() => {
+                                              setIsShowInfoFriend(false);
+                                              setOpenDetail(false);
+                                            }} 
+                                            handleNavigateChat={handleNavigateChat}
+                                            friendInfo={friend.friendInfo} 
+                                            conversations={conversations}
+                                          />
+                                        )
+                                      }
+
                                       <div className="px-4 relative group py-2 cursor-pointer hover:bg-gray-100 hover:-mx-[2px] mx-2">
                                         <div className="flex items-center justify-between cursor-pointer hover:bg-gray-100">
                                           <span>Phân loại</span>
