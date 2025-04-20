@@ -12,8 +12,9 @@ import {
     Pressable
 } from 'react-native';
 import Icon from 'react-native-vector-icons/AntDesign';
-import IconF5 from 'react-native-vector-icons/FontAwesome5';
-export const PinComponent = ({ conversation, pins, scrollToMessage, onDeletePin }) => {
+import { useSelector } from 'react-redux';
+export const PinComponent = ({ pins, scrollToMessage, onDeletePin }) => {
+    const conversation = useSelector((state) => state.conversation.conversation);
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedPin, setSelectedPin] = useState(null);
 

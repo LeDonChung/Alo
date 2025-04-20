@@ -39,7 +39,6 @@ const ChatWindow = () => {
 
   const handleGetLastLogout = async (userId) => {
     await axiosInstance.get(`/api/user/get-profile/${userId}`).then((res) => {
-      console.log("getLastLoginMessage", res.data.data);
       setLastLogout(res.data.data.lastLogout);
     });
   };
@@ -141,7 +140,6 @@ const ChatWindow = () => {
   // Cuộn tới tin nhắn cụ thể
   const scrollToMessage = (messageId) => {
     const messageRef = messageRefs.current[messageId];
-    console.log("Cuộn tới tin nhắn:", messageId, messageRef);
     if (messageRef) {
       messageRef.scrollIntoView({ behavior: "smooth", block: "center" });
     }

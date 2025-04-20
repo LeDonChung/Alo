@@ -12,22 +12,19 @@ import {
   seenAll,
   seenOne,
   sendMessage,
-  setMessages,
   updateMessage,
-  setMessageUpdate,
-  updateMessageStatus,
   setMessageParent,
   updateSeenAllMessage
 } from '../../redux/slices/MessageSlice';
-import { removePin, updateLastMessage } from '../../redux/slices/ConversationSlice';
+import { removePin } from '../../redux/slices/ConversationSlice';
 import HeaderComponent from '../../components/chat/HeaderComponent';
 import InputComponent from '../../components/chat/InputComponent';
 import MessageItem from '../../components/chat/MessageItem';
 import ImageViewerComponent from '../../components/chat/ImageViewComponent';
-import { FlatList, TouchableOpacity } from 'react-native-gesture-handler';
+import { FlatList } from 'react-native-gesture-handler';
 import StickerPicker from '../../components/chat/StickerPicker';
 import { ActivityIndicator } from 'react-native-paper';
-import { showToast } from '../../../utils/AppUtils';
+import { getFriend, showToast } from '../../../utils/AppUtils';
 import { MenuComponent } from '../../components/chat/MenuConponent';
 import MessageDetailModal from '../../components/chat/MessageDetailModal';
 import ForwardMessageModal from '../../components/chat/ForwardMessageModal';
@@ -37,7 +34,6 @@ export const ChatScreen = ({ route, navigation }) => {
   const [selectedImage, setSelectedImage] = useState(null);
   const [isStickerPickerVisible, setIsStickerPickerVisible] = useState(false);
   const isLoadMessage = useSelector(state => state.message.isLoadMessage);
-  const limit = useSelector(state => state.message.limit);
   const messages = useSelector(state => state.message.messages);
   const messageParent = useSelector(state => state.message.messageParent);
   const [inputMessage, setInputMessage] = useState({
@@ -45,12 +41,13 @@ export const ChatScreen = ({ route, navigation }) => {
     content: '',
   });
   const [lastLogout, setLastLogout] = useState(null);
-  const { friend } = route.params;
   const userLogin = useSelector(state => state.user.userLogin);
   const userOnlines = useSelector(state => state.user.userOnlines);
   const dispatch = useDispatch();
 
   const conversation = useSelector(state => state.conversation.conversation);
+  const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id));
+
   useEffect(() => {
     navigation.getParent()?.setOptions({
       tabBarStyle: {
@@ -357,14 +354,9 @@ export const ChatScreen = ({ route, navigation }) => {
   return (
     <View style={{ flex: 1, backgroundColor: '#F3F3F3', position: 'relative' }}>
       <HeaderComponent
-        friend={friend}
         isFriendOnline={isFriendOnline}
         getLastLoginMessage={getLastLoginMessage}
         lastLogout={lastLogout}
-        navigation={navigation}
-        socket={socket}
-        conversation={conversation}
-        userLogin={userLogin}
         scrollToMessage={scrollToMessage}
         onDeletePin={onDeletePin}
       />
@@ -379,8 +371,6 @@ export const ChatScreen = ({ route, navigation }) => {
           renderItem={({ item, index }) => (
             <MessageItem
               item={item}
-              userLogin={userLogin}
-              friend={friend}
               setSelectedImage={setSelectedImage}
               setIsImageViewVisible={setIsImageViewVisible}
               showAvatar={() => showAvatar(index)}
@@ -390,7 +380,6 @@ export const ChatScreen = ({ route, navigation }) => {
               isHighlighted={highlightedId === item.id}
               handlerRemoveAllAction={handlerRemoveAllAction}
               flatListRef={flatListRef}
-              messages={messages}
               scrollToMessage={scrollToMessage}
             />
           )}
@@ -434,7 +423,6 @@ export const ChatScreen = ({ route, navigation }) => {
               showMenuComponent={setIsShowMenuInMessage}
               setShowDetailModal={setShowDetailModal}
               setShowForwardModal={setShowForwardModal}
-              friend={friend}
             />
           </Pressable>
         </Modal>
@@ -446,7 +434,6 @@ export const ChatScreen = ({ route, navigation }) => {
           setShowDetailModal(false);
         }}
         message={selectedMessage}
-        friend={friend}
       />
       <ForwardMessageModal
         visible={showForwardModal}

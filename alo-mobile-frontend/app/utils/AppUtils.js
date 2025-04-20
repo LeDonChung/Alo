@@ -18,6 +18,6 @@ export const showToast = (type, position, title, content) => {
 } 
 
 export const getFriend = (conversation, userId) => {
-    const friend = conversation.members.find(member => member.userId !== userId);
+    const friend = conversation.members.find(member => member.id === userId);
     return friend;
 }

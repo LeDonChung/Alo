@@ -49,7 +49,6 @@ const ChatInput = () => {
 
   const handlerSendImagesCopy = async () => {
     for (const image of images) {
-      console.log("image", image);
       const newMessage = { ...inputMessage, messageType: 'image', fileLink: image, isCopy: true };
       handlerSendMessage(newMessage);
       setImages(images.filter(img => img !== image)); // Xóa hình ảnh đã gửi
@@ -288,7 +287,6 @@ const ChatInput = () => {
   };
 
   const handleFileUpload = async (e) => {
-    console.log("Handle file upload");
     const files = Array.from(e.target.files);
     if (!files.length) return;
 

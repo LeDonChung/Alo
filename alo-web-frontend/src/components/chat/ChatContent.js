@@ -25,12 +25,10 @@ const ChatContent = ({ isLoadMessage, messageRefs, scrollToMessage }) => {
   };
 
   const handleScroll = () => {
-    console.log("Scrolling");
     if (chatContainerRef.current) {
       const { scrollTop } = chatContainerRef.current;
       if (scrollTop === 0) {
         setIsScrolledToTop(true);
-        console.log('Cuộn đến đầu');
       } else {
         setIsScrolledToTop(false);
       }
@@ -77,15 +75,17 @@ const ChatContent = ({ isLoadMessage, messageRefs, scrollToMessage }) => {
 
   if (messages.length === 0) {
     return (
-      <div className="text-center text-gray-500">
-        {
-          !conversation.isGroup ? ( 
-            <p>Nhập tin nhắn để bắt đầu trò chuyện với {friend.fullName}</p>
-          ) : (
-            <p>Nhập tin nhắn để bắt đầu trò chuyện với nhóm {conversation.name}</p>
-          )
-        }
-      </div>
+      conversation && friend && (
+        <div className="text-center text-gray-500">
+          {
+            !conversation.isGroup ? (
+              <p>Nhập tin nhắn để bắt đầu trò chuyện với {friend.fullName}</p>
+            ) : (
+              <p>Nhập tin nhắn để bắt đầu trò chuyện với nhóm {conversation.name}</p>
+            )
+          }
+        </div>
+      )
     );
   }
 

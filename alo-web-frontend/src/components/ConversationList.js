@@ -37,7 +37,6 @@ const ConversationList = () => {
       }
     }
   }
-  console.log('conversations', conversations);
 
 
   const getLastTimeMessage = (time) => {
@@ -58,7 +57,6 @@ const ConversationList = () => {
       return `${timeX.toLocaleDateString('vi-VN')}`;
     }
   }
-  console.log("User login", userLogin);
   const selectedConversation = useSelector(state => state.conversation.conversation);
   return (
 

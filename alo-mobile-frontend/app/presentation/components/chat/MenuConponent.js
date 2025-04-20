@@ -13,8 +13,7 @@ import * as Sharing from 'expo-sharing';
 import { setMessageParent, updateMessageStatus, setMessageUpdate, removeOfMe, setMessageRemoveOfMe } from '../../redux/slices/MessageSlice';
 import { ReactionBar } from './ReactionBar';
 
-export const MenuComponent = ({ message, showMenuComponent, friend, setShowDetailModal, setShowForwardModal }) => {
-    const navigation = useNavigation();
+export const MenuComponent = ({ message, showMenuComponent, setShowDetailModal, setShowForwardModal }) => {
     const dispatch = useDispatch();
     const conversation = useSelector(state => state.conversation.conversation);
     const userLogin = useSelector(state => state.user.userLogin);
@@ -235,7 +234,7 @@ export const MenuComponent = ({ message, showMenuComponent, friend, setShowDetai
                     </TouchableOpacity>
                 )}
                 <TouchableOpacity style={styles.actionItem} onPress={() => {
-                    handlerClickDetail();
+                    handlerClickDetail(); 
                 }}>
                     <Icon name="info-circle" size={24} color="#6B7280" />
                     <Text>Chi tiết</Text>

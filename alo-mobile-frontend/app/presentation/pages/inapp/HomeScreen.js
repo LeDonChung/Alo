@@ -1,19 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { Button, View, Text, FlatList, Image, TouchableOpacity, TextInput, RefreshControl, ActivityIndicator, } from "react-native";
-import { SafeAreaView } from "react-native-safe-area-context";
 import { GlobalStyles } from "../../styles/GlobalStyles";
 import { useDispatch, useSelector } from "react-redux";
-import Icon from "react-native-vector-icons/FontAwesome5";
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice'
 import { getAllConversation, setConversation } from '../../redux/slices/ConversationSlice'
 import socket from "../../../utils/socket";
 import * as SecureStore from 'expo-secure-store';
+import { getFriend } from "../../../utils/AppUtils";
 export const HomeScreen = ({ navigation }) => {
-  const [search, setSearch] = useState('');
   const [tab, setTab] = useState('all');
   const dispatch = useDispatch();
   const userLogin = useSelector((state) => state.user.userLogin)
-  const userOnlines = useSelector(state => state.user.userOnlines);
 
   const conversations = useSelector(state => state.conversation.conversations);
   const [refreshing, setRefreshing] = useState(false);
@@ -51,11 +48,11 @@ export const HomeScreen = ({ navigation }) => {
     await dispatch(setConversation(conversation));
   }
   const renderItem = ({ item, handlerChoostConversation }) => {
-    const friend = item.members.find(member => member.id !== userLogin.id);
+    const friend = getFriend(item, item.memberUserIds.find((item) => item !== userLogin.id));
 
     const getLastMessage = () => {
       if (!item.lastMessage) return '';
-
+      const userSender = getFriend(item, item.lastMessage?.senderId);
       const message = item.lastMessage;
       let content = message.content;
       let messageStatus = item.lastMessage.status;
@@ -78,9 +75,8 @@ export const HomeScreen = ({ navigation }) => {
         return "Bạn: " + (messageStatus === 0 ? content : "Tin nhắn đã thu hồi");
       } else {
         return (
-          item.isGroup
-            ? friend?.fullName + ": " + (messageStatus === 0 ? content : "Tin nhắn đã thu hồi")
-            : (messageStatus === 0 ? content : "Tin nhắn đã thu hồi")
+          item.lastMessage
+          && userSender?.fullName + ": " + (messageStatus === 0 ? content : "Tin nhắn đã thu hồi")
         );
 
       }
@@ -112,19 +108,36 @@ export const HomeScreen = ({ navigation }) => {
       <TouchableOpacity
         onPress={() => {
           handlerChoostConversation(item);
-          navigation.navigate("chat", {
-            friend: friend,
-          })
+          navigation.navigate("chat")
         }}
         style={{ flexDirection: 'row', padding: 10, borderBottomWidth: 1, borderColor: '#EDEDED' }}
       >
-        <Image
-          source={{ uri: friend?.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg' }}
-          style={{ width: 50, height: 50, borderRadius: 25, marginRight: 10 }}
-        />
+        {
+          item.isGroup ? (
+            <Image
+              source={{ uri: item?.avatar || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg' }}
+              style={{ width: 50, height: 50, borderRadius: 25, marginRight: 10 }}
+            />
+          ) : (
+            <Image
+              source={{ uri: friend?.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg' }}
+              style={{ width: 50, height: 50, borderRadius: 25, marginRight: 10 }}
+            />
+          )
+        }
         <View style={{ flex: 1 }}>
-          <Text style={{ fontSize: 16, fontWeight: '500' }}>{friend?.fullName}</Text>
-          <Text style={{ fontSize: 14, color: 'gray' }} numberOfLines={1}>{getLastMessage()}</Text>
+          <Text style={{ fontSize: 16, fontWeight: '500' }}>
+            {
+              item.isGroup ? (
+                item?.name
+              ) : (
+                friend?.fullName
+              )
+            }</Text>
+          <Text style={{ fontSize: 14, color: 'gray' }} numberOfLines={1}>
+            {
+              item.lastMessage && getLastMessage()
+            }</Text>
         </View>
         <Text style={{ fontSize: 12, color: 'gray', marginLeft: 8 }}>{getLastTime()}</Text>
       </TouchableOpacity>

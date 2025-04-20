@@ -1,12 +1,26 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Modal, View, Text, StyleSheet, TouchableOpacity, Image, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { Video } from 'expo-av';
+import { useSelector } from 'react-redux';
 
-const MessageDetailModal = ({ visible, onClose, message, friend }) => {
-  if (!message || !friend) return null;
+const DEFAULT_AVATAR = 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg';
+
+const MessageDetailModal = ({ visible, onClose, message }) => {
+  const [isLoading, setIsLoading] = useState(false);
+
+  if (!message || !message.sender) {
+    return null;
+  }
+
+  const userLogin = useSelector(state => state.user.userLogin);
+  if (!userLogin?.id) {
+    console.warn('User login data missing');
+    return null;
+  }
 
   const formatDateTime = (timestamp) => {
+    if (!timestamp) return 'N/A';
     const date = new Date(timestamp);
     const now = new Date();
     const isToday = date.toDateString() === now.toDateString();
@@ -15,77 +29,97 @@ const MessageDetailModal = ({ visible, onClose, message, friend }) => {
   };
 
   const getFileExtension = (url = '') => {
-    return url.split('.').pop()?.toLowerCase() || '';
+    const parts = url.split('.');
+    return parts.length > 1 ? parts.pop().toLowerCase() : '';
   };
 
   const extractOriginalName = (url = '') => {
+hto
     const fileNameEncoded = url.split('/').pop();
+    if (!fileNameEncoded) return 'Unknown File';
     const fileNameDecoded = decodeURIComponent(fileNameEncoded);
     const parts = fileNameDecoded.split(' - ');
-    return parts[parts.length - 1];
+    return parts[parts.length - 1] || fileNameDecoded;
   };
 
   const renderContent = () => {
-    const type = message.messageType;
-    const fileLink = message.fileLink || '';
+    const { messageType, fileLink = '', content } = message;
     const extension = getFileExtension(fileLink);
 
-    if (type === 'text') {
-      return <Text style={styles.contentText} numberOfLines={20}>{message.content}</Text>;
+    switch (messageType) {
+      case 'text':
+        return <Text style={styles.contentText} numberOfLines={20}>{content}</Text>;
+
+      case 'image':
+      case 'sticker':
+        if (fileLink && extension !== 'mp4') {
+          return (
+            <View>
+              {isLoading && <ActivityIndicator size="small" color="#2563EB" style={styles.loader} />}
+              <Image
+                source={{ uri: fileLink }}
+                style={messageType === 'sticker' ? styles.sticker : styles.image}
+                resizeMode="contain"
+                onLoadStart={() => setIsLoading(true)}
+                onLoadEnd={() => setIsLoading(false)}
+                onError={(e) => {
+                  console.warn('Image load error:', e.nativeEvent.error);
+                  setIsLoading(false);
+                }}
+              />
+            </View>
+          );
+        }
+        break;
+
+      case 'file':
+        if (fileLink && extension !== 'mp4') {
+          const fileIcon = extension === 'pdf' ? 'file-pdf' : extension === 'doc' ? 'file-word' : 'file';
+          return (
+            <TouchableOpacity
+              style={styles.fileContainer}
+              onPress={() => alert('File download not implemented')}
+              accessibilityLabel={`Tải xuống tệp ${extractOriginalName(fileLink)}`}
+            >
+              <Icon name={fileIcon} size={20} color="#2563EB" />
+              <Text style={styles.fileName}>{extractOriginalName(fileLink)}</Text>
+            </TouchableOpacity>
+          );
+        }
+        break;
+
+      default:
+        if (extension === 'mp4' && fileLink) {
+          return (
+            <Video
+              source={{ uri: fileLink }}
+              style={styles.video}
+              useNativeControls
+              resizeMode="contain"
+              isLooping={false}
+              shouldPlay={false}
+              onError={(e) => console.warn('Video load error:', e)}
+            />
+          );
+        }
     }
 
-    if ((type === 'image' || type === 'sticker') && fileLink && extension !== 'mp4') {
-      return (
-        <Image
-          source={{ uri: fileLink }}
-          style={type === 'sticker' ? styles.sticker : styles.image}
-          resizeMode="contain"
-          onLoadStart={() => <ActivityIndicator size="small" color="#2563EB" />}
-        />
-      );
-    }
-
-    if (extension === 'mp4' && fileLink) {
-      return (
-        <Video
-          source={{ uri: fileLink }}
-          style={styles.video}
-          useNativeControls
-          resizeMode="contain"
-          isLooping={false}
-          shouldPlay={false}
-        />
-      );
-    }
-
-    if (type === 'file' && fileLink && extension !== 'mp4') {
-      const fileIcon = extension === 'pdf' ? 'file-pdf' : extension === 'doc' ? 'file-word' : 'file';
-      return (
-        <TouchableOpacity style={styles.fileContainer} onPress={() => {/* Handle file download */}}>
-          <Icon name={fileIcon} size={20} color="#2563EB" />
-          <Text style={styles.fileName}>{extractOriginalName(fileLink)}</Text>
-        </TouchableOpacity>
-      );
-    }
-
+    console.warn('Unsupported message type or file:', { messageType, fileLink });
     return <Text style={styles.errorText}>(Không thể hiển thị nội dung)</Text>;
   };
 
   const avatarIcon = (
     <Image
-      source={{
-        uri: message.sender?.avatarLink
-          ? message.sender.avatarLink
-          : 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg',
-      }}
+     																source={{ uri: message.sender.avatarLink || DEFAULT_AVATAR }}
       style={styles.avatarImage}
+      onError={(e) => console.warn('Avatar load error:', e.nativeEvent.error)}
     />
   );
 
-  const isSent = message.sender?.id === friend.userId;
+  const isSent = message.sender.id === userLogin.id;
 
   return (
-    <Modal visible={visible} transparent animationType="slide">
+    <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
       <View style={styles.overlay}>
         <View style={styles.modalContainer}>
           <Text style={styles.title}>Thông tin tin nhắn</Text>
@@ -94,7 +128,7 @@ const MessageDetailModal = ({ visible, onClose, message, friend }) => {
             {!isSent && avatarIcon}
 
             <View style={[styles.messageBubble, isSent ? styles.bubbleRight : styles.bubbleLeft]}>
-              <Text style={styles.senderName}>{message.sender?.fullName}</Text>
+              <Text style={styles.senderName}>{message.sender.fullName || 'Unknown'}</Text>
               <Text style={styles.timestamp}>{formatDateTime(message.timestamp)}</Text>
               <View style={styles.contentContainer}>{renderContent()}</View>
             </View>
@@ -119,13 +153,13 @@ const MessageDetailModal = ({ visible, onClose, message, friend }) => {
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.6)', // Darker overlay for better contrast
+    backgroundColor: 'rgba(0, 0, 0, 0.6)',
     justifyContent: 'center',
     alignItems: 'center',
   },
   modalContainer: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16, // Rounded corners
+    borderRadius: 16,
     padding: 20,
     width: '90%',
     maxHeight: '80%',
@@ -148,13 +182,13 @@ const styles = StyleSheet.create({
     right: 12,
     padding: 8,
     borderRadius: 20,
-    backgroundColor: '#F3F4F6', // Subtle background for button
+    backgroundColor: '#F3F4F6',
   },
   image: {
     width: 150,
     height: 180,
     borderRadius: 12,
-    backgroundColor: '#F3F4F6', // Placeholder background
+    backgroundColor: '#F3F4F6',
   },
   sticker: {
     width: 140,
@@ -208,7 +242,7 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 0,
   },
   bubbleRight: {
-    backgroundColor: '#BFDBFE', // Softer blue for sent messages
+    backgroundColor: '#BFDBFE',
     marginRight: 10,
     borderTopRightRadius: 0,
     alignItems: 'flex-end',
@@ -243,6 +277,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#E5E7EB',
     borderWidth: 1,
     borderColor: '#DBEAFE',
+  },
+  loader: {
+    position: 'absolute',
+    alignSelf: 'center',
+    top: '50%',
   },
 });
 

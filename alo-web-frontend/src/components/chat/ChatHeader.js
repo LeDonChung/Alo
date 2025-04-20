@@ -32,7 +32,6 @@ const ChatHeader = ({
   const userLogin = useSelector((state) => state.user.userLogin);
 
 
-  console.log('conversation', conversation.memberUserIds.find((item) => item !== userLogin.id));
   const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id))
 
   return (

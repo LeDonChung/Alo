@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { View, Text, Image, TouchableOpacity, Modal, Pressable } from 'react-native';
 import { Video } from 'expo-av';
 import { ReactionListComponent } from './ReactionListComponent';
+import { useSelector } from 'react-redux';
 
-const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted, handlerRemoveAllAction, flatListRef, messages, scrollToMessage }) => {
+const MessageItem = ({ item, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted, handlerRemoveAllAction, scrollToMessage }) => {
+  const userLogin = useSelector(state => state.user.userLogin);
+
   const isSent = item.senderId === userLogin.id;
   const messageType = item.messageType;
   const fileLink = item.fileLink;
@@ -122,7 +125,7 @@ const MessageItem = ({ item, userLogin, friend, setSelectedImage, setIsImageView
         {!isSent && showAvatar() && (
           <TouchableOpacity>
             <Image
-              source={{ uri: friend.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg' }}
+              source={{ uri: item.sender.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg' }}
               style={{ width: 40, height: 40, borderRadius: 20, marginRight: 5 }}
             />
           </TouchableOpacity>
