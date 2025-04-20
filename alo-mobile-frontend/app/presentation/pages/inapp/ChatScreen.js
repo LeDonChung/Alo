@@ -299,7 +299,7 @@ export const ChatScreen = ({ route, navigation }) => {
   const onDeletePin = async (pin) => {
     try {
       await dispatch(removePin({ conversationId: conversation.id, messageId: pin.messageId })).then((res) => {
-        socket.emit("unpin-pin", {
+        socket.emit("unpin-message", {
           conversation: conversation,
           pin: res.payload.data
         });

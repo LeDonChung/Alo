@@ -2,7 +2,7 @@ const friendService = require('../../services/friend.service');
 const userService = require('../../services/user.service');
 const conversationService = require('../../services/conversation.service');
 const messageService = require('../../services/message.service');
-
+const fileService = require('../../services/file.service');
 exports.getConversationsByUserId = async (req, res) => {
     try {
         const authHeader = req.headers['authorization'];
@@ -71,19 +71,43 @@ exports.getConversationsByUserId = async (req, res) => {
     }
 };
 
-
-
-
 exports.getConversationById = async (req, res) => {
     try {
         const conversationId = req.params.id;
-
         const conversation = await conversationService.getConversationById(conversationId);
 
+        if (!conversation) {
+            return res.status(404).json({
+                status: 404,
+                message: "Cuộc trò chuyện không tồn tại.",
+                data: null
+            });
+        }
+
+        const userCache = new Map();
+        const members = [];
+
+        for (const memberUserId of conversation.memberUserIds) {
+            let memberUser;
+            if (userCache.has(memberUserId)) {
+                memberUser = userCache.get(memberUserId);
+            } else {
+                memberUser = await userService.getUserById(memberUserId);
+                userCache.set(memberUserId, memberUser);
+            }
+            members.push(memberUser);
+        }
+
+        // Lấy message cuối cùng
+        const lastMessage = await messageService.getLastMessageByConversationId(conversation.id);
 
         return res.json({
             status: 200,
-            data: conversation,
+            data: {
+                ...conversation,
+                members,
+                lastMessage
+            },
             message: "Lấy thông tin cuộc trò chuyện thành công."
         });
     } catch (err) {
@@ -94,7 +118,8 @@ exports.getConversationById = async (req, res) => {
             data: null
         });
     }
-}
+};
+
 
 exports.createPin = async (req, res) => {
     try {
@@ -145,7 +170,7 @@ exports.createPin = async (req, res) => {
         // Nếu chưa ghim thì thêm vào danh sách ghim và tối đa là 5 ghim, xóa ghim cũ nhất
         if (pineds.length >= 5) {
             // Xóa ghim cũ nhất
-            pineds.pop(); 
+            pineds.pop();
         }
 
         const pin = {
@@ -174,6 +199,7 @@ exports.createPin = async (req, res) => {
         });
     }
 }
+
 exports.deletePin = async (req, res) => {
     try {
         const authHeader = req.headers['authorization'];
@@ -208,7 +234,7 @@ exports.deletePin = async (req, res) => {
 
         // Cập nhật ghim
         const data = await conversationService.updatePineds(conversationId, pineds);
-        
+
 
         return res.json({
             status: 200,
@@ -227,3 +253,115 @@ exports.deletePin = async (req, res) => {
 }
 
 
+exports.createGroupConversation = async (req, res) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        const userId = userService.getUserIdFromToken(token);
+
+        let { name, memberUserIds, avatar } = req.body;
+        if (typeof memberUserIds === 'string') {
+            memberUserIds = JSON.parse(memberUserIds);
+        }
+        if (!name || !memberUserIds) {
+            return res.status(400).json({
+                status: 400,
+                message: "Tên cuộc trò chuyện và danh sách thành viên không được để trống.",
+                data: null
+            });
+        }
+
+        // Kiểm tra memberUserIds ít nhất 3 người
+        if (memberUserIds.length < 2) {
+            return res.status(400).json({
+                status: 400,
+                message: "Danh sách thành viên phải có ít nhất 2 người.",
+                data: null
+            });
+        }
+
+        const data = {
+            name,
+            memberUserIds,
+            isGroup: true,
+            createdBy: userId,
+            createdAt: Date.now(),
+            blockedUserIds: [],
+            roles: [
+                {
+                    userIds: [userId],
+                    role: "leader",
+                    permissions: {
+                        changeGroupInfo: true,
+                        pinMessages: true,
+                        sendMessage: true,
+                        removeMember: true,
+                        blockMember: true
+                    }
+                },
+                {
+                    userIds: [],
+                    role: "vice_leader",
+                    permissions: {
+                        changeGroupInfo: true,
+                        pinMessages: true,
+                        sendMessage: true,
+                        removeMember: true,
+                        blockMember: true
+                    }
+                },
+                {
+                    userIds: [],
+                    role: "member",
+                    permissions: {
+                        changeGroupInfo: true,
+                        pinMessages: true,
+                        sendMessage: true,
+                        removeMember: false,
+                        blockMember: false
+                    }
+                }
+            ]
+        };
+
+        if (req.file) {
+            const file = req.file;
+            data.avatar = await fileService.uploadFile(file);
+        } else {
+            data.avatar = avatar;
+        }
+
+        const conversation = await conversationService.createGroupConversation(data);
+
+        // Lấy thông tin chi tiết các thành viên
+        const userCache = new Map();
+        const members = [];
+        for (const memberUserId of conversation.memberUserIds) {
+            let memberUser;
+            if (userCache.has(memberUserId)) {
+                memberUser = userCache.get(memberUserId);
+            } else {
+                memberUser = await userService.getUserById(memberUserId);
+                userCache.set(memberUserId, memberUser);
+            }
+            members.push(memberUser);
+        }
+
+        return res.json({
+            status: 200,
+            message: "Tạo cuộc trò chuyện thành công.",
+            data: {
+                ...conversation,
+                members
+            }
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+};

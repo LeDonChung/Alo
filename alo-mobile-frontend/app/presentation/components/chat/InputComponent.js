@@ -42,7 +42,7 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
 
         if (!allowedExtensions.includes(fileExtension)) {
           alert('Chỉ chấp nhận các loại tệp: pdf, doc, docx, txt, xls, xlsx, ppt, pptx, zip, rar, mp4');
-          return;
+          return;0
         }
 
         const file = {

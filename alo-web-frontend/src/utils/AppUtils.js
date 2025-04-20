@@ -47,4 +47,9 @@ export  const removeVietnameseTones = (str) => {
     .replace(/Đ/g, "D");
 };
 
+export const getFriend = (conversation, userId) => {
+    const friend = conversation.members.find(member => member.id === userId);
+    console.log('friend', friend);
+    return friend;
+}
 export default showToast;

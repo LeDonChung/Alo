@@ -6,22 +6,17 @@ import 'lightgallery/css/lg-thumbnail.css';
 import lgZoom from 'lightgallery/plugins/zoom';
 import lgThumbnail from 'lightgallery/plugins/thumbnail';
 import lgVideo from 'lightgallery/plugins/video';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import {
   setMessageParent,
   setMessageUpdate,
   updateMessageStatus,
-  removeAllReaction,
   handlerUpdateReaction,
   updateReaction,
   removeOfMe,
   setMessageRemoveOfMe,
 } from '../../redux/slices/MessageSlice';
-import { batch } from 'react-redux';
 import {
-  getConversationById,
-  addPinToConversation,
-  removePinToConversation,
   createPin,
 } from '../../redux/slices/ConversationSlice';
 import socket from '../../utils/socket';
@@ -36,10 +31,10 @@ const MessageItem = ({
   showAvatar,
   onClickParent,
   isHighlighted,
-  conversation,
-  userLogin,
-  conversations,
 }) => {
+  const userLogin = useSelector((state) => state.user.userLogin);
+  const conversation = useSelector((state) => state.conversation.conversation);
+  const conversations = useSelector((state) => state.conversation.conversations);
   const [contextMenu, setContextMenu] = useState({ visible: false, x: 0, y: 0, messageId: null });
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showReactionModal, setShowReactionModal] = useState(false);
@@ -375,9 +370,7 @@ const MessageItem = ({
             <ul className="text-sm text-gray-700">
               {message.status === 0 && (
                 <>
-                  <
-
-li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleAnswer}>
+                  <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handleAnswer}>
                     Trả lời
                   </li>
                   <li

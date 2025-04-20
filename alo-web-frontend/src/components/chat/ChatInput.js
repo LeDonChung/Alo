@@ -13,7 +13,7 @@ import lgZoom from 'lightgallery/plugins/zoom';
 import lgThumbnail from 'lightgallery/plugins/thumbnail';
 import socket from '../../utils/socket';
 
-const ChatInput = ({ isSending, getFriend }) => {
+const ChatInput = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const conversation = useSelector((state) => state.conversation.conversation);
   const userLogin = useSelector((state) => state.user.userLogin);

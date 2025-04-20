@@ -24,6 +24,32 @@ const createConversation = async (data) => {
     }
 }
 
+const createGroupConversation = async (data) => {
+    try {
+        const params = {
+            TableName: 'Conversations',
+            Item: {
+                id: uuidv4(),
+                name: data.name,
+                avatar: data.avatar,
+                createdBy: data.createdBy,
+                createdAt: data.createdAt,
+                isGroup: true,
+                blockedUserIds: data.blockedUserIds,
+                roles: data.roles,
+                memberUserIds: data.memberUserIds
+            }
+        };
+        console.log(params);
+        await client.put(params).promise();
+        console.log(params.Item);
+        return params.Item;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
+
 const getConversationById = async (id) => {
     try {
         const params = {
@@ -41,7 +67,7 @@ const getConversationById = async (id) => {
 }
 
 const getConversationByMembers = async (memberUserIds) => {
-    try {       
+    try {
         const params = {
             TableName: 'Conversations',
             FilterExpression: '#createdBy IN (:memberA, :memberB) AND contains(#memberUserIds, :memberA) AND contains(#memberUserIds, :memberB)',
@@ -55,7 +81,7 @@ const getConversationByMembers = async (memberUserIds) => {
             }
         };
         const data = await client.scan(params).promise();
-        const result =  data.Items?.find(item => item.memberUserIds.length === 2);
+        const result = data.Items?.find(item => item.memberUserIds.length === 2);
         return result;
     } catch (err) {
         console.error(err);
@@ -128,5 +154,6 @@ module.exports = {
     getConversationByMembers,
     getConversationById,
     updateLastMessage,
-    updatePineds
+    updatePineds,
+    createGroupConversation
 };

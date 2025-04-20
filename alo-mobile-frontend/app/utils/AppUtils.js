@@ -5,7 +5,7 @@ import { GlobalStyles } from "../presentation/styles/GlobalStyles"
 export const showToast = (type, position, title, content) => {
     Toast.show({
         type: type,
-        position: position, 
+        position: position,
         text1: title,
         text2: content,
         visibilityTime: 4000, // Thời gian hiển thị toast (ms)
@@ -13,6 +13,11 @@ export const showToast = (type, position, title, content) => {
         topOffset: 30, // Khoảng cách từ cạnh trên
         bottomOffset: 40, // Khoảng cách từ cạnh dưới,
         text1Style: [GlobalStyles.textStyle, { fontWeight: 'bold' }],
-        text2Style: [GlobalStyles.textStyle, {  }],
+        text2Style: [GlobalStyles.textStyle, {}],
     })
+} 
+
+export const getFriend = (conversation, userId) => {
+    const friend = conversation.members.find(member => member.userId !== userId);
+    return friend;
 }

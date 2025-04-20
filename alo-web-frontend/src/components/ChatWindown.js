@@ -7,6 +7,7 @@ import RightSlidebar from './RightSlideBarChat';
 import ChatHeader from './chat/ChatHeader';
 import ChatContent from './chat/ChatContent';
 import ChatInput from './chat/ChatInput';
+import { getFriend } from '../utils/AppUtils';
 
 const ChatWindow = () => {
   const isSending = useSelector(state => state.message.isSending);
@@ -35,10 +36,6 @@ const ChatWindow = () => {
     return `Truy cập ${logoutTime.toLocaleDateString('vi-VN')}`;
   };
 
-  const getFriend = (conversation) => {
-    const friend = conversation.members.find((member) => member.id !== userLogin.id);
-    return friend;
-  };
 
   const handleGetLastLogout = async (userId) => {
     await axiosInstance.get(`/api/user/get-profile/${userId}`).then((res) => {
@@ -50,13 +47,12 @@ const ChatWindow = () => {
   // Bắt sự kiện get last logout
   useEffect(() => {
     const handleGetLastLogoutX = async (userId) => {
-      console.log('getLastLogoutX', userId);
-      console.log(getFriend(conversation));
-      if (userId === getFriend(conversation).id) {
-        console.log('getLastLogout', userId);
+      const friend = getFriend(conversation, userId);
+      if (userId === friend.id) {
         await handleGetLastLogout(userId);
       }
     }
+
     socket.on('user-offline', handleGetLastLogoutX);
 
     return () => {
@@ -155,10 +151,7 @@ const ChatWindow = () => {
     <>
       <div className="w-3/4 flex flex-col">
         <ChatHeader
-          conversation={conversation}
-          userLogin={userLogin}
           lastLogout={lastLogout}
-          getFriend={getFriend}
           getLastLoginMessage={getLastLoginMessage}
           isFriendOnline={isFriendOnline}
           scrollToMessage={scrollToMessage}
@@ -167,30 +160,17 @@ const ChatWindow = () => {
         <div className="flex-1 p-4 overflow-y-auto bg-gray-100" style={{ overflowAnchor: 'none' }}>
 
           <ChatContent
-            messages={messages}
             isLoadMessage={isLoadMessage}
-            conversation={conversation}
-            userLogin={userLogin}
-            getFriend={getFriend}
-            conversations={conversations}
             messageRefs={messageRefs}
             scrollToMessage={scrollToMessage}
           />
         </div>
 
 
-        <ChatInput
-          isSending={isSending}
-          getFriend={getFriend}
-        />
+        <ChatInput />
       </div>
 
-      <RightSlidebar
-        conversation={conversation}
-        userLogin={userLogin}
-        getFriend={getFriend}
-        messages={messages}
-      />
+      <RightSlidebar />
     </>
   );
 };

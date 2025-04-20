@@ -1,8 +1,14 @@
 import React, { useRef, useEffect, useState } from 'react';
 import MessageItem from './MessageItem';
-import { useDispatch } from 'react-redux';
+import { getFriend } from '../../utils/AppUtils';
+import { useSelector } from 'react-redux';
 
-const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFriend, loadMoreMessages, conversations, messageRefs, scrollToMessage }) => {
+const ChatContent = ({ isLoadMessage, messageRefs, scrollToMessage }) => {
+  const conversation = useSelector((state) => state.conversation.conversation);
+  const userLogin = useSelector((state) => state.user.userLogin);
+  const messages = useSelector((state) => state.message.messages);
+  const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id))
+
   const messagesEndRef = useRef(null);
   const chatContainerRef = useRef(null);
   const [isScrolledToTop, setIsScrolledToTop] = useState(false);
@@ -72,7 +78,13 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
   if (messages.length === 0) {
     return (
       <div className="text-center text-gray-500">
-        <p>Nhập tin nhắn để bắt đầu trò chuyện với {getFriend(conversation).fullName}</p>
+        {
+          !conversation.isGroup ? ( 
+            <p>Nhập tin nhắn để bắt đầu trò chuyện với {friend.fullName}</p>
+          ) : (
+            <p>Nhập tin nhắn để bắt đầu trò chuyện với nhóm {conversation.name}</p>
+          )
+        }
       </div>
     );
   }
@@ -95,9 +107,6 @@ const ChatContent = ({ messages, isLoadMessage, conversation, userLogin, getFrie
                 isUserMessage={isUserMessage}
                 isLastMessage={isLastMessage}
                 showAvatar={showAvatar}
-                conversation={conversation}
-                userLogin={userLogin}
-                conversations={conversations}
                 isHighlighted={highlightedMessage === message.id}
                 onClickParent={() => {
                   if (message.messageParent?.id) {

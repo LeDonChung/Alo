@@ -1,12 +1,11 @@
 // ChatHeader.jsx
 import React, { useEffect, useState } from 'react';
 import PinComponentWeb from './PinComponent';
+import { useSelector } from 'react-redux';
+import { getFriend } from '../../utils/AppUtils';
 
 const ChatHeader = ({
-  conversation,
-  userLogin,
   lastLogout,
-  getFriend,
   getLastLoginMessage,
   isFriendOnline,
   scrollToMessage,
@@ -29,26 +28,51 @@ const ChatHeader = ({
     return () => clearInterval(intervalId);
   }, [lastLogout]);
 
-  if (conversation.isGroup) return null;
+  const conversation = useSelector((state) => state.conversation.conversation);
+  const userLogin = useSelector((state) => state.user.userLogin);
+
+
+  console.log('conversation', conversation.memberUserIds.find((item) => item !== userLogin.id));
+  const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id))
 
   return (
+
     <div className="bg-white border-b border-gray-200">
       {/* Header */}
       <div className="p-4 flex items-center">
-        <img
-          src={
-            getFriend(conversation).avatarLink ||
-            'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'
-          }
-          alt="Avatar"
-          className="w-10 h-10 rounded-full mr-2"
-        />
+        {
+          !conversation.isGroup ? (
+            <img
+              src={
+                friend.avatarLink ||
+                'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'
+              }
+              alt="Avatar"
+              className="w-10 h-10 rounded-full mr-2"
+            />
+          ) : (
+            <img
+              src={
+                conversation.avatar ||
+                'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'
+              }
+              alt="Avatar"
+              className="w-10 h-10 rounded-full mr-2"
+            />
+          )
+        }
         <div>
-          <p className="font-semibold">{getFriend(conversation).fullName}</p>
+          {
+            !conversation.isGroup ? (
+              <p className="font-semibold">{friend.fullName}</p>
+            ) : (
+              <p className="font-semibold">{conversation.name}</p>
+            )
+          }
           <p className="text-sm text-gray-500">
-            {isFriendOnline(conversation.memberUserIds.find((v) => v !== userLogin.id))
+            {!conversation.isGroup && (isFriendOnline(conversation.memberUserIds.find((v) => v !== userLogin.id))
               ? 'Đang hoạt động'
-              : timeDisplay}
+              : timeDisplay)}
           </p>
         </div>
         <div className="ml-auto flex space-x-2">

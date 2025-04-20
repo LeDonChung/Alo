@@ -6,6 +6,7 @@ import 'lightgallery/css/lg-zoom.css';
 import 'lightgallery/css/lg-thumbnail.css';
 import lgZoom from 'lightgallery/plugins/zoom';
 import lgThumbnail from 'lightgallery/plugins/thumbnail';
+import { getFriend } from '../utils/AppUtils';
 // Tạo components/Icons.js
 export const FileIcon = ({ className }) => (
   <svg
@@ -61,12 +62,10 @@ export const SearchIcon = ({ className }) => (
     <line x1="21" y1="21" x2="16.65" y2="16.65" />
   </svg>
 );
-const RightSlidebar = ({
-  conversation,
-  userLogin,
-  getFriend,
-  messages
-}) => {
+const RightSlidebar = () => {
+  const userLogin = useSelector(state => state.user.userLogin);
+  const conversation = useSelector(state => state.conversation.conversation);
+  const messages = useSelector(state => state.message.messages);
   function getFileIcon(extension) {
     switch (extension) {
       case 'pdf':
@@ -252,7 +251,7 @@ const RightSlidebar = ({
 
   const [isSetting, setIsSetting] = useState(true);
   const [searchImage, setSearchImage] = useState(false);
-  console.log("photosGroupByDate", photosGroupByDate)
+  const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id))
   return (
     isSetting ? (
       <div className=" w-1/4 bg-white border-l border-gray-200 p-4 overflow-y-auto max-h-[2000px] scrollable">
@@ -261,12 +260,28 @@ const RightSlidebar = ({
           <div className="border-b border-gray-200 pb-4">
             <h3 className="font-semibold text-center mb-2">Thông tin hội thoại</h3>
             <div className="flex flex-col items-center">
-              <img
-                src={getFriend(conversation).avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'} // Thay bằng avatar thật
-                alt="Avatar"
-                className="w-20 h-20 rounded-full mb-2"
-              />
-              <p className="font-semibold text-lg">{getFriend(conversation).fullName}</p>
+              {
+                !conversation.isGroup ? (
+                  <img
+                    src={friend.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'} // Thay bằng avatar thật
+                    alt="Avatar"
+                    className="w-20 h-20 rounded-full mb-2"
+                  />
+                ) : (
+                  <img
+                    src={conversation.avatar || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'} // Thay bằng avatar thật
+                    alt="Avatar"
+                    className="w-20 h-20 rounded-full mb-2"
+                  />
+                )
+              }
+              {
+                !conversation.isGroup ? (
+                  <p className="font-semibold text-lg">{friend.fullName}</p>
+                ) : (
+                  <p className="font-semibold text-lg">{conversation.name}</p>
+                )
+              }
               <p className="font-semibold"></p>
               <div className="flex space-x-4 mt-4">
                 <button className="flex flex-col items-center text-gray-600 hover:text-blue-500">
@@ -425,7 +440,7 @@ const RightSlidebar = ({
                           {group.messages.map((message, index) => (
                             <a key={index} href={message.fileLink}>
                               <img src={message.fileLink} alt="Hình ảnh" className='w-full h-[5rem] cursor-pointer object-cover border rounded-sm' />
-                            </a> 
+                            </a>
                           ))}
                         </LightGallery>
                       </div>

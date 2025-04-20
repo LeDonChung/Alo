@@ -1,31 +1,18 @@
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import React, { useEffect, useState } from 'react';
-import { faMagnifyingGlass } from "@fortawesome/free-solid-svg-icons";
+import React from 'react';
 import socket from '../utils/socket';
 import { useDispatch, useSelector } from 'react-redux';
-import { setUserOnlines } from '../redux/slices/UserSlice';
-import { setConversation, updateLastMessage } from '../redux/slices/ConversationSlice';
+import { setConversation } from '../redux/slices/ConversationSlice';
+import { getFriend } from '../utils/AppUtils';
 
 const ConversationList = () => {
-  const userOnlines = useSelector(state => state.user.userOnlines);
   const dispatch = useDispatch();
 
-
-
-  const isFriendOnline = (userId) => {
-    return userOnlines.includes(userId);
-  };
-
   const userLogin = useSelector(state => state.user.userLogin);
-
-  const getFriend = (conversation) => {
-    const friend = conversation.members.find((member) => member.id !== userLogin.id);
-    return friend;
-  }
 
   const conversations = useSelector(state => state.conversation.conversations);
 
   const showLastMessage = (conversation) => {
+    const friend = getFriend(conversation, conversation.lastMessage?.senderId)
     if (conversation.lastMessage) {
       let message = conversation.lastMessage.content;
       let messageStatus = conversation.lastMessage.status;
@@ -43,15 +30,14 @@ const ConversationList = () => {
         return "Bạn: " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi");
       } else {
         return (
-          conversation.isGroup
-            ? getFriend(conversation).fullName + ": " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi")
-            : (messageStatus === 0 ? message : "Tin nhắn đã thu hồi")
+          conversation.lastMessage
+          && friend.fullName + ": " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi")
         );
 
       }
     }
   }
-
+  console.log('conversations', conversations);
 
 
   const getLastTimeMessage = (time) => {
@@ -72,54 +58,71 @@ const ConversationList = () => {
       return `${timeX.toLocaleDateString('vi-VN')}`;
     }
   }
-  console.log(conversations)
+  console.log("User login", userLogin);
   const selectedConversation = useSelector(state => state.conversation.conversation);
   return (
+
     <div className=" bg-white border-r border-gray-200 py-4 overflow-y-auto max-h-[2000px] scrollable">
       <div>
-        {(conversations && conversations.length > 0) ? conversations.map((conversation) => (
-          !conversation.isGroup &&
-          <div
-            key={conversations.id}
-            onClick={() => {
-              if (selectedConversation) {
-                socket.emit("leave_conversation", selectedConversation.id);
-              }
-              dispatch(setConversation(conversation));
-            }}
-            className={`flex py-4 justify-between items-center p-2 hover:bg-gray-100 cursor-pointer ${conversation.id === selectedConversation?.id ? 'bg-gray-100' : ''}`}
-          >
-            <div className='flex items-center'>
-              {
-                !conversation.isGroup && (
-                  <img
-                    src={getFriend(conversation).avatarLink ? getFriend(conversation).avatarLink : "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
-                    alt="Avatar"
-                    className="w-10 h-10 rounded-full mr-2"
-                  />
-                )
-              }
-              <div>
-                <p className="font-semibold">{getFriend(conversation).fullName}</p>
-                <p className="text-sm text-gray-500 truncate max-w-[280px]">{
-                  showLastMessage(conversation)
+        {(conversations && conversations.length > 0) ? conversations.map((conversation) => {
+          const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id))
+          return (
+            <div
+              key={conversation.id}
+              onClick={() => {
+                if (selectedConversation) {
+                  socket.emit("leave_conversation", selectedConversation.id);
+                }
+                dispatch(setConversation(conversation));
+              }}
+              className={`flex py-4 justify-between items-center p-2 hover:bg-gray-100 cursor-pointer ${conversation.id === selectedConversation?.id ? 'bg-gray-100' : ''}`}
+            >
+              <div className='flex items-center'>
+                {
+                  !conversation.isGroup ? (
+                    <img
+                      src={friend.avatarLink ? friend.avatarLink : "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
+                      alt="Avatar"
+                      className="w-10 h-10 rounded-full mr-2"
+                    />
+                  ) : (
+                    <img
+                      src={conversation.avatar ? conversation.avatar : "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
+                      alt="Avatar"
+                      className="w-10 h-10 rounded-full mr-2"
+                    />
+                  )
+                }
+                <div>
+                  {
+                    !conversation.isGroup ? (
+                      <p className="font-semibold">{friend.fullName}</p>
+                    ) : (
+                      <p className="font-semibold">{conversation.name}</p>
+                    )
+                  }
+
+                  <p className="text-sm text-gray-500 truncate max-w-[280px]">
+                    {
+                      conversation.lastMessage && showLastMessage(conversation)
+                    }
+                  </p>
+                </div>
+              </div>
+              <div className='mb-auto'>
+                <p className="text-sm text-gray-500  " >{
+                  conversation.lastMessage && getLastTimeMessage(conversation.lastMessage.timestamp)
                 }</p>
               </div>
             </div>
-            <div className='mb-auto'>
-              <p className="text-sm text-gray-500  " >{
-                conversation.lastMessage && getLastTimeMessage(conversation.lastMessage.timestamp)
-              }</p>
-            </div>
-          </div>
-        )) : (
+          )
+        }) : (
           <>
             <div className="flex justify-center items-center">
               <div className="animate-spin rounded-full border-t-2 border-b-2 border-blue-600 w-4 h-4"></div>
             </div>
           </>
-        )
-        }
+        )}
       </div>
     </div>
   );
