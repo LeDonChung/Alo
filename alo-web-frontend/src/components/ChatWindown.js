@@ -144,6 +144,7 @@ const ChatWindow = () => {
       messageRef.scrollIntoView({ behavior: "smooth", block: "center" });
     }
   };
+  const [search, setSearch] = useState(false);
 
   return (
     <>
@@ -153,6 +154,8 @@ const ChatWindow = () => {
           getLastLoginMessage={getLastLoginMessage}
           isFriendOnline={isFriendOnline}
           scrollToMessage={scrollToMessage}
+          search={search}
+          setSearch={setSearch}
         />
 
         <div className="flex-1 p-4 overflow-y-auto bg-gray-100" style={{ overflowAnchor: 'none' }}>
@@ -168,7 +171,7 @@ const ChatWindow = () => {
         <ChatInput />
       </div>
 
-      <RightSlidebar />
+      <RightSlidebar search={search} setSearch={setSearch}/>
     </>
   );
 };

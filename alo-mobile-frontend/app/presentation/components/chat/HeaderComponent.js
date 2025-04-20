@@ -16,7 +16,6 @@ const HeaderComponent = ({ isFriendOnline, getLastLoginMessage, lastLogout, scro
   const userLogin = useSelector(state => state.user.userLogin);
   const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id));
   const [timeDisplay, setTimeDisplay] = useState('Chưa truy cập');
-
   // Cập nhật timeDisplay mỗi phút dựa trên lastLogout
   useEffect(() => {
     const updateTimeDisplay = () => {
@@ -33,7 +32,7 @@ const HeaderComponent = ({ isFriendOnline, getLastLoginMessage, lastLogout, scro
     return () => clearInterval(intervalId);
   }, [lastLogout]);
   return (
-    <TouchableOpacity>
+    <View>
       <View style={{ backgroundColor: '#007AFF', padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <AntDesign name="left" size={20} color="white" onPress={() => socket.emit("leave_conversation", conversation.id) && navigation.goBack()} />
@@ -61,9 +60,11 @@ const HeaderComponent = ({ isFriendOnline, getLastLoginMessage, lastLogout, scro
         <View style={{ flexDirection: 'row' }}>
           <Icon name="phone" size={20} color="white" style={{ marginHorizontal: 10 }} />
           <Icon name="video" size={20} color="white" style={{ marginHorizontal: 10 }} />
-          <Icon name="info-circle" size={20} color="white" style={{ marginHorizontal: 10 }} />
+          <TouchableOpacity onPress={() => navigation.navigate('setting')}>
+            <Icon name="info-circle" size={20} color="white" style={{ marginHorizontal: 10 }} />
+          </TouchableOpacity>
         </View>
-      </View> 
+      </View>
       <View>
         {
           (conversation.pineds && conversation.pineds.length) > 0 && (
@@ -75,7 +76,7 @@ const HeaderComponent = ({ isFriendOnline, getLastLoginMessage, lastLogout, scro
           )
         }
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 

@@ -9,6 +9,8 @@ const ChatHeader = ({
   getLastLoginMessage,
   isFriendOnline,
   scrollToMessage,
+  search,
+  setSearch
 }) => {
   const [timeDisplay, setTimeDisplay] = useState('Chưa truy cập');
 
@@ -95,7 +97,7 @@ const ChatHeader = ({
               />
             </svg>
           </button>
-          <button className="p-2 hover:bg-gray-100 rounded-full">
+          <button className={`p-2 hover:bg-gray-100 rounded-full ${search ? "bg-blue-400" : ""}`} onClick={() => setSearch(!search)}>
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
