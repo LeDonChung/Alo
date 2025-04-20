@@ -37,4 +37,51 @@ router.post('/create-group',
     middleware.authenticateToken,
     upload,
     conversationController.createGroupConversation);
+
+router.post('/:conversationId/update-profile-group',
+    middleware.authenticateToken,
+    upload,
+    conversationController.updateProfileGroup);
+
+router.post('/:conversationId/add-member',
+    middleware.authenticateToken,
+    conversationController.addMember);
+
+router.post('/:conversationId/remove-member/:memberUserId',
+    middleware.authenticateToken,
+    conversationController.removeMember);
+
+router.post('/:conversationId/add-vice-leader/:memberUserId',
+    middleware.authenticateToken,
+    conversationController.addViceLeader);
+router.post('/:conversationId/remove-vice-leader/:memberUserId',
+    middleware.authenticateToken,
+    conversationController.removeViceLeader);
+router.post('/:conversationId/change-leader/:newLeaderId',
+    middleware.authenticateToken,
+    conversationController.changeLeader);
+
+router.post('/:conversationId/block/:blockMember',
+    middleware.authenticateToken,
+    conversationController.blockMember);
+
+router.post('/:conversationId/unblock/:memberUserId',
+    middleware.authenticateToken,
+    conversationController.unblockMember);
+
+router.post('/:conversationId/allow-update-profile-group',
+    middleware.authenticateToken,
+    conversationController.updateAllowUpdateGroupInfo);
+
+router.post('/:conversationId/allow-pin-message',
+    middleware.authenticateToken,
+    conversationController.updateAllowPinMessage);
+
+router.post('/:conversationId/allow-send-message',
+    middleware.authenticateToken,
+    conversationController.updateAllowSendMessage);
+
+router.post('/:conversationId/remove-all-history-messages',    
+    middleware.authenticateToken,
+    conversationController.removeAllHistoryMessages);
 module.exports = router;

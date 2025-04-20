@@ -10,7 +10,7 @@ class Message {
         this.seen = seen;
         this.fileLink = fileLink;
         this.reaction = reaction;
-        this.status = status; // 0: đã gửi - hiện, 1: đã thu hồi
+        this.status = status; // 0: đã gửi - hiện, 1: đã thu hồi, 2: xóa cả 2
         this.messageParent = messageParent;
         this.removeOfme = []
     }

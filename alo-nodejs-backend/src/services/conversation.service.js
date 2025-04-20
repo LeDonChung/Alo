@@ -148,6 +148,172 @@ const updatePineds = async (conversationId, pineds) => {
     }
 }
 
+const updateProfileGroup = async (conversationId, data) => {
+    try {
+        const params = {
+            TableName: 'Conversations',
+            Key: {
+                id: conversationId
+            },
+            UpdateExpression: 'set #name = :name, avatar = :avatar',
+            ExpressionAttributeNames: {
+                '#name': 'name'
+            },
+            ExpressionAttributeValues: {
+                ':name': data.name,
+                ':avatar': data.avatar
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+        console.log(params);
+        const res = await client.update(params).promise();
+        return res.Attributes;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+};
+
+const addNewMember = async (conversationId, data) => {
+    try {
+        const params = {
+            TableName: 'Conversations',
+            Key: {
+                id: conversationId
+            },
+            UpdateExpression: 'set memberUserIds = list_append(if_not_exists(memberUserIds, :emptyList), :newMemberUserIds), #roles = :roles',
+            ExpressionAttributeNames: {
+                '#roles': 'roles'
+            },
+            ExpressionAttributeValues: {
+                ':newMemberUserIds': data.memberUserIds,
+                ':roles': data.roles,
+                ':emptyList': []
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+        const res = await client.update(params).promise();
+        return res.Attributes;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+};
+
+const removeMember = async (conversationId, data) => {
+    const params = {
+        TableName: 'Conversations',
+        Key: { id: conversationId },
+        UpdateExpression: 'SET memberUserIds = :memberUserIds, #roles = :roles',
+        ExpressionAttributeNames: {
+            '#roles': 'roles'
+        },
+        ExpressionAttributeValues: {
+            ':memberUserIds': data.memberUserIds,
+            ':roles': data.roles
+        },
+        ReturnValues: 'ALL_NEW'
+    };
+
+    const result = await client.update(params).promise();
+    return result.Attributes;
+}
+
+const updateRoles = async (conversationId, data) => {
+    const params = {
+        TableName: 'Conversations',
+        Key: { id: conversationId },
+        UpdateExpression: 'SET #roles = :roles',
+        ExpressionAttributeNames: {
+            '#roles': 'roles'
+        },
+        ExpressionAttributeValues: {
+            ':roles': data
+        },
+        ReturnValues: 'ALL_NEW'
+    };
+
+    const result = await client.update(params).promise();
+    return result.Attributes;
+}
+
+const updateBlockedUserIds = async (conversationId, blockedUserIds) => {
+    const params = {
+        TableName: 'Conversations',
+        Key: { id: conversationId },
+        UpdateExpression: 'SET blockedUserIds = :blockedUserIds',
+        ExpressionAttributeValues: {
+            ':blockedUserIds': blockedUserIds
+        },
+        ReturnValues: 'ALL_NEW'
+    };
+
+    const result = await client.update(params).promise();
+    return result.Attributes;
+}
+const updateAllMessagesStatusByConversationId = async (conversationId) => {
+    try {
+        let messages = [];
+        let lastEvaluatedKey = null;
+
+        do {
+            const params = {
+                TableName: 'Messages',
+                IndexName: 'conversationId-timestamp-index',
+                FilterExpression: 'conversationId = :conversationId',
+                ExpressionAttributeValues: {
+                    ':conversationId': conversationId
+                },
+                ScanIndexForward: true,
+            };
+
+            const queryResult = await client.scan(params).promise();
+            messages = messages.concat(queryResult.Items);
+            lastEvaluatedKey = queryResult.LastEvaluatedKey;
+        } while (lastEvaluatedKey);
+
+        if (!messages || messages.length === 0) {
+            return { updatedCount: 0, message: 'Không có message nào thuộc conversation này.' };
+        }
+
+        const batchSize = 25;
+        const batches = [];
+        for (let i = 0; i < messages.length; i += batchSize) {
+            batches.push(messages.slice(i, i + batchSize));
+        }
+
+        const batchPromises = batches.map(async (batch) => {
+            const requestItems = batch.map(message => ({
+                PutRequest: {
+                    Item: {
+                        ...message,
+                        status: 2 // Xóa cả 2
+                    }
+                }
+            }));
+
+            const batchParams = {
+                RequestItems: {
+                    Messages: requestItems
+                }
+            };
+
+            return client.batchWrite(batchParams).promise();
+        });
+
+        await Promise.all(batchPromises);
+
+        return {
+            updatedCount: messages.length,
+            message: `Đã cập nhật trạng thái thành 0 cho ${messages.length} message.`
+        };
+
+    } catch (err) {
+        console.error('Lỗi khi cập nhật trạng thái message:', err);
+        throw err;
+    }
+};
+
 module.exports = {
     createConversation,
     getConversationsByUserId,
@@ -155,5 +321,11 @@ module.exports = {
     getConversationById,
     updateLastMessage,
     updatePineds,
-    createGroupConversation
+    createGroupConversation,
+    updateProfileGroup,
+    addNewMember,
+    removeMember,
+    updateRoles,
+    updateBlockedUserIds,
+    updateAllMessagesStatusByConversationId
 };
