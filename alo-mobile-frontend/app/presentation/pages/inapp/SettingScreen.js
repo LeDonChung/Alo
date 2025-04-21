@@ -1,27 +1,23 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, Switch } from 'react-native';
+import { useSelector } from 'react-redux';
 import { ScrollView } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { getFriend } from '../../../utils/AppUtils';
 
-export const SettingScreen = () => {
+export const SettingScreen = ({ navigation }) => {
+    const userLogin = useSelector(state => state.user.userLogin);
+    const conversation = useSelector(state => state.conversation.conversation);
+    const messages = useSelector(state => state.message.messages);
+
     const [pinChat, setPinChat] = useState(false);
     const [hideChat, setHideChat] = useState(false);
-
-    const members = [
-        { id: '1', name: 'Thành viên 1' },
-        { id: '2', name: 'Thành viên 2' },
-    ];
-
-    const messages = [
-        { id: '1', content: 'Ảnh, file, link', isMedia: true },
-        { id: '2', content: 'Tin nhắn 1' },
-    ];
-
+    
     return (
         <ScrollView style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Icon name="arrow-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Tùy chọn</Text>
@@ -47,9 +43,9 @@ export const SettingScreen = () => {
                     <Icon name="chat" size={24} color="#007AFF" style={styles.iconTap} />
                     <Text style={styles.tabText}>Tìm tin nhắn</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.tab}>
+                <TouchableOpacity style={styles.tab} onPress={() => navigation.navigate('addMember')}>
                     <Icon name="group" size={28} color="#007AFF" style={styles.iconTap} />
-                    <Text style={styles.tabText}>Thành viên</Text>
+                    <Text style={styles.tabText}>Thêm thành viên</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.tab}>
                     <Icon name="image" size={24} color="#007AFF" style={styles.iconTap} />

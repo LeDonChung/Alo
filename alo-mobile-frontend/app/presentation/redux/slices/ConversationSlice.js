@@ -47,6 +47,20 @@ const removePin = createAsyncThunk('ConversationSlice/removePin', async ({ conve
     }
 });
 
+const addMemberToGroup = createAsyncThunk(
+    'ConversationSlice/addMemberToGroup',
+    async ({ conversationId, memberUserIds }, { rejectWithValue }) => {
+      try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/add-member`, {
+          memberUserIds
+        });
+        return response.data;
+      } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+      }
+    }
+  );
+
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
@@ -149,9 +163,21 @@ const ConversationSlice = createSlice({
         });
         builder.addCase(removePin.rejected, (state, action) => {
         });
+
+        builder.addCase(addMemberToGroup.pending, (state) => {
+        });
+        builder.addCase(addMemberToGroup.fulfilled, (state, action) => {
+            let cons = state.conversation;
+            if (cons) {
+                cons.members = [...cons.members, ...action.payload.data.members];
+            } 
+            state.conversation = {...cons};
+        });
+        builder.addCase(addMemberToGroup.rejected, (state, action) => {
+        });
     }
 });
 
 export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket } = ConversationSlice.actions; 
-export { getAllConversation, getConversationById, createPin, removePin };
+export { getAllConversation, getConversationById, createPin, removePin, addMemberToGroup };
 export default ConversationSlice.reducer;
