@@ -80,6 +80,39 @@ const createGroup = createAsyncThunk('ConversationSlice/createGroup', async ({ d
     }
 });
 
+const updateProfileGroup = createAsyncThunk('ConversationSlice/updateProfileGroup', async ({ conversationId, data, file }, { rejectWithValue }) => {
+    try {
+        const formData = new FormData();
+
+        if (file) {
+            formData.append("file", {
+                uri: file.uri,
+                name: file.name,
+                type: file.type
+            });
+        }
+
+        for (const key in data) {
+            const value = data[key];
+            if (Array.isArray(value)) {
+                formData.append(key, JSON.stringify(value));
+            } else {
+                formData.append(key, value);
+            }
+        }
+
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/update-profile-group`, formData, {
+            headers: {
+                "Content-Type": "multipart/form-data"
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.log(error);
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
+
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
@@ -95,6 +128,19 @@ const ConversationSlice = createSlice({
             } else {
                 const index = state.conversations.findIndex(conversation => conversation.id === newConversation.id);
                 state.conversations[index] = newConversation;
+            }
+        },
+        updateProfileGroupById: (state, action) => {
+            const updatedConversation = action.payload;
+            const existingConversation = state.conversations.find(conversation => conversation.id === updatedConversation.id);
+            if (existingConversation) {
+                const index = state.conversations.findIndex(conversation => conversation.id === updatedConversation.id);
+                state.conversations[index].name = updatedConversation.name;
+                state.conversations[index].avatar = updatedConversation.avatar;
+                if (state.conversation.id == updatedConversation.id) {
+                    state.conversation.name = updatedConversation.name;
+                    state.conversation.avatar = updatedConversation.avatar;
+                }
             }
         },
         removeConversation: (state, action) => {
@@ -207,11 +253,18 @@ const ConversationSlice = createSlice({
         });
 
         builder.addCase(createGroup.rejected, (state, action) => {
-            state.conversation = [];
+        });
+
+        builder.addCase(updateProfileGroup.pending, (state) => {
+        });
+        builder.addCase(updateProfileGroup.fulfilled, (state, action) => {
+        });
+
+        builder.addCase(updateProfileGroup.rejected, (state, action) => {
         });
     }
 });
 
-export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket, addConversation, removeConversation } = ConversationSlice.actions;
-export { getAllConversation, getConversationById, createPin, removePin, createGroup };
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket, addConversation, removeConversation, updateProfileGroupById } = ConversationSlice.actions;
+export { getAllConversation, getConversationById, createPin, removePin, createGroup, updateProfileGroup };
 export default ConversationSlice.reducer;
