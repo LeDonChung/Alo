@@ -68,7 +68,7 @@ export default function HomePage() {
                 </div>
 
                 {/* menu */}
-                <div className="flex flex-col">
+                <div className="flex flex-col h-full overflow-y-auto">
                     <ConversationList conversations={conversations} />
                 </div>
             </div>
