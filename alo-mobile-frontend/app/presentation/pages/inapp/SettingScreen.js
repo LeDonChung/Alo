@@ -125,6 +125,10 @@ export const SettingScreen = () => {
             });
     }, [navigation]);
 
+    const handleSearchMessages = () => {
+        navigation.navigate('chat');
+    };
+
     return (
         <ScrollView style={styles.container}>
 
@@ -224,7 +228,7 @@ export const SettingScreen = () => {
 
             {/* Tabs */}
             <View style={styles.tabs}>
-                <TouchableOpacity style={styles.tab}>
+                <TouchableOpacity style={styles.tab} onPress={handleSearchMessages}>
                     <Icon name="chat" size={24} color="#007AFF" style={styles.iconTap} />
                     <Text style={styles.tabText}>Tìm tin nhắn</Text>
                 </TouchableOpacity>
