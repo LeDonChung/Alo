@@ -135,7 +135,28 @@ export const GroupMembersScreen = () => {
     console.log("Chặn thành viên:", member.fullName);
   };
   const handleRemove = (member) => {
-    console.log("Xóa khỏi nhóm:", member.fullName);
+    Alert.alert(
+      "Xóa thành viên",
+      `Bạn có chắc chắn muốn xóa ${member.displayName} khỏi nhóm?`,
+      [
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+        {
+          text: "Xác nhận",
+          onPress: async () => {
+            // Gọi API hoặc dispatch action để xóa thành viên khỏi nhóm
+            await dispatch(removeMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
+  
+            // Cập nhật lại danh sách thành viên sau khi xóa
+            setMembers((prevMembers) => {
+              return prevMembers.filter((m) => m.id !== member.id);
+            });
+          },
+        },
+      ]
+    );
   };
 
   const renderItem = ({ item }) => (

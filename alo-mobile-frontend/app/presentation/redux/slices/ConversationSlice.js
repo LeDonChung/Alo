@@ -63,11 +63,9 @@ const addMemberToGroup = createAsyncThunk(
 
 const removeMemberToGroup = createAsyncThunk(
     'ConversationSlice/removeMemberToGroup',
-    async ({ conversationId, memberUserIds }, { rejectWithValue }) => {
+    async ({ conversationId, memberUserId }, { rejectWithValue }) => {
         try {
-            const response = await axiosInstance.post(`/api/conversation/${conversationId}/remove-member`, {
-                memberUserIds
-            });
+            const response = await axiosInstance.post(`/api/conversation/${conversationId}/remove-member/${memberUserId}`);
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
@@ -346,7 +344,7 @@ const ConversationSlice = createSlice({
         builder.addCase(removeMemberToGroup.fulfilled, (state, action) => {
             let cons = state.conversation;
             if (cons) {
-                cons.members = cons.members.filter(member => !action.payload.data.memberUserIds.includes(member.id));
+                cons.members = cons.members.filter(member => !action.payload.data.memberUserId.includes(member.id));
             }
             state.conversation = {...cons};
         });
