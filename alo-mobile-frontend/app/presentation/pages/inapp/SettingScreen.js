@@ -279,7 +279,7 @@ export const SettingScreen = () => {
                 </TouchableOpacity>
 
                 {/* Thêm các tùy chọn mới từ hình ảnh */}
-                {/* role leader moi hien thi */ }
+                {/* role leader moi hien thi */}
                 {leaderIds.includes(userLogin.id) && (
                 <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('group-members', { groupId: conversation.id, mode: 'transferLeader' })}>
                     <Icon name="person-add-alt-1" size={24} color="#000" />

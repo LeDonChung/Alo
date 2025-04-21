@@ -75,11 +75,21 @@ const removeMemberToGroup = createAsyncThunk(
 
 const blockMemberToGroup = createAsyncThunk(
     'ConversationSlice/blockMemberToGroup',
-    async ({ conversationId, memberUserIds }, { rejectWithValue }) => {
+    async ({ conversationId, memberUserId }, { rejectWithValue }) => {
         try {
-            const response = await axiosInstance.post(`/api/conversation/${conversationId}/block`, {
-                memberUserIds
-            });
+            const response = await axiosInstance.post(`/api/conversation/${conversationId}/block/${memberUserId}`);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+        }
+    }
+);
+
+const unblockMemberToGroup = createAsyncThunk(
+    'ConversationSlice/unblockMemberToGroup',
+    async ({ conversationId, memberUserId }, { rejectWithValue }) => {
+        try {
+            const response = await axiosInstance.post(`/api/conversation/${conversationId}/unblocl/${memberUserId}`);
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
@@ -356,12 +366,25 @@ const ConversationSlice = createSlice({
         builder.addCase(blockMemberToGroup.fulfilled, (state, action) => {
             let cons = state.conversation;
             if (cons) {
-                cons.members = cons.members.filter(member => !action.payload.data.memberUserIds.includes(member.id));
+                cons.members = cons.members.filter(member => !action.payload.data.memberUserId.includes(member.id));
                 cons.blockedMembers = [...cons.blockedMembers, ...action.payload.data.members];
             }
             state.conversation = {...cons};
         });
         builder.addCase(blockMemberToGroup.rejected, (state, action) => {
+        });
+
+        builder.addCase(unblockMemberToGroup.pending, (state) => {
+        });
+        builder.addCase(unblockMemberToGroup.fulfilled, (state, action) => {
+            let cons = state.conversation;
+            if (cons) {
+                cons.blockedMembers = cons.blockedMembers.filter(member => !action.payload.data.memberUserId.includes(member.id));
+                cons.members = [...cons.members, ...action.payload.data.members];
+            }
+            state.conversation = {...cons};
+        });
+        builder.addCase(unblockMemberToGroup.rejected, (state, action) => {
         });
 
         builder.addCase(addViceLeaderToGroup.pending, (state) => {
@@ -471,5 +494,5 @@ const ConversationSlice = createSlice({
 
 
 export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket, addConversation, removeConversation, updateProfileGroupById } = ConversationSlice.actions;
-export { getAllConversation, getConversationById, createPin, removePin, createGroup, updateProfileGroup, addMemberToGroup, removeMemberToGroup, blockMemberToGroup, addViceLeaderToGroup, removeViceLeaderToGroup, changeLeader };
+export { getAllConversation, getConversationById, createPin, removePin, createGroup, updateProfileGroup, addMemberToGroup, removeMemberToGroup, blockMemberToGroup, unblockMemberToGroup, addViceLeaderToGroup, removeViceLeaderToGroup, changeLeader };
 export default ConversationSlice.reducer;

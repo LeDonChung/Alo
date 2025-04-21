@@ -19,6 +19,17 @@ const getProfile = createAsyncThunk('UserSlice/getProfile', async (token, { reje
         return rejectWithValue(error.response?.data);
     }
 });
+
+const getUserById = createAsyncThunk('UserSlice/getUserById', async (userId, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.get('/api/user/get-profile/' + userId);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data);
+    }
+});
+
+
 const uploadAvatar = createAsyncThunk('UserSlice/uploadAvatar', async (file, { rejectWithValue }) => {
     try {
         console.log("File: ", file);
@@ -241,9 +252,19 @@ const UserSlice = createSlice({
         builder.addCase(forgetPassword.rejected, (state, action) => {
         });
 
+        builder.addCase(getUserById.pending, (state) => {
+        });
+        builder.addCase(getUserById.fulfilled, (state, action) => {
+            state.userLogin = action.payload.data;
+            SecureStore.setItem('userLogin', JSON.stringify(action.payload.data));
+        });
+        builder.addCase(getUserById.rejected, (state, action) => {
+            state.userLogin = null;
+        });
+
     }
 });
 
 export const { setUserOnlines, setUserLogin } = UserSlice.actions;
-export { uploadAvatar, uploadBackground, getProfile, updateProfile, login, verifyOtp, generateOtp, logout, forgetPassword, changePassword };
+export { uploadAvatar, uploadBackground, getProfile, updateProfile, login, verifyOtp, generateOtp, logout, forgetPassword, changePassword, getUserById };
 export default UserSlice.reducer;

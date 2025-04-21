@@ -13,7 +13,8 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { ManagementMemberModal } from "../../components/chat/ManagementMemberModal";
 import { useDispatch, useSelector } from "react-redux";
-import { removeMemberToGroup, blockMemberToGroup, addViceLeaderToGroup, removeViceLeaderToGroup, getConversationById, changeLeader } from "../../redux/slices/ConversationSlice";
+import { removeMemberToGroup, blockMemberToGroup, unblockMemberToGroup, addViceLeaderToGroup, removeViceLeaderToGroup, getConversationById, changeLeader } from "../../redux/slices/ConversationSlice";
+import { getUserById } from "../../redux/slices/UserSlice";
 
 const FILTERS = {
   ALL: "all",
@@ -34,7 +35,6 @@ export const GroupMembersScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [filterMode, setFilterMode] = useState(FILTERS.ALL);
   const dispatch = useDispatch();
-
   useEffect(() => {
     if (conversation) {
       const leaderIds =
@@ -69,12 +69,12 @@ export const GroupMembersScreen = () => {
         setFilteredMembers(members.filter((m) => m.status === "invited"));
         break;
       case FILTERS.BLOCKED:
-        setFilteredMembers(members.filter((m) => m.status === "blocked"));
+        setFilteredMembers(members.filter((m) => conversation.blockedUserIds.includes(m.id)));
         break;
       default:
         setFilteredMembers(members);
     }
-  }, [filterMode, members]);
+}, [filterMode, members, conversation.blockedUserIds]);
 
   const handleTransferLeader = (member) => {
     Alert.alert(
@@ -132,8 +132,59 @@ export const GroupMembersScreen = () => {
     }
   };
   const handleBlock = (member) => {
-    console.log("Chặn thành viên:", member.fullName);
+    Alert.alert(
+      "Chặn và xóa khỏi nhóm",
+      `Bạn có chắc chắn muốn chặn và xóa ${member.displayName} khỏi nhóm?`,
+      [
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+        {
+          text: "Xác nhận",
+          onPress: async () => {
+            await dispatch(blockMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
+            await dispatch(removeMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
+            await dispatch(getConversationById(conversation.id));
+            setMembers((prevMembers) => {
+              return prevMembers.filter((m) => m.id !== member.id);
+            });
+          },
+        },
+      ]
+    );
   };
+
+  const handleUnblock = (member) => {
+    Alert.alert(
+        "Bỏ chặn",
+        `Bạn có chắc chắn muốn bỏ chặn ${member.displayName}?`,
+        [
+          {
+            text: "Hủy",
+            style: "cancel",
+            },
+            {
+            text: "Xác nhận",
+            onPress: async () => {
+                await dispatch(unblockMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
+                setMembers((prevMembers) => {
+                    return prevMembers.map((m) => {
+                    // Chỉ thay đổi người được bỏ chặn, không thay đổi người khác
+
+                    if (m.id === member.id) {
+                        return { ...m, status: "active" }; // Đặt lại trạng thái thành viên thành "active"
+                    }
+                    return m; // Giữ nguyên những người khác
+                    });
+                });
+            },
+            },
+        ]
+    );
+};
+
+
   const handleRemove = (member) => {
     Alert.alert(
       "Xóa thành viên",
