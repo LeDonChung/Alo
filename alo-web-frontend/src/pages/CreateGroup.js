@@ -7,9 +7,9 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleXmark, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { SearchByPhone } from "../components/SearchByPhone";
 import { removeVietnameseTones } from "../utils/AppUtils";
-import { getAllConversation } from "../redux/slices/ConversationSlice";
+import { getAllConversation, createGroup, addConversation } from "../redux/slices/ConversationSlice";
 import { userLogin } from "../utils/AppUtils";
-import axios from "axios";
+import socket from "../utils/socket";
 
 // Thêm: Danh sách ảnh mặc định cho nhóm
 const defaultGroupImages = [
@@ -44,13 +44,26 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
     const friendsFromRedux = useSelector((state) => state.friend.friends);
 
 
+
+    
+    // useEffect(() => {
+    //     if (socket && userLogin.id) {
+    //         socket.emit("join", userLogin.id);
+    //         console.log(`Tham gia phòng user:${userLogin.id}`);
+    //     }
+
+    //     return () => {
+    //     };
+    // }, [userLogin.id]);
+
     // Lấy danh sách bạn bè 
     useEffect(() => {
         const fetchFriends = async () => {
             try {
-                await dispatch(getFriends()); // Dispatch action để lấy danh sách bạn bè
+                await dispatch(getFriends());
             } catch (error) {
-                console.log("Error fetching friends:", error);
+                console.error("Lỗi khi lấy danh sách bạn bè:", error);
+                setError("Không thể tải danh sách bạn bè.");
             }
         };
         fetchFriends();
@@ -85,7 +98,7 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
         );
     };
 
-    // Sửa: Hàm xử lý chọn file ảnh từ máy
+    // Hàm xử lý chọn file ảnh từ máy
     const handleAvatarChange = (e) => {
         const file = e.target.files[0];
         if (file) {
@@ -95,19 +108,19 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
         setShowDefaultImages(false);
     };
 
-    // Thêm: Hàm xử lý chọn ảnh mặc định
+    // Hàm xử lý chọn ảnh mặc định
     const handleDefaultImageSelect = (url) => {
         setDefaultAvatarUrl(url);
         setAvatarFile(null);
         setShowDefaultImages(false);
     };
 
-    // Thêm: Hàm hiển thị/ẩn danh sách ảnh mặc định
+    // Hàm hiển thị/ẩn danh sách ảnh mặc định
     const toggleDefaultImages = () => {
         setShowDefaultImages((prev) => !prev);
     };
 
-    // Hàm tạo nhóm, gửi URL ảnh mặc định hoặc file ảnh
+    // Hàm tạo nhóm
     const handleCreateGroup = async () => {
         if (!groupName.trim()) {
             setError("Tên nhóm không được để trống.");
@@ -122,40 +135,50 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
         setError("");
 
         try {
-            const formData = new FormData();
-            formData.append("name", groupName);
-            formData.append("memberUserIds", JSON.stringify([...selected, userLogin.id]));
-            // Sửa: Gửi file ảnh hoặc URL ảnh mặc định
-            if (avatarFile) {
-                formData.append("file", avatarFile);
-            } else if (defaultAvatarUrl) {
-                formData.append("avatar", defaultAvatarUrl);
-            }
+            const result = await dispatch(
+                createGroup({
+                    name: groupName,
+                    memberUserIds: [...selected, userLogin.id],
+                    file: avatarFile,
+                    avatar: defaultAvatarUrl,
+                })
+            ).unwrap();
 
-            const response = await axios.post(
-                `${process.env.REACT_APP_API_URL}/api/conversation/create-group`,
-                formData,
-                {
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("accessToken")}`,
-                        "Content-Type": "multipart/form-data",
-                    },
-                }
-            );
+            dispatch(addConversation(result.data));
 
-            if (response.data.status === 200) {
-                await dispatch(getAllConversation());
-                onClose();
-            } else {
-                setError(response.data.message || "Tạo nhóm thất bại.");
-            }
+            console.log("Gửi sự kiện create_group:", result.data);
+            socket.emit("create_group", { conversation: result.data });
+
+            const conversationId = result.data.id;
+            socket.emit("join_conversation", conversationId);
+            console.log(`Tham gia phòng nhóm ${conversationId}`);
+            onClose();
         } catch (err) {
             console.error("Lỗi khi tạo nhóm:", err);
-            setError(err.response?.data?.message || "Đã có lỗi xảy ra. Vui lòng thử lại.");
+            setError(err.message || "Đã có lỗi xảy ra. Vui lòng thử lại.");
         } finally {
             setIsLoading(false);
         }
     };
+
+    useEffect(() => {
+        socket.on("receive-create-group", ({ conversation }) => {
+            console.log("Nhận được sự kiện receive-create-group:", conversation);
+            dispatch(addConversation(conversation));
+            const conversationId = conversation.id;
+            socket.emit("join_conversation", conversationId);
+            console.log(`Tham gia phòng nhóm ${conversationId}`);
+        });
+
+        socket.on("error", (error) => {
+            console.error("Lỗi từ server qua socket:", error);
+        });
+
+        return () => {
+            socket.off("receive-create-group");
+            socket.off("error");
+        };
+    }, [dispatch]);
 
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
@@ -205,39 +228,38 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
 
                 {/* Thêm: Hiển thị danh sách ảnh mặc định */}
                 {showDefaultImages && (
-                        <div className="mb-2">
-                            <h3 className="text-sm font-semibold mb-2">Cập nhật ảnh đại diện</h3>
-                            {/* Thêm: Nút tải lên từ máy tính hiển thị cùng lúc với danh sách ảnh mặc định */}
-                            <label
-                                htmlFor="avatar-upload"
-                                className="flex items-center bg-blue-500 text-white text-sm px-3 py-1 rounded cursor-pointer hover:bg-blue-600 mb-2 w-full"
-                            >
-                                <FontAwesomeIcon icon={faUpload} className="mr-2" />
-                                Tải lên từ máy tính
-                                <input
-                                    id="avatar-upload"
-                                    type="file"
-                                    accept="image/*"
-                                    className="hidden"
-                                    onChange={handleAvatarChange}
-                                />
-                            </label>
-                            <h3 className="text-sm font-semibold mb-2">Bộ sưu tập</h3>
-                            <div className="grid grid-cols-4 gap-2">
-                                {defaultGroupImages.map((url, index) => (
-                                    <img
-                                        key={index}
-                                        src={url}
-                                        alt={`Default ${index + 1}`}
-                                        className={`w-[50px] h-[50px] rounded-full cursor-pointer hover:opacity-80 ${
-                                            defaultAvatarUrl === url ? "border-2 border-blue-500" : ""
+                    <div className="mb-2">
+                        <h3 className="text-sm font-semibold mb-2">Cập nhật ảnh đại diện</h3>
+                        {/* Thêm: Nút tải lên từ máy tính hiển thị cùng lúc với danh sách ảnh mặc định */}
+                        <label
+                            htmlFor="avatar-upload"
+                            className="flex items-center bg-blue-500 text-white text-sm px-3 py-1 rounded cursor-pointer hover:bg-blue-600 mb-2 w-"
+                        >
+                            <FontAwesomeIcon icon={faUpload} className="mr-2" />
+                            Tải lên từ máy tính
+                            <input
+                                id="avatar-upload"
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                onChange={handleAvatarChange}
+                            />
+                        </label>
+                        <h3 className="text-sm font-semibold mb-2">Bộ sưu tập</h3>
+                        <div className="grid grid-cols-4 gap-2">
+                            {defaultGroupImages.map((url, index) => (
+                                <img
+                                    key={index}
+                                    src={url}
+                                    alt={`Default ${index + 1}`}
+                                    className={`w-[50px] h-[50px] rounded-full cursor-pointer hover:opacity-80 ${defaultAvatarUrl === url ? "border-2 border-blue-500" : ""
                                         }`}
-                                        onClick={() => handleDefaultImageSelect(url)}
-                                    />
-                                ))}
-                            </div>
+                                    onClick={() => handleDefaultImageSelect(url)}
+                                />
+                            ))}
                         </div>
-                    )}
+                    </div>
+                )}
                 <input
                     className="border p-2 rounded w-full mb-4"
                     type="text"
