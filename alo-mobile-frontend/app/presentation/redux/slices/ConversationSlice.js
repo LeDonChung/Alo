@@ -115,6 +115,21 @@ const removeViceLeaderToGroup = createAsyncThunk(
     }
 );
 
+const changeLeader = createAsyncThunk(
+    'ConversationSlice/changeLeader',
+    async ({ conversationId, newLeaderId }, { rejectWithValue }) => {
+        try {
+            const response = await axiosInstance.post(
+                `/api/conversation/${conversationId}/change-leader/${newLeaderId}`
+            );
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+        }
+    }
+);
+
+
 const createGroup = createAsyncThunk('ConversationSlice/createGroup', async ({ data, file }, { rejectWithValue }) => {
     try {
         const formData = new FormData();
@@ -395,6 +410,47 @@ const ConversationSlice = createSlice({
             state.conversation = {...cons};
         });
 
+        builder.addCase(changeLeader.pending, (state) => {
+            state.loading = true;
+        });
+        
+        builder.addCase(changeLeader.fulfilled, (state, action) => {
+            let cons = state.conversation;
+        
+            if (cons) {
+                cons.members = cons.members.map((member) => {
+                    if (action.payload.data.newLeaderId === member.id) {
+                        return { ...member, isLeader: true };  
+                    } else {
+                        return { ...member, isLeader: false };
+                    }
+                });
+        
+                cons.roles = cons.roles.map((role) => {
+                    if (role.role === 'leader') {
+                        return { ...role, userIds: [action.payload.data.newLeaderId] };
+                    } else if (role.role === 'vice_leader') {
+                        return {
+                            ...role,
+                            userIds: role.userIds.filter(userId => userId !== action.payload.data.newLeaderId)
+                        };
+                    } else if (role.role === 'member') {
+                        return role;
+                    }
+                    return role;
+                });
+            }
+        
+            state.conversation = { ...cons };
+            state.loading = false; 
+        });
+        
+        builder.addCase(changeLeader.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload || "Lỗi khi thay đổi trưởng nhóm";
+        });
+        
+
         builder.addCase(createGroup.pending, (state) => {
         });
         builder.addCase(createGroup.fulfilled, (state, action) => {
@@ -417,5 +473,5 @@ const ConversationSlice = createSlice({
 
 
 export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket, addConversation, removeConversation, updateProfileGroupById } = ConversationSlice.actions;
-export { getAllConversation, getConversationById, createPin, removePin, createGroup, updateProfileGroup, addMemberToGroup, removeMemberToGroup, blockMemberToGroup, addViceLeaderToGroup, removeViceLeaderToGroup };
+export { getAllConversation, getConversationById, createPin, removePin, createGroup, updateProfileGroup, addMemberToGroup, removeMemberToGroup, blockMemberToGroup, addViceLeaderToGroup, removeViceLeaderToGroup, changeLeader };
 export default ConversationSlice.reducer;

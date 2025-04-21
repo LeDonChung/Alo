@@ -7,12 +7,13 @@ import {
   StyleSheet,
   Image,
   ScrollView,
+  Alert
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { ManagementMemberModal } from "../../components/chat/ManagementMemberModal";
 import { useDispatch, useSelector } from "react-redux";
-import { removeMemberToGroup, blockMemberToGroup, addViceLeaderToGroup, removeViceLeaderToGroup } from "../../redux/slices/ConversationSlice";
+import { removeMemberToGroup, blockMemberToGroup, addViceLeaderToGroup, removeViceLeaderToGroup, getConversationById, changeLeader } from "../../redux/slices/ConversationSlice";
 
 const FILTERS = {
   ALL: "all",
@@ -53,7 +54,7 @@ export const GroupMembersScreen = () => {
 
       if (mode === "transferLeader") {
         filtered = filtered.filter((member) => !member.isLeader);
-      }
+      } 
 
       setMembers(filtered);
     }
@@ -76,14 +77,59 @@ export const GroupMembersScreen = () => {
   }, [filterMode, members]);
 
   const handleTransferLeader = (member) => {
-    console.log("Chuyển quyền trưởng nhóm cho:", member.fullName);
+    Alert.alert(
+      "Chuyển quyền trưởng nhóm",
+      `Bạn có chắc chắn muốn chuyển quyền trưởng nhóm cho ${member.displayName}?`,
+      [
+        {
+          text: "Hủy",
+          style: "cancel",
+        },
+        {
+          text: "Xác nhận",
+          onPress: async () => {
+            await dispatch(changeLeader({ conversationId: conversation.id, newLeaderId: member.id }));
+            setMembers((prevMembers) => {
+              return prevMembers.map((m) => {
+                if (m.id === member.id) {
+                  return { ...m, isLeader: true };
+                }
+                return { ...m, isLeader: false };
+              });
+            });
+          },
+        },
+      ]
+    );
   };
 
-  const handlePromoteVice = (member) => {
-    dispatch(addViceLeaderToGroup({ conversationId: conversation.id, memberUserId: member.id }));
+  const handlePromoteVice = async (member) => {
+    if (!member.isViceLeader) {
+      await dispatch(addViceLeaderToGroup({ conversationId: conversation.id, memberUserId: member.id }));
+      setMembers((prevMembers) => {
+        return prevMembers.map((m) => {
+          // Chỉ thay đổi người được chọn làm phó nhóm, không thay đổi người khác
+          if (m.id === member.id) {
+            return { ...m, isViceLeader: true };
+          }
+          return m; // Giữ nguyên những người khác
+        });
+      });
+    }
   };
-  const handleRemoveVice = (member) => {
-    dispatch(removeViceLeaderToGroup({ conversationId: conversation.id, memberUserIds: member.id }));
+  const handleRemoveVice = async (member) => {
+    if (member.isViceLeader) {
+      await dispatch(removeViceLeaderToGroup({ conversationId: conversation.id, memberUserIds: member.id }));
+      setMembers((prevMembers) => {
+        return prevMembers.map((m) => {
+          // Chỉ thay đổi người được gỡ vai trò phó nhóm, không thay đổi người khác
+          if (m.id === member.id) {
+            return { ...m, isViceLeader: false }; // Gỡ vai trò phó nhóm
+          }
+          return m; // Giữ nguyên những người khác
+        });
+      });
+    }
   };
   const handleBlock = (member) => {
     console.log("Chặn thành viên:", member.fullName);
@@ -185,13 +231,14 @@ export const GroupMembersScreen = () => {
         </Text>
       </View>
 
-      {/* Filter buttons */}
-      <View style={styles.filterContainer}>
-        {renderFilterButton("Tất cả", FILTERS.ALL)}
-        {renderFilterButton("Trưởng và Phó nhóm", FILTERS.LEADER_AND_VICE)}
-        {renderFilterButton("Đã mời", FILTERS.INVITED)}
-        {renderFilterButton("Đã chặn", FILTERS.BLOCKED)}
-      </View>
+      {mode !== "transferLeader" && (
+        <View style={styles.filterContainer}>
+            {renderFilterButton("Tất cả", FILTERS.ALL)}
+            {renderFilterButton("Trưởng và Phó nhóm", FILTERS.LEADER_AND_VICE)}
+            {renderFilterButton("Đã mời", FILTERS.INVITED)}
+            {renderFilterButton("Đã chặn", FILTERS.BLOCKED)}
+        </View>
+        )}
 
       <FlatList
         data={filteredMembers}
