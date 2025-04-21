@@ -7,6 +7,7 @@ import { getFriend, getGroupImageDefaut, showToast } from '../../../utils/AppUti
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { updateProfileGroup, updateProfileGroupById } from '../../redux/slices/ConversationSlice';
+import socket from '../../../utils/socket';
 export const SettingScreen = () => {
     const userLogin = useSelector(state => state.user.userLogin);
     const conversation = useSelector(state => state.conversation.conversation);
@@ -76,7 +77,7 @@ export const SettingScreen = () => {
                 // Nếu là ảnh đại diện từ link thì data.avatar sẽ là link
                 // Nếu là ảnh đại diện từ file thì data.avatar sẽ là file
                 if (groupAvatar && !groupAvatar.startsWith('file://')) {
-                    data.avatar = groupAvatar || groupDefault[0];
+                    data.avatar = groupAvatar;
                 }
 
                 let file = null;
@@ -90,23 +91,27 @@ export const SettingScreen = () => {
 
                 console.log("file", file);
                 console.log("data", data);
-                
+
                 await dispatch(updateProfileGroup({
                     conversationId: conversation.id,
                     data,
                     file
                 })).unwrap().then((res) => {
-                    console.log("res", res);
                     dispatch(updateProfileGroupById(res.data));
+                    showToast('error', 'top', 'Thông báo', res.message || 'Cập nhật ảnh đại diện nhóm thành công.');
+                    socket.emit('update_profile_group', {
+                        conversation: res.data
+                    });
+
                 })
             } catch (error) {
                 console.error('Error updating group avatar:', error);
-                showToast('error', ToastPosition.TOP, 'Lỗi', error.message || 'Cập nhật ảnh đại diện nhóm thất bại');
+                showToast('error', 'top', 'Lỗi', error.message || 'Cập nhật ảnh đại diện nhóm thất bại');
             }
         }
         if (groupAvatar) {
             handlerUpdateGroup()
-        } 
+        }
     }, [groupAvatar]);
     useEffect(() => {
         navigation.getParent()?.setOptions({
