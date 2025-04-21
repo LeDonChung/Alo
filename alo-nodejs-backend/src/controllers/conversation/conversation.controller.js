@@ -260,6 +260,7 @@ exports.createGroupConversation = async (req, res) => {
         const userId = userService.getUserIdFromToken(token);
 
         let { name, memberUserIds, avatar } = req.body;
+        console.log("memberUserIds: ", memberUserIds)
         if (typeof memberUserIds === 'string') {
             memberUserIds = JSON.parse(memberUserIds);
         }
@@ -379,7 +380,7 @@ exports.updateProfileGroup = async (req, res) => {
         const userId = userService.getUserIdFromToken(token);
 
         const { conversationId } = req.params;
-        let { name } = req.body;
+        let { name, avatar } = req.body;
 
         const conversation = await conversationService.getConversationById(conversationId);
 
@@ -394,8 +395,8 @@ exports.updateProfileGroup = async (req, res) => {
         // Kiểm tra quyền sửa thông tin nhóm
         const role = conversation.roles.find(role => role.userIds.includes(userId));
         if (!role || !role.permissions?.changeGroupInfo) {
-            return res.status(403).json({
-                status: 403,
+            return res.status(404).json({
+                status: 404,
                 message: "Bạn không có quyền sửa thông tin nhóm.",
                 data: null
             });
@@ -409,13 +410,19 @@ exports.updateProfileGroup = async (req, res) => {
             });
         }
 
-        let avatar = conversation.avatar;
+        let newAvatar = conversation.avatar;
         if (req.file) {
             const file = req.file;
-            avatar = await fileService.uploadFile(file);
+            newAvatar = await fileService.uploadFile(file);
+        } else {
+            if (avatar) {
+                newAvatar = avatar;
+            } else {
+                newAvatar = conversation.avatar;
+            }
         }
 
-        const data = { name, avatar };
+        const data = { name, avatar: newAvatar };
 
         await conversationService.updateProfileGroup(conversationId, data);
 
@@ -473,8 +480,8 @@ exports.addMember = async (req, res) => {
         // Kiểm tra quyền thêm thành viên
         const role = conversation.roles.find(role => role.userIds.includes(userId));
         if (!role || !role.permissions?.addMember) {
-            return res.status(403).json({
-                status: 403,
+            return res.status(404).json({
+                status: 404,
                 message: "Bạn không có quyền thêm thành viên.",
                 data: null
             });
@@ -548,8 +555,8 @@ exports.removeMember = async (req, res) => {
         const userRole = conversation.roles.find(role => role.userIds.includes(userId));
 
         if (!userRole || !userRole.permissions?.removeMember) {
-            return res.status(403).json({
-                status: 403,
+            return res.status(404).json({
+                status: 404,
                 message: "Bạn không có quyền xóa thành viên.",
                 data: null
             });
@@ -578,8 +585,8 @@ exports.removeMember = async (req, res) => {
 
         // Logic phân quyền xoá
         if (userRole.role === "vice_leader" && targetRole?.role !== "member") {
-            return res.status(403).json({
-                status: 403,
+            return res.status(404).json({
+                status: 404,
                 message: "Bạn chỉ có quyền xóa thành viên có vai trò là member.",
                 data: null
             });
@@ -637,8 +644,8 @@ exports.addViceLeader = async (req, res) => {
         // Kiểm tra quyền (chỉ leader được thêm vice leader)
         const role = conversation.roles.find(role => role.userIds.includes(userId));
         if (!role || role.role !== 'leader') {
-            return res.status(403).json({
-                status: 403,
+            return res.status(404).json({
+                status: 404,
                 message: "Bạn không có quyền thêm phó nhóm.",
                 data: null
             });
@@ -707,8 +714,8 @@ exports.removeViceLeader = async (req, res) => {
         // Kiểm tra quyền (chỉ leader được xóa vice leader)
         const role = conversation.roles.find(role => role.userIds.includes(userId));
         if (!role || role.role !== 'leader') {
-            return res.status(403).json({
-                status: 403,
+            return res.status(404).json({
+                status: 404,
                 message: "Bạn không có quyền xóa phó nhóm.",
                 data: null
             });
@@ -778,8 +785,8 @@ exports.changeLeader = async (req, res) => {
         // Kiểm tra quyền (chỉ leader hiện tại được chuyển giao)
         const role = conversation.roles.find(role => role.userIds.includes(userId));
         if (!role || role.role !== 'leader') {
-            return res.status(403).json({
-                status: 403,
+            return res.status(404).json({
+                status: 404,
                 message: "Bạn không có quyền chuyển giao trưởng nhóm.",
                 data: null
             });
@@ -853,8 +860,8 @@ exports.unblockMember = async (req, res) => {
         // Kiểm tra quyền chặn thành viên
         const role = conversation.roles.find(role => role.userIds.includes(userId));
         if (!role || !role.permissions?.blockMember) {
-            return res.status(403).json({
-                status: 403,
+            return res.status(404).json({
+                status: 404,
                 message: "Bạn không có quyền bỏ chặn thành viên.",
                 data: null
             });
@@ -910,8 +917,8 @@ exports.blockMember = async (req, res) => {
         // Kiểm tra quyền chặn thành viên
         const role = conversation.roles.find(role => role.userIds.includes(userId));
         if (!role || !role.permissions?.blockMember) {
-            return res.status(403).json({
-                status: 403,
+            return res.status(404).json({
+                status: 404,
                 message: "Bạn không có quyền chặn thành viên.",
                 data: null
             });
@@ -977,8 +984,8 @@ exports.updateAllowUpdateGroupInfo = async (req, res) => {
         // Kiểm tra quyền (chỉ leader hoặc vice leader)
         const role = conversation.roles.find(role => role.userIds.includes(userId));
         if (!role || (role.role !== 'leader' && role.role !== 'vice_leader')) {
-            return res.status(403).json({
-                status: 403,
+            return res.status(404).json({
+                status: 404,
                 message: "Bạn không có quyền thay đổi quyền cập nhật thông tin nhóm.",
                 data: null
             });
@@ -1037,8 +1044,8 @@ exports.updateAllowPinMessage = async (req, res) => {
         // Kiểm tra quyền (chỉ leader hoặc vice leader)
         const role = conversation.roles.find(role => role.userIds.includes(userId));
         if (!role || (role.role !== 'leader' && role.role !== 'vice_leader')) {
-            return res.status(403).json({
-                status: 403,
+            return res.status(404).json({
+                status: 404,
                 message: "Bạn không có quyền thay đổi quyền ghim tin nhắn.",
                 data: null
             });
@@ -1097,8 +1104,8 @@ exports.updateAllowSendMessage = async (req, res) => {
         // Kiểm tra quyền (chỉ leader hoặc vice leader)
         const role = conversation.roles.find(role => role.userIds.includes(userId));
         if (!role || (role.role !== 'leader' && role.role !== 'vice_leader')) {
-            return res.status(403).json({
-                status: 403,
+            return res.status(404).json({
+                status: 404,
                 message: "Bạn không có quyền thay đổi quyền gửi tin nhắn.",
                 data: null
             });
@@ -1160,8 +1167,8 @@ exports.removeAllHistoryMessages = async (req, res) => {
         // Kiểm tra quyền (chỉ leader hoặc vice leader)
         const role = conversation.roles.find(role => role.userIds.includes(userId));
         if (!role || (role.role !== 'leader')) {
-            return res.status(403).json({
-                status: 403,
+            return res.status(404).json({
+                status: 404,
                 message: "Bạn không có quyền xóa lịch sử trò chuyện.",
                 data: null
             });

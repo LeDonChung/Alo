@@ -264,7 +264,7 @@ io.on("connection", (socket) => {
             filteredSocketIds.forEach(id => {
                 io.to(id).emit('receive-update-message', data);
             });
-            
+
         }
     })
 
@@ -312,6 +312,32 @@ io.on("connection", (socket) => {
         });
     })
 
+
+    socket.on('create_group', async (data) => {
+        const { conversation } = data;
+        const members = conversation.memberUserIds;
+
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-create-group', { conversation });
+            });
+        }
+    })
+
+    socket.on('update_profile_group', async (data) => {
+        const { conversation } = data;
+        const members = conversation.memberUserIds;
+
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive_update_profile_group', { conversation });
+            });
+        }
+    })
     // =====================
     // Helper functions
     // =====================
