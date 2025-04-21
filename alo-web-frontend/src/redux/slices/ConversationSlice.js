@@ -62,6 +62,18 @@ const createGroup = createAsyncThunk('ConversationSlice/createGroup', async ({ n
     }
 });
 
+const removeAllHistoryMessages = createAsyncThunk(
+    'ConversationSlice/removeAllHistoryMessages',
+    async ({ conversationId }, { rejectWithValue }) => {
+        try {
+            const response = await axiosInstance.post(`/api/conversation/${conversationId}/remove-all-history-messages`);
+            return { conversationId, data: response.data };
+        } catch (error) {
+            return rejectWithValue(error.response?.data || { message: 'Lỗi khi gọi API' });
+        }
+    }
+);
+
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
@@ -164,9 +176,32 @@ const ConversationSlice = createSlice({
             state.conversations.unshift(action.payload.data); // Thêm nhóm mới vào đầu danh sách
         });
         builder.addCase(createGroup.rejected, (state, action) => {});
+
+        builder.addCase(removeAllHistoryMessages.pending, (state) => {
+            state.loading = true;
+            state.error = null;
+        });
+        builder.addCase(removeAllHistoryMessages.fulfilled, (state, action) => {
+            state.loading = false;
+            if (state.conversation && state.conversation.id === action.payload.conversationId) {
+                state.conversation.messages = []; // Xóa danh sách tin nhắn
+                state.conversation.lastMessage = null; // Xóa lastMessage
+            }
+            const conversationIndex = state.conversations.findIndex(
+                (conv) => conv.id === action.payload.conversationId
+            );
+            if (conversationIndex !== -1) {
+                state.conversations[conversationIndex].messages = [];
+                state.conversations[conversationIndex].lastMessage = null;
+            }
+        });
+        builder.addCase(removeAllHistoryMessages.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload.message;
+        });
     }
 });
 
 export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, addConversation } = ConversationSlice.actions;
-export { getAllConversation, getConversationById, createPin, removePin, createGroup };
+export { getAllConversation, getConversationById, createPin, removePin, createGroup, removeAllHistoryMessages };
 export default ConversationSlice.reducer;

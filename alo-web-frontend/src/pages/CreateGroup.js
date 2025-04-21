@@ -161,25 +161,7 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
         }
     };
 
-    useEffect(() => {
-        socket.on("receive-create-group", ({ conversation }) => {
-            console.log("Nhận được sự kiện receive-create-group:", conversation);
-            dispatch(addConversation(conversation));
-            const conversationId = conversation.id;
-            socket.emit("join_conversation", conversationId);
-            console.log(`Tham gia phòng nhóm ${conversationId}`);
-        });
-
-        socket.on("error", (error) => {
-            console.error("Lỗi từ server qua socket:", error);
-        });
-
-        return () => {
-            socket.off("receive-create-group");
-            socket.off("error");
-        };
-    }, [dispatch]);
-
+    
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white rounded-lg shadow-lg w-[400px] max-h-[90vh] overflow-auto relative p-4">

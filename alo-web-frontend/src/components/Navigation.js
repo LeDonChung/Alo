@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
-import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
+import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation } from "../redux/slices/ConversationSlice";
 import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage, seenOne } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 export const Navigation = () => {
@@ -154,7 +154,7 @@ export const Navigation = () => {
         console.log("Messages", messages);
     }, [messages]);
 
-    
+
 
 
     const friendsRequest = useSelector((state) => state.friend.friendsRequest);
@@ -258,6 +258,46 @@ export const Navigation = () => {
             socket.off("receive-pin-message", handleReceivePinMessage);
         }
     }, []);
+
+    //lắng nghe sự kiện tạo nhóm từ server
+    useEffect(() => {
+        socket.on("receive-create-group", ({ conversation }) => {
+            console.log("Nhận được sự kiện receive-create-group:", conversation);
+            dispatch(addConversation(conversation));
+            const conversationId = conversation.id;
+            socket.emit("join_conversation", conversationId);
+            console.log(`Tham gia phòng nhóm ${conversationId}`);
+        });
+
+        socket.on("error", (error) => {
+            console.error("Lỗi từ server qua socket:", error);
+        });
+
+        return () => {
+            socket.off("receive-create-group");
+            socket.off("error");
+        };
+    }, [dispatch]);
+
+    // // Lắng nghe sự kiện server
+    //   useEffect(() => {
+    //     socket.on('receive-remove-all-history-messages', (data) => {
+    //       const { conversationId } = data;
+    //       if (conversationId === conversation.id) {
+    //         dispatch(setConversation({ ...conversation, messages: [], lastMessage: null }));
+    //         setPhotos([]);
+    //         setFiles([]);
+    //         setLinks([]);
+    //         setPhotosGroupByDate([]);
+    //         setFilesGroupByDate([]);
+    //         alert('Lịch sử trò chuyện đã được xóa bởi trưởng nhóm.');
+    //       }
+    //     });
+    
+    //     return () => {
+    //       socket.off('receive-remove-all-history-messages');
+    //     };
+    //   }, [conversation, dispatch]);
 
     return (
         <>
