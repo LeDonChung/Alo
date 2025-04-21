@@ -1,12 +1,16 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useSelector } from 'react-redux';
 import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, Switch } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { getFriend } from '../../../utils/AppUtils';
 
-export const SettingScreen = () => {
+export const SettingScreen = ({ navigation }) => {
     const [pinChat, setPinChat] = useState(false);
     const [hideChat, setHideChat] = useState(false);
-
+    const userLogin = useSelector(state => state.user.userLogin);
+    const conversation = useSelector(state => state.conversation.conversation);
+    
     const members = [
         { id: '1', name: 'Thành viên 1' },
         { id: '2', name: 'Thành viên 2' },
@@ -16,12 +20,20 @@ export const SettingScreen = () => {
         { id: '1', content: 'Ảnh, file, link', isMedia: true },
         { id: '2', content: 'Tin nhắn 1' },
     ];
-
+    
+    // Lấy thông tin bạn bè
+    const friend = getFriend(
+        conversation,
+        conversation?.memberUserIds?.find(item => item !== userLogin.id)
+    );
+    
+    console.log('Friend:', friend);
+    console.log('Conversation:', conversation);
     return (
         <ScrollView style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => {navigation.goBack()}}>
                     <Icon name="arrow-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Tùy chọn</Text>
@@ -29,12 +41,24 @@ export const SettingScreen = () => {
 
             {/* Group Info */}
             <View style={styles.groupInfo}>
-                <Image
-                    source={{ uri: 'https://via.placeholder.com/100' }}
-                    style={styles.groupAvatar}
-                />
+                {conversation.isGroup ? (
+                    <Image
+                        source={{ uri: conversation.avatar }}
+                        style={styles.groupAvatar}
+                    />
+                ) : (
+                    <Image
+                        source={{ uri: friend?.avatarLink }}
+                        style={styles.groupAvatar}
+                    />
+                )}
+                
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={styles.groupName}>CNM</Text>
+                    {conversation.isGroup ? (
+                        <Text style={styles.groupName}>{conversation.name}</Text>
+                    ) : (
+                        <Text style={styles.groupName}>{friend?.fullName}</Text>
+                    )}
                     <TouchableOpacity style={{ marginLeft: 10 }}>
                         <Icon name="edit" size={20} color="#000" />
                     </TouchableOpacity>
@@ -63,7 +87,7 @@ export const SettingScreen = () => {
 
             {/* Options */}
             <View style={styles.options}>
-                <TouchableOpacity style={styles.option}>
+                <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('imageFileDetails')}>
                     <Icon name="image" size={24} color="#000" />
                     <Text style={styles.optionText}>Ảnh, file</Text>
                 </TouchableOpacity>
