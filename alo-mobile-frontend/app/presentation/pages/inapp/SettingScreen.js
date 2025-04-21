@@ -1,27 +1,131 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, Switch } from 'react-native';
+import React, { useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, Switch, Modal } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/MaterialIcons';
-
+import { useDispatch, useSelector } from 'react-redux';
+import { getFriend, getGroupImageDefaut, showToast } from '../../../utils/AppUtils';
+import { useNavigation } from '@react-navigation/native';
+import * as ImagePicker from 'expo-image-picker';
+import { updateProfileGroup, updateProfileGroupById } from '../../redux/slices/ConversationSlice';
 export const SettingScreen = () => {
-    const [pinChat, setPinChat] = useState(false);
-    const [hideChat, setHideChat] = useState(false);
+    const userLogin = useSelector(state => state.user.userLogin);
+    const conversation = useSelector(state => state.conversation.conversation);
+    const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id));
+    const navigation = useNavigation();
+    const [groupAvatar, setGroupAvatar] = useState(null);
+    const [modalVisible, setModalVisible] = useState(false);
+    const groupDefault = getGroupImageDefaut();
 
-    const members = [
-        { id: '1', name: 'Thành viên 1' },
-        { id: '2', name: 'Thành viên 2' },
-    ];
+    const pickImage = async () => {
+        try {
+            const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+            if (status !== 'granted') {
+                alert('Vui lòng cấp quyền sử dụng thư viện!');
+                return;
+            }
 
-    const messages = [
-        { id: '1', content: 'Ảnh, file, link', isMedia: true },
-        { id: '2', content: 'Tin nhắn 1' },
-    ];
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                quality: 1,
+            });
+
+            if (!result.canceled) {
+                setGroupAvatar(result.assets[0].uri);
+                setModalVisible(false);
+            }
+        } catch (error) {
+            console.error('Error picking image:', error);
+        }
+    };
+
+    const takePhoto = async () => {
+        try {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+                alert('Vui lòng cấp quyền sử dụng camera!');
+                return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+                quality: 1,
+            });
+
+            if (!result.canceled) {
+                setGroupAvatar(result.assets[0].uri);
+                setModalVisible(false);
+            }
+        } catch (error) {
+            console.error('Error taking photo:', error);
+        }
+    };
+
+    const selectDefaultIcon = (iconUri) => {
+        setGroupAvatar(iconUri);
+        setModalVisible(false);
+    };
+
+    const dispatch = useDispatch();
+
+    useEffect(() => {
+        const handlerUpdateGroup = async () => {
+            try {
+                const data = {
+                    name: conversation.name,
+                }
+
+                // Nếu là ảnh đại diện từ link thì data.avatar sẽ là link
+                // Nếu là ảnh đại diện từ file thì data.avatar sẽ là file
+                if (groupAvatar && !groupAvatar.startsWith('file://')) {
+                    data.avatar = groupAvatar || groupDefault[0];
+                }
+
+                let file = null;
+                if (groupAvatar && groupAvatar.startsWith('file://')) {
+                    file = {
+                        uri: groupAvatar,
+                        name: 'group-avatar.jpg',
+                        type: 'image/jpeg',
+                    };
+                }
+
+                console.log("file", file);
+                console.log("data", data);
+                
+                await dispatch(updateProfileGroup({
+                    conversationId: conversation.id,
+                    data,
+                    file
+                })).unwrap().then((res) => {
+                    console.log("res", res);
+                    dispatch(updateProfileGroupById(res.data));
+                })
+            } catch (error) {
+                console.error('Error updating group avatar:', error);
+                showToast('error', ToastPosition.TOP, 'Lỗi', error.message || 'Cập nhật ảnh đại diện nhóm thất bại');
+            }
+        }
+        if (groupAvatar) {
+            handlerUpdateGroup()
+        } 
+    }, [groupAvatar]);
+    useEffect(() => {
+        navigation.getParent()?.setOptions({
+            tabBarStyle: {
+                display: 'none',
+            },
+        });
+        return () =>
+            navigation.getParent()?.setOptions({
+                tabBarStyle: undefined,
+            });
+    }, [navigation]);
 
     return (
         <ScrollView style={styles.container}>
+
             {/* Header */}
             <View style={styles.header}>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Icon name="arrow-back" size={24} color="#fff" />
                 </TouchableOpacity>
                 <Text style={styles.headerTitle}>Tùy chọn</Text>
@@ -29,17 +133,89 @@ export const SettingScreen = () => {
 
             {/* Group Info */}
             <View style={styles.groupInfo}>
-                <Image
-                    source={{ uri: 'https://via.placeholder.com/100' }}
-                    style={styles.groupAvatar}
-                />
+                {
+                    conversation.isGroup ? (
+                        <TouchableOpacity onPress={() => setModalVisible(true)} style={{ marginBottom: 10 }} >
+                            <Image
+                                source={{ uri: groupAvatar || conversation.avatar || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" }}
+                                style={styles.groupAvatar}
+                            />
+                        </TouchableOpacity>
+
+                    ) : (
+                        <Image
+                            source={{ uri: friend.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" }}
+                            style={styles.groupAvatar}
+                        />
+                    )
+                }
                 <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                    <Text style={styles.groupName}>CNM</Text>
+                    <Text style={styles.groupName}>{
+                        conversation.isGroup ? conversation.name : friend.fullName
+                    }</Text>
                     <TouchableOpacity style={{ marginLeft: 10 }}>
                         <Icon name="edit" size={20} color="#000" />
                     </TouchableOpacity>
                 </View>
             </View>
+
+            {/* Modal chọn ảnh đại diện */}
+            <Modal visible={modalVisible} transparent animationType="slide">
+                <TouchableOpacity
+                    style={styles.modalOverlay}
+                    activeOpacity={1}
+                    onPress={() => setModalVisible(false)}
+                >
+                    <TouchableOpacity activeOpacity={1} style={styles.modal}>
+                        <Text style={styles.modalTitle}>Chọn ảnh đại diện nhóm</Text>
+                        <View style={styles.iconRow}>
+                            <FlatList
+                                data={groupDefault}
+                                horizontal
+                                showsHorizontalScrollIndicator={false}
+                                initialNumToRender={4}
+                                keyExtractor={(item) => item}
+                                renderItem={({ item }) => (
+                                    <TouchableOpacity
+                                        key={item}
+                                        onPress={() => selectDefaultIcon(item)}
+                                    >
+                                        <Image
+                                            source={{ uri: item }}
+                                            style={styles.defaultIcon}
+                                        />
+                                    </TouchableOpacity>
+                                )}
+                                contentContainerStyle={{ paddingBottom: 24 }}
+                            />
+                        </View>
+                        <TouchableOpacity onPress={takePhoto} style={styles.optionModal}>
+                            <Text style={{ fontSize: 16, fontWeight: 'medium' }}>
+                                Chụp ảnh mới
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={pickImage} style={styles.optionModal}>
+                            <Text style={{ fontSize: 16, fontWeight: 'medium' }}>
+                                Chọn ảnh từ điện thoại
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                            onPress={() => setModalVisible(false)}
+                            style={styles.optionModal}
+                        >
+                            <Text
+                                style={{
+                                    fontSize: 16,
+                                    fontWeight: 'medium',
+                                    color: 'red',
+                                }}
+                            >
+                                Hủy
+                            </Text>
+                        </TouchableOpacity>
+                    </TouchableOpacity>
+                </TouchableOpacity>
+            </Modal>
 
             {/* Tabs */}
             <View style={styles.tabs}>
@@ -117,7 +293,7 @@ export const SettingScreen = () => {
             </View>
         </ScrollView>
     );
-    
+
 };
 
 const styles = StyleSheet.create({
@@ -217,4 +393,76 @@ const styles = StyleSheet.create({
         padding: 15,
         backgroundColor: '#f0f0f0',
     },
+    footer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#fff',
+        paddingVertical: 10,
+        borderTopWidth: 1,
+        borderColor: '#eee',
+    },
+    avatarContainer: {
+        padding: 4,
+        position: 'relative',
+        marginRight: 16,
+    },
+    selectedAvatar: {
+        width: 50,
+        height: 50,
+        borderRadius: 50,
+    },
+    removeIcon: {
+        position: 'absolute',
+        right: -5,
+        backgroundColor: '#666',
+        borderRadius: 10,
+        width: 20,
+        height: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    forwardButton: {
+        backgroundColor: '#2196F3',
+        width: 60,
+        height: 60,
+        borderRadius: 40,
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginRight: 16,
+    },
+    modalOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.5)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modal: {
+        backgroundColor: '#fff',
+        width: '90%',
+        padding: 20,
+        borderRadius: 16,
+    },
+    modalTitle: {
+        fontWeight: 'bold',
+        fontSize: 16,
+        marginBottom: 12,
+    },
+    iconRow: {
+        marginBottom: 0,
+    },
+    defaultIcon: {
+        width: 80,
+        height: 80,
+        borderRadius: 40,
+        marginRight: 12,
+    },
+    optionModal: {
+        paddingVertical: 12,
+    },
 });
+
