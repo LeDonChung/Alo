@@ -15,7 +15,7 @@ import { FilterScreen } from "../pages/inapp/FilterScreen";
 import { AccountNavigation } from "./AccountNavigation";
 import { useDispatch, useSelector } from "react-redux";
 import socket from "../../utils/socket";
-import { addConversation, addPinToConversation, getAllConversation, removePinToConversation, setConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
+import { addConversation, addPinToConversation, getAllConversation, removePinToConversation, setConversation, updateLastMessage, updateProfileGroupById } from "../redux/slices/ConversationSlice";
 import { addFriend, addFriendRequests, cancelFriend, getFriendByPhoneNumber, getFriends, getFriendsRequest, removeFriend, sendFriendRequest, setFriendRequests, setFriends, unfriend } from "../redux/slices/FriendSlice";
 import { showToast } from "../../utils/AppUtils";
 import { FlatList } from "react-native-gesture-handler";
@@ -132,6 +132,20 @@ export const InAppNavigation = () => {
 
     return () => {
       socket.off("receive-create-group", handlerReceiveCreatedConversation);
+    } 
+  }, []);
+
+  useEffect(() => {
+    const handlerReceiveUpdatedConversation = async (data) => {
+      console.log("Receive updated profile conversation", data);
+      const conversation = data.conversation;
+      await dispatch(updateProfileGroupById(conversation));
+    }
+
+    socket.on("receive_update_profile_group", handlerReceiveUpdatedConversation);
+
+    return () => {
+      socket.off("receive_update_profile_group", handlerReceiveUpdatedConversation);
     }
   }, []);
   useEffect(() => {
