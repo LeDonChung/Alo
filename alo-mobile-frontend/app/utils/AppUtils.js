@@ -21,3 +21,17 @@ export const getFriend = (conversation, userId) => {
     const friend = conversation.members.find(member => member.id === userId);
     return friend;
 }
+
+export const getUserRoleAndPermissions = (conversation, userId) => {
+    const roleInfo = conversation.roles.find(role => role.userIds.includes(userId));
+    if (!roleInfo) {
+        return {
+            role: null,
+            permissions: {}
+        };
+    }
+    return {
+        role: roleInfo.role,
+        permissions: roleInfo.permissions
+    };
+}
