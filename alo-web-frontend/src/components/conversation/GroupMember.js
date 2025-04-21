@@ -1,7 +1,7 @@
 import React from 'react';
 import { getFriend } from '../../utils/AppUtils';
 
-const GroupMembers = ({ conversation, userLogin, setIsSetting }) => {
+const GroupMembers = ({ conversation, userLogin, setIsSetting, membersWithRoles }) => {
     const members = conversation.memberUserIds.map(userId => getFriend(conversation, userId));
 
     return (
@@ -21,7 +21,7 @@ const GroupMembers = ({ conversation, userLogin, setIsSetting }) => {
 
             {/* Danh sách thành viên */}
             <div className="space-y-2">
-                {members.map((member, index) => (
+                {membersWithRoles.map((member, index) => (
                     <div key={index} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md transition-colors">
                         <img
                             src={member.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'}
@@ -31,6 +31,7 @@ const GroupMembers = ({ conversation, userLogin, setIsSetting }) => {
                         <div className="flex-1">
                             <p className="text-sm font-medium text-gray-900">{member.fullName}</p>
                             <p className="text-xs text-gray-500">{member.id === userLogin.id ? 'Bạn' : ''}</p>
+                            <p className="text-xs text-gray-500">{member.role === 'leader' ? 'Trưởng nhóm' : member.role === 'vice_leader' ? 'Phó nhóm' : 'Thành viên'}</p>
                         </div>
                     </div>
                 ))}
