@@ -119,6 +119,13 @@ const ConversationSlice = createSlice({
                 state.conversations[index] = newConversation;
             }
         },
+        updateConversationInList: (state, action) => {
+            const updatedConvo = action.payload;
+            const index = state.conversations.findIndex(c => c.id === updatedConvo.id);
+            if (index !== -1) {
+                state.conversations[index] = updatedConvo;
+            }
+        }
     },
     extraReducers: (builder) => {
 
@@ -179,29 +186,26 @@ const ConversationSlice = createSlice({
 
         builder.addCase(removeAllHistoryMessages.pending, (state) => {
             state.loading = true;
-            state.error = null;
         });
         builder.addCase(removeAllHistoryMessages.fulfilled, (state, action) => {
             state.loading = false;
             if (state.conversation && state.conversation.id === action.payload.conversationId) {
-                state.conversation.messages = []; // Xóa danh sách tin nhắn
                 state.conversation.lastMessage = null; // Xóa lastMessage
             }
             const conversationIndex = state.conversations.findIndex(
                 (conv) => conv.id === action.payload.conversationId
             );
             if (conversationIndex !== -1) {
-                state.conversations[conversationIndex].messages = [];
                 state.conversations[conversationIndex].lastMessage = null;
             }
         });
         builder.addCase(removeAllHistoryMessages.rejected, (state, action) => {
             state.loading = false;
-            state.error = action.payload.message;
+            state.error = action.payload?.message || "Lỗi không xác định";
         });
     }
 });
 
-export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, addConversation } = ConversationSlice.actions;
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, addConversation, updateConversationInList } = ConversationSlice.actions;
 export { getAllConversation, getConversationById, createPin, removePin, createGroup, removeAllHistoryMessages };
 export default ConversationSlice.reducer;

@@ -11,9 +11,10 @@ import GroupMembers from './conversation/GroupMember';
 import GroupManagement from './conversation/GroupManager';
 import MediaStorage from './conversation/MediaStorage';
 import { SearchInfo } from './conversation/SearchInfo';
-import { setConversation, removeAllHistoryMessages } from '../redux/slices/ConversationSlice'; 
+import { setConversation, removeAllHistoryMessages } from '../redux/slices/ConversationSlice';
 import socket from '../utils/socket';
 import { toast } from 'react-toastify';
+import { clearAllMessages } from '../redux/slices/MessageSlice';
 
 
 
@@ -95,36 +96,24 @@ const RightSlidebar = ({ search, setSearch }) => {
 
     try {
       const result = await dispatch(removeAllHistoryMessages({ conversationId: conversation.id })).unwrap();
+
       if (result.data.status === 200) {
+        // Xóa messages trong state local
+        dispatch(clearAllMessages());
+
+        // Emit socket event để thông báo cho các clients khác
         socket.emit('remove-all-history-messages', { conversationId: conversation.id });
+
         toast.success('Đã xóa toàn bộ lịch sử trò chuyện thành công!');
       } else {
-        alert(`Xóa lịch sử trò chuyện thất bại: ${result.data.message || 'Lỗi không xác định.'}`);
+        toast.error(`Xóa lịch sử trò chuyện thất bại: ${result.message || 'Lỗi không xác định.'}`);
       }
     } catch (error) {
-      alert(`Lỗi: ${error.message || 'Đã xảy ra sự cố. Vui lòng thử lại sau.'}`);
+      toast.error(`Lỗi: ${error.message || 'Đã xảy ra sự cố. Vui lòng thử lại sau.'}`);
     }
   };
 
-  // Lắng nghe sự kiện Socket.IO
-  useEffect(() => {
-    socket.on('receive-remove-all-history-messages', (data) => {
-      const { conversationId } = data;
-      if (conversationId === conversation.id) {
-        dispatch(setConversation({ ...conversation, messages: [], lastMessage: null }));
-        setPhotos([]);
-        setFiles([]);
-        setLinks([]);
-        setPhotosGroupByDate([]);
-        setFilesGroupByDate([]);
-        alert('Lịch sử trò chuyện đã được xóa bởi trưởng nhóm.');
-      }
-    });
 
-    return () => {
-      socket.off('receive-remove-all-history-messages');
-    };
-  }, [conversation, dispatch]);
 
   // Cập nhật state khi messages hoặc conversation thay đổi
   useEffect(() => {

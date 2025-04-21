@@ -5,12 +5,14 @@ import { useDispatch, useSelector } from "react-redux";
 import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
-import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation } from "../redux/slices/ConversationSlice";
-import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage, seenOne } from "../redux/slices/MessageSlice";
+import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, updateConversationInList, } from "../redux/slices/ConversationSlice";
+import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage, seenOne, clearAllMessages } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
+
 export const Navigation = () => {
     const dispatch = useDispatch();
     const userLogin = useSelector((state) => state.user.userLogin);
+    const conversations = useSelector((state) => state.conversation.conversations);
 
     // ============= HANDLE SOCKET LOGOUT ==============
     const handleLogout = async () => {
@@ -279,25 +281,35 @@ export const Navigation = () => {
         };
     }, [dispatch]);
 
-    // // Lắng nghe sự kiện server
-    //   useEffect(() => {
-    //     socket.on('receive-remove-all-history-messages', (data) => {
-    //       const { conversationId } = data;
-    //       if (conversationId === conversation.id) {
-    //         dispatch(setConversation({ ...conversation, messages: [], lastMessage: null }));
-    //         setPhotos([]);
-    //         setFiles([]);
-    //         setLinks([]);
-    //         setPhotosGroupByDate([]);
-    //         setFilesGroupByDate([]);
-    //         alert('Lịch sử trò chuyện đã được xóa bởi trưởng nhóm.');
-    //       }
-    //     });
+
+    //lắng nghe sự kiện xóa tất cả tin nhắn từ server
+    useEffect(() => {
+        const handleRemoveAllHistoryMessages = (data) => {
+            console.log('Received remove all history messages:', data);
+            const { conversationId } = data;
     
-    //     return () => {
-    //       socket.off('receive-remove-all-history-messages');
-    //     };
-    //   }, [conversation, dispatch]);
+            // Nếu đang ở cuộc trò chuyện bị xóa lịch sử
+            if (conversation && conversation.id === conversationId) {
+                dispatch(clearAllMessages());
+                showToast("Lịch sử trò chuyện đã bị xóa", "info");
+            }
+    
+            // Cập nhật conversation list để xóa last message
+            if (conversations && conversations.length > 0) {
+                const convoIndex = conversations.findIndex(c => c.id === conversationId);
+                if (convoIndex !== -1) {
+                    const updatedConvo = { ...conversations[convoIndex], lastMessage: null };
+                    dispatch(updateConversationInList(updatedConvo));
+                }
+            }
+        };
+        
+        socket.on('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
+        
+        return () => {
+            socket.off('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
+        };
+    }, [conversation, conversations, dispatch]);
 
     return (
         <>
