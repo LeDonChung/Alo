@@ -14,7 +14,7 @@ const ChatContent = ({ isLoadMessage, messageRefs, scrollToMessage }) => {
   const [isScrolledToTop, setIsScrolledToTop] = useState(false);
   const [scrollToParent, setScrollToParent] = useState(null);
   const [highlightedMessage, setHighlightedMessage] = useState(null);
-
+  
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
