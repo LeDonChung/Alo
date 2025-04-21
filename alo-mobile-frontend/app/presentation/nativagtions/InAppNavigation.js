@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { createBottomTabNavigator } from "@react-navigation/bottom-tabs";
 import { ActivityIndicator, Image, Modal, RefreshControl, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -7,6 +7,7 @@ import IconMI from "react-native-vector-icons/MaterialIcons";
 import IconFA from "react-native-vector-icons/FontAwesome";
 import IconFA5 from "react-native-vector-icons/FontAwesome5";
 import Icon from "react-native-vector-icons/FontAwesome5";
+import Popover from 'react-native-popover-view';
 
 import { HomeNavigation } from "./HomeNavigation";
 import ContactScreen from "../pages/inapp/ContactScreenMB/ContactScreen";
@@ -14,12 +15,13 @@ import { FilterScreen } from "../pages/inapp/FilterScreen";
 import { AccountNavigation } from "./AccountNavigation";
 import { useDispatch, useSelector } from "react-redux";
 import socket from "../../utils/socket";
-import { addPinToConversation, getAllConversation, removePinToConversation, setConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
+import { addConversation, addPinToConversation, getAllConversation, removePinToConversation, setConversation, updateLastMessage } from "../redux/slices/ConversationSlice";
 import { addFriend, addFriendRequests, cancelFriend, getFriendByPhoneNumber, getFriends, getFriendsRequest, removeFriend, sendFriendRequest, setFriendRequests, setFriends, unfriend } from "../redux/slices/FriendSlice";
 import { showToast } from "../../utils/AppUtils";
 import { FlatList } from "react-native-gesture-handler";
 import { ContactStyles } from "../styles/ContactStyle";
 import { handlerUpdateReaction, setMessageRemoveOfMe, setMessageUpdate, updateReaction, updateSeenAllMessage } from "../redux/slices/MessageSlice";
+import { useNavigation } from "@react-navigation/native";
 
 const Tab = createBottomTabNavigator();
 
@@ -39,7 +41,7 @@ export const InAppNavigation = () => {
   //ktra sdt or text
   const isPhoneNumber = (input) => /^(0|\+84)(3[2-9]|5[2689]|7[0-9]|8[1-9]|9[0-9])\d{7}$/.test(input);
   const [showBackIcon, setShowBackIcon] = useState(false);
-
+  const navigator = useNavigation();
   const init = async () => {
     dispatch(getAllConversation())
     dispatch(getFriends());
@@ -119,6 +121,19 @@ export const InAppNavigation = () => {
   }
 
   // ================ HANDLE SOCKET CONVERSATION REQUEST ===============
+  useEffect(() => {
+    const handlerReceiveCreatedConversation = async (data) => {
+      console.log("Receive created conversation", data);
+      const conversation = data.conversation;
+      await dispatch(addConversation(conversation));
+    }
+
+    socket.on("receive-create-group", handlerReceiveCreatedConversation);
+
+    return () => {
+      socket.off("receive-create-group", handlerReceiveCreatedConversation);
+    }
+  }, []);
   useEffect(() => {
     const handleReceivePinMessage = (data) => {
       console.log("Received pin message:", data);
@@ -370,7 +385,8 @@ export const InAppNavigation = () => {
       console.error("Lỗi khi gửi lời mời kết bạn:", error);
     }
   }
-
+  const [showPopover, setShowPopover] = useState(false);
+  const touchableRef = useRef();
   return (
     <SafeAreaView style={{ flex: 1, flexDirection: "column" }}>
       {(chooseTab === "home" || chooseTab === "contact") && (
@@ -401,9 +417,63 @@ export const InAppNavigation = () => {
             value={search}
             onChangeText={setSearch}
           />
-          <TouchableOpacity>
+          <TouchableOpacity ref={touchableRef}
+            onPress={() => setShowPopover(true)}>
             <Icon name="plus" size={18} color="white" style={{ marginHorizontal: 10 }} />
           </TouchableOpacity>
+
+          {/* Popover hiển thị khi bấm nút */}
+          <Popover
+            isVisible={showPopover}
+            from={touchableRef}
+            onRequestClose={() => setShowPopover(false)}
+            placement="bottom"
+          >
+            <View
+              style={{
+                padding: 10,
+                backgroundColor: '#fff',
+                borderRadius: 10,
+                elevation: 5,
+                shadowColor: '#000',
+                shadowOpacity: 0.2,
+                shadowOffset: { width: 0, height: 2 },
+                minWidth: 200,
+              }}
+            >
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10 }}
+              >
+                <IconIO name="person-add-outline" size={18} color="blue" style={{ marginRight: 10, width: 24, textAlign: 'center' }} />
+                <Text style={{ fontSize: 16, color: '#333' }}>Thêm bạn</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10 }}
+                onPress={() => {
+                  navigator.navigate("create-group");
+                  setShowPopover(false);
+                }}
+              >
+                <IconFA name="users" size={18} color="blue" style={{ marginRight: 10, width: 24, textAlign: 'center' }} />
+                <Text style={{ fontSize: 16, color: '#333' }}>Tạo nhóm</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10 }}
+              >
+                <IconIO name="call" size={18} color="blue" style={{ marginRight: 10, width: 24, textAlign: 'center' }} />
+                <Text style={{ fontSize: 16, color: '#333' }}>Tạo cuộc gọi nhóm</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 10 }}
+              >
+                <IconMI name="devices" size={18} color="blue" style={{ marginRight: 10, width: 24, textAlign: 'center' }} />
+                <Text style={{ fontSize: 16, color: '#333' }}>Thiết bị đăng nhập</Text>
+              </TouchableOpacity>
+            </View>
+          </Popover>
         </View>
       )}
 

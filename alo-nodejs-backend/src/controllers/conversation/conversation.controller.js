@@ -260,6 +260,7 @@ exports.createGroupConversation = async (req, res) => {
         const userId = userService.getUserIdFromToken(token);
 
         let { name, memberUserIds, avatar } = req.body;
+        console.log("memberUserIds: ", memberUserIds)
         if (typeof memberUserIds === 'string') {
             memberUserIds = JSON.parse(memberUserIds);
         }

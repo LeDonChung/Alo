@@ -30,7 +30,7 @@ const getConversationById = createAsyncThunk('ConversationSlice/getConversationB
 });
 
 const createPin = createAsyncThunk('ConversationSlice/createPin', async ({ conversationId, messageId }, { rejectWithValue }) => {
-    try { 
+    try {
         const response = await axiosInstance.post(`/api/conversation/${conversationId}/pin/${messageId}`);
         return response.data;
     } catch (error) {
@@ -47,12 +47,62 @@ const removePin = createAsyncThunk('ConversationSlice/removePin', async ({ conve
     }
 });
 
+const createGroup = createAsyncThunk('ConversationSlice/createGroup', async ({ data, file }, { rejectWithValue }) => {
+    try {
+        const formData = new FormData();
+
+        if (file) {
+            formData.append("file", {
+                uri: file.uri,
+                name: file.name,
+                type: file.type
+            });
+        }
+
+        for (const key in data) {
+            const value = data[key];
+            if (Array.isArray(value)) {
+                formData.append(key, JSON.stringify(value));
+            } else {
+                formData.append(key, value);
+            }
+        }
+
+        const response = await axiosInstance.post('/api/conversation/create-group', formData, {
+            headers: {
+                "Content-Type": "multipart/form-data"
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.log(error);
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
     reducers: {
         setConversation: (state, action) => {
             state.conversation = action.payload;
+        },
+        addConversation: (state, action) => {
+            const newConversation = action.payload;
+            const existingConversation = state.conversations.find(conversation => conversation.id === newConversation.id);
+            if (!existingConversation) {
+                state.conversations.unshift(newConversation);
+            } else {
+                const index = state.conversations.findIndex(conversation => conversation.id === newConversation.id);
+                state.conversations[index] = newConversation;
+            }
+        },
+        removeConversation: (state, action) => {
+            const conversationId = action.payload;
+            const conversationIndex = state.conversations.findIndex(conversation => conversation.id === conversationId);
+            if (conversationIndex !== -1) {
+                state.conversations.splice(conversationIndex, 1);
+            }
         },
         updateLastMessage: (state, action) => {
             const conversationId = action.payload.conversationId;
@@ -67,24 +117,24 @@ const ConversationSlice = createSlice({
         addPinToConversation: (state, action) => {
             let cons = state.conversation;
             console.log(cons.pin)
-            console.log(action.payload) 
+            console.log(action.payload)
 
-            if (cons) { 
+            if (cons) {
                 cons.pineds.unshift(action.payload);
 
                 if (cons.pineds.length > 5) {
-                    cons.pineds.pop(); 
+                    cons.pineds.pop();
                 }
             }
- 
-            state.conversation = {...cons}; 
+
+            state.conversation = { ...cons };
         },
         removePinToConversation: (state, action) => {
             let cons = state.conversation;
             if (cons) {
                 cons.pineds = cons.pineds.filter(pin => pin.messageId !== action.payload.messageId);
-            } 
-            state.conversation = {...cons};
+            }
+            state.conversation = { ...cons };
         },
         updateConversationFromSocket: (state, action) => {
             const { conversationId, message } = action.payload;
@@ -124,15 +174,15 @@ const ConversationSlice = createSlice({
         builder.addCase(createPin.fulfilled, (state, action) => {
             let cons = state.conversation;
 
-            if (cons) { 
+            if (cons) {
                 cons.pineds.unshift(action.payload.data);
 
                 if (cons.pineds.length > 5) {
                     cons.pineds.pop();
                 }
             }
- 
-            state.conversation = {...cons};   
+
+            state.conversation = { ...cons };
         });
 
         builder.addCase(createPin.rejected, (state, action) => {
@@ -144,14 +194,24 @@ const ConversationSlice = createSlice({
             let cons = state.conversation;
             if (cons) {
                 cons.pineds = cons.pineds.filter(pin => pin.messageId !== action.payload.data.messageId);
-            } 
-            state.conversation = {...cons};
+            }
+            state.conversation = { ...cons };
         });
         builder.addCase(removePin.rejected, (state, action) => {
+        });
+
+        builder.addCase(createGroup.pending, (state) => {
+        });
+        builder.addCase(createGroup.fulfilled, (state, action) => {
+            console.log(action.payload);
+        });
+
+        builder.addCase(createGroup.rejected, (state, action) => {
+            state.conversation = [];
         });
     }
 });
 
-export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket } = ConversationSlice.actions; 
-export { getAllConversation, getConversationById, createPin, removePin };
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket, addConversation, removeConversation } = ConversationSlice.actions;
+export { getAllConversation, getConversationById, createPin, removePin, createGroup };
 export default ConversationSlice.reducer;
