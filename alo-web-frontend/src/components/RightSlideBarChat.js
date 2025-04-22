@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useSelector } from 'react-redux';
+import { useSelector, useDispatch } from 'react-redux';
 import LightGallery from 'lightgallery/react';
 import 'lightgallery/css/lightgallery.css';
 import 'lightgallery/css/lg-zoom.css';
@@ -11,8 +11,15 @@ import GroupMembers from './conversation/GroupMember';
 import GroupManagement from './conversation/GroupManager';
 import MediaStorage from './conversation/MediaStorage';
 import { SearchInfo } from './conversation/SearchInfo';
+import { setConversation, removeAllHistoryMessages } from '../redux/slices/ConversationSlice'; 
+import socket from '../utils/socket';
+import { toast } from 'react-toastify';
+
+
+
 
 const RightSlidebar = ({ search, setSearch }) => {
+  const dispatch = useDispatch();
   const userLogin = useSelector(state => state.user.userLogin);
   const conversation = useSelector(state => state.conversation.conversation);
   const messages = useSelector(state => state.message.messages);
@@ -77,6 +84,48 @@ const RightSlidebar = ({ search, setSearch }) => {
   const [showManagement, setShowManagement] = useState(false);
   const [showMediaStorage, setShowMediaStorage] = useState(false);
   const [showFile, setShowFile] = useState(false);
+
+  const [membersWithRoles, setMembersWithRoles] = useState([]);
+
+  // Hàm xử lý xóa lịch sử trò chuyện
+  const handleRemoveAllHistoryMessages = async () => {
+    if (!window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện? Hành động này không thể hoàn tác.')) {
+      return;
+    }
+
+    try {
+      const result = await dispatch(removeAllHistoryMessages({ conversationId: conversation.id })).unwrap();
+      if (result.data.status === 200) {
+        socket.emit('remove-all-history-messages', { conversationId: conversation.id });
+        toast.success('Đã xóa toàn bộ lịch sử trò chuyện thành công!');
+      } else {
+        alert(`Xóa lịch sử trò chuyện thất bại: ${result.data.message || 'Lỗi không xác định.'}`);
+      }
+    } catch (error) {
+      alert(`Lỗi: ${error.message || 'Đã xảy ra sự cố. Vui lòng thử lại sau.'}`);
+    }
+  };
+
+  // Lắng nghe sự kiện Socket.IO
+  useEffect(() => {
+    socket.on('receive-remove-all-history-messages', (data) => {
+      const { conversationId } = data;
+      if (conversationId === conversation.id) {
+        dispatch(setConversation({ ...conversation, messages: [], lastMessage: null }));
+        setPhotos([]);
+        setFiles([]);
+        setLinks([]);
+        setPhotosGroupByDate([]);
+        setFilesGroupByDate([]);
+        alert('Lịch sử trò chuyện đã được xóa bởi trưởng nhóm.');
+      }
+    });
+
+    return () => {
+      socket.off('receive-remove-all-history-messages');
+    };
+  }, [conversation, dispatch]);
+
   // Cập nhật state khi messages hoặc conversation thay đổi
   useEffect(() => {
     // Photos (hiển thị tối đa 8 ảnh mới nhất)
@@ -143,6 +192,25 @@ const RightSlidebar = ({ search, setSearch }) => {
     );
   }, [messages, conversation]);
 
+  //Cập nhật danh sách thành viên với vai trò
+  useEffect(() => {
+    if (conversation?.isGroup && conversation?.members && conversation?.roles) {
+      const membersWithRolesData = conversation.members.map(member => {
+        // Tìm vai trò của thành viên trong conversation.roles
+        const roleObj = conversation.roles.find(role => role.userIds.includes(member.id));
+        return {
+          ...member,
+          role: roleObj ? roleObj.role : 'member', // Mặc định là member nếu không tìm thấy
+        };
+      });
+      setMembersWithRoles(membersWithRolesData);
+    }
+  }, [conversation]);
+
+  //Lấy vai trò và quyền của userLogin
+  const userRole = conversation?.roles?.find(role => role.userIds.includes(userLogin.id));
+  const userPermissions = userRole?.permissions || {};
+
   // Lấy thông tin bạn bè
   const friend = getFriend(
     conversation,
@@ -199,6 +267,7 @@ const RightSlidebar = ({ search, setSearch }) => {
                 conversation={conversation}
                 userLogin={userLogin}
                 setIsSetting={setIsSetting}
+                membersWithRoles={membersWithRoles}
               />
             )
           }
@@ -336,6 +405,7 @@ const RightSlidebar = ({ search, setSearch }) => {
                         </svg>
                         <p className="text-sm text-gray-700">{conversation.memberUserIds.length} thành viên</p>
                       </div>
+
                       <div className="mt-2 px-2">
                         <a href="#" className="text-sm text-blue-500 hover:underline">
                           Link tham gia nhóm
@@ -487,21 +557,23 @@ const RightSlidebar = ({ search, setSearch }) => {
                 {conversation.isGroup && (
                   <div className="border-b border-gray-200 pb-4">
                     <div className="space-y-2">
-
-                      <>
-                        <button className="w-full flex items-center space-x-3 p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors">
+                      {/* Chỉ hiển thị "Xóa lịch sử trò chuyện" nếu user là leader */}
+                      {userRole?.role === 'leader' && (
+                        <button
+                          onClick={handleRemoveAllHistoryMessages} className="w-full flex items-center space-x-3 p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                           </svg>
                           <span className="text-sm">Xóa lịch sử trò chuyện</span>
                         </button>
-                        <button className="w-full flex items-center space-x-3 p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                          </svg>
-                          <span className="text-sm">Rời nhóm</span>
-                        </button>
-                      </>
+                      )}
+                      {/* Hiển thị "Rời nhóm" cho tất cả thành viên */}
+                      <button className="w-full flex items-center space-x-3 p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors">
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                        <span className="text-sm">Rời nhóm</span>
+                      </button>
                     </div>
                   </div>
                 )}
