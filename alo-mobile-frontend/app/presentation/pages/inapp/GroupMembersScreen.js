@@ -282,15 +282,21 @@ export const GroupMembersScreen = () => {
 
   const renderFilterButton = (label, value) => {
     const isActive = filterMode === value;
-    const dynamicStyle = {
+    const isBlockedFilter = value === FILTERS.BLOCKED;
+  const isLeader = conversation?.roles.find((r) => r.role === "leader")?.userIds?.includes(userLogin.id);
+  const isVice = conversation?.roles.find((r) => r.role === "vice_leader")?.userIds?.includes(userLogin.id);
+    
+  const disabled = isBlockedFilter && !(isLeader || isVice);
+  const dynamicStyle = {
       backgroundColor: isActive ? "#007AFF" : "#e0e0e0",
     };
 
     return (
       <TouchableOpacity
         key={value}
-        onPress={() => setFilterMode(value)}
+        onPress={() => !disabled && setFilterMode(value)}
         style={[styles.filterButton, dynamicStyle]}
+        disabled={disabled}
       >
         <Text
           style={[
