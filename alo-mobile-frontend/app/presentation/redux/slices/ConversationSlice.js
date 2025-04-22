@@ -133,11 +133,11 @@ const ConversationSlice = createSlice({
         updateProfileGroupById: (state, action) => {
             const updatedConversation = action.payload;
             const existingConversation = state.conversations.find(conversation => conversation.id === updatedConversation.id);
-            if (existingConversation) {
+            if (existingConversation) { 
                 const index = state.conversations.findIndex(conversation => conversation.id === updatedConversation.id);
                 state.conversations[index].name = updatedConversation.name;
                 state.conversations[index].avatar = updatedConversation.avatar;
-                if (state.conversation.id == updatedConversation.id) {
+                if (state.conversation?.id === updatedConversation.id) {
                     state.conversation.name = updatedConversation.name;
                     state.conversation.avatar = updatedConversation.avatar;
                 }
