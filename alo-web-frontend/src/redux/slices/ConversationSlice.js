@@ -205,17 +205,14 @@ const ConversationSlice = createSlice({
             const conversationId = action.payload.conversationId;
             const memberUserIds = action.payload.memberUserIds;
             const memberInfo = action.payload.memberInfo;
-            console.log("state.conversations: ", state.conversations);
+            const conversationExists = state.conversations.find(conversation => conversation.id === conversationId);
 
-            const conversation = state.conversations.find(conversation => conversation.id === conversationId);
-
-            if (conversation) {
-                conversation.memberUserIds = [...conversation.memberUserIds, ...memberUserIds];
-                conversation.members = [...conversation.members, ...memberInfo];
-                console.log("conversation add member: ", conversation);
-
+            if (conversationExists) {
+                conversationExists.memberUserIds = [...conversationExists.memberUserIds, ...memberUserIds];
+                conversationExists.members = [...conversationExists.members, ...memberInfo];
                 const index = state.conversations.findIndex(convo => convo.id === conversationId);
-                state.conversations[index] = conversation;
+                state.conversations[index] = conversationExists;
+                state.conversation = conversationExists; 
             }
         },
         addConversation: (state, action) => {

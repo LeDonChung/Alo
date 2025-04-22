@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import socket from "../../utils/socket";
 import { removeVietnameseTones } from "../../utils/AppUtils";
 import { useSelector } from "react-redux";
 import showToast from "../../utils/AppUtils";
 import { addMemberGroup, addMemberToGroup } from "../../redux/slices/ConversationSlice";
+import socket from "../../utils/socket";
 
 const ModalAddMember = ({ isOpen, onClose, userLogin, conversation }) => {
     const dispatch = useDispatch();
@@ -13,25 +13,39 @@ const ModalAddMember = ({ isOpen, onClose, userLogin, conversation }) => {
     const [memberSelected, setMemberSelected] = useState([]);
     const [memberInfo, setMemberInfo] = useState([]);
     const [filteredFriends, setFilteredFriends] = useState(friends);
-    const conversations = useSelector((state) => state.conversation.conversations);
+    const [isAddMember, setIsAddMember] = useState(false);
 
 
 
     const handleAddMember = async (e) => {
+        setIsAddMember(true);
         e.preventDefault();
-        console.log("conversations", conversations);
         if (memberSelected.length > 0) {
             try {
                 const resp = await dispatch(addMemberToGroup({ conversationId: conversation.id, memberUserIds: memberSelected }));
                 await dispatch(addMemberGroup({ conversationId: conversation.id, memberUserIds: memberSelected, memberInfo: memberInfo }));
                 const result = resp.payload.data;
-                console.log("result", result);
+
+                const dataSocket = {
+                    conversation: conversation, 
+                    userIdSelects: memberSelected, 
+                    memberInfo: memberInfo
+                }
+
+                //socket
+                socket.emit("add-members-to-group", {conversation, memberSelected, memberInfo});
+
                 showToast("Thêm thành viên thành công!", 'success');
+                setMemberSelected([]);
+                setMemberInfo([]);
+                setFilteredFriends(friends);
+                setSearch("");
                 onClose();
             } catch (error) {
                 showToast(error.message, 'error');
-            } 
+            }
         }
+        setIsAddMember(false);
     }
 
     const handleClickMember = (friend) => {
@@ -107,11 +121,17 @@ const ModalAddMember = ({ isOpen, onClose, userLogin, conversation }) => {
                             >
                                 Hủy
                             </button>
+
                             <button onClick={(e) => handleAddMember(e)}
                                 type="button"
                                 className={`bg-blue-500 text-white px-4 py-2 rounded-lg cursor-pointer ${memberSelected.length === 0 ? "opacity-50 cursor-not-allowed" : "hover:bg-blue-600"}`}
                                 disabled={memberSelected.length === 0}>
-                                Thêm
+                                {isAddMember ? (
+                                    <div
+                                        className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin mx-auto"
+                                        aria-hidden="true"
+                                    ></div>
+                                ) : "Thêm"}
                             </button>
                         </div>
                     </div>

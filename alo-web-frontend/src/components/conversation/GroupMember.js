@@ -32,7 +32,7 @@ const GroupMembers = ({ conversation, userLogin, setIsSetting, membersWithRoles 
             {/* Danh sách thành viên */}
             <div className="space-y-2">
                 {membersWithRoles.map((member, index) => (
-                    <div key={index} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md transition-colors">
+                    <div key={index} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md transition-colors relative">
                         <img
                             src={member.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'}
                             alt={member.fullName}
