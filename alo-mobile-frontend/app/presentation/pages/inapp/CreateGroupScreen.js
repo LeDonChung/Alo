@@ -246,7 +246,7 @@ export const CreateGroupScreen = () => {
                 dispatch(addConversation(data));
                 dispatch(setConversation(data));
                 showToast('success', 'top', 'Tạo nhóm thành công', 'Nhóm đã được tạo thành công');
-                socket.emit('create_group', {
+                socket.emit('create-group', {
                     conversation: data
                 })
                 navigation.navigate('chat');

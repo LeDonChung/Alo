@@ -313,7 +313,7 @@ io.on("connection", (socket) => {
     })
 
 
-    socket.on('create_group', async (data) => {
+    socket.on('create-group', async (data) => {
         const { conversation } = data;
         const members = conversation.memberUserIds;
 
