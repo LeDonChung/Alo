@@ -11,11 +11,13 @@ import GroupMembers from './conversation/GroupMember';
 import GroupManagement from './conversation/GroupManager';
 import MediaStorage from './conversation/MediaStorage';
 import { SearchInfo } from './conversation/SearchInfo';
+import ModalAddMember from './conversation/ModalAddMember';
 
 const RightSlidebar = ({ search, setSearch }) => {
   const userLogin = useSelector(state => state.user.userLogin);
   const conversation = useSelector(state => state.conversation.conversation);
   const messages = useSelector(state => state.message.messages);
+  const [isOpenModalAddMember, setIsOpenModalAddMember] = useState(false);
 
   // Hàm lấy icon theo loại file
   const getFileIcon = (extension) => {
@@ -260,7 +262,7 @@ const RightSlidebar = ({ search, setSearch }) => {
                       {conversation.isGroup ? (
                         <>
                           <button
-
+                            onClick={() => {setIsOpenModalAddMember(true)}}
                             className="flex flex-col items-center text-gray-600 hover:text-blue-500 transition-colors"
                           >
                             <div className="rounded-full bg-gray-200 p-2">
@@ -275,6 +277,8 @@ const RightSlidebar = ({ search, setSearch }) => {
                             </div>
                             <span className="text-sm mt-1">Thêm thành viên</span>
                           </button>
+                          <ModalAddMember isOpen={isOpenModalAddMember} onClose={() => {setIsOpenModalAddMember(false)}} userLogin={userLogin} conversation={conversation} />
+
                           <button
                             onClick={() => {
                               setIsSetting(false);

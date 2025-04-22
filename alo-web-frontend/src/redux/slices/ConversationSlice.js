@@ -44,6 +44,15 @@ const removePin = createAsyncThunk('ConversationSlice/removePin', async ({ conve
     }
 });
 
+const addMemberToGroup = createAsyncThunk('ConversationSlice/addMemberToGroup', async ({ conversationId, memberUserIds }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/add-member`, { memberUserIds });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
@@ -78,7 +87,24 @@ const ConversationSlice = createSlice({
                     (pin) => pin.messageId !== action.payload.messageId
                 );
             }
-        }
+        },
+        addMemberGroup: (state, action) => {
+            const conversationId = action.payload.conversationId;
+            const memberUserIds = action.payload.memberUserIds;
+            const memberInfo = action.payload.memberInfo;
+            console.log("state.conversations: ", state.conversations);
+            
+            const conversation = state.conversations.find(conversation => conversation.id === conversationId);
+            
+            if (conversation) {
+                conversation.memberUserIds = [...conversation.memberUserIds, ...memberUserIds];
+                conversation.members = [...conversation.members, ...memberInfo];
+                console.log("conversation add member: ", conversation);
+                
+                const index = state.conversations.findIndex(convo => convo.id === conversationId);
+                state.conversations[index] = conversation;
+            }
+        },
     },
     extraReducers: (builder) => {
 
@@ -94,13 +120,13 @@ const ConversationSlice = createSlice({
 
 
         builder.addCase(getConversationById.pending, (state) => {
-            state.conversation = [];
+            state.conversation = null;
         });
         builder.addCase(getConversationById.fulfilled, (state, action) => {
             state.conversation = action.payload.data;
         });
         builder.addCase(getConversationById.rejected, (state, action) => {
-            state.conversation = [];
+            state.conversation = null; 
         });
 
         builder.addCase(createPin.pending, (state) => {
@@ -130,9 +156,17 @@ const ConversationSlice = createSlice({
         });
         builder.addCase(removePin.rejected, (state, action) => {
         });
+
+        // add member to group
+        builder.addCase(addMemberToGroup.pending, (state) => {
+        });
+        builder.addCase(addMemberToGroup.fulfilled, (state, action) => {
+        });
+        builder.addCase(addMemberToGroup.rejected, (state, action) => {
+        });
     }
 });
 
-export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation } = ConversationSlice.actions;
-export { getAllConversation, getConversationById, createPin, removePin };
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, addMemberGroup } = ConversationSlice.actions;
+export { getAllConversation, getConversationById, createPin, removePin, addMemberToGroup };
 export default ConversationSlice.reducer;
