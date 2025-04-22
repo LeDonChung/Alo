@@ -338,6 +338,20 @@ io.on("connection", (socket) => {
             });
         }
     })
+
+    socket.on('update-roles', async (data) => {
+        const { conversation } = data;
+
+        const members = conversation.memberUserIds;
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-update-roles', { conversation });
+            });
+        }
+    })
+
     // // Xử lý sự kiện xóa lịch sử trò chuyện
     // socket.on('remove-all-history-messages', async (data) => {
     //     const { conversationId } = data;

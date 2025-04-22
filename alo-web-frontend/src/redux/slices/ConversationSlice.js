@@ -87,6 +87,32 @@ const createGroup = createAsyncThunk('ConversationSlice/createGroup', async (dat
     }
 });
 
+
+const updateAllowUpdateProfileGroup = createAsyncThunk('ConversationSlice/updateAllowUpdateProfileGroup', async ({ conversationId, allow }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/allow-update-profile-group`, { allow: allow });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
+
+const updateAllowPinMessageGroup = createAsyncThunk('ConversationSlice/updateAllowPinMessageGroup', async ({ conversationId, allow }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/allow-pin-message`, { allow: allow });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
+const updateAllowSendMessageGroup = createAsyncThunk('ConversationSlice/updateAllowSendMessageGroup', async ({ conversationId, allow }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/allow-send-message`, { allow: allow });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
 const removeAllHistoryMessages = createAsyncThunk(
     'ConversationSlice/removeAllHistoryMessages',
     async ({ conversationId }, { rejectWithValue }) => {
@@ -202,6 +228,25 @@ const ConversationSlice = createSlice({
                 state.conversations[index] = newConversation;
             }
         },
+        updatePermissions: (state, action) => {
+            const conversationId = action.payload.conversationId;
+            const roles = action.payload.roles;
+            console.log("roles", roles)
+            // Cập nhật quyền cho conversation hiện tại đang chọn nếu có
+            console.log("state.conversation", conversationId)
+            // Cập nhật conversation hiện tại đang chọn nếu có
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation.roles = roles;
+            }
+            // Cập nhật danh sách conversations
+            const conversation = state.conversations.find(conversation => conversation.id === conversationId);
+            if (conversation) {
+                conversation.roles = roles;
+                const index = state.conversations.findIndex(convo => convo.id === conversationId);
+                state.conversations[index].roles = roles;
+            }
+        }
+
     },
     extraReducers: (builder) => {
 
@@ -299,10 +344,34 @@ const ConversationSlice = createSlice({
 
         builder.addCase(updateProfileGroup.rejected, (state, action) => {
         });
+
+        builder.addCase(updateAllowUpdateProfileGroup.fulfilled, (state) => {
+
+        })
+        builder.addCase(updateAllowUpdateProfileGroup.rejected, (state) => {
+
+        })
+
+        builder.addCase(updateAllowSendMessageGroup.fulfilled, (state) => {
+
+        })
+        builder.addCase(updateAllowSendMessageGroup.rejected, (state) => {
+
+        })
+
+        builder.addCase(updateAllowPinMessageGroup.fulfilled, (state) => {
+
+        })
+
+        builder.addCase(updateAllowPinMessageGroup.rejected, (state) => {
+
+        })
     }
 });
 
 
-export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, addConversation, addMemberGroup, updateProfileGroupById } = ConversationSlice.actions;
-export { getAllConversation, getConversationById, createPin, removePin, addMemberToGroup, createGroup, removeAllHistoryMessages, updateProfileGroup };
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, addConversation, addMemberGroup, updateProfileGroupById, updatePermissions } = ConversationSlice.actions;
+export { getAllConversation, getConversationById, createPin, removePin, addMemberToGroup, createGroup, removeAllHistoryMessages, updateProfileGroup,
+    updateAllowUpdateProfileGroup, updateAllowSendMessageGroup, updateAllowPinMessageGroup
+ };
 export default ConversationSlice.reducer;
