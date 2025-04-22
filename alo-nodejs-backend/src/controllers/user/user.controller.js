@@ -136,3 +136,19 @@ exports.getProfileById = async (req, res) => {
         message: "Get profile successfully"
     })
 }
+
+exports.getUserByIds = async (req, res) => {
+    const userIds = req.body.userIds;
+
+    const users = await userService.getUsersByIds(userIds);
+
+    if (!users) {
+        return res.status(500).json({ error: 'Get profile failed.' });
+    }
+
+    return res.json({
+        status: 200,
+        data: users,
+        message: "Get profile successfully"
+    })
+}

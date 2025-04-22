@@ -14,7 +14,8 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import { ManagementMemberModal } from "../../components/chat/ManagementMemberModal";
 import { useDispatch, useSelector } from "react-redux";
 import { removeMemberToGroup, blockMemberToGroup, unblockMemberToGroup, addViceLeaderToGroup, removeViceLeaderToGroup, getConversationById, changeLeader } from "../../redux/slices/ConversationSlice";
-import { getUserById } from "../../redux/slices/UserSlice";
+import { getUserByIds } from "../../redux/slices/UserSlice";
+import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
 
 const FILTERS = {
   ALL: "all",
@@ -35,6 +36,7 @@ export const GroupMembersScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [filterMode, setFilterMode] = useState(FILTERS.ALL);
   const dispatch = useDispatch();
+
   useEffect(() => {
     if (conversation) {
       const leaderIds =
@@ -69,13 +71,23 @@ export const GroupMembersScreen = () => {
         setFilteredMembers(members.filter((m) => m.status === "invited"));
         break;
       case FILTERS.BLOCKED:
-        setFilteredMembers(members.filter((m) => conversation.blockedUserIds.includes(m.id)));
+        const blockedUserIds = conversation?.blockedUserIds || [];
+            const fetchBlockedMembers = async () => {
+                const response = await dispatch(getUserByIds(blockedUserIds)).unwrap();
+                // Extract user details from the response
+                const userDetails = response.data.map(user => ({
+                    ...user,
+                    displayName: user.fullName || user.displayName || "Unknown User"
+                }));
+                setFilteredMembers(userDetails);
+            };
+            fetchBlockedMembers();
         break;
       default:
         setFilteredMembers(members);
     }
-}, [filterMode, members, conversation.blockedUserIds]);
-
+}, [filterMode, members, conversation]);
+  
   const handleTransferLeader = (member) => {
     Alert.alert(
       "Chuyển quyền trưởng nhóm",
@@ -314,7 +326,7 @@ export const GroupMembersScreen = () => {
 
       <FlatList
         data={filteredMembers}
-        keyExtractor={(item) => item._id}
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
       />
 
@@ -327,6 +339,7 @@ export const GroupMembersScreen = () => {
         onPromoteVice={handlePromoteVice}
         onRemoveVice={handleRemoveVice}
         onBlock={handleBlock}
+        unBlock={handleUnblock}
         onRemove={handleRemove}
       />
     </View>

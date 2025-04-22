@@ -89,7 +89,7 @@ const unblockMemberToGroup = createAsyncThunk(
     'ConversationSlice/unblockMemberToGroup',
     async ({ conversationId, memberUserId }, { rejectWithValue }) => {
         try {
-            const response = await axiosInstance.post(`/api/conversation/${conversationId}/unblocl/${memberUserId}`);
+            const response = await axiosInstance.post(`/api/conversation/${conversationId}/unblock/${memberUserId}`);
             return response.data;
         } catch (error) {
             return rejectWithValue(error.response?.data || "Lỗi khi gọi API");

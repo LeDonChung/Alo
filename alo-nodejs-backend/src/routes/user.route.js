@@ -54,4 +54,13 @@ router.get(
     middleware.authenticateToken,
     userController.getProfileById
 )
+
+router.post(
+    '/get-user-by-ids',
+    middleware.authenticateToken,
+    middleware.authorizeRoles(['USER']),
+    userController.getUserByIds
+)
+
+
 module.exports = router;

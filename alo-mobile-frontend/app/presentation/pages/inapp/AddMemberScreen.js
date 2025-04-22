@@ -21,15 +21,16 @@ export const AddMemberScreen = ({ navigation }) => {
   useEffect(() => {
     dispatch(getAllConversation());
   }, [dispatch]);
-
+  const blockedUserIds = conversation.blockedUserIds || [];
   const filteredConversations = conversations.filter((conversation) => {
+    
     if (conversation.isGroup) return false;
 
     const otherUser = conversation.members.find(
       (member) => member.id !== myUserId
     );
 
-    return otherUser && !currentGroupMemberIds.includes(otherUser.id);
+    return otherUser && !currentGroupMemberIds.includes(otherUser.id) && !blockedUserIds.includes(otherUser.id);
   });
 
   const toggleSelect = (userId) => {
@@ -76,7 +77,6 @@ export const AddMemberScreen = ({ navigation }) => {
         renderItem={({ item }) => {
           const otherUser = item.members.find((m) => m.id !== myUserId);
           const userId = otherUser?.id;
-
           return (
             <TouchableOpacity
               onPress={() => toggleSelect(userId)}

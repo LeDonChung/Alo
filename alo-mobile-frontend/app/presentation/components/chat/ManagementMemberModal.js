@@ -1,5 +1,13 @@
-import React from 'react';
-import { Modal, View, Text, Image, StyleSheet, TouchableOpacity, Pressable } from 'react-native';
+import React from "react";
+import {
+  Modal,
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+  Pressable,
+} from "react-native";
 
 const Option = ({ text, onPress }) => (
   <TouchableOpacity onPress={onPress} style={styles.optionBtn}>
@@ -16,16 +24,18 @@ export const ManagementMemberModal = ({
   onPromoteVice,
   onRemoveVice,
   onBlock,
-  onRemove
+  unBlock,
+  onRemove,
 }) => {
-  if (!member || !conversation || !userLogin) return null;
-
-  const leaderIds = conversation.roles.find(r => r.role === 'leader')?.userIds || [];
-  const viceLeaderIds = conversation.roles.find(r => r.role === 'vice_leader')?.userIds || [];
+  const leaderIds =
+    conversation.roles.find((r) => r.role === "leader")?.userIds || [];
+  const viceLeaderIds =
+    conversation.roles.find((r) => r.role === "vice_leader")?.userIds || [];
 
   const isLeader = leaderIds.includes(userLogin.id);
   const isViceLeader = viceLeaderIds.includes(userLogin.id);
   const canManage = isLeader || isViceLeader;
+  if (!member || !conversation || !userLogin) return null;
 
   return (
     <Modal
@@ -36,34 +46,64 @@ export const ManagementMemberModal = ({
     >
       <Pressable style={styles.overlay} onPress={onClose} />
       <View style={styles.modalContainer}>
-        <View style={{ alignItems: 'center' }}>
+        <View style={{ alignItems: "center" }}>
           <Image
-            source={{ uri: member.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg' }}
+            source={{
+              uri:
+                member.avatarLink ||
+                "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg",
+            }}
             style={styles.modalAvatar}
           />
           <Text style={styles.modalName}>{member.displayName}</Text>
 
           {canManage && (
-            <View style={{ width: '100%' }}>
-              {member.isViceLeader ? (
-                <Option text="Gỡ vai trò phó nhóm" onPress={() => {
-                  onRemoveVice?.(member);
-                  onClose();
-                }} />
+            <View style={{ width: "100%" }}>
+              {conversation.blockedUserIds?.includes(member.id) ? (
+                // Nếu đang bị chặn chỉ hiển thị Bỏ chặn
+                <Option
+                  text="Bỏ chặn thành viên"
+                  onPress={() => {
+                    unBlock?.(member);
+                    onClose();
+                  }}
+                />
               ) : (
-                <Option text="Bổ nhiệm làm phó nhóm" onPress={() => {
-                  onPromoteVice?.(member);
-                  onClose();
-                }} />
+                // Nếu không bị chặn hiển thị các chức năng khác
+                <>
+                  {member.isViceLeader ? (
+                    <Option
+                      text="Gỡ vai trò phó nhóm"
+                      onPress={() => {
+                        onRemoveVice?.(member);
+                        onClose();
+                      }}
+                    />
+                  ) : (
+                    <Option
+                      text="Bổ nhiệm làm phó nhóm"
+                      onPress={() => {
+                        onPromoteVice?.(member);
+                        onClose();
+                      }}
+                    />
+                  )}
+                  <Option
+                    text="Chặn thành viên"
+                    onPress={() => {
+                      onBlock?.(member);
+                      onClose();
+                    }}
+                  />
+                  <Option
+                    text="Xóa khỏi nhóm"
+                    onPress={() => {
+                      onRemove?.(member);
+                      onClose();
+                    }}
+                  />
+                </>
               )}
-              <Option text="Chặn thành viên" onPress={() => {
-                onBlock?.(member);
-                onClose();
-              }} />
-              <Option text="Xóa khỏi nhóm" onPress={() => {
-                onRemove?.(member);
-                onClose();
-              }} />
             </View>
           )}
         </View>
@@ -75,13 +115,13 @@ export const ManagementMemberModal = ({
 const styles = StyleSheet.create({
   overlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
+    backgroundColor: "rgba(0,0,0,0.4)",
   },
   modalContainer: {
-    position: 'absolute',
+    position: "absolute",
     bottom: 0,
-    width: '100%',
-    backgroundColor: '#fff',
+    width: "100%",
+    backgroundColor: "#fff",
     borderTopLeftRadius: 16,
     borderTopRightRadius: 16,
     padding: 20,
@@ -95,17 +135,17 @@ const styles = StyleSheet.create({
   },
   modalName: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     marginBottom: 20,
   },
   optionBtn: {
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderColor: '#eee',
+    borderColor: "#eee",
   },
   optionText: {
     fontSize: 16,
-    color: '#007AFF',
-    textAlign: 'center',
+    color: "#007AFF",
+    textAlign: "center",
   },
 });
