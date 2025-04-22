@@ -6,7 +6,7 @@ import 'lightgallery/css/lg-zoom.css';
 import 'lightgallery/css/lg-thumbnail.css';
 import lgZoom from 'lightgallery/plugins/zoom';
 import lgThumbnail from 'lightgallery/plugins/thumbnail';
-import { getFriend } from '../utils/AppUtils';
+import showToast, { getFriend, getUserRoleAndPermissions } from '../utils/AppUtils';
 import GroupMembers from './conversation/GroupMember';
 import GroupManagement from './conversation/GroupManager';
 import MediaStorage from './conversation/MediaStorage';
@@ -233,6 +233,14 @@ const RightSlidebar = ({ search, setSearch }) => {
       setIsSetting(false);
     }
   }, [search])
+
+  const handlerShowProfileGroup = () => {
+    if(!getUserRoleAndPermissions(conversation, userLogin.id)?.permissions?.changeGroupInfo) {
+      showToast('Bạn không có quyền thay đổi thông tin nhóm', 'error');
+      return;
+    }
+    setIsOpenUpdateProfileGroup(true)
+  }
   const renderContent = () => {
     return (
       <div className="w-1/4 bg-white border-l border-gray-200 p-2 overflow-y-auto max-h-screen scrollbar-thin scrollbar-thumb-gray-300">
@@ -286,7 +294,7 @@ const RightSlidebar = ({ search, setSearch }) => {
                       {
                         conversation.isGroup ? (
                           <img
-                            onClick={() => setIsOpenUpdateProfileGroup(true)}
+                            onClick={() => handlerShowProfileGroup()}
                             src={conversation.avatar || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'}
                             alt="Avatar"
                             className="w-20 h-20 rounded-full border border-gray-200 cursor-pointer"
@@ -308,7 +316,7 @@ const RightSlidebar = ({ search, setSearch }) => {
                     </div>
                     {
                       conversation.isGroup ? (
-                        <p className="text-sm font-bold text-gray-900 cursor-pointer" onClick={() => setIsOpenUpdateProfileGroup(true)}>{conversation.name}</p>
+                        <p className="text-sm font-bold text-gray-900 cursor-pointer" onClick={() => handlerShowProfileGroup()}>{conversation.name}</p>
                       ) : (
                         <p className="text-sm font-bold text-gray-900 cursor-pointer">{friend?.fullName || 'Không xác định'}</p>
                       )

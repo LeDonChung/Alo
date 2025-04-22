@@ -4,7 +4,7 @@ import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import { batch, useDispatch, useSelector } from 'react-redux';
 import { createPin, updateLastMessage } from '../../redux/slices/ConversationSlice';
-import { showToast } from '../../../utils/AppUtils';
+import { getUserRoleAndPermissions, showToast } from '../../../utils/AppUtils';
 import socket from '../../../utils/socket';
 import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system';
@@ -190,37 +190,60 @@ export const MenuComponent = ({ message, showMenuComponent, setShowDetailModal, 
         <ScrollView contentContainerStyle={styles.container}>
             <ReactionBar message={message} onClose={() => showMenuComponent(false)} />
             <View style={styles.actionGrid}>
-                {isSent && message.status === 0 && (
-                    <TouchableOpacity style={styles.actionItem} onPress={handleMessageRecall}>
-                        <Icon name="undo" size={24} color="#EA580C" />
-                        <Text>Thu hồi</Text>
-                    </TouchableOpacity>
-                )}
+
                 <TouchableOpacity style={styles.actionItem} onPress={handleReply}>
                     <Icon name="reply" size={24} color="#6B21A8" />
-                    <Text>Trả lời</Text>
+                    <Text style={styles.textCenter}X>Trả lời</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionItem} onPress={() => {
                     showMenuComponent(false);
                     setShowForwardModal(true);
                 }}>
                     <Icon name="share" size={24} color="#2563EB" />
-                    <Text>Chuyển tiếp</Text>
+                    <Text style={styles.textCenter} >Chuyển tiếp</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionItem} onPress={handleCopy}>
                     <Icon name="copy" size={24} color="#2563EB" />
-                    <Text>Sao chép</Text>
+                    <Text style={styles.textCenter}>Sao chép</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.actionItem} onPress={() => {
-                    handlerClickPin(message);
-                }}>
-                    <Icon name="thumbtack" size={24} color="#EA580C" />
-                    <Text>Ghim</Text>
-                </TouchableOpacity>
+                {
+                    conversation.isGroup ? (
+                        <>
+                            {
+                                getUserRoleAndPermissions(conversation, userLogin.id).pinMessages ? (
+                                    <>
+                                        <TouchableOpacity style={styles.actionItem} onPress={() => {
+                                            handlerClickPin(message);
+                                        }}>
+                                            <Icon name="thumbtack" size={24} color="#EA580C" />
+                                            <Text style={styles.textCenter}>Ghim</Text>
+                                        </TouchableOpacity>
+                                    </>
+                                ) : (
+                                    null
+                                )
+                            }
+                        </>
+                    ) : (
+                        <TouchableOpacity style={styles.actionItem} onPress={() => {
+                            handlerClickPin(message);
+                        }}>
+                            <Icon name="thumbtack" size={24} color="#EA580C" />
+                            <Text style={styles.textCenter}>Ghim</Text>
+                        </TouchableOpacity>
+                    )
+                }
+
                 <TouchableOpacity style={styles.actionItem} onPress={() => handlerRemoveOfMe()}>
                     <Icon name="trash" size={24} color="#DC2626" />
-                    <Text>Xóa ở phía tôi</Text>
+                    <Text style={styles.textCenter}>Xóa ở phía tôi</Text>
                 </TouchableOpacity>
+                {isSent && message.status === 0 && (
+                    <TouchableOpacity style={styles.actionItem} onPress={handleMessageRecall}>
+                        <Icon name="undo" size={24} color="#EA580C" />
+                        <Text style={styles.textCenter}>Thu hồi</Text>
+                    </TouchableOpacity>
+                )}
                 {(message.messageType === 'file' || message.messageType === 'image') && (
                     <TouchableOpacity onPress={() => {
                         if (message.messageType === 'image') {
@@ -230,14 +253,14 @@ export const MenuComponent = ({ message, showMenuComponent, setShowDetailModal, 
                         }
                     }} style={styles.actionItem}>
                         <Icon name="cloud-download-alt" size={24} color="#DC2626" />
-                        <Text>Tải xuống</Text>
+                        <Text style={styles.textCenter}>Tải xuống</Text>
                     </TouchableOpacity>
                 )}
                 <TouchableOpacity style={styles.actionItem} onPress={() => {
-                    handlerClickDetail(); 
+                    handlerClickDetail();
                 }}>
                     <Icon name="info-circle" size={24} color="#6B7280" />
-                    <Text>Chi tiết</Text>
+                    <Text style={styles.textCenter}>Chi tiết</Text>
                 </TouchableOpacity>
             </View>
         </ScrollView>
@@ -281,4 +304,8 @@ const styles = StyleSheet.create({
         color: '#16A34A',
         fontSize: 10,
     },
+    textCenter: {
+        textAlign: 'center',
+        marginTop: 2
+    }
 });
