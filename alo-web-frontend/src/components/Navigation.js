@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
-import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, updateProfileGroupById } from "../redux/slices/ConversationSlice";
+import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, addMemberGroup, updateProfileGroupById } from "../redux/slices/ConversationSlice";
 import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage, seenOne } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 export const Navigation = () => {
@@ -278,6 +278,29 @@ export const Navigation = () => {
             socket.off("error");
         };
     }, [dispatch]);
+
+    //lắng nghe sự kiện thêm thành viên vào nhóm từ server
+    useEffect(() => {
+        const handleReceiveAddMember = (data) => {
+            console.log("Nhận được sự kiện receive-add-member:", data);
+            const userLoginId = JSON.parse(localStorage.getItem("userLogin")).id;
+            const { conversation, memberSelected, memberInfo } = data;
+            conversation.memberUserIds = [...conversation.memberUserIds, ...memberSelected];
+            conversation.members = [...conversation.members, ...memberInfo];            
+            if(memberSelected.includes(userLoginId)){
+                showToast("Bạn đã được thêm vào nhóm" + conversation.name, "success");
+                dispatch(addConversation(conversation));
+            }
+            if(conversation.memberUserIds.includes(userLoginId)){
+                dispatch(addMemberGroup({ conversationId: conversation.id, memberUserIds: memberSelected, memberInfo: memberInfo }));
+            }
+        }
+        socket.on("receive-add-members-to-group", handleReceiveAddMember);
+
+        return () => {
+            socket.off("receive-add-members-to-group", handleReceiveAddMember);
+        };
+    }, [])
 
     // // Lắng nghe sự kiện server
     //   useEffect(() => {

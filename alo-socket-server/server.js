@@ -355,6 +355,37 @@ io.on("connection", (socket) => {
     //         });
     //     }
     // });
+
+
+
+    socket.on('add-members-to-group', async (data) => {
+        console.log("Thêm thành viên vào nhóm:", data);
+        
+        const { conversation, memberSelected, memberInfo } = data;
+        const members = conversation.memberUserIds;
+
+        // gửi cho tất cả các thành viên trong nhóm
+        for(const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-add-members-to-group', data);
+            });
+        }
+        
+        // gửi cho tất cả các thành viên được chọn
+        for (const userId of memberSelected) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-add-members-to-group', data);
+            });
+        }
+
+
+    })
+
+
     // =====================
     // Helper functions
     // =====================
