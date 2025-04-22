@@ -14,7 +14,7 @@ import {
   sendMessage,
   updateMessage,
   setMessageParent,
-  updateSeenAllMessage
+  updateSeenAllMessage,
 } from '../../redux/slices/MessageSlice';
 import { removePin } from '../../redux/slices/ConversationSlice';
 import HeaderComponent from '../../components/chat/HeaderComponent';
@@ -46,22 +46,29 @@ export const ChatScreen = ({ route, navigation }) => {
   const dispatch = useDispatch();
 
   const conversation = useSelector(state => state.conversation.conversation);
-  const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id));
+  const friend = getFriend(
+    conversation,
+    conversation.memberUserIds.find(item => item !== userLogin.id)
+  );
+
+  if (!userLogin.id) {
+    console.warn('User not logged in');
+    showToast('error', 'bottom', 'Thông báo', 'Vui lòng đăng nhập lại.', 2000);
+    navigation.navigate('Login');
+    return null;
+  }
 
   useEffect(() => {
     navigation.getParent()?.setOptions({
-      tabBarStyle: {
-        display: "none"
-      }
+      tabBarStyle: { display: 'none' },
     });
-    return () => navigation.getParent()?.setOptions({
-      tabBarStyle: undefined
-    });
+    return () =>
+      navigation.getParent()?.setOptions({
+        tabBarStyle: undefined,
+      });
   }, [navigation]);
 
-  const isFriendOnline = (userId) => {
-    return userOnlines.includes(userId);
-  };
+  const isFriendOnline = userId => userOnlines.includes(userId);
 
   const handlerSendMessage = async (customInputMessage = null) => {
     const messageData = customInputMessage || inputMessage;
@@ -116,29 +123,22 @@ export const ChatScreen = ({ route, navigation }) => {
         sender: userLogin,
       };
 
-
       socket.emit('send-message', {
         conversation,
         message: sentMessage,
       });
 
       dispatch(updateMessage(sentMessage));
-
     } catch (err) {
-      console.error("Error sending message:", err);
+      console.error('Error sending message:', err);
+      showToast('error', 'bottom', 'Thông báo', 'Gửi tin nhắn thất bại.', 2000);
     }
   };
 
-  const handleSendImage = async (newMessage) => {
-    handlerSendMessage(newMessage);
-  };
+  const handleSendImage = async newMessage => handlerSendMessage(newMessage);
+  const handleSendFile = async newMessage => handlerSendMessage(newMessage);
 
-  const handleSendFile = async (newMessage) => {
-    console.log("newMessage", newMessage);
-    handlerSendMessage(newMessage);
-  };
-
-  const handleStickerSelect = async (stickerUrl) => {
+  const handleStickerSelect = async stickerUrl => {
     const newMessage = {
       content: '',
       messageType: 'sticker',
@@ -149,70 +149,77 @@ export const ChatScreen = ({ route, navigation }) => {
   };
 
   useEffect(() => {
-    const handlerReceiveMessage = async (message) => {
-      console.log("MESSAGE", message);
+    const handlerReceiveMessage = async message => {
+      if (!message || !message.id || !message.sender || !message.sender.id) {
+        console.warn('Invalid socket message:', message);
+        return;
+      }
       dispatch(addMessage(message));
-      await dispatch(seenOne(message.id)).unwrap().then((res) => {
-        const data = res.data;
-        socket.emit('seen-message', {
-          messages: [data],
-          conversation: conversation
-        });
-      });
+      await dispatch(seenOne(message.id))
+        .unwrap()
+        .then(res => {
+          const data = res.data;
+          socket.emit('seen-message', {
+            messages: [data],
+            conversation: conversation,
+          });
+        })
+        .catch(err => console.error('Error marking message as seen:', err));
     };
     socket.on('receive-message', handlerReceiveMessage);
 
-    return () => {
-      socket.off('receive-message', handlerReceiveMessage);
-    };
+    return () => socket.off('receive-message', handlerReceiveMessage);
   }, [conversation.id]);
 
   useEffect(() => {
-    socket.on("users-online", ({ userIds }) => {
+    socket.on('users-online', ({ userIds }) => {
       dispatch(setUserOnlines(userIds));
     });
+    return () => socket.off('users-online');
   }, []);
 
   useEffect(() => {
     const handlerInitMessage = async () => {
-      await dispatch(getMessagesByConversationId(conversation.id)).unwrap().then(async (res) => {
-        console.log("hi");
-        const unseenMessages = res.data.filter((message) => {
-          const seen = message.seen || [];
-          return !seen.some((seenUser) => seenUser.userId === userLogin.id);
-        }).map((message) => message.id);
+      await dispatch(getMessagesByConversationId(conversation.id))
+        .unwrap()
+        .then(async res => {
+          const unseenMessages = res.data
+            .filter(message => {
+              const seen = message.seen || [];
+              return !seen.some(seenUser => seenUser.userId === userLogin.id);
+            })
+            .map(message => message.id);
 
-        if (unseenMessages.length > 0) {
-          await dispatch(seenAll(unseenMessages)).unwrap().then((res) => {
-            const data = res.data;
-            dispatch(updateSeenAllMessage(data));
-            socket.emit('seen-message', {
-              messages: data,
-              conversation: conversation
-            });
-          });
-        }
-      });
+          if (unseenMessages.length > 0) {
+            await dispatch(seenAll(unseenMessages))
+              .unwrap()
+              .then(res => {
+                const data = res.data;
+                dispatch(updateSeenAllMessage(data));
+                socket.emit('seen-message', {
+                  messages: data,
+                  conversation: conversation,
+                });
+              });
+          }
+        });
     };
 
     handlerInitMessage();
-  }, []);
+  }, [conversation.id, userLogin.id]);
 
   useEffect(() => {
-    const handleGetLastLogoutX = async (userId) => {
+    const handleGetLastLogoutX = async userId => {
       if (userId === friend.id) {
-        console.log('getLastLogout', userId);
         await handleGetLastLogout(userId);
       }
     };
     socket.on('user-offline', handleGetLastLogoutX);
 
-    return () => {
-      socket.off('user-offline', handleGetLastLogoutX);
-    };
-  }, []);
+    return () => socket.off('user-offline', handleGetLastLogoutX);
+  }, [friend.id]);
 
-  const getLastLoginMessage = (lastLogout) => {
+  const getLastLoginMessage = lastLogout => {
     if (!lastLogout) return 'Chưa truy cập';
     const now = new Date();
     const logoutTime = new Date(lastLogout);
@@ -227,23 +234,21 @@ export const ChatScreen = ({ route, navigation }) => {
     return `Truy cập ${logoutTime.toLocaleDateString('vi-VN')}`;
   };
 
-  const handleGetLastLogout = async (userId) => {
-    await axiosInstance.get(`/api/user/get-profile/${userId}`).then((res) => {
+  const handleGetLastLogout = async userId => {
+    await axiosInstance.get(`/api/user/get-profile/${userId}`).then(res => {
       setLastLogout(res.data.data.lastLogout);
     });
   };
 
   useEffect(() => {
-    socket.emit("join_conversation", conversation.id);
+    socket.emit('join_conversation', conversation.id);
 
     if (!conversation.isGroup) {
-      const friend = conversation.memberUserIds.find((member) => member !== userLogin.id);
-      handleGetLastLogout(friend);
+      const friendId = conversation.memberUserIds.find(member => member !== userLogin.id);
+      handleGetLastLogout(friendId);
     }
 
-    return () => {
-      socket.emit("leave_conversation", conversation.id);
-    };
+    return () => socket.emit('leave_conversation', conversation.id);
   }, [conversation, userLogin.id]);
 
   const [messageSort, setMessageSort] = useState([]);
@@ -253,61 +258,51 @@ export const ChatScreen = ({ route, navigation }) => {
     setMessageSort(sortedMessages);
   }, [messages]);
 
-  const showAvatar = (index) => {
+  const showAvatar = index => {
     if (index === messageSort.length - 1) return true;
-
     const nextMessage = messageSort[index + 1];
-    if (!nextMessage) return true;
-
-    return nextMessage.senderId !== messageSort[index].senderId;
+    return nextMessage ? nextMessage.senderId !== messageSort[index].senderId : true;
   };
 
   const [isShowMenuInMessage, setIsShowMenuInMessage] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);
 
-  const showTime = (index) => {
+  const showTime = index => {
     if (index === messageSort.length - 1) return false;
-
     const nextMessage = messageSort[index - 1];
-    if (!nextMessage) return true;
-
-    return nextMessage.senderId !== messageSort[index].senderId;
+    return nextMessage ? nextMessage.senderId !== messageSort[index].senderId : true;
   };
 
   const [highlightedId, setHighlightedId] = useState(null);
   const flatListRef = useRef(null);
-  const scrollToMessage = (messageId) => {
+  const scrollToMessage = messageId => {
     const index = messageSort.findIndex(msg => msg.id === messageId);
     if (index !== -1 && flatListRef.current) {
       flatListRef.current.scrollToIndex({ index, animated: true });
-
       setHighlightedId(messageId);
-
-      setTimeout(() => {
-        setHighlightedId(null);
-      }, 3000);
+      setTimeout(() => setHighlightedId(null), 3000);
     }
   };
 
   useEffect(() => {
     socket.emit('login', userLogin?.id);
-  }, [userLogin?.id, dispatch]);
+  }, [userLogin?.id]);
 
-  const onDeletePin = async (pin) => {
+  const onDeletePin = async pin => {
     try {
-      await dispatch(removePin({ conversationId: conversation.id, messageId: pin.messageId })).then((res) => {
-        socket.emit("unpin-message", {
+      await dispatch(removePin({ conversationId: conversation.id, messageId: pin.messageId })).then(res => {
+        socket.emit('unpin-message', {
           conversation: conversation,
-          pin: res.payload.data
+          pin: res.payload.data,
         });
-        showToast('success', 'bottom', "Thông báo", res.payload.message);
+        showToast('success', 'bottom', 'Thông báo', res.payload.message);
       });
     } catch (error) {
-      showToast('error', 'bottom', "Thông báo", error.message);
+      showToast('error', 'bottom', 'Thông báo', error.message);
     }
   };
 
-  const handlerRemoveAllAction = (message) => {
+  const handlerRemoveAllAction = message => {
     try {
       const updatedReaction = {};
 
@@ -318,38 +313,46 @@ export const ChatScreen = ({ route, navigation }) => {
         if (quantity > 0) {
           updatedReaction[type] = {
             quantity,
-            users: filteredUsers
+            users: filteredUsers,
           };
         }
       });
 
-      console.log("Reaction after removing all of mine:", updatedReaction);
+      dispatch(
+        handlerUpdateReaction({
+          messageId: message.id,
+          updatedReaction,
+        })
+      );
 
-      dispatch(handlerUpdateReaction({
-        messageId: message.id,
-        updatedReaction
-      }));
-
-      dispatch(removeAllReaction({
-        messageId: message.id,
-      }))
+      dispatch(removeAllReaction({ messageId: message.id }))
         .unwrap()
         .then(res => {
           socket.emit('update-reaction', {
             conversation,
-            message: res.data
+            message: res.data,
           });
         })
         .catch(err => {
-          console.error("Error while removing all reactions:", err);
+          console.error('Error while removing all reactions:', err);
         });
     } catch (error) {
-      console.error("Error in handlerRemoveAllAction:", error);
+      console.error('Error in handlerRemoveAllAction:', error);
     }
   };
 
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showForwardModal, setShowForwardModal] = useState(false);
+
+  const openDetailModal = message => {
+    if (!message || !message.sender || !message.sender.id) {
+      console.warn('Invalid message for detail modal:', message);
+      showToast('error', 'bottom', 'Thông báo', 'Không thể xem chi tiết tin nhắn.', 2000);
+      return;
+    }
+    setSelectedMessage(message);
+    setShowDetailModal(true);
+  };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#F3F3F3', position: 'relative' }}>
@@ -383,7 +386,9 @@ export const ChatScreen = ({ route, navigation }) => {
               scrollToMessage={scrollToMessage}
             />
           )}
-          keyExtractor={(item, index) => item.id?.toString() + item.timestamp?.toString() || index.toString()}
+          keyExtractor={(item, index) =>
+            item.id ? item.id.toString() : `temp-${index}-${item.timestamp || Date.now()}`
+          }
           contentContainerStyle={{ paddingVertical: 10 }}
           inverted
         />
@@ -405,15 +410,9 @@ export const ChatScreen = ({ route, navigation }) => {
         clearMessageParent={() => dispatch(setMessageParent(null))}
         friend={friend}
       />
-      {isStickerPickerVisible && (
-        <StickerPicker onStickerSelect={handleStickerSelect} />
-      )}
+      {isStickerPickerVisible && <StickerPicker onStickerSelect={handleStickerSelect} />}
       {isShowMenuInMessage && (
-        <Modal
-          visible={isShowMenuInMessage}
-          transparent={true}
-          animationType="none"
-        >
+        <Modal visible={isShowMenuInMessage} transparent={true} animationType="none">
           <Pressable
             style={{ flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.5)', justifyContent: 'center', alignItems: 'center' }}
             onPress={() => setIsShowMenuInMessage(false)}
@@ -427,14 +426,18 @@ export const ChatScreen = ({ route, navigation }) => {
           </Pressable>
         </Modal>
       )}
-      <MessageDetailModal
-        visible={showDetailModal}
-        onClose={() => {
-          setIsShowMenuInMessage(false);
-          setShowDetailModal(false);
-        }}
-        message={selectedMessage}
-      />
+      {
+        selectedMessage && (
+          <MessageDetailModal
+            visible={showDetailModal}
+            onClose={() => {
+              setIsShowMenuInMessage(false);
+              setShowDetailModal(false);
+            }}
+            message={selectedMessage}
+          />
+        )
+      }
       <ForwardMessageModal
         visible={showForwardModal}
         onClose={() => {

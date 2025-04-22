@@ -15,9 +15,40 @@ export const showToast = (type, position, title, content) => {
         text1Style: [GlobalStyles.textStyle, { fontWeight: 'bold' }],
         text2Style: [GlobalStyles.textStyle, {}],
     })
-} 
+}
 
 export const getFriend = (conversation, userId) => {
     const friend = conversation.members.find(member => member.id === userId);
     return friend;
+}
+
+export const getGroupImageDefaut = () => {
+    return [
+        "https://my-alo-bucket.s3.us-east-1.amazonaws.com/Image+Group/1_family.jpg",
+        "https://my-alo-bucket.s3.us-east-1.amazonaws.com/Image+Group/2_family.jpg",
+        "https://my-alo-bucket.s3.us-east-1.amazonaws.com/Image+Group/3_family.jpg",
+        "https://my-alo-bucket.s3.us-east-1.amazonaws.com/Image+Group/4_work.jpg",
+        "https://my-alo-bucket.s3.us-east-1.amazonaws.com/Image+Group/5_work.jpg",
+        "https://my-alo-bucket.s3.us-east-1.amazonaws.com/Image+Group/6_work.jpg",
+        "https://my-alo-bucket.s3.us-east-1.amazonaws.com/Image+Group/7_friends.jpg",
+        "https://my-alo-bucket.s3.us-east-1.amazonaws.com/Image+Group/8_friends.jpg",
+        "https://my-alo-bucket.s3.us-east-1.amazonaws.com/Image+Group/9_friends.jpg",
+        "https://my-alo-bucket.s3.us-east-1.amazonaws.com/Image+Group/10_school.jpg",
+        "https://my-alo-bucket.s3.us-east-1.amazonaws.com/Image+Group/11_school.jpg",
+        "https://my-alo-bucket.s3.us-east-1.amazonaws.com/Image+Group/12_school.jpg"
+
+    ]
+}
+export const getUserRoleAndPermissions = (conversation, userId) => {
+    const roleInfo = conversation.roles.find(role => role.userIds.includes(userId));
+    if (!roleInfo) {
+        return {
+            role: null,
+            permissions: {}
+        };
+    }
+    return {
+        role: roleInfo.role,
+        permissions: roleInfo.permissions
+    };
 }

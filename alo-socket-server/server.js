@@ -264,7 +264,7 @@ io.on("connection", (socket) => {
             filteredSocketIds.forEach(id => {
                 io.to(id).emit('receive-update-message', data);
             });
-            
+
         }
     })
 
@@ -312,6 +312,49 @@ io.on("connection", (socket) => {
         });
     })
 
+
+    socket.on('create_group', async (data) => {
+        const { conversation } = data;
+        const members = conversation.memberUserIds;
+
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-create-group', { conversation });
+            });
+        }
+    })
+
+    socket.on('update_profile_group', async (data) => {
+        const { conversation } = data;
+        const members = conversation.memberUserIds;
+
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive_update_profile_group', { conversation });
+            });
+        }
+    })
+    // // Xử lý sự kiện xóa lịch sử trò chuyện
+    // socket.on('remove-all-history-messages', async (data) => {
+    //     const { conversationId } = data;
+    //     // Lấy thông tin conversation từ backend để lấy danh sách thành viên
+    //     const conversationService = require("./src/service/conversation.service");
+    //     const conversation = await conversationService.getConversationById(conversationId);
+    //     if (!conversation) return;
+
+    //     const members = conversation.memberUserIds;
+    //     for (const userId of members) {
+    //         const socketIds = await findSocketIdsByUserId(userId);
+    //         const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+    //         filteredSocketIds.forEach(id => {
+    //             io.to(id).emit('receive-remove-all-history-messages', { conversationId });
+    //         });
+    //     }
+    // });
     // =====================
     // Helper functions
     // =====================

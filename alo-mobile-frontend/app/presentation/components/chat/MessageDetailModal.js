@@ -7,17 +7,10 @@ import { useSelector } from 'react-redux';
 const DEFAULT_AVATAR = 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg';
 
 const MessageDetailModal = ({ visible, onClose, message }) => {
+  if (!message) return null; // Return null if message is not provided
   const [isLoading, setIsLoading] = useState(false);
 
-  if (!message || !message.sender) {
-    return null;
-  }
-
   const userLogin = useSelector(state => state.user.userLogin);
-  if (!userLogin?.id) {
-    console.warn('User login data missing');
-    return null;
-  }
 
   const formatDateTime = (timestamp) => {
     if (!timestamp) return 'N/A';
@@ -34,7 +27,6 @@ const MessageDetailModal = ({ visible, onClose, message }) => {
   };
 
   const extractOriginalName = (url = '') => {
-hto
     const fileNameEncoded = url.split('/').pop();
     if (!fileNameEncoded) return 'Unknown File';
     const fileNameDecoded = decodeURIComponent(fileNameEncoded);
@@ -110,7 +102,7 @@ hto
 
   const avatarIcon = (
     <Image
-     																source={{ uri: message.sender.avatarLink || DEFAULT_AVATAR }}
+      source={{ uri: message.sender.avatarLink || DEFAULT_AVATAR }}
       style={styles.avatarImage}
       onError={(e) => console.warn('Avatar load error:', e.nativeEvent.error)}
     />
