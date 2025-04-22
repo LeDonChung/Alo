@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, Switch, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, Switch, Modal, TextInput, Button } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
@@ -14,6 +14,57 @@ export const SettingScreen = () => {
     const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id));
     const navigation = useNavigation();
     const [groupAvatar, setGroupAvatar] = useState(null);
+    const [isEditGroupNameModalVisible, setEditGroupNameModalVisible] = useState(false);
+
+    const [groupName, setGroupName] = useState(conversation.name);
+    const openEditGroupNameModal = () => {
+        setEditGroupNameModalVisible(true);
+    };
+
+    const closeEditGroupNameModal = () => {
+        setEditGroupNameModalVisible(false);
+    };
+
+    const handleGroupNameChange = (newName) => {
+        setGroupName(newName);
+    };
+
+    const saveGroupName = async () => {
+        try {
+            if (!groupName) {
+                showToast('error', 'top', 'Thông báo', 'Vui lòng nhập tên nhóm.');
+                closeEditGroupNameModal();
+                return;
+            }
+            if( groupName === conversation.name) {
+                showToast('error', 'top', 'Thông báo', 'Tên nhóm không thay đổi.');
+                closeEditGroupNameModal();
+                return;
+            }
+            const data = {
+                avatar: conversation.avatar,
+                name: groupName,
+            }
+
+            await dispatch(updateProfileGroup({
+                conversationId: conversation.id,
+                data,
+                file: null
+            })).unwrap().then((res) => {
+                dispatch(updateProfileGroupById(res.data));
+                showToast('error', 'top', 'Thông báo', res.message || 'Cập nhật ảnh đại diện nhóm thành công.');
+                socket.emit('update_profile_group', {
+                    conversation: res.data
+                });
+
+            })
+        } catch (error) {
+            console.error('Error updating group avatar:', error);
+            showToast('error', 'top', 'Lỗi', error.message || 'Cập nhật ảnh đại diện nhóm thất bại');
+        }
+        closeEditGroupNameModal();
+    };
+
     const [modalVisible, setModalVisible] = useState(false);
     const groupDefault = getGroupImageDefaut();
 
@@ -158,12 +209,66 @@ export const SettingScreen = () => {
                     <Text style={styles.groupName}>{
                         conversation.isGroup ? conversation.name : friend.fullName
                     }</Text>
-                    <TouchableOpacity style={{ marginLeft: 10 }}>
+                    <TouchableOpacity style={{ marginLeft: 10 }} onPress={openEditGroupNameModal}>
                         <Icon name="edit" size={20} color="#000" />
                     </TouchableOpacity>
                 </View>
             </View>
 
+            {/* Modal sửa tên nhóm */}
+            {
+                isEditGroupNameModalVisible && (
+                    <Modal
+                        visible={isEditGroupNameModalVisible}
+                        transparent
+                        animationType="slide"
+                        onRequestClose={closeEditGroupNameModal}
+                    >
+                        <TouchableOpacity
+                            style={{
+                                flex: 1,
+                                backgroundColor: 'rgba(0, 0, 0, 0.5)',
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                            }}
+                            activeOpacity={1}
+                            onPress={closeEditGroupNameModal}
+                        >
+                            <TouchableOpacity activeOpacity={1} style={{
+                                backgroundColor: '#fff',
+                                width: '80%',
+                                padding: 20,
+                                borderRadius: 16,
+                            }}>
+                                <Text style={{
+                                    fontWeight: 'bold',
+                                    fontSize: 16,
+                                    marginBottom: 12,
+                                }}>Tên nhóm</Text>
+                                <TextInput
+                                    style={{
+                                        height: 50,
+                                        borderColor: '#ddd',
+                                        borderWidth: 1,
+                                        marginBottom: 10,
+                                        paddingHorizontal: 10,
+                                    }}
+                                    value={groupName}
+                                    onChangeText={handleGroupNameChange}
+                                />
+                                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                                    <TouchableOpacity onPress={closeEditGroupNameModal} style={{ flex: 1, marginRight: 10 }}>
+                                        <Text style={{ textAlign: 'center', color: '#007AFF' }}>Hủy</Text>
+                                    </TouchableOpacity>
+                                    <TouchableOpacity onPress={saveGroupName} style={{ flex: 1 }}>
+                                        <Text style={{ textAlign: 'center', color: '#007AFF' }}>Lưu</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            </TouchableOpacity>
+                        </TouchableOpacity>
+                    </Modal>
+                )
+            }
             {/* Modal chọn ảnh đại diện */}
             <Modal visible={modalVisible} transparent animationType="slide">
                 <TouchableOpacity
@@ -296,6 +401,7 @@ export const SettingScreen = () => {
                     <Text style={[styles.optionText, { color: '#FF0000' }]}>Rời nhóm</Text>
                 </TouchableOpacity>
             </View>
+
         </ScrollView>
     );
 

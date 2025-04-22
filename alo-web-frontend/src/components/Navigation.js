@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
-import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation } from "../redux/slices/ConversationSlice";
+import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, updateProfileGroupById } from "../redux/slices/ConversationSlice";
 import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage, seenOne } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 export const Navigation = () => {
@@ -299,6 +299,20 @@ export const Navigation = () => {
     //     };
     //   }, [conversation, dispatch]);
 
+
+    useEffect(() => {
+        const handlerReceiveUpdatedConversation = async (data) => {
+          console.log("Receive updated profile conversation", data);
+          const conversation = data.conversation;
+          await dispatch(updateProfileGroupById(conversation));
+        }
+    
+        socket.on("receive_update_profile_group", handlerReceiveUpdatedConversation);
+    
+        return () => {
+          socket.off("receive_update_profile_group", handlerReceiveUpdatedConversation);
+        }
+      }, []);
     return (
         <>
             {/* Sidebar Navigation */}
