@@ -8,6 +8,7 @@ import ChatHeader from './chat/ChatHeader';
 import ChatContent from './chat/ChatContent';
 import ChatInput from './chat/ChatInput';
 import { getFriend } from '../utils/AppUtils';
+import { setConversation } from '../redux/slices/ConversationSlice';
 
 const ChatWindow = () => {
   const isSending = useSelector(state => state.message.isSending);
@@ -145,6 +146,22 @@ const ChatWindow = () => {
     }
   };
   const [search, setSearch] = useState(false);
+
+
+  // Lắng nghe sự kiện xóa lịch sử trò chuyện từ Socket.IO
+  useEffect(() => {
+    socket.on('receive-remove-all-history-messages', (data) => {
+      const { conversationId } = data;
+      if (conversationId === conversation.id) {
+        // Cập nhật conversation để xóa danh sách tin nhắn
+        dispatch(setConversation({ ...conversation, messages: [] }));
+      }
+    });
+
+    return () => {
+      socket.off('receive-remove-all-history-messages');
+    };
+  }, [conversation, dispatch]);
 
   return (
     <>

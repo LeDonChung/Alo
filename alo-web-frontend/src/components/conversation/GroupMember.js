@@ -3,7 +3,7 @@ import { getFriend } from '../../utils/AppUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faKey, faEllipsis } from '@fortawesome/free-solid-svg-icons';
 
-const GroupMembers = ({ conversation, userLogin, setIsSetting }) => {
+const GroupMembers = ({ conversation, userLogin, setIsSetting, membersWithRoles }) => {
     const members = conversation.memberUserIds.map(userId => getFriend(conversation, userId));
     const leaderId = conversation.roles.find(role => role.role === 'leader')?.userIds[0];
     const viceLeaderIds = conversation.roles.find(role => role.role === 'vice_leader')?.userIds || [];
@@ -31,10 +31,8 @@ const GroupMembers = ({ conversation, userLogin, setIsSetting }) => {
 
             {/* Danh sách thành viên */}
             <div className="space-y-2">
-                {members.map((member, index) => (
-
-                    <div key={index} className="flex items-center space-x-3 p-2 hover:bg-gray-100 rounded-md transition-colors relative">
-
+                {membersWithRoles.map((member, index) => (
+                    <div key={index} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md transition-colors">
                         <img
                             src={member.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'}
                             alt={member.fullName}
@@ -164,7 +162,7 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
                     )
                 }
 
-                
+
                 {/* user login is vice_leader */}
                 {
                     viceLeaderIds.includes(userLogin.id) && (

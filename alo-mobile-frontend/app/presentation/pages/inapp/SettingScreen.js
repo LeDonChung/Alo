@@ -244,7 +244,7 @@ export const SettingScreen = () => {
 
             {/* Options */}
             <View style={styles.options}>
-                <TouchableOpacity style={styles.option}>
+                <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('imageFileDetails')}>
                     <Icon name="image" size={24} color="#000" />
                     <Text style={styles.optionText}>Ảnh, file</Text>
                 </TouchableOpacity>
