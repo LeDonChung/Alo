@@ -7,9 +7,10 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faCircleXmark, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { SearchByPhone } from "../components/SearchByPhone";
 import { removeVietnameseTones } from "../utils/AppUtils";
-import { getAllConversation, createGroup, addConversation } from "../redux/slices/ConversationSlice";
+import { getAllConversation, createGroup, addConversation, setConversation } from "../redux/slices/ConversationSlice";
 import { userLogin } from "../utils/AppUtils";
 import socket from "../utils/socket";
+import { useNavigate } from "react-router-dom";
 
 // Thêm: Danh sách ảnh mặc định cho nhóm
 const defaultGroupImages = [
@@ -42,32 +43,6 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
     const [showDefaultImages, setShowDefaultImages] = useState(false);
     const userLogin = useSelector((state) => state.user.userLogin);
     const friendsFromRedux = useSelector((state) => state.friend.friends);
-
-
-
-    
-    // useEffect(() => {
-    //     if (socket && userLogin.id) {
-    //         socket.emit("join", userLogin.id);
-    //         console.log(`Tham gia phòng user:${userLogin.id}`);
-    //     }
-
-    //     return () => {
-    //     };
-    // }, [userLogin.id]);
-
-    // Lấy danh sách bạn bè 
-    useEffect(() => {
-        const fetchFriends = async () => {
-            try {
-                await dispatch(getFriends());
-            } catch (error) {
-                console.error("Lỗi khi lấy danh sách bạn bè:", error);
-                setError("Không thể tải danh sách bạn bè.");
-            }
-        };
-        fetchFriends();
-    }, [dispatch]);
 
     //Cập nhật DS bạn bè từ redux
     useEffect(() => {
@@ -120,6 +95,8 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
         setShowDefaultImages((prev) => !prev);
     };
 
+    const navigate = useNavigate();
+    const conversation = useSelector((state) => state.conversation.conversation);
     // Hàm tạo nhóm
     const handleCreateGroup = async () => {
         if (!groupName.trim()) {
@@ -142,17 +119,21 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                     file: avatarFile,
                     avatar: defaultAvatarUrl,
                 })
-            ).unwrap();
+            ).unwrap().then((res) => {
+                dispatch(addConversation(res.data));
 
-            dispatch(addConversation(result.data));
+                console.log("Gửi sự kiện create_group:", res.data);
+                socket.emit("create-group", { conversation: res.data });
 
-            console.log("Gửi sự kiện create_group:", result.data);
-            socket.emit("create_group", { conversation: result.data });
+                const conversationId = res.data.id;
+                dispatch(setConversation(res.data))
+                socket.emit("join_conversation", conversationId);
+                navigate(`/me`);
+                console.log(`Tham gia phòng nhóm ${conversationId}`);
+                onClose();
+            })
 
-            const conversationId = result.data.id;
-            socket.emit("join_conversation", conversationId);
-            console.log(`Tham gia phòng nhóm ${conversationId}`);
-            onClose();
+
         } catch (err) {
             console.error("Lỗi khi tạo nhóm:", err);
             setError(err.message || "Đã có lỗi xảy ra. Vui lòng thử lại.");
@@ -161,7 +142,7 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
         }
     };
 
-    
+
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white rounded-lg shadow-lg w-[400px] max-h-[90vh] overflow-auto relative p-4">
@@ -173,14 +154,14 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                 </button>
 
                 <h2 className="text-lg font-semibold mb-2 text-center">Tạo nhóm</h2>
-                <div className="flex items-center justify-between border-b border-gray-300 mb-4">
+                <div className="flex items-center justify-center border-b border-gray-300 mb-4">
                     <div className="relative">
-                        <div>
+                        <div className="h-[50px] w-[50px]" >
                             <img
                                 src={
                                     avatarFile
                                         ? URL.createObjectURL(avatarFile)
-                                        : defaultAvatarUrl || "./icon/ic_create_group.png"
+                                        : defaultAvatarUrl || defaultGroupImages[0]
                                 }
                                 alt="Avatar"
                                 className="w-[40px] h-[40px] rounded-full cursor-pointer"
@@ -249,14 +230,6 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                     value={textSearch}
                     onChange={(e) => setTextSearch(e.target.value)}
                 />
-                {textSearch && (
-                    <FontAwesomeIcon
-                        icon={faCircleXmark}
-                        className="text-gray-500 absolute right-3 top-1/2 transform -translate-y-1/2 cursor-pointer"
-                        size="lg"
-                        onClick={() => setTextSearch("")}
-                    />
-                )}
 
 
                 {/* Danh sách bạn bè */}
@@ -266,9 +239,9 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                     ) : (
                         filteredFriends.map((friend) => (
                             <button
-                                key={friend.friendId}
-                                className="flex items-center p-3 hover:bg-gray-100"
-                                onClick={() => toggleSelect(friend.friendId)}
+                                key={friend.friendInfo.id}
+                                className="flex p-3 hover:bg-gray-100"
+                                onClick={() => toggleSelect(friend.friendInfo.id)}
                             >
                                 <img
                                     src={
@@ -278,12 +251,12 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                                     alt={friend.friendInfo.fullName}
                                     className="w-[30px] h-[30px] rounded-full"
                                 />
-                                <span className="ml-4 font-medium flex-1">
+                                <span className="ml-4 font-medium  mr-auto">
                                     {friend.friendInfo.fullName}
                                 </span>
                                 <input
                                     type="checkbox"
-                                    checked={selected.includes(friend.friendId)}
+                                    checked={selected.includes(friend.friendInfo.id)}
                                     readOnly
                                     className="cursor-pointer"
                                 />
