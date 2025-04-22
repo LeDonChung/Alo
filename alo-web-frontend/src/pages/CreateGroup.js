@@ -112,13 +112,20 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
         setError("");
 
         try {
-            const result = await dispatch(
-                createGroup({
-                    name: groupName,
-                    memberUserIds: [...selected, userLogin.id],
-                    file: avatarFile,
-                    avatar: defaultAvatarUrl,
-                })
+            let data = {
+                name: groupName,
+                memberUserIds: [...selected, userLogin.id],
+            }
+
+            if(avatarFile) {
+                data.file = avatarFile;
+            } else {
+                data.avatar = defaultAvatarUrl;
+            }
+
+            console.log("Dữ liệu tạo nhóm:", data);
+            await dispatch(
+                createGroup(data)
             ).unwrap().then((res) => {
                 dispatch(addConversation(res.data));
 
