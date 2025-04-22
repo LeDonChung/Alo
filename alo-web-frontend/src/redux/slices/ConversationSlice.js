@@ -98,6 +98,36 @@ const removeAllHistoryMessages = createAsyncThunk(
         }
     }
 );
+
+const updateProfileGroup = createAsyncThunk('ConversationSlice/updateProfileGroup', async ({ conversationId, data, file }, { rejectWithValue }) => {
+    try {
+        const formData = new FormData();
+
+        if (file) {
+            console.log("file", file)
+            formData.append("file", file);
+        }
+
+        for (const key in data) {
+            const value = data[key];
+            if (Array.isArray(value)) {
+                formData.append(key, JSON.stringify(value));
+            } else {
+                formData.append(key, value);
+            }
+        }
+        console.log("formData", formData.get('file'))
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/update-profile-group`, formData, {
+            headers: {
+                "Content-Type": "multipart/form-data"
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.log(error);
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
@@ -105,7 +135,19 @@ const ConversationSlice = createSlice({
         setConversation: (state, action) => {
             state.conversation = action.payload;
         },
-
+        updateProfileGroupById: (state, action) => {
+            const updatedConversation = action.payload;
+            const existingConversation = state.conversations.find(conversation => conversation.id === updatedConversation.id);
+            if (existingConversation) {
+                const index = state.conversations.findIndex(conversation => conversation.id === updatedConversation.id);
+                state.conversations[index].name = updatedConversation.name;
+                state.conversations[index].avatar = updatedConversation.avatar;
+                if (state.conversation?.id === updatedConversation.id) {
+                    state.conversation.name = updatedConversation.name;
+                    state.conversation.avatar = updatedConversation.avatar;
+                }
+            }
+        },
         // thêm status message vào để khi thu hồi thì bắt  được tin nhắn đã thu hồi -> update lastMessage bên conversation để hiển thị ngay lập tức
         updateLastMessage: (state, action) => {
             const conversationId = action.payload.conversationId;
@@ -246,10 +288,18 @@ const ConversationSlice = createSlice({
             state.loading = false;
             state.error = action.payload.message;
         });
+
+        builder.addCase(updateProfileGroup.pending, (state) => {
+        });
+        builder.addCase(updateProfileGroup.fulfilled, (state, action) => {
+        });
+
+        builder.addCase(updateProfileGroup.rejected, (state, action) => {
+        });
     }
 });
 
 
-export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, addConversation, addMemberGroup } = ConversationSlice.actions;
-export { getAllConversation, getConversationById, createPin, removePin, addMemberToGroup, createGroup, removeAllHistoryMessages };
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, addConversation, addMemberGroup, updateProfileGroupById } = ConversationSlice.actions;
+export { getAllConversation, getConversationById, createPin, removePin, addMemberToGroup, createGroup, removeAllHistoryMessages, updateProfileGroup };
 export default ConversationSlice.reducer;
