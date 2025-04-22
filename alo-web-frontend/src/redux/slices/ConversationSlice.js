@@ -54,20 +54,35 @@ const addMemberToGroup = createAsyncThunk('ConversationSlice/addMemberToGroup', 
     }
 });
 
-const createGroup = createAsyncThunk('ConversationSlice/createGroup', async ({ name, memberUserIds, file, avatar }, { rejectWithValue }) => {
+const createGroup = createAsyncThunk('ConversationSlice/createGroup', async (data, { rejectWithValue }) => {
     try {
         const formData = new FormData();
-        formData.append("name", name);
-        formData.append("memberUserIds", JSON.stringify(memberUserIds));
-        if (file) {
-            formData.append("file", file);
-        } else if (avatar) {
-            formData.append("avatar", avatar);
+
+        if (data.file) {
+            formData.append("file", {
+                uri: data.file.uri,
+                name: data.file.name,
+                type: data.file.type
+            });
         }
 
-        const response = await axiosInstance.post('/api/conversation/create-group', formData);
+        for (const key in data) {
+            const value = data[key];
+            if (Array.isArray(value)) {
+                formData.append(key, JSON.stringify(value));
+            } else {
+                formData.append(key, value);
+            }
+        }
+
+        const response = await axiosInstance.post('/api/conversation/create-group', formData, {
+            headers: {
+                "Content-Type": "multipart/form-data"
+            }
+        });
         return response.data;
     } catch (error) {
+        console.log(error);
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 });

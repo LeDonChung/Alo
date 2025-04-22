@@ -332,6 +332,7 @@ exports.createGroupConversation = async (req, res) => {
 
         if (req.file) {
             const file = req.file;
+            console.log("file: ", file)
             data.avatar = await fileService.uploadFile(file);
         } else {
             data.avatar = avatar;
