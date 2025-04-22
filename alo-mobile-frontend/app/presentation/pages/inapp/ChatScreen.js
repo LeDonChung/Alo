@@ -19,8 +19,9 @@ import {
   navigateToPreviousResult,
   navigateToNextResult, 
   resetSearch,
+  clearMessages,
 } from '../../redux/slices/MessageSlice';
-import { removePin } from '../../redux/slices/ConversationSlice';
+import { removePin, clearHistoryMessages } from '../../redux/slices/ConversationSlice';
 import HeaderComponent from '../../components/chat/HeaderComponent';
 import InputComponent from '../../components/chat/InputComponent';
 import MessageItem from '../../components/chat/MessageItem';
@@ -191,6 +192,22 @@ export const ChatScreen = ({ route, navigation }) => {
   }, []);
 
   useEffect(() => {
+    const handleClearHistoryMessages = (data) => {
+        if (data.conversationId === conversation.id) {
+            dispatch(clearMessages());
+
+            dispatch(clearHistoryMessages({ 
+                conversationId: data.conversationId, 
+                conversation: data.conversation 
+            }));
+            showToast('info', 'top', 'Thông báo', 'Lịch sử trò chuyện đã được xóa.');
+        }
+    };
+    socket.on('clear-history-messages', handleClearHistoryMessages);
+    return () => socket.off('clear-history-messages', handleClearHistoryMessages);
+}, [conversation.id, dispatch]);
+
+  useEffect(() => {
     const handlerInitMessage = async () => {
       await dispatch(getMessagesByConversationId(conversation.id))
         .unwrap()
@@ -267,9 +284,14 @@ export const ChatScreen = ({ route, navigation }) => {
   const [messageSort, setMessageSort] = useState([]);
 
   useEffect(() => {
-    const sortedMessages = [...messages].sort((a, b) => b.timestamp - a.timestamp);
+    const sortedMessages = [...messages]
+        .filter(message => message.status !== 2) 
+        .sort((a, b) => b.timestamp - a.timestamp);
     setMessageSort(sortedMessages);
-  }, [messages]);
+    if (!conversation.lastMessage && conversation.pineds.length === 0) {
+        setMessageSort([]);
+    }
+}, [messages, conversation.lastMessage, conversation.pineds]);
 
   const showAvatar = index => {
     if (index === messageSort.length - 1) return true;

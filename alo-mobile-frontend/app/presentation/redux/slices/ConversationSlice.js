@@ -111,7 +111,16 @@ const updateProfileGroup = createAsyncThunk('ConversationSlice/updateProfileGrou
         console.log(error);
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
-})
+});
+
+const removeAllHistoryMessages = createAsyncThunk('ConversationSlice/removeAllHistoryMessages', async ({ conversationId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/remove-all-history-messages`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
 
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
@@ -191,7 +200,23 @@ const ConversationSlice = createSlice({
                 state.conversations[index] = conversation;
             }
         },
+        clearHistoryMessages: (state, action) => {
+            const { conversationId, conversation } = action.payload;
+            state.conversations = state.conversations.map(conv => 
+                conv.id === conversationId 
+                    ? { ...conv, lastMessage: null, pineds: [] }
+                    : conv
+            );
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation = {
+                    ...state.conversation,
+                    lastMessage: null,
+                    pineds: []
+                };
+            }
+        },
     },
+    
     extraReducers: (builder) => {
 
         builder.addCase(getAllConversation.pending, (state) => {
@@ -262,9 +287,27 @@ const ConversationSlice = createSlice({
 
         builder.addCase(updateProfileGroup.rejected, (state, action) => {
         });
+        
+        builder.addCase(removeAllHistoryMessages.pending, (state) => {
+            state.error = null;
+        });
+        builder.addCase(removeAllHistoryMessages.fulfilled, (state, action) => {
+            state.conversations = state.conversations.map(conv => 
+                conv.id === action.meta.arg.conversationId 
+                ? { ...conv, lastMessage: null, pineds: [] }
+                : conv
+            );
+            if (state.conversation && state.conversation.id === action.meta.arg.conversationId) {
+                state.conversation.lastMessage = null;
+                state.conversation.pineds = [];
+            }
+        });
+        builder.addCase(removeAllHistoryMessages.rejected, (state, action) => {
+            state.error = action.payload.message || "Xóa lịch sử thất bại";
+        });
     }
 });
 
-export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket, addConversation, removeConversation, updateProfileGroupById } = ConversationSlice.actions;
-export { getAllConversation, getConversationById, createPin, removePin, createGroup, updateProfileGroup };
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket, addConversation, removeConversation, updateProfileGroupById, clearHistoryMessages } = ConversationSlice.actions;
+export { getAllConversation, getConversationById, createPin, removePin, createGroup, updateProfileGroup, removeAllHistoryMessages };
 export default ConversationSlice.reducer;

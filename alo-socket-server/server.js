@@ -338,6 +338,33 @@ io.on("connection", (socket) => {
             });
         }
     })
+    
+    socket.on('clear-history-messages', async (data) => {
+        const { conversationId, conversation } = data;
+        console.log(`Nhận yêu cầu xóa lịch sử cho conversationId: ${conversationId}`);
+
+        if (!conversationId || !conversation || !conversation.memberUserIds) {
+            console.log('Dữ liệu yêu cầu xóa lịch sử không hợp lệ:', data);
+            return;
+        }
+    
+        const members = conversation.memberUserIds;
+        console.log(`Đang gửi tín hiệu xóa lịch sử cho ${members.length} thành viên`);
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+
+            filteredSocketIds.forEach(id => {
+                console.log(`Gửi tín hiệu đến user ${userId}, socket ${id}`);
+                io.to(id).emit('clear-history-messages', { 
+                    conversationId,
+                    conversation
+                });
+            });
+        }
+        
+        console.log(`Đã gửi tín hiệu xóa lịch sử thành công cho cuộc trò chuyện ${conversationId}`);
+    });
     // =====================
     // Helper functions
     // =====================

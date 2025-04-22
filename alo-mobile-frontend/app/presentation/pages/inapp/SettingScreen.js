@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, Switch, Modal } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, Switch, Modal, Alert } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFriend, getGroupImageDefaut, showToast } from '../../../utils/AppUtils';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import { updateProfileGroup, updateProfileGroupById } from '../../redux/slices/ConversationSlice';
+import { updateProfileGroup, updateProfileGroupById, removeAllHistoryMessages, setConversation  } from '../../redux/slices/ConversationSlice';
+import { clearMessages } from '../../redux/slices/MessageSlice';
 import socket from '../../../utils/socket';
 export const SettingScreen = () => {
     const userLogin = useSelector(state => state.user.userLogin);
@@ -17,6 +18,44 @@ export const SettingScreen = () => {
     const [modalVisible, setModalVisible] = useState(false);
     const groupDefault = getGroupImageDefaut();
 
+    const handleClearChatHistory = () => {
+        Alert.alert(
+            'Xóa lịch sử trò chuyện',
+            'Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện này không ?',
+            [
+                { text: 'Hủy', style: 'cancel' },
+                {
+                    text: 'Xóa',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            const response = await dispatch(removeAllHistoryMessages({ 
+                                conversationId: conversation.id 
+                            })).unwrap();
+                            dispatch(clearMessages());
+
+                            if (response.data && response.data.conversation) {
+                                dispatch(setConversation(response.data.conversation));
+                            }
+
+                            socket.emit('clear-history-messages', {
+                                conversationId: conversation.id,
+                                conversation: response.data?.conversation || conversation
+                            });
+                            
+                            showToast('success', 'top', 'Thông báo', 'Lịch sử trò chuyện đã được xóa.');
+                            navigation.goBack();
+                        } catch (error) {
+                            console.error('Error clearing chat history:', error);
+                            showToast('error', 'top', 'Lỗi', error.message || 'Xóa lịch sử trò chuyện thất bại.');
+                        }
+                    },
+                },
+            ],
+            { cancelable: true }
+        );
+    };
+    
     const pickImage = async () => {
         try {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -290,7 +329,7 @@ export const SettingScreen = () => {
                     <Text style={styles.optionText}>Chuyển quyền trưởng nhóm</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.option}>
+                <TouchableOpacity style={styles.option} onPress={handleClearChatHistory}>
                     <Icon name="delete" size={24} color="#FF0000" />
                     <Text style={[styles.optionText, { color: '#FF0000' }]}>Xóa lịch sử trò chuyện</Text>
                 </TouchableOpacity>

@@ -138,7 +138,7 @@ const searchMessages = createAsyncThunk(
             const { messages } = message;
 
             const filteredMessages = messages.filter(msg => {
-                if (msg.messageType === 'text' && msg.content) {
+                if (msg.messageType === 'text' && msg.content && msg.status !== 2) {
                     return msg.content.toLowerCase().includes(keyword.toLowerCase());
                 }
                 return false;
@@ -239,6 +239,17 @@ const MessageSlice = createSlice({
             state.searchResults = [];
             state.currentSearchIndex = 0;
             state.isSearching = false;
+        },
+        clearMessages: (state) => {
+            state.messages = state.messages.map(message => ({
+                ...message,
+                status: 2
+            }));      
+            state.messageParent = null;
+            state.searchResults = [];   
+            state.currentSearchIndex = 0;
+            state.isSearching = false;
+            state.error = null;
         },
     },
     extraReducers: (builder) => {
@@ -341,6 +352,7 @@ export const {
     navigateToPreviousResult,
     navigateToNextResult,
     resetSearch,
+    clearMessages,
 } = MessageSlice.actions;
 
 export {
