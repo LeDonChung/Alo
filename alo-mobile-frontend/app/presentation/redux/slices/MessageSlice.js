@@ -13,6 +13,10 @@ const initialState = {
     },
     messageParent: null,
     messageUpdate: null,
+    isSearching: false,
+    searchResults: [],
+    currentSearchIndex: 0,
+    error: null,
 };
 
 const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ message, file }, { rejectWithValue }) => {
@@ -126,6 +130,29 @@ const removeOfMe = createAsyncThunk('MessageSlice/removeOfMe', async (messageId,
     }
 });
 
+const searchMessages = createAsyncThunk(
+    'MessageSlice/searchMessages',
+    async ({ keyword }, { getState, rejectWithValue }) => {
+        try {
+            const { message } = getState();
+            const { messages } = message;
+
+            const filteredMessages = messages.filter(msg => {
+                if (msg.messageType === 'text' && msg.content && msg.status !== 2) {
+                    return msg.content.toLowerCase().includes(keyword.toLowerCase());
+                }
+                return false;
+            });
+
+            const sortedFilteredMessages = [...filteredMessages].sort((a, b) => b.timestamp - a.timestamp);
+
+            return { data: sortedFilteredMessages };
+        } catch (error) {
+            return rejectWithValue(error.message || "Lỗi khi tìm kiếm tin nhắn");
+        }
+    }
+);
+
 const MessageSlice = createSlice({
     name: 'MessageSlice',
     initialState: initialState,
@@ -198,6 +225,32 @@ const MessageSlice = createSlice({
                 }
             }
         },
+        navigateToPreviousResult: (state) => {
+            if (state.currentSearchIndex > 0) {
+                state.currentSearchIndex -= 1;
+            }
+        },
+        navigateToNextResult: (state) => {
+            if (state.currentSearchIndex < state.searchResults.length - 1) {
+                state.currentSearchIndex += 1;
+            }
+        },
+        resetSearch: (state) => {
+            state.searchResults = [];
+            state.currentSearchIndex = 0;
+            state.isSearching = false;
+        },
+        clearMessages: (state) => {
+            state.messages = state.messages.map(message => ({
+                ...message,
+                status: 2
+            }));      
+            state.messageParent = null;
+            state.searchResults = [];   
+            state.currentSearchIndex = 0;
+            state.isSearching = false;
+            state.error = null;
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(sendMessage.pending, (state) => {
@@ -266,6 +319,22 @@ const MessageSlice = createSlice({
         builder.addCase(removeOfMe.pending, (state) => { });
         builder.addCase(removeOfMe.fulfilled, (state, action) => { });
         builder.addCase(removeOfMe.rejected, (state, action) => { });
+
+        builder.addCase(searchMessages.pending, (state) => {
+            state.isSearching = true;
+            state.searchResults = [];
+            state.currentSearchIndex = 0;
+            state.error = null;
+        });
+        builder.addCase(searchMessages.fulfilled, (state, action) => {
+            state.searchResults = action.payload.data;
+            state.isSearching = false;
+        });
+        builder.addCase(searchMessages.rejected, (state, action) => {
+            state.isSearching = false;
+            state.searchResults = [];
+            state.error = action.payload?.message || "Lỗi không xác định";
+        });
     }
 });
 
@@ -279,7 +348,11 @@ export const {
     setMessageParent,
     setMessageUpdate,
     updateSeenAllMessage,
-    setMessageRemoveOfMe
+    setMessageRemoveOfMe,
+    navigateToPreviousResult,
+    navigateToNextResult,
+    resetSearch,
+    clearMessages,
 } = MessageSlice.actions;
 
 export {
@@ -291,7 +364,8 @@ export {
     updateMessageStatus,
     seenAll,
     seenOne,
-    removeOfMe
+    removeOfMe,
+    searchMessages,
 };
 
 export default MessageSlice.reducer;

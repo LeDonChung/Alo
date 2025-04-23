@@ -1,9 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { Modal, Pressable, View, TextInput, TouchableOpacity, Text} from 'react-native';
 import { axiosInstance } from '../../../api/APIClient';
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
+import { v4 as uuidv4 } from 'uuid';
 import {
   addMessage,
   getMessagesByConversationId,
@@ -15,8 +16,13 @@ import {
   updateMessage,
   setMessageParent,
   updateSeenAllMessage,
+  searchMessages, 
+  navigateToPreviousResult,
+  navigateToNextResult, 
+  resetSearch,
+  clearMessages,
 } from '../../redux/slices/MessageSlice';
-import { removePin } from '../../redux/slices/ConversationSlice';
+import { removePin, clearHistoryMessages, memberLeaveGroup } from '../../redux/slices/ConversationSlice';
 import HeaderComponent from '../../components/chat/HeaderComponent';
 import InputComponent from '../../components/chat/InputComponent';
 import MessageItem from '../../components/chat/MessageItem';
@@ -28,6 +34,7 @@ import { getFriend, getUserRoleAndPermissions, showToast } from '../../../utils/
 import { MenuComponent } from '../../components/chat/MenuConponent';
 import MessageDetailModal from '../../components/chat/MessageDetailModal';
 import ForwardMessageModal from '../../components/chat/ForwardMessageModal';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 
 export const ChatScreen = ({ route, navigation }) => {
   const [isImageViewVisible, setIsImageViewVisible] = useState(false);
@@ -50,6 +57,13 @@ export const ChatScreen = ({ route, navigation }) => {
     conversation,
     conversation.memberUserIds.find(item => item !== userLogin.id)
   );
+
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isSearchVisible, setIsSearchVisible] = useState(false);
+  const searchResults = useSelector((state) => state.message.searchResults);
+  const currentSearchIndex = useSelector((state) => state.message.currentSearchIndex);
+  const isSearching = useSelector((state) => state.message.isSearching);
+  const error = useSelector((state) => state.message.error);
 
   if (!userLogin.id) {
     console.warn('User not logged in');
@@ -179,6 +193,24 @@ export const ChatScreen = ({ route, navigation }) => {
   }, []);
 
   useEffect(() => {
+    const handleClearHistoryMessages = (data) => {
+        if (data.conversationId === conversation.id) {
+            dispatch(clearMessages());
+
+            dispatch(clearHistoryMessages({ 
+                conversationId: data.conversationId, 
+                conversation: data.conversation 
+            }));
+            showToast('info', 'top', 'Thông báo', 'Lịch sử trò chuyện đã được xóa.');
+        }
+    };
+    socket.on('clear-history-messages', handleClearHistoryMessages);
+    return () => socket.off('clear-history-messages', handleClearHistoryMessages);
+}, [conversation.id, dispatch]);
+
+
+
+  useEffect(() => {
     const handlerInitMessage = async () => {
       await dispatch(getMessagesByConversationId(conversation.id))
         .unwrap()
@@ -239,7 +271,46 @@ export const ChatScreen = ({ route, navigation }) => {
       setLastLogout(res.data.data.lastLogout);
     });
   };
-
+  useEffect(() => {
+    if (!socket) return;
+    const handleMemberLeave = (data) => {
+        const { conversationId, userId, userName, updatedConversation } = data;
+        
+        console.log(`Nhận thông báo: ${userName} đã rời nhóm ${conversationId}`);
+        
+        if (conversation?.id === conversationId) {
+            dispatch(memberLeaveGroup({
+                conversationId,
+                userId,
+                updatedConversation,
+            }));
+            if (userId === userLogin.id) {
+                showToast('success', 'bottom', 'Thông báo', 'Bạn đã rời khỏi nhóm thành công');
+                navigation.navigate('home');
+            } else {
+                const systemMessage = {
+                    id: uuidv4(),
+                    conversationId,
+                    sender: {
+                        id: "system",
+                        fullName: "Hệ thống"
+                    },
+                    content: `${userName} đã rời khỏi nhóm`,
+                    contentType: "notification",
+                    messageType: "notification",
+                    timestamp: new Date().toISOString(),
+                    status: 0
+                };
+                
+                dispatch(addMessage(systemMessage));
+            }
+        }
+    };
+    
+    socket.on('member-leave-group', handleMemberLeave);
+    
+    return () => socket.off('member-leave-group', handleMemberLeave);
+  }, [socket, conversation, dispatch, userLogin.id, navigation]);
   useEffect(() => {
     socket.emit('join_conversation', conversation.id);
 
@@ -249,14 +320,20 @@ export const ChatScreen = ({ route, navigation }) => {
     }
 
     return () => socket.emit('leave_conversation', conversation.id);
+    dispatch(resetSearch());
   }, [conversation, userLogin.id]);
 
   const [messageSort, setMessageSort] = useState([]);
 
   useEffect(() => {
-    const sortedMessages = [...messages].sort((a, b) => b.timestamp - a.timestamp);
+    const sortedMessages = [...messages]
+        .filter(message => message.status !== 2) 
+        .sort((a, b) => b.timestamp - a.timestamp);
     setMessageSort(sortedMessages);
-  }, [messages]);
+    if (!conversation.lastMessage && conversation.pineds.length === 0) {
+        setMessageSort([]);
+    }
+}, [messages, conversation.lastMessage, conversation.pineds]);
 
   const showAvatar = index => {
     if (index === messageSort.length - 1) return true;
@@ -354,6 +431,52 @@ export const ChatScreen = ({ route, navigation }) => {
     setShowDetailModal(true);
   };
 
+  const handleSearch = (keyword) => {
+    if (keyword.trim()) {
+      dispatch(searchMessages({ keyword }));
+    } else {
+      dispatch(resetSearch());
+    }
+  };
+
+  useEffect(() => {
+    handleSearch(searchQuery);
+  }, [searchQuery]);
+
+  const handlePrevious = () => {
+    if (currentSearchIndex > 0) {
+      dispatch(navigateToPreviousResult());
+      const messageId = searchResults[currentSearchIndex - 1].id;
+      scrollToMessage(messageId);
+    }
+  };
+
+  const handleNext = () => {
+    if (currentSearchIndex < searchResults.length - 1) {
+      dispatch(navigateToNextResult());
+      const messageId = searchResults[currentSearchIndex + 1].id;
+      scrollToMessage(messageId);
+    }
+  };
+
+  useEffect(() => {
+    if (searchResults.length > 0 && !isSearching) {
+      const messageId = searchResults[currentSearchIndex].id;
+      scrollToMessage(messageId);
+    }
+  }, [searchResults, isSearching]);
+  const getItemLayout = (data, index) => {
+    
+    const averageHeight = 80; 
+    return {
+      length: averageHeight,
+      offset: averageHeight * index, 
+      index,
+    };
+  };
+  //đém tin nhắn mới nhất là 1
+  const reversedIndex = searchResults.length - currentSearchIndex;
+
   return (
     <View style={{ flex: 1, backgroundColor: '#F3F3F3', position: 'relative' }}>
       <HeaderComponent
@@ -362,8 +485,50 @@ export const ChatScreen = ({ route, navigation }) => {
         lastLogout={lastLogout}
         scrollToMessage={scrollToMessage}
         onDeletePin={onDeletePin}
+        onSearch={() => setIsSearchVisible(true)} 
+        isSearchVisible={isSearchVisible} 
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery} 
+        setIsSearchVisible={setIsSearchVisible} 
       />
-      {isLoadMessage ? (
+      {error && isSearchVisible && searchResults.length === 0 && (
+        <Text style={{ textAlign: 'center', fontSize: 16, color: '#FF0000', margin: 10 }}>
+          {error}
+        </Text>
+      )}
+
+      {isSearchVisible && searchResults.length > 0 && !isSearching && (
+        <View style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          padding: 10,
+          backgroundColor: '#f5f5f5',
+          borderBottomWidth: 1,
+          borderBottomColor: '#EDEDED',
+        }}>
+          <Text style={{ fontSize: 14, color: '#888', textAlign: 'left', flex: 1 }}>
+            {`Kết quả thứ ${reversedIndex}/${searchResults.length}`}
+          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <TouchableOpacity
+              onPress={handlePrevious}
+              disabled={currentSearchIndex === 0}
+              style={{ padding: 10 }}
+            >
+              <Icon name="arrow-upward" size={24} color={currentSearchIndex === 0 ? '#ccc' : '#007AFF'} />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleNext}
+              disabled={currentSearchIndex === searchResults.length - 1}
+              style={{ padding: 10 }}
+            >
+              <Icon name="arrow-downward" size={24} color={currentSearchIndex === searchResults.length - 1 ? '#ccc' : '#007AFF'} />
+            </TouchableOpacity>
+          </View>
+        </View>
+      )}
+      {isLoadMessage || (isSearching && isSearchVisible) ? (
         <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
           <ActivityIndicator size="large" color="#0000ff" />
         </View>
@@ -380,10 +545,11 @@ export const ChatScreen = ({ route, navigation }) => {
               showTime={() => showTime(index)}
               setIsShowMenuInMessage={setIsShowMenuInMessage}
               setSelectedMessage={setSelectedMessage}
-              isHighlighted={highlightedId === item.id}
+              isHighlighted={highlightedId === item.id || searchResults.some((result) => result.id === item.id)}
               handlerRemoveAllAction={handlerRemoveAllAction}
               flatListRef={flatListRef}
               scrollToMessage={scrollToMessage}
+              searchKeyword={searchQuery}
             />
           )}
           keyExtractor={(item, index) =>
@@ -391,6 +557,7 @@ export const ChatScreen = ({ route, navigation }) => {
           }
           contentContainerStyle={{ paddingVertical: 10 }}
           inverted
+          getItemLayout={getItemLayout} 
         />
       )}
       <ImageViewerComponent

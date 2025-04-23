@@ -4,7 +4,7 @@ import { Video } from 'expo-av';
 import { ReactionListComponent } from './ReactionListComponent';
 import { useSelector } from 'react-redux';
 
-const MessageItem = ({ item, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted, handlerRemoveAllAction, scrollToMessage }) => {
+const MessageItem = ({ item, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted, handlerRemoveAllAction, scrollToMessage, searchKeyword  }) => {
   const userLogin = useSelector(state => state.user.userLogin);
 
   const isSent = item.senderId === userLogin.id;
@@ -19,6 +19,28 @@ const MessageItem = ({ item, setSelectedImage, setIsImageViewVisible, showAvatar
     const parts = fileNameDecoded.split(" - ");
     return parts[parts.length - 1];
   };
+  if (item && (item.messageType === "notification" || item.contentType === "notification")) {
+    return (
+        <View style={{
+          alignItems: 'center',
+          marginVertical: 10,
+          paddingHorizontal: 16,
+        }}>
+            <Text style={{
+              fontSize: 12,
+              color: '#888',
+              textAlign: 'center',
+              backgroundColor: '#f0f0f0',
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 12,
+              overflow: 'hidden',
+            }}>
+                {item.content}
+            </Text>
+        </View>
+    );
+  }
 
   const getFileIcon = (extension) => {
     const iconSize = { width: 24, height: 24 };
@@ -109,6 +131,29 @@ const MessageItem = ({ item, setSelectedImage, setIsImageViewVisible, showAvatar
       </TouchableOpacity>
     );
   };
+  //tô đậm keyword search
+  const highlightSearchKeyword = (text) => {
+    if (!searchKeyword || !text || messageType !== 'text') {
+      return <Text>{text}</Text>;
+    }
+
+    const regex = new RegExp(`(${searchKeyword})`, 'gi');
+    const parts = text.split(regex);
+
+    return (
+      <Text>
+        {parts.map((part, index) =>
+          regex.test(part) ? (
+            <Text key={index} style={{ backgroundColor: '#FFFF00', fontWeight: 'bold' }}>
+              {part}
+            </Text>
+          ) : (
+            <Text key={index}>{part}</Text>
+          )
+        )}
+      </Text>
+    );
+  };
 
   return (
     (item && !item.removeOfme?.includes(userLogin.id)) && (
@@ -153,7 +198,7 @@ const MessageItem = ({ item, setSelectedImage, setIsImageViewVisible, showAvatar
                 {/* Text Message */}
                 {messageType === 'text' && item.content && (
                   <View style={{ backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
-                    <Text>{item.content}</Text>
+                    {highlightSearchKeyword(item.content)}
                   </View>
                 )}
 
