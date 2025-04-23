@@ -341,7 +341,7 @@ io.on("connection", (socket) => {
 
     socket.on('update-roles', async (data) => {
         const { conversation } = data;
-
+        console.log('Cập nhật quyền:', data);
         const members = conversation.memberUserIds;
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);

@@ -74,7 +74,7 @@ export const ManagementMemberModal = ({
                   {member.isViceLeader ? (
                     <Option
                       text="Gỡ vai trò phó nhóm"
-                      onPress={() => {
+                      onPress={ () => {
                         onRemoveVice?.(member);
                         onClose();
                       }}
@@ -82,8 +82,8 @@ export const ManagementMemberModal = ({
                   ) : (
                     <Option
                       text="Bổ nhiệm làm phó nhóm"
-                      onPress={() => {
-                        onPromoteVice?.(member);
+                      onPress={ () => {
+                         onPromoteVice?.(member);
                         onClose();
                       }}
                     />

@@ -16,6 +16,8 @@ import { useDispatch, useSelector } from "react-redux";
 import { removeMemberToGroup, blockMemberToGroup, unblockMemberToGroup, addViceLeaderToGroup, removeViceLeaderToGroup, getConversationById, changeLeader } from "../../redux/slices/ConversationSlice";
 import { getUserByIds } from "../../redux/slices/UserSlice";
 import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
+import socket from "../../../utils/socket";
+import showToast from "../../../utils/AppUtils";
 
 const FILTERS = {
   ALL: "all",
@@ -117,30 +119,18 @@ export const GroupMembersScreen = () => {
 
   const handlePromoteVice = async (member) => {
     if (!member.isViceLeader) {
-      await dispatch(addViceLeaderToGroup({ conversationId: conversation.id, memberUserId: member.id }));
-      setMembers((prevMembers) => {
-        return prevMembers.map((m) => {
-          // Chỉ thay đổi người được chọn làm phó nhóm, không thay đổi người khác
-          if (m.id === member.id) {
-            return { ...m, isViceLeader: true };
-          }
-          return m; // Giữ nguyên những người khác
-        });
-      });
+      const resp = await dispatch(addViceLeaderToGroup({ conversationId: conversation.id, memberUserId: member.id }));
+      const result = resp.payload?.data;
+      socket.emit("update-roles", { conversation: result });
+      showToast("Đã thêm phó nhóm thành công", "success");
     }
   };
   const handleRemoveVice = async (member) => {
     if (member.isViceLeader) {
-      await dispatch(removeViceLeaderToGroup({ conversationId: conversation.id, memberUserIds: member.id }));
-      setMembers((prevMembers) => {
-        return prevMembers.map((m) => {
-          // Chỉ thay đổi người được gỡ vai trò phó nhóm, không thay đổi người khác
-          if (m.id === member.id) {
-            return { ...m, isViceLeader: false }; // Gỡ vai trò phó nhóm
-          }
-          return m; // Giữ nguyên những người khác
-        });
-      });
+      const resp = await dispatch(removeViceLeaderToGroup({ conversationId: conversation.id, memberUserIds: member.id }));
+      const result = resp.payload?.data;
+      socket.emit("update-roles", { conversation: result });
+      showToast("Bạn đã gỡ phó nhóm thành công", "success");
     }
   };
   const handleBlock = (member) => {
