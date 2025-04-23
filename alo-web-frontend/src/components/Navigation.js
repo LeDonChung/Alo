@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
-import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, addMemberGroup, updateProfileGroupById, updatePermissions } from "../redux/slices/ConversationSlice";
+import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, addMemberGroup, updateProfileGroupById, updatePermissions, removeConversation, removeMemberGroup } from "../redux/slices/ConversationSlice";
 import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage, seenOne } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 import { addReceive, setCalling, setIncomingCall, setIsVideoCallOpen, setIsVoiceCallOpen } from "../redux/slices/CallSlice";
@@ -290,7 +290,7 @@ export const Navigation = () => {
             conversation.memberUserIds = [...conversation.memberUserIds, ...memberSelected];
             conversation.members = [...conversation.members, ...memberInfo];
             if (memberSelected.includes(userLoginId)) {
-                showToast("Bạn đã được thêm vào nhóm" + conversation.name, "success");
+                showToast("Bạn đã được thêm vào nhóm " + conversation.name, "success");
                 dispatch(addConversation(conversation));
             }
             if (conversation.memberUserIds.includes(userLoginId)) {
@@ -302,7 +302,28 @@ export const Navigation = () => {
         return () => {
             socket.off("receive-add-members-to-group", handleReceiveAddMember);
         };
-    }, [])
+    }, []);
+
+    //lắng nghe sự kiện xóa thành viên khỏi nhóm từ server
+    useEffect(() => {
+        const handleReceiveRemoveMember = async (data) => {
+            console.log("Nhận được sự kiện receive-remove-member:", data);
+            const { conversation, memberUserId } = data;
+            const userLoginId = JSON.parse(localStorage.getItem("userLogin")).id;
+            if (memberUserId === userLoginId) {
+                showToast("Bạn đã bị xóa khỏi nhóm " + conversation.name, "info");
+                await dispatch(removeConversation({conversationId: conversation.id}));
+                navigate("/me");
+            } else {
+                dispatch(removeMemberGroup({ conversationId: conversation.id, memberUserId: memberUserId }));
+            }
+        }
+        socket.on("receive-remove-member", handleReceiveRemoveMember);
+
+        return () => {
+            socket.off("receive-remove-member", handleReceiveRemoveMember);
+        }
+    }, []);
 
     // // Lắng nghe sự kiện server
     //   useEffect(() => {
@@ -366,7 +387,7 @@ export const Navigation = () => {
     }, [])
 
 
-    
+
 
     const isVideoCallOpen = useSelector((state) => state.call.isVideoCallOpen);
     const isVoiceCallOpen = useSelector((state) => state.call.isVoiceCallOpen);
