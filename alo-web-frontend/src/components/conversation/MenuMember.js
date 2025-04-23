@@ -10,6 +10,7 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
     const dispatch = useDispatch();
     const [isLoading, setIsLoading] = useState(false);
     const [isOpenConfirmBlock, setIsOpenConfirmBlock] = useState(false);
+    const [isOpenOutGroup, setIsOpenOutGroup] = useState(false);
     if (!isOpen) return null;
 
     const handleAddViceLeader = async (e) => {
@@ -63,7 +64,7 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
                             {
                                 userLogin.id === leaderId && (
                                     member.id === leaderId ? (
-                                        <div className="w-full cursor-pointer" onClick={onClose}>
+                                        <div className="w-full cursor-pointer" onClick={() => {setIsOpenOutGroup(true)}}>
                                             <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Rời nhóm</p>
                                         </div>
                                     ) : (
@@ -94,7 +95,7 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
                             {
                                 viceLeaderIds.includes(userLogin.id) && (
                                     member.id === userLogin.id ? (
-                                        <div className="w-full cursor-pointer" onClick={onClose}>
+                                        <div className="w-full cursor-pointer" onClick={() => {setIsOpenOutGroup(true)}}>
                                             <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Rời nhóm</p>
                                         </div>
                                     ) : (
@@ -120,11 +121,13 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
                             {/* user login is member */}
                             {
                                 userLogin.id === member.id && member.id !== leaderId && !viceLeaderIds.includes(member.id) && (
-                                    <div className="w-full cursor-pointer" onClick={onClose}>
+                                    <div className="w-full cursor-pointer" onClick={() => {setIsOpenOutGroup(true)}}>
                                         <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Rời nhóm</p>
                                     </div>
                                 )
                             }
+
+                            
                         </>
                     )
                 }
