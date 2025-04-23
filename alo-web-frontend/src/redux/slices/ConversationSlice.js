@@ -54,6 +54,42 @@ const addMemberToGroup = createAsyncThunk('ConversationSlice/addMemberToGroup', 
     }
 });
 
+const addViceLeader = createAsyncThunk('ConversationSlice/addViceLeader', async ({ conversationId, memberUserId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/add-vice-leader/${memberUserId}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
+const removeViceLeader = createAsyncThunk('ConversationSlice/removeViceLeader', async ({ conversationId, memberUserId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/remove-vice-leader/${memberUserId}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
+const removeMember = createAsyncThunk('ConversationSlice/removeMember', async ({ conversationId, memberUserId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/remove-member/${memberUserId}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
+const blockMember = createAsyncThunk('ConversationSlice/blockMember', async ({ conversationId, memberUserId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/block/${memberUserId}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
 const createGroup = createAsyncThunk('ConversationSlice/createGroup', async (data, { rejectWithValue }) => {
     try {
         const formData = new FormData();
@@ -154,6 +190,7 @@ const updateProfileGroup = createAsyncThunk('ConversationSlice/updateProfileGrou
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 })
+
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
@@ -205,14 +242,18 @@ const ConversationSlice = createSlice({
             const conversationId = action.payload.conversationId;
             const memberUserIds = action.payload.memberUserIds;
             const memberInfo = action.payload.memberInfo;
-            const conversationExists = state.conversations.find(conversation => conversation.id === conversationId);
 
-            if (conversationExists) {
-                conversationExists.memberUserIds = [...conversationExists.memberUserIds, ...memberUserIds];
-                conversationExists.members = [...conversationExists.members, ...memberInfo];
-                const index = state.conversations.findIndex(convo => convo.id === conversationId);
-                state.conversations[index] = conversationExists;
-                state.conversation = conversationExists;
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation.memberUserIds = [...state.conversation.memberUserIds, ...memberUserIds];
+                state.conversation.members = [...state.conversation.members, ...memberInfo];
+            }
+ 
+            // Cập nhật danh sách conversations
+            const conversationIndex = state.conversations.findIndex(convo => convo.id === conversationId);
+            if (conversationIndex !== -1) {
+                state.conversations[conversationIndex].memberUserIds = [...state.conversations[conversationIndex].memberUserIds, ...memberUserIds];
+                state.conversations[conversationIndex].members = [...state.conversations[conversationIndex].members, ...memberInfo];
+
             }
         },
         addConversation: (state, action) => {
@@ -229,7 +270,6 @@ const ConversationSlice = createSlice({
             const conversationId = action.payload.conversationId;
             const roles = action.payload.roles;
             console.log("roles", roles)
-            // Cập nhật quyền cho conversation hiện tại đang chọn nếu có
             console.log("state.conversation", conversationId)
             // Cập nhật conversation hiện tại đang chọn nếu có
             if (state.conversation && state.conversation.id === conversationId) {
@@ -243,6 +283,22 @@ const ConversationSlice = createSlice({
                 state.conversations[index].roles = roles;
             }
         },
+        removeMemberGroup: (state, action) => {
+            const conversationId = action.payload.conversationId;
+            const memberUserId = action.payload.memberUserId;
+            console.log("removeMemberGroup", state.conversations)
+            // Xoas khoir nhoms
+            // Xoa khoi nhom dang chon
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation.memberUserIds = state.conversation.memberUserIds.filter(id => id !== memberUserId);
+                state.conversation.members = state.conversation.members.filter(member => member.id !== memberUserId);
+            }
+            // Xoa khoi nhoms dung index
+            const conversationIndex = state.conversations.findIndex(convo => convo.id === conversationId);
+            if (conversationIndex !== -1) {
+                state.conversations[conversationIndex].memberUserIds = state.conversations[conversationIndex].memberUserIds.filter(id => id !== memberUserId);
+                state.conversations[conversationIndex].members = state.conversations[conversationIndex].members.filter(member => member.id !== memberUserId);
+            }
         handlerRemoveHistoryMessage: (state, action) => {
             const {conversation} = action.payload;
             if (state.conversation && state.conversation.id === conversation.id) {
@@ -256,6 +312,17 @@ const ConversationSlice = createSlice({
             }
         }
 
+        },
+        removeConversation: (state, action) => {
+            const conversationId = action.payload.conversationId;
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation = null;
+            }
+            const conversationIndex = state.conversations.findIndex(convo => convo.id === conversationId);
+            if (conversationIndex !== -1) {
+                state.conversations.splice(conversationIndex, 1);
+            }
+        }
     },
     extraReducers: (builder) => {
 
@@ -341,6 +408,23 @@ const ConversationSlice = createSlice({
         builder.addCase(updateProfileGroup.rejected, (state, action) => {
         });
 
+        // add vice leader
+        builder.addCase(addViceLeader.pending, (state) => {
+        });
+        builder.addCase(addViceLeader.fulfilled, (state, action) => {
+        });
+        builder.addCase(addViceLeader.rejected, (state, action) => {
+        });
+
+        // remove vice leader
+        builder.addCase(removeViceLeader.pending, (state) => {
+        });
+        builder.addCase(removeViceLeader.fulfilled, (state, action) => {
+        });
+        builder.addCase(removeViceLeader.rejected, (state, action) => {
+        });
+
+
         builder.addCase(updateAllowUpdateProfileGroup.fulfilled, (state) => {
 
         })
@@ -362,13 +446,52 @@ const ConversationSlice = createSlice({
         builder.addCase(updateAllowPinMessageGroup.rejected, (state) => {
 
         })
+
+        // remove member
+        builder.addCase(removeMember.pending, (state) => {
+        });
+        builder.addCase(removeMember.fulfilled, (state, action) => {
+        });
+        builder.addCase(removeMember.rejected, (state, action) => {
+        });
+
+
+        // block member
+        builder.addCase(blockMember.pending, (state) => {
+        });
+        builder.addCase(blockMember.fulfilled, (state, action) => {
+        });
+        builder.addCase(blockMember.rejected, (state, action) => {
+        });
     }
 });
 
 
-export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, addConversation, addMemberGroup, updateProfileGroupById, updatePermissions, handlerRemoveHistoryMessage } = ConversationSlice.actions;
-export {
-    getAllConversation, getConversationById, createPin, removePin, addMemberToGroup, createGroup, removeAllHistoryMessages, updateProfileGroup,
-    updateAllowUpdateProfileGroup, updateAllowSendMessageGroup, updateAllowPinMessageGroup
+export const { 
+    setConversation, 
+    updateLastMessage, 
+    addPinToConversation, 
+    removePinToConversation, 
+    updateConversationFromSocket, 
+    addConversation, 
+    removeConversation, 
+    updateProfileGroupById, 
+    clearHistoryMessages, 
+    memberLeaveGroup, 
+    updatePermissions 
+} = ConversationSlice.actions;
+
+export { 
+    getAllConversation, 
+    getConversationById, 
+    createPin, 
+    removePin, 
+    createGroup, 
+    updateProfileGroup, 
+    removeAllHistoryMessages, 
+    leaveGroup, 
+    updateAllowUpdateProfileGroup, 
+    updateAllowSendMessageGroup, 
+    updateAllowPinMessageGroup 
 };
 export default ConversationSlice.reducer;

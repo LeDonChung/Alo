@@ -371,6 +371,8 @@ io.on("connection", (socket) => {
 
     socket.on('update-roles', async (data) => {
         const { conversation } = data;
+        console.log("update-roles: ", conversation);
+        
 
         const members = conversation.memberUserIds;
         for (const userId of members) {
@@ -407,7 +409,20 @@ io.on("connection", (socket) => {
         }
 
 
-    })
+    });
+
+    socket.on('remove-member', async (data) => {
+        const { conversation, memberUserId } = data;
+        const members = conversation.memberUserIds;
+
+        for(const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-remove-member', data);
+            });
+        }
+    });
 
 
     // =====================

@@ -1,19 +1,35 @@
-import React, { useState } from 'react';
+import React, { use, useState } from 'react';
 import { getFriend } from '../../utils/AppUtils';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faKey, faEllipsis } from '@fortawesome/free-solid-svg-icons';
+import MenuMember from './MenuMember';
+import { useSelector } from 'react-redux';
 
 const GroupMembers = ({ conversation, userLogin, setIsSetting, membersWithRoles }) => {
     const members = conversation.memberUserIds.map(userId => getFriend(conversation, userId));
     const leaderId = conversation.roles.find(role => role.role === 'leader')?.userIds[0];
     const viceLeaderIds = conversation.roles.find(role => role.role === 'vice_leader')?.userIds || [];
-    console.log("members", members);
-    console.log("conversation", conversation);
+    const friends = useSelector((state) => state.friend.friends);
 
 
+    const filterFriendId = () => {
+        const memberUserIds = conversation.memberUserIds;
+        const friendIds = [];
+        if (friends && friends.length > 0) {
+            for (let friend of friends) {
+                if (memberUserIds.includes(friend.friendInfo.id)) {
+                    friendIds.push(friend.friendId);
+                }
+            }
+        }
+        return friendIds;
+    }
 
     const [isOpenMenu, setIsOpenMenu] = useState(false);
     const [memberSelected, setMemberSelected] = useState(null);
+    const [isFriends, setIsFriends] = useState(filterFriendId());
+
+
     return (
         <div className="w-full bg-white border-l border-gray-200 p-2 overflow-y-auto max-h-screen scrollbar-thin scrollbar-thumb-gray-300">
             {/* Header */}
@@ -68,15 +84,25 @@ const GroupMembers = ({ conversation, userLogin, setIsSetting, membersWithRoles 
                             // pho nhóm: xóa khỏi nhóm (thành viên không là nhóm trưởng và phó); chính mình -> rời nhóm
                             // thành viên: rời nhóm
                             userLogin.id === leaderId ? (
-                                <button
-                                    onClick={() => {
-                                        setIsOpenMenu(!isOpenMenu);
-                                        setMemberSelected(member);
-                                    }}
-                                    className="p-2 rounded-full hover:bg-gray-200 transition-colors"
-                                >
-                                    <FontAwesomeIcon icon={faEllipsis} className="text-gray-600" />
-                                </button>
+                                <>
+                                    {/* {
+                                        isFriends && (isFriends.includes(member.id) || member.id === userLogin.id) ? ( */}
+                                    <button
+                                        onClick={() => {
+                                            setIsOpenMenu(!isOpenMenu);
+                                            setMemberSelected(member);
+                                        }}
+                                        className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                                    >
+                                        <FontAwesomeIcon icon={faEllipsis} className="text-gray-600" />
+                                    </button>
+                                    {/*  ) : (
+                                             <button className='p-2 rounded-sm bg-blue-100 hover:bg-blue-200 transition-colors'>
+                                                 <span className="text-sm text-blue-600">Kết bạn</span>
+                                             </button>
+                                         )
+                                    } */}
+                                </>
                             ) : (
                                 viceLeaderIds.includes(userLogin.id) && ((member.id !== userLogin.id && !viceLeaderIds.includes(member.id) && member.id !== leaderId) || (userLogin.id === member.id)) && (
                                     <button
@@ -92,19 +118,24 @@ const GroupMembers = ({ conversation, userLogin, setIsSetting, membersWithRoles 
                             )
                         }
 
+
+                        {/* role -> member */}
                         {
                             userLogin.id === member.id && member.id !== leaderId && !viceLeaderIds.includes(member.id) && (
-                                <button
-                                    onClick={() => {
-                                        setIsOpenMenu(!isOpenMenu);
-                                        setMemberSelected(member);
-                                    }}
-                                    className="p-2 rounded-sm hover:bg-gray-200 transition-colors"
-                                >
-                                    <FontAwesomeIcon icon={faEllipsis} className="text-gray-600" />
-                                </button>
+                                <>
+                                    <button
+                                        onClick={() => {
+                                            setIsOpenMenu(!isOpenMenu);
+                                            setMemberSelected(member);
+                                        }}
+                                        className="p-2 rounded-sm hover:bg-gray-200 transition-colors"
+                                    >
+                                        <FontAwesomeIcon icon={faEllipsis} className="text-gray-600" />
+                                    </button>
+                                </>
                             )
                         }
+
 
                         {
                             isOpenMenu && memberSelected?.id === member.id && (
@@ -115,8 +146,7 @@ const GroupMembers = ({ conversation, userLogin, setIsSetting, membersWithRoles 
                                     conversation={conversation}
                                     isOpen={isOpenMenu}
                                     userLogin={userLogin}
-                                    onClose={() => setIsOpenMenu(false)}
-                                />
+                                    onClose={() => setIsOpenMenu(false)} />
                             )
                         }
                     </div>
@@ -125,73 +155,5 @@ const GroupMembers = ({ conversation, userLogin, setIsSetting, membersWithRoles 
         </div>
     );
 };
-
-
-const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onClose, userLogin }) => {
-
-    if (!isOpen) return null;
-
-    return (
-        <>
-            <div className="absolute bg-white border border-gray-200 rounded-md shadow-lg z-10 right-10 mt-2 w-48">
-                {/* User login is leader */}
-                {
-                    userLogin.id === leaderId && (
-                        member.id === leaderId ? (
-                            <div className="w-full cursor-pointer" onClick={onClose}>
-                                <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Rời nhóm</p>
-                            </div>
-                        ) : (
-                            <>
-                                {
-                                    viceLeaderIds.includes(member.id) ? (
-                                        <div className="w-full cursor-pointer" onClick={onClose}>
-                                            <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Gỡ quyền phó nhóm</p>
-                                        </div>
-                                    ) : (
-                                        <div className="w-full cursor-pointer" onClick={onClose}>
-                                            <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Thêm phó nhóm</p>
-                                        </div>
-                                    )
-                                }
-                                <div className="w-full cursor-pointer" onClick={onClose}>
-                                    <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Xóa khỏi nhóm</p>
-                                </div>
-                            </>
-                        )
-                    )
-                }
-
-
-                {/* user login is vice_leader */}
-                {
-                    viceLeaderIds.includes(userLogin.id) && (
-                        member.id === userLogin.id ? (
-                            <div className="w-full cursor-pointer" onClick={onClose}>
-                                <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Rời nhóm</p>
-                            </div>
-                        ) : (
-                            member.id !== leaderId && (
-                                <div className="w-full cursor-pointer" onClick={onClose}>
-                                    <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Xóa khỏi nhóm</p>
-                                </div>
-                            )
-                        )
-                    )
-                }
-
-                {/* user login is member */}
-                {
-                    userLogin.id === member.id && member.id !== leaderId && !viceLeaderIds.includes(member.id) && (
-                        <div className="w-full cursor-pointer" onClick={onClose}>
-                            <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Rời nhóm</p>
-                        </div>
-                    )
-                }
-            </div>
-        </>
-    )
-
-}
 
 export default GroupMembers;

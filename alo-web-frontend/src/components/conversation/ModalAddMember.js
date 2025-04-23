@@ -22,15 +22,8 @@ const ModalAddMember = ({ isOpen, onClose, userLogin, conversation }) => {
         e.preventDefault();
         if (memberSelected.length > 0) {
             try {
-                const resp = await dispatch(addMemberToGroup({ conversationId: conversation.id, memberUserIds: memberSelected }));
+                await dispatch(addMemberToGroup({ conversationId: conversation.id, memberUserIds: memberSelected }));
                 await dispatch(addMemberGroup({ conversationId: conversation.id, memberUserIds: memberSelected, memberInfo: memberInfo }));
-                const result = resp.payload.data;
-
-                const dataSocket = {
-                    conversation: conversation, 
-                    userIdSelects: memberSelected, 
-                    memberInfo: memberInfo
-                }
 
                 //socket
                 socket.emit("add-members-to-group", {conversation, memberSelected, memberInfo});
