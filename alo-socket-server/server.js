@@ -338,10 +338,39 @@ io.on("connection", (socket) => {
             });
         }
     })
+    
+    socket.on('leave-group', async (data) => {
+        const { conversationId, userId, userName, updatedConversation } = data;
+        
+        console.log(`User ${userName} (${userId}) leaving group ${conversationId}`);
+
+        if (!conversationId || !userId || !userName) {
+            console.error('Thiếu dữ liệu cần thiết để phát sự kiện rời nhóm');
+            return;
+        }
+        const safeConversation = updatedConversation || { id: conversationId };
+        io.to(conversationId).emit('member-leave-group', {
+            conversationId,
+            userId,
+            userName,
+            updatedConversation: safeConversation
+        });
+    });
+    // Xử lý sự kiện xóa lịch sử trò chuyện
+    socket.on('remove-all-history-messages', async (data) => {
+        const { conversation } = data;
+        const members = conversation.memberUserIds;
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-remove-all-history-messages', { conversation });
+            });
+        }
+    });
 
     socket.on('update-roles', async (data) => {
         const { conversation } = data;
-        console.log('Cập nhật quyền:', data);
         const members = conversation.memberUserIds;
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);
@@ -351,26 +380,6 @@ io.on("connection", (socket) => {
             });
         }
     })
-
-    // // Xử lý sự kiện xóa lịch sử trò chuyện
-    // socket.on('remove-all-history-messages', async (data) => {
-    //     const { conversationId } = data;
-    //     // Lấy thông tin conversation từ backend để lấy danh sách thành viên
-    //     const conversationService = require("./src/service/conversation.service");
-    //     const conversation = await conversationService.getConversationById(conversationId);
-    //     if (!conversation) return;
-
-    //     const members = conversation.memberUserIds;
-    //     for (const userId of members) {
-    //         const socketIds = await findSocketIdsByUserId(userId);
-    //         const filteredSocketIds = socketIds.filter(id => id !== socket.id);
-    //         filteredSocketIds.forEach(id => {
-    //             io.to(id).emit('receive-remove-all-history-messages', { conversationId });
-    //         });
-    //     }
-    // });
-
-
 
     socket.on('add-members-to-group', async (data) => {
         console.log("Thêm thành viên vào nhóm:", data);
@@ -397,7 +406,20 @@ io.on("connection", (socket) => {
         }
 
 
-    })
+    });
+
+    socket.on('remove-member', async (data) => {
+        const { conversation, memberUserId } = data;
+        const members = conversation.memberUserIds;
+
+        for(const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-remove-member', data);
+            });
+        }
+    });
 
 
     // =====================

@@ -156,7 +156,6 @@ const ChatInput = () => {
       console.error('Error sending message:', err);
     }
 
-    setInputMessage({ content: '', messageType: 'text', fileLink: '', file: null });
   };
 
   // const handlerSendMessage = async (messageNew) => {

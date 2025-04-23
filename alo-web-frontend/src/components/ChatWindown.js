@@ -7,6 +7,7 @@ import RightSlidebar from './RightSlideBarChat';
 import ChatHeader from './chat/ChatHeader';
 import ChatContent from './chat/ChatContent';
 import ChatInput from './chat/ChatInput';
+import { clearAllMessages } from '../redux/slices/MessageSlice';
 import { getFriend, getUserRoleAndPermissions } from '../utils/AppUtils';
 import { setConversation } from '../redux/slices/ConversationSlice';
 
@@ -21,6 +22,7 @@ const ChatWindow = () => {
   const [lastLogout, setLastLogout] = useState(null);
   const limit = useSelector(state => state.message.limit);
   const conversations = useSelector(state => state.conversation.conversations);
+
 
   const getLastLoginMessage = (lastLogout) => {
     if (!lastLogout) return 'Chưa truy cập';
@@ -150,21 +152,22 @@ const ChatWindow = () => {
   };
   const [search, setSearch] = useState(false);
 
-
-  // Lắng nghe sự kiện xóa lịch sử trò chuyện từ Socket.IO
+  // Thêm useEffect để lắng nghe sự kiện xóa lịch sử
   useEffect(() => {
-    socket.on('receive-remove-all-history-messages', (data) => {
+    const handleRemoveAllHistoryMessages = (data) => {
       const { conversationId } = data;
-      if (conversationId === conversation.id) {
-        // Cập nhật conversation để xóa danh sách tin nhắn
-        dispatch(setConversation({ ...conversation, messages: [] }));
+      if (conversation.id === conversationId) {
+        dispatch(clearAllMessages());
       }
-    });
+    };
+
+    socket.on('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
 
     return () => {
-      socket.off('receive-remove-all-history-messages');
+      socket.off('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
     };
-  }, [conversation, dispatch]);
+  }, [conversation.id, dispatch]);
+
 
   return (
     <>
@@ -206,7 +209,7 @@ const ChatWindow = () => {
 
       </div>
 
-      <RightSlidebar search={search} setSearch={setSearch} />
+      <RightSlidebar search={search} setSearch={setSearch} scrollToMessage={scrollToMessage} />
     </>
   );
 };

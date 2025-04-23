@@ -218,6 +218,60 @@ const removeMember = async (conversationId, data) => {
     const result = await client.update(params).promise();
     return result.Attributes;
 }
+const leaveGroup = async (conversationId, userId) => {
+    try {
+        const conversation = await getConversationById(conversationId);
+        
+        if (!conversation) {
+            throw new Error('Cuộc trò chuyện không tồn tại.');
+        }
+
+        if (!conversation.memberUserIds) {
+            throw new Error('Dữ liệu cuộc trò chuyện không hợp lệ.');
+        }
+
+        if (!conversation.memberUserIds.includes(userId)) {
+            throw new Error('Bạn không phải là thành viên của cuộc trò chuyện này.');
+        }
+
+        const leaderRole = conversation.roles && conversation.roles.find(role => role.role === 'leader');
+        if (leaderRole && leaderRole.userIds && leaderRole.userIds.includes(userId)) {
+            throw new Error('Bạn đang là trưởng nhóm. Vui lòng chuyển quyền trưởng nhóm cho người khác trước khi rời nhóm.');
+        }
+
+        const updatedMemberUserIds = conversation.memberUserIds.filter(id => id !== userId);
+        
+        let updatedRoles = [];
+        if (conversation.roles && Array.isArray(conversation.roles)) {
+            updatedRoles = conversation.roles.map(role => ({
+                ...role,
+                userIds: role.userIds ? role.userIds.filter(id => id !== userId) : []
+            }));
+        }
+
+        const params = {
+            TableName: 'Conversations',
+            Key: { id: conversationId },
+            UpdateExpression: 'SET memberUserIds = :memberUserIds, #roles = :roles',
+            ExpressionAttributeNames: {
+                '#roles': 'roles'
+            },
+            ExpressionAttributeValues: {
+                ':memberUserIds': updatedMemberUserIds,
+                ':roles': updatedRoles
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+
+        const result = await client.update(params).promise();
+        
+        return result.Attributes;
+    } catch (error) {
+        console.error('Lỗi khi rời nhóm:', error);
+        throw error;
+    }
+};
+
 
 const updateRoles = async (conversationId, data) => {
     const params = {
@@ -327,5 +381,6 @@ module.exports = {
     removeMember,
     updateRoles,
     updateBlockedUserIds,
-    updateAllMessagesStatusByConversationId
+    updateAllMessagesStatusByConversationId,
+    leaveGroup
 };

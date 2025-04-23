@@ -24,40 +24,45 @@ import { FilterScreen } from "../pages/inapp/FilterScreen";
 import { AccountNavigation } from "./AccountNavigation";
 import { useDispatch, useSelector } from "react-redux";
 import socket from "../../utils/socket";
-import {
-  addConversation,
-  addPinToConversation,
-  getAllConversation,
-  removePinToConversation,
-  setConversation,
-  updateLastMessage,
-  updatePermissions,
-  updateProfileGroupById,
-  addMemberGroup,
+import { 
+  addConversation, 
+  addPinToConversation, 
+  getAllConversation, 
+  handlerRemoveHistoryMessage, 
+  removePinToConversation, 
+  setConversation, 
+  updateLastMessage, 
+  updatePermissions, 
+  updateProfileGroupById 
 } from "../redux/slices/ConversationSlice";
-import {
-  addFriend,
-  addFriendRequests,
-  cancelFriend,
-  getFriendByPhoneNumber,
-  getFriends,
-  getFriendsRequest,
-  removeFriend,
-  sendFriendRequest,
-  setFriendRequests,
-  setFriends,
-  unfriend,
+
+import { 
+  addFriend, 
+  addFriendRequests, 
+  cancelFriend, 
+  getFriendByPhoneNumber, 
+  getFriends, 
+  getFriendsRequest, 
+  removeFriend, 
+  sendFriendRequest, 
+  setFriendRequests, 
+  setFriends, 
+  unfriend 
 } from "../redux/slices/FriendSlice";
+
 import { showToast } from "../../utils/AppUtils";
 import { FlatList } from "react-native-gesture-handler";
 import { ContactStyles } from "../styles/ContactStyle";
-import {
-  handlerUpdateReaction,
-  setMessageRemoveOfMe,
-  setMessageUpdate,
-  updateReaction,
-  updateSeenAllMessage,
+
+import { 
+  clearAllMessages, 
+  handlerUpdateReaction, 
+  setMessageRemoveOfMe, 
+  setMessageUpdate, 
+  updateReaction, 
+  updateSeenAllMessage 
 } from "../redux/slices/MessageSlice";
+
 import { useNavigation } from "@react-navigation/native";
 
 const Tab = createBottomTabNavigator();
@@ -286,6 +291,23 @@ export const InAppNavigation = () => {
     };
   }, []);
 
+
+  useEffect(() => {
+    const handleRemoveAllHistoryMessages = (data) => {
+        console.log('Received remove all history messages:', data);
+        const { conversation } = data;
+
+        // Nếu đang ở cuộc trò chuyện bị xóa lịch sử
+        dispatch(handlerRemoveHistoryMessage({ conversation }))
+        dispatch(clearAllMessages());
+    };
+
+    socket.on('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
+
+    return () => {
+        socket.off('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
+    };
+}, []);
   // =============== HANDLE SOCKET FRIEND REQUEST ===============
   useEffect(() => {
     const handleReceiveAcceptFriendRequest = async (data) => {

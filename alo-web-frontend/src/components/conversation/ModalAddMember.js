@@ -21,21 +21,20 @@ const ModalAddMember = ({ isOpen, onClose, userLogin, conversation }) => {
         setIsAddMember(true);
         e.preventDefault();
         if (memberSelected.length > 0) {
+
             try {
-                const resp = await dispatch(addMemberToGroup({ conversationId: conversation.id, memberUserIds: memberSelected }));
+
+
+                await dispatch(addMemberToGroup({ conversationId: conversation.id, memberUserIds: memberSelected })).unwrap()
+                    .then(() => {
+                        //socket
+                        socket.emit("add-members-to-group", { conversation, memberSelected, memberInfo });
+                        showToast("Thêm thành viên thành công!", 'success');
+                    });
+
                 await dispatch(addMemberGroup({ conversationId: conversation.id, memberUserIds: memberSelected, memberInfo: memberInfo }));
-                const result = resp.payload.data;
 
-                const dataSocket = {
-                    conversation: conversation, 
-                    userIdSelects: memberSelected, 
-                    memberInfo: memberInfo
-                }
 
-                //socket
-                socket.emit("add-members-to-group", {conversation, memberSelected, memberInfo});
-
-                showToast("Thêm thành viên thành công!", 'success');
                 setMemberSelected([]);
                 setMemberInfo([]);
                 setFilteredFriends(friends);

@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import AntDesign from 'react-native-vector-icons/AntDesign';
 import { useSelector } from 'react-redux';
@@ -10,7 +10,7 @@ import socket from '../../../utils/socket';
 import { getFriend } from '../../../utils/AppUtils';
 import { useNavigation } from '@react-navigation/native';
 
-const HeaderComponent = ({ isFriendOnline, getLastLoginMessage, lastLogout, scrollToMessage, onDeletePin }) => {
+const HeaderComponent = ({ isFriendOnline, getLastLoginMessage, lastLogout, scrollToMessage, onDeletePin, onSearch, isSearchVisible, searchQuery, setSearchQuery, setIsSearchVisible }) => {
   const navigation = useNavigation();
   const conversation = useSelector((state) => state.conversation.conversation);
   const userLogin = useSelector(state => state.user.userLogin);
@@ -36,15 +36,42 @@ const HeaderComponent = ({ isFriendOnline, getLastLoginMessage, lastLogout, scro
       <View style={{ backgroundColor: '#007AFF', padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
         <View style={{ flexDirection: 'row', alignItems: 'center' }}>
           <AntDesign name="left" size={20} color="white" onPress={() => socket.emit("leave_conversation", conversation.id) && navigation.goBack()} />
+          {isSearchVisible ? (
+            <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>
+              <TextInput
+                style={{
+                  flex: 1,
+                  backgroundColor: '#fff',
+                  borderRadius: 8,
+                  padding: 5,
+                  fontSize: 16,
+                  color: '#000',
+                }}
+                placeholder="Tìm kiếm"
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoFocus
+              />
+              <TouchableOpacity 
+                onPress={() => {
+                  setIsSearchVisible(false);
+                  setSearchQuery('');
+                }}
+                style={{ marginLeft: 10 }}
+              >
+                <Icon name="times" size={20} color="white" /> 
+              </TouchableOpacity>
+            </View>
+          ) :(
           <View style={{ marginLeft: 20 }}>
-            <Text style={{ color: 'white', fontSize: 18 }}>{
+            <Text style={{ color: 'white', fontSize: 18, width: 150 }} numberOfLines={1}>{
               conversation.isGroup ? (
                 conversation.name
               ) : (
                 friend?.fullName
               )
             }</Text>
-            <Text style={{ color: 'white', fontSize: 12 }}>
+            <Text style={{ color: 'white', fontSize: 12 }} numberOfLines={1}>
               {
                 !conversation.isGroup ? (
                   isFriendOnline(conversation.memberUserIds.find(v => v !== userLogin.id))
@@ -56,12 +83,18 @@ const HeaderComponent = ({ isFriendOnline, getLastLoginMessage, lastLogout, scro
               }
             </Text>
           </View>
+          )}
         </View>
         <View style={{ flexDirection: 'row' }}>
-          <Icon name="phone" size={20} color="white" style={{ marginHorizontal: 10 }} />
-          <Icon name="video" size={20} color="white" style={{ marginHorizontal: 10 }} />
+        {!isSearchVisible && (
+            <TouchableOpacity onPress={onSearch} style={{ marginHorizontal: 10 }}>
+              <Icon name="search" size={20} color="white" />
+            </TouchableOpacity>
+          )}
+          <Icon name="phone" size={18} color="white" style={{ marginHorizontal: 10 }} />
+          <Icon name="video" size={18} color="white" style={{ marginHorizontal: 10 }} />
           <TouchableOpacity onPress={() => navigation.navigate('setting')}>
-            <Icon name="info-circle" size={20} color="white" style={{ marginHorizontal: 10 }} />
+            <Icon name="info-circle" size={18} color="white" style={{ marginHorizontal: 10 }} />
           </TouchableOpacity>
         </View>
       </View>

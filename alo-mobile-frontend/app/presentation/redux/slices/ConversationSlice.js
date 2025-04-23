@@ -6,6 +6,7 @@ const initialState = {
     conversations: [],
     conversation: null,
     error: null,
+    isLeaving: false, // Added from leaveGroup pending case
 };
 
 const getAllConversation = createAsyncThunk(
@@ -202,8 +203,16 @@ const updateProfileGroup = createAsyncThunk('ConversationSlice/updateProfileGrou
         console.log(error);
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
-})
+});
 
+const removeAllHistoryMessages = createAsyncThunk('ConversationSlice/removeAllHistoryMessages', async ({ conversationId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/remove-all-history-messages`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
 
 const updateAllowUpdateProfileGroup = createAsyncThunk('ConversationSlice/updateAllowUpdateProfileGroup', async ({ conversationId, allow }, { rejectWithValue }) => {
     try {
@@ -212,7 +221,21 @@ const updateAllowUpdateProfileGroup = createAsyncThunk('ConversationSlice/update
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
-})
+});
+
+const leaveGroup = createAsyncThunk(
+    'conversation/leaveGroup',
+    async ({ conversationId }, { rejectWithValue }) => {
+      try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/leave-group`);
+        return response.data;
+      } catch (error) {
+        console.error('Leave group error:', error);
+        console.error('Error response:', error.response?.data);
+        return rejectWithValue(error.response?.data || { message: 'Không thể rời nhóm' });
+      }
+    }
+);
 
 const updateAllowPinMessageGroup = createAsyncThunk('ConversationSlice/updateAllowPinMessageGroup', async ({ conversationId, allow }, { rejectWithValue }) => {
     try {
@@ -221,7 +244,8 @@ const updateAllowPinMessageGroup = createAsyncThunk('ConversationSlice/updateAll
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
-})
+});
+
 const updateAllowSendMessageGroup = createAsyncThunk('ConversationSlice/updateAllowSendMessageGroup', async ({ conversationId, allow }, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.post(`/api/conversation/${conversationId}/allow-send-message`, { allow: allow });
@@ -229,7 +253,7 @@ const updateAllowSendMessageGroup = createAsyncThunk('ConversationSlice/updateAl
     } catch (error) {
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
-})
+});
 
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
@@ -293,17 +317,12 @@ const ConversationSlice = createSlice({
         },
         addPinToConversation: (state, action) => {
             let cons = state.conversation;
-            console.log(cons.pin)
-            console.log(action.payload)
-
             if (cons) {
                 cons.pineds.unshift(action.payload);
-
                 if (cons.pineds.length > 5) {
                     cons.pineds.pop();
                 }
             }
- 
             state.conversation = { ...cons };
         },
         removePinToConversation: (state, action) => {
@@ -322,24 +341,86 @@ const ConversationSlice = createSlice({
                 state.conversations[index] = conversation;
             }
         },
+        clearHistoryMessages: (state, action) => {
+            const { conversationId, conversation } = action.payload;
+            state.conversations = state.conversations.map(conv => 
+                conv.id === conversationId 
+                    ? { ...conv, lastMessage: null, pineds: [] }
+                    : conv
+            );
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation = {
+                    ...state.conversation,
+                    lastMessage: null,
+                    pineds: []
+                };
+            }
+        },
+        memberLeaveGroup: (state, action) => {
+            const { conversationId, userId, updatedConversation } = action.payload;
+            if (state.conversations && state.conversations.length > 0) {
+                state.conversations = state.conversations.map(conv => {
+                    if (conv.id === conversationId) {
+                        if (updatedConversation) {
+                            return {
+                                ...conv,
+                                memberUserIds: updatedConversation.memberUserIds || [],
+                                roles: updatedConversation.roles || []
+                            };
+                        }
+                        return {
+                            ...conv,
+                            memberUserIds: conv.memberUserIds ? conv.memberUserIds.filter(id => id !== userId) : []
+                        };
+                    }
+                    return conv;
+                });
+            }
+            if (state.conversation && state.conversation.id === conversationId) {
+                if (userId === action.payload.currentUserId) {
+                    state.conversation = null;
+                } else if (updatedConversation) {
+                    state.conversation = {
+                        ...state.conversation,
+                        memberUserIds: updatedConversation.memberUserIds || [],
+                        roles: updatedConversation.roles || []
+                    };
+                } else {
+                    state.conversation = {
+                        ...state.conversation,
+                        memberUserIds: state.conversation.memberUserIds ? 
+                            state.conversation.memberUserIds.filter(id => id !== userId) : []
+                    };
+                }
+            }
+        },
         updatePermissions: (state, action) => {
             const conversationId = action.payload.conversationId;
             const roles = action.payload.roles;
-            // Cập nhật conversation hiện tại đang chọn nếu có
             if (state.conversation && state.conversation.id === conversationId) {
                 state.conversation.roles = roles;
             }
-            // Cập nhật danh sách conversations
             const conversation = state.conversations.find(conversation => conversation.id === conversationId);
             if (conversation) {
                 conversation.roles = roles;
                 const index = state.conversations.findIndex(convo => convo.id === conversationId);
                 state.conversations[index].roles = roles;
             }
-        }
+        },
+        handlerRemoveHistoryMessage: (state, action) => {
+            const {conversation} = action.payload;
+            if (state.conversation && state.conversation.id === conversation.id) {
+                state.conversation.lastMessage = null; 
+            }
+            const conversationIndex = state.conversations.findIndex(
+                (conv) => conv.id === conversation.id
+            );
+            if (conversationIndex !== -1) {
+                state.conversations[conversationIndex].lastMessage = null;
+            }
+        },
     },
     extraReducers: (builder) => {
-
         builder.addCase(getAllConversation.pending, (state) => {
             state.conversations = [];
         });
@@ -349,7 +430,6 @@ const ConversationSlice = createSlice({
         builder.addCase(getAllConversation.rejected, (state, action) => {
             state.conversations = [];
         });
-
 
         builder.addCase(getConversationById.pending, (state) => {
             state.conversation = [];
@@ -361,27 +441,20 @@ const ConversationSlice = createSlice({
             state.conversation = [];
         });
 
-        builder.addCase(createPin.pending, (state) => {
-        });
+        builder.addCase(createPin.pending, (state) => {});
         builder.addCase(createPin.fulfilled, (state, action) => {
             let cons = state.conversation;
-
             if (cons) {
                 cons.pineds.unshift(action.payload.data);
-
                 if (cons.pineds.length > 5) {
                     cons.pineds.pop();
                 }
             }
-
             state.conversation = { ...cons };
         });
+        builder.addCase(createPin.rejected, (state, action) => {});
 
-        builder.addCase(createPin.rejected, (state, action) => {
-        });
-
-        builder.addCase(removePin.pending, (state) => {
-        });
+        builder.addCase(removePin.pending, (state) => {});
         builder.addCase(removePin.fulfilled, (state, action) => {
             let cons = state.conversation;
             if (cons) {
@@ -389,8 +462,7 @@ const ConversationSlice = createSlice({
             }
             state.conversation = { ...cons };
         });
-        builder.addCase(removePin.rejected, (state, action) => {
-        });
+        builder.addCase(removePin.rejected, (state, action) => {});
 
         builder.addCase(addMemberToGroup.pending, (state) => {
         });
@@ -526,53 +598,136 @@ const ConversationSlice = createSlice({
             state.error = action.payload || "Lỗi khi thay đổi trưởng nhóm";
         });
         
-
-        builder.addCase(createGroup.pending, (state) => {
-        });
+        builder.addCase(createGroup.pending, (state) => {});
         builder.addCase(createGroup.fulfilled, (state, action) => {
             console.log(action.payload);
         });
-        
+        builder.addCase(createGroup.rejected, (state, action) => {});
 
-        builder.addCase(createGroup.rejected, (state, action) => {
+        builder.addCase(updateProfileGroup.pending, (state) => {});
+        builder.addCase(updateProfileGroup.fulfilled, (state, action) => {});
+        builder.addCase(updateProfileGroup.rejected, (state, action) => {});
+
+        builder.addCase(removeAllHistoryMessages.pending, (state) => {
+            state.error = null;
+        });
+        builder.addCase(removeAllHistoryMessages.fulfilled, (state, action) => {
+            state.conversations = state.conversations.map(conv => 
+                conv.id === action.meta.arg.conversationId 
+                ? { ...conv, lastMessage: null, pineds: [] }
+                : conv
+            );
+            if (state.conversation && state.conversation.id === action.meta.arg.conversationId) {
+                state.conversation.lastMessage = null;
+                state.conversation.pineds = [];
+            }
+        });
+        builder.addCase(removeAllHistoryMessages.rejected, (state, action) => {
+            state.error = action.payload.message || "Xóa lịch sử thất bại";
         });
 
-        builder.addCase(updateProfileGroup.pending, (state) => {
+        builder.addCase(leaveGroup.pending, (state) => {
+            state.error = null;
+            state.isLeaving = true;
         });
-        builder.addCase(updateProfileGroup.fulfilled, (state, action) => {
+        builder.addCase(leaveGroup.fulfilled, (state, action) => {
+            state.isLeaving = false;
+            const conversationId = action.payload?.data?.conversationId || 
+                                   action.payload?.conversationId || 
+                                   action.meta.arg.conversationId;
+            state.conversations = state.conversations.filter(
+                conversation => conversation.id !== conversationId
+            );
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation = null;
+            }
+            state.error = null;
+        });
+        builder.addCase(leaveGroup.rejected, (state, action) => {
+            state.isLeaving = false;
+            state.error = action.payload?.message || 
+                          action.error?.message || 
+                          "Không thể rời nhóm chat. Vui lòng thử lại sau.";
         });
 
-        builder.addCase(updateProfileGroup.rejected, (state, action) => {
+        builder.addCase(updateAllowUpdateProfileGroup.pending, (state) => {});
+        builder.addCase(updateAllowUpdateProfileGroup.fulfilled, (state, action) => {
+            const conversationId = action.meta.arg.conversationId;
+            const allow = action.meta.arg.allow;
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation.allowUpdateProfile = allow;
+            }
+            const conversation = state.conversations.find(conv => conv.id === conversationId);
+            if (conversation) {
+                conversation.allowUpdateProfile = allow;
+            }
+        });
+        builder.addCase(updateAllowUpdateProfileGroup.rejected, (state, action) => {
+            state.error = action.payload?.message || "Cập nhật quyền thất bại";
         });
 
-        builder.addCase(updateAllowUpdateProfileGroup.fulfilled, (state) => {
+        builder.addCase(updateAllowSendMessageGroup.pending, (state) => {});
+        builder.addCase(updateAllowSendMessageGroup.fulfilled, (state, action) => {
+            const conversationId = action.meta.arg.conversationId;
+            const allow = action.meta.arg.allow;
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation.allowSendMessage = allow;
+            }
+            const conversation = state.conversations.find(conv => conv.id === conversationId);
+            if (conversation) {
+                conversation.allowSendMessage = allow;
+            }
+        });
+        builder.addCase(updateAllowSendMessageGroup.rejected, (state, action) => {
+            state.error = action.payload?.message || "Cập nhật quyền thất bại";
+        });
 
-        })
-        builder.addCase(updateAllowUpdateProfileGroup.rejected, (state) => {
-
-        })
-
-        builder.addCase(updateAllowSendMessageGroup.fulfilled, (state) => {
-
-        })
-        builder.addCase(updateAllowSendMessageGroup.rejected, (state) => {
-
-        })
-
-        builder.addCase(updateAllowPinMessageGroup.fulfilled, (state) => {
-
-        })
-
-        builder.addCase(updateAllowPinMessageGroup.rejected, (state) => {
-
-        })
+        builder.addCase(updateAllowPinMessageGroup.pending, (state) => {});
+        builder.addCase(updateAllowPinMessageGroup.fulfilled, (state, action) => {
+            const conversationId = action.meta.arg.conversationId;
+            const allow = action.meta.arg.allow;
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation.allowPinMessage = allow;
+            }
+            const conversation = state.conversations.find(conv => conv.id === conversationId);
+            if (conversation) {
+                conversation.allowPinMessage = allow;
+            }
+        });
+        builder.addCase(updateAllowPinMessageGroup.rejected, (state, action) => {
+            state.error = action.payload?.message || "Cập nhật quyền thất bại";
+        });
     }
 });
 
+export const { 
+    setConversation, 
+    updateLastMessage, 
+    addPinToConversation, 
+    removePinToConversation, 
+    updateConversationFromSocket, 
+    addConversation, 
+    removeConversation, 
+    updateProfileGroupById, 
+    clearHistoryMessages, 
+    memberLeaveGroup, 
+    updatePermissions,
+    handlerRemoveHistoryMessage,
+} = ConversationSlice.actions;
 
-export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket, addConversation, addMemberGroup, removeConversation, updateProfileGroupById, updatePermissions } = ConversationSlice.actions;
-export {
-    getAllConversation, getConversationById, createPin, removePin, createGroup, updateProfileGroup, addMemberToGroup, removeMemberToGroup, blockMemberToGroup, unblockMemberToGroup, addViceLeaderToGroup, removeViceLeaderToGroup, changeLeader ,
-    updateAllowUpdateProfileGroup, updateAllowSendMessageGroup, updateAllowPinMessageGroup
+export { 
+    getAllConversation, 
+    getConversationById, 
+    createPin, 
+    removePin, 
+    createGroup, 
+    updateProfileGroup, 
+    removeAllHistoryMessages, 
+    leaveGroup, 
+    updateAllowUpdateProfileGroup, 
+    updateAllowSendMessageGroup, 
+    updateAllowPinMessageGroup 
 };
+
+
 export default ConversationSlice.reducer;
