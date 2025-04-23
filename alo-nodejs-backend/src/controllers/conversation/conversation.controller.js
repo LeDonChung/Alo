@@ -1216,6 +1216,16 @@ exports.leaveGroup = async (req, res) => {
                 data: null
             });
         }
+
+        const roleLeader = conversation.roles.find(role => role.role === 'leader');
+        if(roleLeader && roleLeader.includes(userId)) {
+            return res.status(400).json({
+                status: 400,
+                message: "Bạn không thể rời nhóm khi đang là trưởng nhóm.",
+                data: null
+            });
+        }
+
         const updatedConversation = await conversationService.leaveGroup(conversationId, userId);
 
         return res.json({
@@ -1224,16 +1234,7 @@ exports.leaveGroup = async (req, res) => {
             data: updatedConversation
         });
 
-    } catch (err) {
-        console.error("Lỗi khi rời nhóm:", err);
-        if (err.message === 'Bạn đang là trưởng nhóm. Vui lòng chuyển quyền trưởng nhóm cho người khác trước khi rời nhóm.') {
-            return res.status(400).json({
-                status: 400,
-                message: err.message,
-                data: null
-            });
-        }
-        
+    } catch (err) {        
         return res.status(500).json({
             status: 500,
             message: err.message || "Đã có lỗi xảy ra. Vui lòng thử lại sau.",

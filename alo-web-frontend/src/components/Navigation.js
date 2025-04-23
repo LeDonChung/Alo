@@ -311,13 +311,14 @@ export const Navigation = () => {
             console.log("Nhận được sự kiện receive-add-member:", data);
             const userLoginId = JSON.parse(localStorage.getItem("userLogin")).id;
             const { conversation, memberSelected, memberInfo } = data;
-            conversation.memberUserIds = [...conversation.memberUserIds, ...memberSelected];
-            conversation.members = [...conversation.members, ...memberInfo];
+
+            //nếu conversation.memberUserIds bao gồm userLoginId và 
+
             if (memberSelected.includes(userLoginId)) {
                 showToast("Bạn đã được thêm vào nhóm " + conversation.name, "success");
                 dispatch(addConversation(conversation));
             }
-            if (conversation.memberUserIds.includes(userLoginId)) {
+            if (conversation.memberUserIds.includes(userLoginId) && !memberSelected.includes(userLoginId)) {
                 dispatch(addMemberGroup({ conversationId: conversation.id, memberUserIds: memberSelected, memberInfo: memberInfo }));
             }
         }
