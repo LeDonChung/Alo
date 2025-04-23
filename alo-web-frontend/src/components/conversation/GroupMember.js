@@ -10,7 +10,6 @@ const GroupMembers = ({ conversation, userLogin, setIsSetting, membersWithRoles 
     const leaderId = conversation.roles.find(role => role.role === 'leader')?.userIds[0];
     const viceLeaderIds = conversation.roles.find(role => role.role === 'vice_leader')?.userIds || [];
     const friends = useSelector((state) => state.friend.friends);
-    console.log("friends", friends);
 
 
     const filterFriendId = () => {
@@ -29,8 +28,6 @@ const GroupMembers = ({ conversation, userLogin, setIsSetting, membersWithRoles 
     const [isOpenMenu, setIsOpenMenu] = useState(false);
     const [memberSelected, setMemberSelected] = useState(null);
     const [isFriends, setIsFriends] = useState(filterFriendId());
-
-    console.log("isFriends: ", isFriends);
 
 
     return (

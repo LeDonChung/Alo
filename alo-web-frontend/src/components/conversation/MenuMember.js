@@ -2,6 +2,7 @@ import { useDispatch } from "react-redux";
 import { addViceLeader, removeViceLeader, setViceLeader, updatePermissions } from "../../redux/slices/ConversationSlice";
 import showToast from "../../utils/AppUtils";
 import { useState } from "react";
+import socket from "../../utils/socket";
 
 
 
@@ -17,6 +18,8 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
             const resp = await dispatch(addViceLeader({ conversationId: conversation.id, memberUserId: member.id }));
             const result = resp.payload?.data;
             await dispatch(updatePermissions({ conversationId: conversation.id, roles: result.roles }));
+
+            socket.emit("update-roles", {conversation: result});
             showToast("Bạn đã bổ nhiệm " + member.fullName + " làm phó nhóm!", "info");
             onClose();
         } catch (error) {
@@ -32,6 +35,8 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
             const resp = await dispatch(removeViceLeader({ conversationId: conversation.id, memberUserId: member.id }));
             const result = resp.payload?.data;
             await dispatch(updatePermissions({ conversationId: conversation.id, roles: result.roles }));
+
+            socket.emit("update-roles", {conversation: result});
             showToast("Bạn đã gỡ quyền phó nhóm của " + member.fullName + "!", "info");
             onClose();
         } catch (error) {
