@@ -132,7 +132,7 @@ export const InAppNavigation = () => {
 
     return () => {
       socket.off("receive-create-group", handlerReceiveCreatedConversation);
-    } 
+    }
   }, []);
 
   useEffect(() => {

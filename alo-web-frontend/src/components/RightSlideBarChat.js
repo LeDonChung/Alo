@@ -19,7 +19,7 @@ import { clearAllMessages } from '../redux/slices/MessageSlice';
 
 
 
-const RightSlidebar = ({ search, setSearch }) => {
+const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
   const dispatch = useDispatch();
   const userLogin = useSelector(state => state.user.userLogin);
   const conversation = useSelector(state => state.conversation.conversation);
@@ -91,32 +91,32 @@ const RightSlidebar = ({ search, setSearch }) => {
   // Hàm xử lý xóa lịch sử trò chuyện
   const handleRemoveAllHistoryMessages = async () => {
     if (!window.confirm('Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện? Hành động này không thể hoàn tác.')) {
-        return;
+      return;
     }
-    
+
     try {
-        const result = await dispatch(removeAllHistoryMessages({ conversationId: conversation.id })).unwrap();
-        
-        if (result.data.status === 200) {
-            console.log("API call successful, emitting socket event");
-            
-            // Xóa messages trong state local
-            dispatch(clearAllMessages());
-            
-            // Emit socket event để thông báo cho các clients khác
-            socket.emit('remove-all-history-messages', { conversationId: conversation.id });
-            console.log("Socket event emitted:", { conversationId: conversation.id });
-            
-            toast.success('Đã xóa toàn bộ lịch sử trò chuyện thành công!');
-        } else {
-            console.error("API call failed:", result);
-            toast.error(`Xóa lịch sử trò chuyện thất bại: ${result.message || 'Lỗi không xác định.'}`);
-        }
+      const result = await dispatch(removeAllHistoryMessages({ conversationId: conversation.id })).unwrap();
+
+      if (result.data.status === 200) {
+        console.log("API call successful, emitting socket event");
+
+        // Xóa messages trong state local
+        dispatch(clearAllMessages());
+
+        // Emit socket event để thông báo cho các clients khác
+        socket.emit('remove-all-history-messages', { conversationId: conversation.id });
+        console.log("Socket event emitted:", { conversationId: conversation.id });
+
+        toast.success('Đã xóa toàn bộ lịch sử trò chuyện thành công!');
+      } else {
+        console.error("API call failed:", result);
+        toast.error(`Xóa lịch sử trò chuyện thất bại: ${result.message || 'Lỗi không xác định.'}`);
+      }
     } catch (error) {
-        console.error("Error in removeAllHistoryMessages:", error);
-        toast.error(`Lỗi: ${error.message || 'Đã xảy ra sự cố. Vui lòng thử lại sau.'}`);
+      console.error("Error in removeAllHistoryMessages:", error);
+      toast.error(`Lỗi: ${error.message || 'Đã xảy ra sự cố. Vui lòng thử lại sau.'}`);
     }
-};
+  };
 
 
 
@@ -236,7 +236,11 @@ const RightSlidebar = ({ search, setSearch }) => {
         <div className="space-y-6">
           {
             search && !isSetting && (
-              <SearchInfo search={search} setIsSetting={setIsSetting} setSearch={setSearch} />
+              <SearchInfo 
+              search={search} 
+              setIsSetting={setIsSetting} 
+              setSearch={setSearch}
+              scrollToMessage={scrollToMessage} />
             )
           }
           {

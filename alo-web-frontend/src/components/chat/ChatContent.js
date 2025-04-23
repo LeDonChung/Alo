@@ -107,7 +107,6 @@ const ChatContent = ({ isLoadMessage, messageRefs, scrollToMessage }) => {
                 isUserMessage={isUserMessage}
                 isLastMessage={isLastMessage}
                 showAvatar={showAvatar}
-                isHighlighted={highlightedMessage === message.id}
                 onClickParent={() => {
                   if (message.messageParent?.id) {
                     setScrollToParent(message.messageParent.id);

@@ -22,6 +22,7 @@ const ChatWindow = () => {
   const limit = useSelector(state => state.message.limit);
   const conversations = useSelector(state => state.conversation.conversations);
 
+
   const getLastLoginMessage = (lastLogout) => {
     if (!lastLogout) return 'Chưa truy cập';
     const now = new Date();
@@ -192,7 +193,7 @@ const ChatWindow = () => {
         <ChatInput />
       </div>
 
-      <RightSlidebar search={search} setSearch={setSearch} />
+      <RightSlidebar search={search} setSearch={setSearch} scrollToMessage={scrollToMessage} />
     </>
   );
 };
