@@ -54,6 +54,24 @@ const addMemberToGroup = createAsyncThunk('ConversationSlice/addMemberToGroup', 
     }
 });
 
+const addViceLeader = createAsyncThunk('ConversationSlice/addViceLeader', async ({ conversationId, memberUserId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/add-vice-leader/${memberUserId}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
+const removeViceLeader = createAsyncThunk('ConversationSlice/removeViceLeader', async ({ conversationId, memberUserId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/remove-vice-leader/${memberUserId}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
 const createGroup = createAsyncThunk('ConversationSlice/createGroup', async (data, { rejectWithValue }) => {
     try {
         const formData = new FormData();
@@ -128,6 +146,7 @@ const updateProfileGroup = createAsyncThunk('ConversationSlice/updateProfileGrou
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 })
+
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
@@ -199,6 +218,23 @@ const ConversationSlice = createSlice({
                 state.conversations[index] = newConversation;
             }
         },
+        updatePermissions: (state, action) => {
+            const conversationId = action.payload.conversationId;
+            const roles = action.payload.roles;
+            console.log("roles", roles)
+            console.log("state.conversation", conversationId)
+            // Cập nhật conversation hiện tại đang chọn nếu có
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation.roles = roles;
+            }
+            // Cập nhật danh sách conversations
+            const conversation = state.conversations.find(conversation => conversation.id === conversationId);
+            if (conversation) {
+                conversation.roles = roles;
+                const index = state.conversations.findIndex(convo => convo.id === conversationId);
+                state.conversations[index].roles = roles;
+            }
+        }
     },
     extraReducers: (builder) => {
 
@@ -296,10 +332,18 @@ const ConversationSlice = createSlice({
 
         builder.addCase(updateProfileGroup.rejected, (state, action) => {
         });
+
+        // add vice leader
+        builder.addCase(addViceLeader.pending, (state) => {
+        });
+        builder.addCase(addViceLeader.fulfilled, (state, action) => {            
+        });
+        builder.addCase(addViceLeader.rejected, (state, action) => {
+        });
     }
 });
 
 
-export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, addConversation, addMemberGroup, updateProfileGroupById } = ConversationSlice.actions;
-export { getAllConversation, getConversationById, createPin, removePin, addMemberToGroup, createGroup, removeAllHistoryMessages, updateProfileGroup };
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, addConversation, addMemberGroup, updateProfileGroupById, updatePermissions } = ConversationSlice.actions;
+export { getAllConversation, getConversationById, createPin, removePin, addMemberToGroup, createGroup, removeAllHistoryMessages, updateProfileGroup, addViceLeader, removeViceLeader };
 export default ConversationSlice.reducer;
