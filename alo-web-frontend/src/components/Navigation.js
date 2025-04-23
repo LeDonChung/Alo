@@ -6,8 +6,8 @@ import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updat
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
 
-import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, addMemberGroup, updateProfileGroupById, updatePermissions } from "../redux/slices/ConversationSlice";
-import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage, seenOne } from "../redux/slices/MessageSlice";
+import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, addMemberGroup, updateProfileGroupById, updatePermissions, handlerRemoveHistoryMessage } from "../redux/slices/ConversationSlice";
+import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage, seenOne, clearAllMessages } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 import { addReceive, setCalling, setIncomingCall, setIsVideoCallOpen, setIsVoiceCallOpen } from "../redux/slices/CallSlice";
 import VideoCallModal from "./call/VideoCallModel";
@@ -285,30 +285,22 @@ export const Navigation = () => {
     }, [dispatch]);
 
 
+
+
     //lắng nghe sự kiện xóa tất cả tin nhắn từ server
     useEffect(() => {
         const handleRemoveAllHistoryMessages = (data) => {
             console.log('Received remove all history messages:', data);
-            const { conversationId } = data;
-    
+            const { conversation } = data;
+
             // Nếu đang ở cuộc trò chuyện bị xóa lịch sử
-            if (conversation && conversation.id === conversationId) {
-                dispatch(clearAllMessages());
-                showToast("Lịch sử trò chuyện đã bị xóa", "info");
-            }
-    
-            // Cập nhật conversation list để xóa last message
-            if (conversations && conversations.length > 0) {
-                const convoIndex = conversations.findIndex(c => c.id === conversationId);
-                if (convoIndex !== -1) {
-                    const updatedConvo = { ...conversations[convoIndex], lastMessage: null };
-                    dispatch(updateConversationInList(updatedConvo));
-                }
-            }
+            dispatch(handlerRemoveHistoryMessage({ conversation }))
+            dispatch(setConversation(null))
+            dispatch(clearAllMessages());
         };
-        
+
         socket.on('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
-        
+
         return () => {
             socket.off('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
         };
@@ -337,7 +329,7 @@ export const Navigation = () => {
         };
     }, [])
 
-    
+
     useEffect(() => {
         const handlerReceiveUpdatedConversation = async (data) => {
             console.log("Receive updated profile conversation", data);
@@ -379,7 +371,7 @@ export const Navigation = () => {
     }, [])
 
 
-    
+
 
     const isVideoCallOpen = useSelector((state) => state.call.isVideoCallOpen);
     const isVoiceCallOpen = useSelector((state) => state.call.isVoiceCallOpen);

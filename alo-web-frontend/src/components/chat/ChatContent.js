@@ -91,7 +91,7 @@ const ChatContent = ({ isLoadMessage, messageRefs, scrollToMessage }) => {
 
   return (
     <div ref={chatContainerRef}>
-      {messages.map((message, index) => {
+      {messages.filter(m => m.status !== 2).map((message, index) => {
         const isUserMessage = message.sender.id === userLogin.id;
         const isLastMessage = index === messages.length - 1 || messages[index + 1]?.sender.id !== message.sender.id;
         const showAvatar = index === 0 || messages[index - 1]?.sender.id !== message.sender.id;

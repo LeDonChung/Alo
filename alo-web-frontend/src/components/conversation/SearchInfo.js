@@ -199,7 +199,7 @@ export const SearchInfo = ({ search, setSearch, setIsSetting, scrollToMessage })
                               >
                                  <div className="flex items-center">
                                     <img
-                                       src={sender.avatarLink || "https://via.placeholder.com/30"}
+                                       src={sender.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
                                        alt="avatar"
                                        className="w-5 h-5 rounded-full mr-2"
                                     />
@@ -251,7 +251,7 @@ export const SearchInfo = ({ search, setSearch, setIsSetting, scrollToMessage })
                      {selectedSender && (
                         <div className="flex items-center bg-blue-50 text-blue-700 px-2 py-1 rounded-full border border-blue-200 text-xs">
                            <img
-                              src={selectedSender.avatarLink || "https://via.placeholder.com/30"}
+                              src={selectedSender.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
                               alt="avatar"
                               className="w-4 h-4 rounded-full mr-1"
                            />
@@ -324,7 +324,7 @@ export const SearchInfo = ({ search, setSearch, setIsSetting, scrollToMessage })
                      >
                         <div className="flex items-center mb-1">
                            <img
-                              src={message.sender?.avatarLink || "https://via.placeholder.com/30"}
+                              src={message.sender?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
                               alt="avatar"
                               className="w-4 h-4 rounded-full mr-1"
                            />
