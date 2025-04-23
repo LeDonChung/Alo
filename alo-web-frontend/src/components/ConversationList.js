@@ -12,6 +12,7 @@ const ConversationList = () => {
   const conversations = useSelector(state => state.conversation.conversations);
 
   const showLastMessage = (conversation) => {
+    if(conversation.lastMessage.status === 2) return;
     const friend = getFriend(conversation, conversation.lastMessage?.senderId)
     if (conversation.lastMessage) {
       let message = conversation.lastMessage.content;
@@ -100,7 +101,7 @@ const ConversationList = () => {
                     )
                   }
 
-                  <p className="text-sm text-gray-500 truncate max-w-[280px]">
+                  <p className="text-sm text-gray-500 truncate max-w-[270px]">
                     {
                       conversation.lastMessage && showLastMessage(conversation)
                     }

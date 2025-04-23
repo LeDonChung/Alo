@@ -1,17 +1,23 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, Switch, Modal, TextInput, Button } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, Switch, Modal, TextInput, Button, Alert } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
 import { getFriend, getGroupImageDefaut, getUserRoleAndPermissions, showToast } from '../../../utils/AppUtils';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import { updateProfileGroup, updateProfileGroupById } from '../../redux/slices/ConversationSlice';
+import { updateProfileGroup, updateProfileGroupById, removeAllHistoryMessages, setConversation, leaveGroup, handlerRemoveHistoryMessage } from '../../redux/slices/ConversationSlice';
+import { clearAllMessages, clearMessages } from '../../redux/slices/MessageSlice';
 import socket from '../../../utils/socket';
 export const SettingScreen = () => {
     const userLogin = useSelector(state => state.user.userLogin);
     const conversation = useSelector(state => state.conversation.conversation);
-    const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id));
+    const friend = conversation?.isGroup === false && conversation?.memberUserIds ?
+        getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id)) :
+        {};
+    //Lấy vai trò và quyền của userLogin
+    const userRole = conversation?.roles?.find(role => role.userIds.includes(userLogin.id));
+    const userPermissions = userRole?.permissions || {};
     const navigation = useNavigation();
     const [groupAvatar, setGroupAvatar] = useState(null);
     const [isEditGroupNameModalVisible, setEditGroupNameModalVisible] = useState(false);
@@ -74,6 +80,117 @@ export const SettingScreen = () => {
 
     const [modalVisible, setModalVisible] = useState(false);
     const groupDefault = getGroupImageDefaut();
+
+    const handleClearChatHistory = () => {
+        Alert.alert(
+            'Xóa lịch sử trò chuyện',
+            'Bạn có chắc chắn muốn xóa toàn bộ lịch sử trò chuyện này không ?',
+            [
+                { text: 'Hủy', style: 'cancel' },
+                {
+                    text: 'Xóa',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            try {
+                                await dispatch(removeAllHistoryMessages({ conversationId: conversation.id })).unwrap().then((res) => {
+
+                                    // Xóa messages trong state local
+                                    dispatch(clearAllMessages());
+                                    dispatch(handlerRemoveHistoryMessage({ conversation: conversation }))
+
+                                    // Emit socket event để thông báo cho các clients khác
+                                    socket.emit('remove-all-history-messages', { conversation: conversation });
+
+                                    showToast('info', 'top', "Thông báo", 'Đã xóa toàn bộ lịch sử trò chuyện thành công!');
+                                })
+
+                            } catch (error) {
+                                console.error("Error in removeAllHistoryMessages:", error);
+                                showToast('error', 'top', "Thông báo", `${error.message}`);
+                            }
+                            navigation.goBack();
+                        } catch (error) {
+                            console.error('Error clearing chat history:', error);
+                            showToast('error', 'top', "Thông báo", `${error.message}`);
+                        }
+                    },
+                },
+            ],
+            { cancelable: true }
+        );
+    };
+
+    const handleLeaveGroup = () => {
+        if (!conversation) {
+            showToast('error', 'top', 'Lỗi', 'Không thể tải thông tin nhóm');
+            return;
+        }
+
+        const isGroupLeader = conversation?.roles?.some(role =>
+            role.role === 'leader' && role.userIds.includes(userLogin.id)
+        );
+
+        if (isGroupLeader) {
+            Alert.alert(
+                'Thông báo',
+                'Bạn đang là trưởng nhóm. Vui lòng chuyển quyền trưởng nhóm cho người khác trước khi rời nhóm.',
+                [{ text: 'Đã hiểu', style: 'default' }]
+            );
+            return;
+        }
+
+        Alert.alert(
+            'Rời nhóm',
+            'Bạn có chắc chắn muốn rời khỏi nhóm chat này không?',
+            [
+                { text: 'Hủy', style: 'cancel' },
+                {
+                    text: 'Rời nhóm',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            showToast('info', 'top', 'Đang xử lý', 'Đang xử lý yêu cầu rời nhóm...');
+                            const currentConversationId = conversation.id;
+                            const currentUserId = userLogin.id;
+                            const currentUserName = userLogin.fullName;
+                            dispatch(setConversation(null));
+
+                            const result = await dispatch(leaveGroup({
+                                conversationId: currentConversationId
+                            })).unwrap();
+
+                            console.log('Leave group response:', result);
+
+                            if (result && result.status === 200) {
+                                socket.emit('leave-group', {
+                                    conversationId: currentConversationId,
+                                    userId: currentUserId,
+                                    userName: currentUserName,
+                                    updatedConversation: result.data
+                                });
+
+                                showToast('success', 'bottom', 'Thông báo', 'Bạn đã rời khỏi nhóm thành công');
+
+                                setTimeout(() => {
+                                    navigation.navigate('home');
+                                }, 100);
+                            } else {
+                                throw new Error(result?.message || 'Không thể rời nhóm');
+                            }
+                        } catch (error) {
+                            console.error('Error leaving group:', error);
+                            console.error('Error details:', JSON.stringify(error, null, 2));
+
+                            showToast('error', 'top', 'Lỗi',
+                                error.message || 'Không thể rời nhóm. Vui lòng thử lại.');
+                        }
+                    },
+                },
+            ],
+            { cancelable: true }
+        );
+    };
     const handlerPickImage = () => {
         if (!getUserRoleAndPermissions(conversation, userLogin.id)?.permissions?.changeGroupInfo) {
             showToast('error', 'top', 'Thông báo', 'Bạn không có quyền thay đổi tên nhóm này.');
@@ -188,6 +305,10 @@ export const SettingScreen = () => {
                 tabBarStyle: undefined,
             });
     }, [navigation]);
+
+    const handleSearchMessages = () => {
+        navigation.navigate('chat');
+    };
 
     return (
         <ScrollView style={styles.container}>
@@ -358,7 +479,7 @@ export const SettingScreen = () => {
 
             {/* Tabs */}
             <View style={styles.tabs}>
-                <TouchableOpacity style={styles.tab}>
+                <TouchableOpacity style={styles.tab} onPress={handleSearchMessages}>
                     <Icon name="chat" size={24} color="#007AFF" style={styles.iconTap} />
                     <Text style={styles.tabText}>Tìm tin nhắn</Text>
                 </TouchableOpacity>
@@ -420,15 +541,23 @@ export const SettingScreen = () => {
                                 <Text style={styles.optionText}>Cài đặt cá nhân</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={styles.option}>
-                                <Icon name="person-add-alt-1" size={24} color="#000" />
-                                <Text style={styles.optionText}>Chuyển quyền trưởng nhóm</Text>
-                            </TouchableOpacity>
+                            {
+                                userRole.role === 'leader' && (
+                                    <>
+                                        <TouchableOpacity style={styles.option}>
+                                            <Icon name="person-add-alt-1" size={24} color="#000" />
+                                            <Text style={styles.optionText}>Chuyển quyền trưởng nhóm</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.option} onPress={handleClearChatHistory}>
+                                            <Icon name="delete" size={24} color="#FF0000" />
+                                            <Text style={[styles.optionText, { color: '#FF0000' }]}>Xóa lịch sử trò chuyện</Text>
+                                        </TouchableOpacity>
+                                    </>
+                                )
+                            }
 
-                            <TouchableOpacity style={styles.option}>
-                                <Icon name="delete" size={24} color="#FF0000" />
-                                <Text style={[styles.optionText, { color: '#FF0000' }]}>Xóa lịch sử trò chuyện</Text>
-                            </TouchableOpacity>
+
+
 
                             <TouchableOpacity style={styles.option}>
                                 <Icon name="logout" size={24} color="#FF0000" />

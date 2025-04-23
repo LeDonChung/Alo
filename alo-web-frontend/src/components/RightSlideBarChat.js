@@ -11,14 +11,17 @@ import GroupMembers from './conversation/GroupMember';
 import GroupManagement from './conversation/GroupManager';
 import MediaStorage from './conversation/MediaStorage';
 import { SearchInfo } from './conversation/SearchInfo';
-import ModalAddMember from './conversation/ModalAddMember';
-import { setConversation, removeAllHistoryMessages } from '../redux/slices/ConversationSlice';
+import { setConversation, removeAllHistoryMessages, handlerRemoveHistoryMessage } from '../redux/slices/ConversationSlice';
 import socket from '../utils/socket';
-import { toast } from 'react-toastify';
+import { clearAllMessages } from '../redux/slices/MessageSlice';
+import ModalAddMember from './conversation/ModalAddMember';
 import UpdateProfileGroup from './conversation/UpdateProfileGroup';
 
 
-const RightSlidebar = ({ search, setSearch }) => {
+
+
+const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
+
   const dispatch = useDispatch();
   const userLogin = useSelector(state => state.user.userLogin);
   const conversation = useSelector(state => state.conversation.conversation);
@@ -86,7 +89,6 @@ const RightSlidebar = ({ search, setSearch }) => {
   const [showMediaStorage, setShowMediaStorage] = useState(false);
   const [showFile, setShowFile] = useState(false);
   const [isOpenUpdateProfileGroup, setIsOpenUpdateProfileGroup] = useState(false);
-
   const [membersWithRoles, setMembersWithRoles] = useState([]);
 
   // Hàm xử lý xóa lịch sử trò chuyện
@@ -96,37 +98,27 @@ const RightSlidebar = ({ search, setSearch }) => {
     }
 
     try {
-      const result = await dispatch(removeAllHistoryMessages({ conversationId: conversation.id })).unwrap();
-      if (result.data.status === 200) {
-        socket.emit('remove-all-history-messages', { conversationId: conversation.id });
-        toast.success('Đã xóa toàn bộ lịch sử trò chuyện thành công!');
-      } else {
-        alert(`Xóa lịch sử trò chuyện thất bại: ${result.data.message || 'Lỗi không xác định.'}`);
-      }
+      await dispatch(removeAllHistoryMessages({ conversationId: conversation.id })).unwrap().then((res) => {
+        console.log("API call successful, emitting socket event");
+
+        // Xóa messages trong state local
+        dispatch(clearAllMessages());
+        dispatch(handlerRemoveHistoryMessage({ conversation: conversation }))
+
+        // Emit socket event để thông báo cho các clients khác
+        socket.emit('remove-all-history-messages', { conversation: conversation });
+
+        showToast('Đã xóa toàn bộ lịch sử trò chuyện thành công!', 'success');
+      })
+
     } catch (error) {
-      alert(`Lỗi: ${error.message || 'Đã xảy ra sự cố. Vui lòng thử lại sau.'}`);
+      console.error("Error in removeAllHistoryMessages:", error);
+      showToast(`${error.message}` || 'Lỗi không xác định.', 'error');
     }
   };
 
-  // Lắng nghe sự kiện Socket.IO
-  useEffect(() => {
-    socket.on('receive-remove-all-history-messages', (data) => {
-      const { conversationId } = data;
-      if (conversationId === conversation.id) {
-        dispatch(setConversation({ ...conversation, messages: [], lastMessage: null }));
-        setPhotos([]);
-        setFiles([]);
-        setLinks([]);
-        setPhotosGroupByDate([]);
-        setFilesGroupByDate([]);
-        alert('Lịch sử trò chuyện đã được xóa bởi trưởng nhóm.');
-      }
-    });
 
-    return () => {
-      socket.off('receive-remove-all-history-messages');
-    };
-  }, [conversation, dispatch]);
+
 
   // Cập nhật state khi messages hoặc conversation thay đổi
   useEffect(() => {
@@ -235,7 +227,7 @@ const RightSlidebar = ({ search, setSearch }) => {
   }, [search])
 
   const handlerShowProfileGroup = () => {
-    if(!getUserRoleAndPermissions(conversation, userLogin.id)?.permissions?.changeGroupInfo) {
+    if (!getUserRoleAndPermissions(conversation, userLogin.id)?.permissions?.changeGroupInfo) {
       showToast('Bạn không có quyền thay đổi thông tin nhóm', 'error');
       return;
     }
@@ -247,7 +239,11 @@ const RightSlidebar = ({ search, setSearch }) => {
         <div className="space-y-6">
           {
             search && !isSetting && (
-              <SearchInfo search={search} setIsSetting={setIsSetting} setSearch={setSearch} />
+              <SearchInfo
+                search={search}
+                setIsSetting={setIsSetting}
+                setSearch={setSearch}
+                scrollToMessage={scrollToMessage} />
             )
           }
           {
@@ -324,7 +320,7 @@ const RightSlidebar = ({ search, setSearch }) => {
                     {
                       isOpenUpdateProfileGroup && <UpdateProfileGroup onClose={() => {
                         setIsOpenUpdateProfileGroup(false);
-                      }} conversation={conversation}/>
+                      }} conversation={conversation} />
                     }
                     <div className="flex space-x-4 mt-4">
                       <button className="flex flex-col items-center text-gray-600 hover:text-blue-500 transition-colors">

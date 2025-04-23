@@ -84,4 +84,9 @@ router.post('/:conversationId/allow-send-message',
 router.post('/:conversationId/remove-all-history-messages',    
     middleware.authenticateToken,
     conversationController.removeAllHistoryMessages);
+
+router.post('/:conversationId/leave-group',
+    middleware.authenticateToken,
+    conversationController.leaveGroup);  
+    
 module.exports = router;

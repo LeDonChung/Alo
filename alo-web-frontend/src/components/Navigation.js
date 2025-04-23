@@ -5,14 +5,16 @@ import { useDispatch, useSelector } from "react-redux";
 import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
-import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, addMemberGroup, updateProfileGroupById, updatePermissions, removeConversation, removeMemberGroup } from "../redux/slices/ConversationSlice";
-import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage, seenOne } from "../redux/slices/MessageSlice";
+import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, addMemberGroup, updateProfileGroupById, updatePermissions, removeConversation, removeMemberGroup, handlerRemoveHistoryMessage } from "../redux/slices/ConversationSlice";
+import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage, seenOne, clearAllMessages } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 import { addReceive, setCalling, setIncomingCall, setIsVideoCallOpen, setIsVoiceCallOpen } from "../redux/slices/CallSlice";
 import VideoCallModal from "./call/VideoCallModel";
+
 export const Navigation = () => {
     const dispatch = useDispatch();
     const userLogin = useSelector((state) => state.user.userLogin);
+    const conversations = useSelector((state) => state.conversation.conversations);
 
     // ============= HANDLE SOCKET LOGOUT ==============
     const handleLogout = async () => {
@@ -281,6 +283,28 @@ export const Navigation = () => {
         };
     }, [dispatch]);
 
+
+
+
+    //lắng nghe sự kiện xóa tất cả tin nhắn từ server
+    useEffect(() => {
+        const handleRemoveAllHistoryMessages = (data) => {
+            console.log('Received remove all history messages:', data);
+            const { conversation } = data;
+
+            // Nếu đang ở cuộc trò chuyện bị xóa lịch sử
+            dispatch(handlerRemoveHistoryMessage({ conversation }))
+            dispatch(setConversation(null))
+            dispatch(clearAllMessages());
+        };
+
+        socket.on('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
+
+        return () => {
+            socket.off('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
+        };
+    }, [conversation, conversations, dispatch]);
+
     //lắng nghe sự kiện thêm thành viên vào nhóm từ server
     useEffect(() => {
         const handleReceiveAddMember = (data) => {
@@ -324,26 +348,6 @@ export const Navigation = () => {
             socket.off("receive-remove-member", handleReceiveRemoveMember);
         }
     }, []);
-
-    // // Lắng nghe sự kiện server
-    //   useEffect(() => {
-    //     socket.on('receive-remove-all-history-messages', (data) => {
-    //       const { conversationId } = data;
-    //       if (conversationId === conversation.id) {
-    //         dispatch(setConversation({ ...conversation, messages: [], lastMessage: null }));
-    //         setPhotos([]);
-    //         setFiles([]);
-    //         setLinks([]);
-    //         setPhotosGroupByDate([]);
-    //         setFilesGroupByDate([]);
-    //         alert('Lịch sử trò chuyện đã được xóa bởi trưởng nhóm.');
-    //       }
-    //     });
-
-    //     return () => {
-    //       socket.off('receive-remove-all-history-messages');
-    //     };
-    //   }, [conversation, dispatch]);
 
 
     useEffect(() => {
