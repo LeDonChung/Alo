@@ -105,6 +105,32 @@ const createGroup = createAsyncThunk('ConversationSlice/createGroup', async (dat
     }
 });
 
+
+const updateAllowUpdateProfileGroup = createAsyncThunk('ConversationSlice/updateAllowUpdateProfileGroup', async ({ conversationId, allow }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/allow-update-profile-group`, { allow: allow });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
+
+const updateAllowPinMessageGroup = createAsyncThunk('ConversationSlice/updateAllowPinMessageGroup', async ({ conversationId, allow }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/allow-pin-message`, { allow: allow });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
+const updateAllowSendMessageGroup = createAsyncThunk('ConversationSlice/updateAllowSendMessageGroup', async ({ conversationId, allow }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/allow-send-message`, { allow: allow });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
 const removeAllHistoryMessages = createAsyncThunk(
     'ConversationSlice/removeAllHistoryMessages',
     async ({ conversationId }, { rejectWithValue }) => {
@@ -340,10 +366,43 @@ const ConversationSlice = createSlice({
         });
         builder.addCase(addViceLeader.rejected, (state, action) => {
         });
+
+        // remove vice leader
+        builder.addCase(removeViceLeader.pending, (state) => {
+        });
+        builder.addCase(removeViceLeader.fulfilled, (state, action) => {
+        });
+        builder.addCase(removeViceLeader.rejected, (state, action) => {
+        });
+
+
+        builder.addCase(updateAllowUpdateProfileGroup.fulfilled, (state) => {
+
+        })
+        builder.addCase(updateAllowUpdateProfileGroup.rejected, (state) => {
+
+        })
+
+        builder.addCase(updateAllowSendMessageGroup.fulfilled, (state) => {
+
+        })
+        builder.addCase(updateAllowSendMessageGroup.rejected, (state) => {
+
+        })
+
+        builder.addCase(updateAllowPinMessageGroup.fulfilled, (state) => {
+
+        })
+
+        builder.addCase(updateAllowPinMessageGroup.rejected, (state) => {
+
+        })
     }
 });
 
 
 export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, addConversation, addMemberGroup, updateProfileGroupById, updatePermissions } = ConversationSlice.actions;
-export { getAllConversation, getConversationById, createPin, removePin, addMemberToGroup, createGroup, removeAllHistoryMessages, updateProfileGroup, addViceLeader, removeViceLeader };
+export { getAllConversation, getConversationById, createPin, removePin, addMemberToGroup, createGroup, removeAllHistoryMessages, updateProfileGroup,
+    updateAllowUpdateProfileGroup, updateAllowSendMessageGroup, updateAllowPinMessageGroup, addViceLeader, removeViceLeader
+ };
 export default ConversationSlice.reducer;

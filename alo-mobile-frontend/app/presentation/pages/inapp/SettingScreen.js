@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, Switch, Moda
 import { ScrollView } from 'react-native-gesture-handler';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useDispatch, useSelector } from 'react-redux';
-import { getFriend, getGroupImageDefaut, showToast } from '../../../utils/AppUtils';
+import { getFriend, getGroupImageDefaut, getUserRoleAndPermissions, showToast } from '../../../utils/AppUtils';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { updateProfileGroup, updateProfileGroupById } from '../../redux/slices/ConversationSlice';
@@ -29,14 +29,21 @@ export const SettingScreen = () => {
         setGroupName(newName);
     };
 
+    const handlerClickGroupName = () => {
+        if (!getUserRoleAndPermissions(conversation, userLogin.id)?.permissions?.changeGroupInfo) {
+            showToast('error', 'top', 'Thông báo', 'Bạn không có quyền thay đổi tên nhóm này.');
+            return;
+        }
+    }
     const saveGroupName = async () => {
         try {
+
             if (!groupName) {
                 showToast('error', 'top', 'Thông báo', 'Vui lòng nhập tên nhóm.');
                 closeEditGroupNameModal();
                 return;
             }
-            if( groupName === conversation.name) {
+            if (groupName === conversation.name) {
                 showToast('error', 'top', 'Thông báo', 'Tên nhóm không thay đổi.');
                 closeEditGroupNameModal();
                 return;
@@ -67,9 +74,15 @@ export const SettingScreen = () => {
 
     const [modalVisible, setModalVisible] = useState(false);
     const groupDefault = getGroupImageDefaut();
-
+    const handlerPickImage = () => {
+        if (!getUserRoleAndPermissions(conversation, userLogin.id)?.permissions?.changeGroupInfo) {
+            showToast('error', 'top', 'Thông báo', 'Bạn không có quyền thay đổi tên nhóm này.');
+            return;
+        }
+    }
     const pickImage = async () => {
         try {
+
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
             if (status !== 'granted') {
                 alert('Vui lòng cấp quyền sử dụng thư viện!');
@@ -191,7 +204,13 @@ export const SettingScreen = () => {
             <View style={styles.groupInfo}>
                 {
                     conversation.isGroup ? (
-                        <TouchableOpacity onPress={() => setModalVisible(true)} style={{ marginBottom: 10 }} >
+                        <TouchableOpacity onPress={() => {
+                            if (!getUserRoleAndPermissions(conversation, userLogin.id)?.permissions?.changeGroupInfo) {
+                                showToast('error', 'top', 'Thông báo', 'Bạn không có quyền thay đổi ảnh nhóm này.');
+                                return;
+                            }
+                            setModalVisible(true)
+                        }} style={{ marginBottom: 10 }} >
                             <Image
                                 source={{ uri: groupAvatar || conversation.avatar || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg" }}
                                 style={styles.groupAvatar}
@@ -209,8 +228,18 @@ export const SettingScreen = () => {
                     <Text style={styles.groupName}>{
                         conversation.isGroup ? conversation.name : friend.fullName
                     }</Text>
-                    <TouchableOpacity style={{ marginLeft: 10 }} onPress={openEditGroupNameModal}>
-                        <Icon name="edit" size={20} color="#000" />
+                    <TouchableOpacity style={{ marginLeft: 10 }} onPress={() => {
+                        if (!getUserRoleAndPermissions(conversation, userLogin.id)?.permissions?.changeGroupInfo) {
+                            showToast('error', 'top', 'Thông báo', 'Bạn không có quyền thay đổi tên nhóm này.');
+                            return;
+                        }
+                        openEditGroupNameModal()
+                    }}>
+                        {
+                            conversation.isGroup && (
+                                <Icon name="edit" size={20} color="#000" />
+                            )
+                        }
                     </TouchableOpacity>
                 </View>
             </View>
@@ -333,10 +362,14 @@ export const SettingScreen = () => {
                     <Icon name="chat" size={24} color="#007AFF" style={styles.iconTap} />
                     <Text style={styles.tabText}>Tìm tin nhắn</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={styles.tab}>
-                    <Icon name="group" size={28} color="#007AFF" style={styles.iconTap} />
-                    <Text style={styles.tabText}>Thành viên</Text>
-                </TouchableOpacity>
+                {
+                    conversation.isGroup && (
+                        <TouchableOpacity style={styles.tab}>
+                            <Icon name="group" size={28} color="#007AFF" style={styles.iconTap} />
+                            <Text style={styles.tabText}>Thành viên</Text>
+                        </TouchableOpacity>
+                    )
+                }
                 <TouchableOpacity style={styles.tab}>
                     <Icon name="image" size={24} color="#007AFF" style={styles.iconTap} />
                     <Text style={styles.tabText}>Đổi hình nền</Text>
@@ -359,47 +392,51 @@ export const SettingScreen = () => {
                     <Text style={styles.optionText}>Tin nhắn đã ghim</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.option}>
-                    <Icon name="settings" size={24} color="#000" />
-                    <Text style={styles.optionText}>Cài đặt nhóm</Text>
-                </TouchableOpacity>
+                {
+                    conversation.isGroup && (
+                        <>
+                            <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('group-manager')}>
+                                <Icon name="settings" size={24} color="#000" />
+                                <Text style={styles.optionText}>Cài đặt nhóm</Text>
+                            </TouchableOpacity>
 
-                {/* Thêm các tùy chọn từ tab "Bình chọn" ngay sau "Cài đặt nhóm" */}
-                <TouchableOpacity style={styles.option}>
-                    <Icon name="group" size={24} color="#000" />
-                    <Text style={styles.optionText}>Xem thành viên (5)</Text>
-                </TouchableOpacity>
+                            <TouchableOpacity style={styles.option}>
+                                <Icon name="group" size={24} color="#000" />
+                                <Text style={styles.optionText}>Xem thành viên (5)</Text>
+                            </TouchableOpacity>
 
-                <TouchableOpacity style={styles.option}>
-                    <Icon name="person-add" size={24} color="#000" />
-                    <Text style={styles.optionText}>Duyệt thành viên</Text>
-                </TouchableOpacity>
+                            <TouchableOpacity style={styles.option}>
+                                <Icon name="person-add" size={24} color="#000" />
+                                <Text style={styles.optionText}>Duyệt thành viên</Text>
+                            </TouchableOpacity>
 
-                <TouchableOpacity style={styles.option}>
-                    <Icon name="link" size={24} color="#000" />
-                    <Text style={styles.optionText}>Link nhóm</Text>
-                </TouchableOpacity>
+                            <TouchableOpacity style={styles.option}>
+                                <Icon name="link" size={24} color="#000" />
+                                <Text style={styles.optionText}>Link nhóm</Text>
+                            </TouchableOpacity>
 
-                <TouchableOpacity style={styles.option}>
-                    <Icon name="settings" size={24} color="#000" />
-                    <Text style={styles.optionText}>Cài đặt cá nhân</Text>
-                </TouchableOpacity>
+                            <TouchableOpacity style={styles.option}>
+                                <Icon name="settings" size={24} color="#000" />
+                                <Text style={styles.optionText}>Cài đặt cá nhân</Text>
+                            </TouchableOpacity>
 
-                {/* Thêm các tùy chọn mới từ hình ảnh */}
-                <TouchableOpacity style={styles.option}>
-                    <Icon name="person-add-alt-1" size={24} color="#000" />
-                    <Text style={styles.optionText}>Chuyển quyền trưởng nhóm</Text>
-                </TouchableOpacity>
+                            <TouchableOpacity style={styles.option}>
+                                <Icon name="person-add-alt-1" size={24} color="#000" />
+                                <Text style={styles.optionText}>Chuyển quyền trưởng nhóm</Text>
+                            </TouchableOpacity>
 
-                <TouchableOpacity style={styles.option}>
-                    <Icon name="delete" size={24} color="#FF0000" />
-                    <Text style={[styles.optionText, { color: '#FF0000' }]}>Xóa lịch sử trò chuyện</Text>
-                </TouchableOpacity>
+                            <TouchableOpacity style={styles.option}>
+                                <Icon name="delete" size={24} color="#FF0000" />
+                                <Text style={[styles.optionText, { color: '#FF0000' }]}>Xóa lịch sử trò chuyện</Text>
+                            </TouchableOpacity>
 
-                <TouchableOpacity style={styles.option}>
-                    <Icon name="logout" size={24} color="#FF0000" />
-                    <Text style={[styles.optionText, { color: '#FF0000' }]}>Rời nhóm</Text>
-                </TouchableOpacity>
+                            <TouchableOpacity style={styles.option}>
+                                <Icon name="logout" size={24} color="#FF0000" />
+                                <Text style={[styles.optionText, { color: '#FF0000' }]}>Rời nhóm</Text>
+                            </TouchableOpacity>
+                        </>
+                    )
+                }
             </View>
 
         </ScrollView>
