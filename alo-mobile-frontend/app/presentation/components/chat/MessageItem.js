@@ -19,6 +19,28 @@ const MessageItem = ({ item, setSelectedImage, setIsImageViewVisible, showAvatar
     const parts = fileNameDecoded.split(" - ");
     return parts[parts.length - 1];
   };
+  if (item && (item.messageType === "notification" || item.contentType === "notification")) {
+    return (
+        <View style={{
+          alignItems: 'center',
+          marginVertical: 10,
+          paddingHorizontal: 16,
+        }}>
+            <Text style={{
+              fontSize: 12,
+              color: '#888',
+              textAlign: 'center',
+              backgroundColor: '#f0f0f0',
+              paddingHorizontal: 12,
+              paddingVertical: 6,
+              borderRadius: 12,
+              overflow: 'hidden',
+            }}>
+                {item.content}
+            </Text>
+        </View>
+    );
+  }
 
   const getFileIcon = (extension) => {
     const iconSize = { width: 24, height: 24 };

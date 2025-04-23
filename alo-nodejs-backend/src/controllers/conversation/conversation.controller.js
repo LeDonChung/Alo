@@ -1192,4 +1192,51 @@ exports.removeAllHistoryMessages = async (req, res) => {
         });
     }
 };
+// LEAVE GROUP
+exports.leaveGroup = async (req, res) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        const userId = userService.getUserIdFromToken(token);
+        const { conversationId } = req.params;
 
+        const conversation = await conversationService.getConversationById(conversationId);
+        if (!conversation) {
+            return res.status(404).json({
+                status: 404,
+                message: "Cuộc trò chuyện không tồn tại.",
+                data: null
+            });
+        }
+        if (!conversation.memberUserIds || !conversation.memberUserIds.includes(userId)) {
+            return res.status(400).json({
+                status: 400,
+                message: "Bạn không phải là thành viên của cuộc trò chuyện.",
+                data: null
+            });
+        }
+        const updatedConversation = await conversationService.leaveGroup(conversationId, userId);
+
+        return res.json({
+            status: 200,
+            message: "Rời nhóm thành công.",
+            data: updatedConversation
+        });
+
+    } catch (err) {
+        console.error("Lỗi khi rời nhóm:", err);
+        if (err.message === 'Bạn đang là trưởng nhóm. Vui lòng chuyển quyền trưởng nhóm cho người khác trước khi rời nhóm.') {
+            return res.status(400).json({
+                status: 400,
+                message: err.message,
+                data: null
+            });
+        }
+        
+        return res.status(500).json({
+            status: 500,
+            message: err.message || "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+};

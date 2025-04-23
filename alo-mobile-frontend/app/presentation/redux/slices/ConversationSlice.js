@@ -121,7 +121,19 @@ const removeAllHistoryMessages = createAsyncThunk('ConversationSlice/removeAllHi
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 });
-
+const leaveGroup = createAsyncThunk(
+    'conversation/leaveGroup',
+    async ({ conversationId }, { rejectWithValue }) => {
+      try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/leave-group`);
+        return response.data;
+      } catch (error) {
+        console.error('Leave group error:', error);
+        console.error('Error response:', error.response?.data);
+        return rejectWithValue(error.response?.data || { message: 'Không thể rời nhóm' });
+      }
+    }
+);
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
@@ -215,6 +227,46 @@ const ConversationSlice = createSlice({
                 };
             }
         },
+        memberLeaveGroup: (state, action) => {
+            const { conversationId, userId, updatedConversation } = action.payload;
+
+            if (state.conversations && state.conversations.length > 0) {
+                state.conversations = state.conversations.map(conv => {
+                    if (conv.id === conversationId) {
+                        if (updatedConversation) {
+                            return {
+                                ...conv,
+                                memberUserIds: updatedConversation.memberUserIds || [],
+                                roles: updatedConversation.roles || []
+                            };
+                        }
+                        return {
+                            ...conv,
+                            memberUserIds: conv.memberUserIds ? conv.memberUserIds.filter(id => id !== userId) : []
+                        };
+                    }
+                    return conv;
+                });
+            }
+            
+            if (state.conversation && state.conversation.id === conversationId) {
+                if (userId === action.payload.currentUserId) {
+                    state.conversation = null;
+                } else if (updatedConversation) {
+                    state.conversation = {
+                        ...state.conversation,
+                        memberUserIds: updatedConversation.memberUserIds || [],
+                        roles: updatedConversation.roles || []
+                    };
+                } else {
+                    state.conversation = {
+                        ...state.conversation,
+                        memberUserIds: state.conversation.memberUserIds ? 
+                            state.conversation.memberUserIds.filter(id => id !== userId) : []
+                    };
+                }
+            }
+        }
     },
     
     extraReducers: (builder) => {
@@ -305,9 +357,38 @@ const ConversationSlice = createSlice({
         builder.addCase(removeAllHistoryMessages.rejected, (state, action) => {
             state.error = action.payload.message || "Xóa lịch sử thất bại";
         });
+        builder.addCase(leaveGroup.pending, (state) => {
+            state.error = null;
+            state.isLeaving = true;
+        });
+        
+        builder.addCase(leaveGroup.fulfilled, (state, action) => {
+            state.isLeaving = false;
+            
+            const conversationId = action.payload?.data?.conversationId || 
+                                   action.payload?.conversationId || 
+                                   action.meta.arg.conversationId;
+        
+            state.conversations = state.conversations.filter(
+                conversation => conversation.id !== conversationId
+            );
+        
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation = null;
+            }
+        
+            state.error = null;
+        });
+        
+        builder.addCase(leaveGroup.rejected, (state, action) => {
+            state.isLeaving = false;
+            state.error = action.payload?.message || 
+                          action.error?.message || 
+                          "Không thể rời nhóm chat. Vui lòng thử lại sau.";
+        });
     }
 });
 
-export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket, addConversation, removeConversation, updateProfileGroupById, clearHistoryMessages } = ConversationSlice.actions;
-export { getAllConversation, getConversationById, createPin, removePin, createGroup, updateProfileGroup, removeAllHistoryMessages };
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket, addConversation, removeConversation, updateProfileGroupById, clearHistoryMessages, memberLeaveGroup, userRemovedFromGroup  } = ConversationSlice.actions;
+export { getAllConversation, getConversationById, createPin, removePin, createGroup, updateProfileGroup, removeAllHistoryMessages, leaveGroup };
 export default ConversationSlice.reducer;

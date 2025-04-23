@@ -365,6 +365,24 @@ io.on("connection", (socket) => {
         
         console.log(`Đã gửi tín hiệu xóa lịch sử thành công cho cuộc trò chuyện ${conversationId}`);
     });
+    
+    socket.on('leave-group', async (data) => {
+        const { conversationId, userId, userName, updatedConversation } = data;
+        
+        console.log(`User ${userName} (${userId}) leaving group ${conversationId}`);
+
+        if (!conversationId || !userId || !userName) {
+            console.error('Thiếu dữ liệu cần thiết để phát sự kiện rời nhóm');
+            return;
+        }
+        const safeConversation = updatedConversation || { id: conversationId };
+        io.to(conversationId).emit('member-leave-group', {
+            conversationId,
+            userId,
+            userName,
+            updatedConversation: safeConversation
+        });
+    });
     // =====================
     // Helper functions
     // =====================

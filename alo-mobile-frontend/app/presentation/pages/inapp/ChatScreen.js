@@ -4,6 +4,7 @@ import { Modal, Pressable, View, TextInput, TouchableOpacity, Text} from 'react-
 import { axiosInstance } from '../../../api/APIClient';
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
+import { v4 as uuidv4 } from 'uuid';
 import {
   addMessage,
   getMessagesByConversationId,
@@ -21,7 +22,7 @@ import {
   resetSearch,
   clearMessages,
 } from '../../redux/slices/MessageSlice';
-import { removePin, clearHistoryMessages } from '../../redux/slices/ConversationSlice';
+import { removePin, clearHistoryMessages, memberLeaveGroup } from '../../redux/slices/ConversationSlice';
 import HeaderComponent from '../../components/chat/HeaderComponent';
 import InputComponent from '../../components/chat/InputComponent';
 import MessageItem from '../../components/chat/MessageItem';
@@ -207,6 +208,8 @@ export const ChatScreen = ({ route, navigation }) => {
     return () => socket.off('clear-history-messages', handleClearHistoryMessages);
 }, [conversation.id, dispatch]);
 
+
+
   useEffect(() => {
     const handlerInitMessage = async () => {
       await dispatch(getMessagesByConversationId(conversation.id))
@@ -268,7 +271,46 @@ export const ChatScreen = ({ route, navigation }) => {
       setLastLogout(res.data.data.lastLogout);
     });
   };
-
+  useEffect(() => {
+    if (!socket) return;
+    const handleMemberLeave = (data) => {
+        const { conversationId, userId, userName, updatedConversation } = data;
+        
+        console.log(`Nhận thông báo: ${userName} đã rời nhóm ${conversationId}`);
+        
+        if (conversation?.id === conversationId) {
+            dispatch(memberLeaveGroup({
+                conversationId,
+                userId,
+                updatedConversation,
+            }));
+            if (userId === userLogin.id) {
+                showToast('success', 'bottom', 'Thông báo', 'Bạn đã rời khỏi nhóm thành công');
+                navigation.navigate('home');
+            } else {
+                const systemMessage = {
+                    id: uuidv4(),
+                    conversationId,
+                    sender: {
+                        id: "system",
+                        fullName: "Hệ thống"
+                    },
+                    content: `${userName} đã rời khỏi nhóm`,
+                    contentType: "notification",
+                    messageType: "notification",
+                    timestamp: new Date().toISOString(),
+                    status: 0
+                };
+                
+                dispatch(addMessage(systemMessage));
+            }
+        }
+    };
+    
+    socket.on('member-leave-group', handleMemberLeave);
+    
+    return () => socket.off('member-leave-group', handleMemberLeave);
+  }, [socket, conversation, dispatch, userLogin.id, navigation]);
   useEffect(() => {
     socket.emit('join_conversation', conversation.id);
 

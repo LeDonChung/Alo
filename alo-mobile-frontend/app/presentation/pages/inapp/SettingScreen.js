@@ -6,13 +6,15 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getFriend, getGroupImageDefaut, showToast } from '../../../utils/AppUtils';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import { updateProfileGroup, updateProfileGroupById, removeAllHistoryMessages, setConversation  } from '../../redux/slices/ConversationSlice';
+import { updateProfileGroup, updateProfileGroupById, removeAllHistoryMessages, setConversation, leaveGroup  } from '../../redux/slices/ConversationSlice';
 import { clearMessages } from '../../redux/slices/MessageSlice';
 import socket from '../../../utils/socket';
 export const SettingScreen = () => {
     const userLogin = useSelector(state => state.user.userLogin);
     const conversation = useSelector(state => state.conversation.conversation);
-    const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id));
+    const friend = conversation?.isGroup === false && conversation?.memberUserIds ? 
+    getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id)) : 
+    {};
     const navigation = useNavigation();
     const [groupAvatar, setGroupAvatar] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
@@ -56,6 +58,76 @@ export const SettingScreen = () => {
         );
     };
     
+    const handleLeaveGroup = () => {
+        if (!conversation) {
+            showToast('error', 'top', 'Lỗi', 'Không thể tải thông tin nhóm');
+            return;
+        }
+    
+        const isGroupLeader = conversation?.roles?.some(role => 
+            role.role === 'leader' && role.userIds.includes(userLogin.id)
+        );
+        
+        if (isGroupLeader) {
+            Alert.alert(
+                'Thông báo',
+                'Bạn đang là trưởng nhóm. Vui lòng chuyển quyền trưởng nhóm cho người khác trước khi rời nhóm.',
+                [{ text: 'Đã hiểu', style: 'default' }]
+            );
+            return;
+        }
+        
+        Alert.alert(
+            'Rời nhóm',
+            'Bạn có chắc chắn muốn rời khỏi nhóm chat này không?',
+            [
+                { text: 'Hủy', style: 'cancel' },
+                {
+                    text: 'Rời nhóm',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            showToast('info', 'top', 'Đang xử lý', 'Đang xử lý yêu cầu rời nhóm...');
+                            const currentConversationId = conversation.id;
+                            const currentUserId = userLogin.id;
+                            const currentUserName = userLogin.fullName;
+                            dispatch(setConversation(null));
+                            
+                            const result = await dispatch(leaveGroup({ 
+                                conversationId: currentConversationId 
+                            })).unwrap();
+                            
+                            console.log('Leave group response:', result);
+                            
+                            if (result && result.status === 200) {
+                                socket.emit('leave-group', {
+                                    conversationId: currentConversationId,
+                                    userId: currentUserId,
+                                    userName: currentUserName,
+                                    updatedConversation: result.data
+                                });
+
+                                showToast('success', 'bottom', 'Thông báo', 'Bạn đã rời khỏi nhóm thành công');
+
+                                setTimeout(() => {
+                                    navigation.navigate('home');
+                                }, 100);
+                            } else {
+                                throw new Error(result?.message || 'Không thể rời nhóm');
+                            }
+                        } catch (error) {
+                            console.error('Error leaving group:', error);
+                            console.error('Error details:', JSON.stringify(error, null, 2));
+                            
+                            showToast('error', 'top', 'Lỗi', 
+                                error.message || 'Không thể rời nhóm. Vui lòng thử lại.');
+                        }
+                    },
+                },
+            ],
+            { cancelable: true }
+        );
+    };
     const pickImage = async () => {
         try {
             const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -334,7 +406,7 @@ export const SettingScreen = () => {
                     <Text style={[styles.optionText, { color: '#FF0000' }]}>Xóa lịch sử trò chuyện</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.option}>
+                <TouchableOpacity style={styles.option} onPress={handleLeaveGroup}>
                     <Icon name="logout" size={24} color="#FF0000" />
                     <Text style={[styles.optionText, { color: '#FF0000' }]}>Rời nhóm</Text>
                 </TouchableOpacity>
