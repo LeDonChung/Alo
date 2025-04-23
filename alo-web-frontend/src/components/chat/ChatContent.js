@@ -14,7 +14,7 @@ const ChatContent = ({ isLoadMessage, messageRefs, scrollToMessage }) => {
   const [isScrolledToTop, setIsScrolledToTop] = useState(false);
   const [scrollToParent, setScrollToParent] = useState(null);
   const [highlightedMessage, setHighlightedMessage] = useState(null);
-
+  
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
@@ -91,7 +91,7 @@ const ChatContent = ({ isLoadMessage, messageRefs, scrollToMessage }) => {
 
   return (
     <div ref={chatContainerRef}>
-      {messages.map((message, index) => {
+      {messages.filter(m => m.status !== 2).map((message, index) => {
         const isUserMessage = message.sender.id === userLogin.id;
         const isLastMessage = index === messages.length - 1 || messages[index + 1]?.sender.id !== message.sender.id;
         const showAvatar = index === 0 || messages[index - 1]?.sender.id !== message.sender.id;
@@ -107,7 +107,6 @@ const ChatContent = ({ isLoadMessage, messageRefs, scrollToMessage }) => {
                 isUserMessage={isUserMessage}
                 isLastMessage={isLastMessage}
                 showAvatar={showAvatar}
-                isHighlighted={highlightedMessage === message.id}
                 onClickParent={() => {
                   if (message.messageParent?.id) {
                     setScrollToParent(message.messageParent.id);

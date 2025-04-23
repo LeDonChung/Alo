@@ -3,7 +3,9 @@ import React, { useEffect, useState } from 'react';
 import PinComponentWeb from './PinComponent';
 import { useSelector } from 'react-redux';
 import { getFriend } from '../../utils/AppUtils';
-
+import { useDispatch } from 'react-redux';
+import { setCalling, setIsVideoCallOpen, setIsVoiceCallOpen } from '../../redux/slices/CallSlice';
+import VideoCallModal from '../call/VideoCallModel';
 const ChatHeader = ({
   lastLogout,
   getLastLoginMessage,
@@ -36,6 +38,22 @@ const ChatHeader = ({
 
   const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id))
 
+
+  // HANDLER CALLL
+  const isVideoCallOpen = useSelector((state) => state.call.isVideoCallOpen);
+  const isVoiceCallOpen = useSelector((state) => state.call.isVoiceCallOpen);
+
+  const dispatch = useDispatch();
+  const handlerVideoCall = () => {
+    dispatch(setIsVideoCallOpen(true))
+    dispatch(setIsVoiceCallOpen(false))
+    dispatch(setCalling(false))
+  }
+  const handlerVoiceCall = () => {
+    dispatch(setIsVideoCallOpen(true))
+    dispatch(setIsVoiceCallOpen(false))
+    dispatch(setCalling(false))
+  }
   return (
 
     <div className="bg-white border-b border-gray-200">
@@ -77,17 +95,11 @@ const ChatHeader = ({
           </p>
         </div>
         <div className="ml-auto flex space-x-2">
-          <button className="p-2 hover:bg-gray-100 rounded-full">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth="2"
-                d="M3 5a2 2 0 012-2h3l2 4-3 2a16 16 0 007 7l2-3 4 2v3a2 2 0 01-2 2h-3a19 19 0 01-9-4 19 19 0 01-4-9V5z"
-              />
-            </svg>
-          </button>
-          <button className="p-2 hover:bg-gray-100 rounded-full">
+          <button className="p-2 hover:bg-gray-100 rounded-full"
+            onClick={() => {
+              handlerVideoCall();
+            }}
+          >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
@@ -117,6 +129,8 @@ const ChatHeader = ({
           scrollToMessage={scrollToMessage}
         />
       )}
+
+      
     </div>
   );
 };

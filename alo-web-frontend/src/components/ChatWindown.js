@@ -7,7 +7,9 @@ import RightSlidebar from './RightSlideBarChat';
 import ChatHeader from './chat/ChatHeader';
 import ChatContent from './chat/ChatContent';
 import ChatInput from './chat/ChatInput';
-import { getFriend } from '../utils/AppUtils';
+import { clearAllMessages } from '../redux/slices/MessageSlice';
+import { getFriend, getUserRoleAndPermissions } from '../utils/AppUtils';
+import { setConversation } from '../redux/slices/ConversationSlice';
 
 const ChatWindow = () => {
   const isSending = useSelector(state => state.message.isSending);
@@ -20,6 +22,7 @@ const ChatWindow = () => {
   const [lastLogout, setLastLogout] = useState(null);
   const limit = useSelector(state => state.message.limit);
   const conversations = useSelector(state => state.conversation.conversations);
+
 
   const getLastLoginMessage = (lastLogout) => {
     if (!lastLogout) return 'Chưa truy cập';
@@ -46,6 +49,9 @@ const ChatWindow = () => {
   // Bắt sự kiện get last logout
   useEffect(() => {
     const handleGetLastLogoutX = async (userId) => {
+      if(!conversation.isGroup) {
+        return;
+      }
       const friend = getFriend(conversation, userId);
       if (userId === friend.id) {
         await handleGetLastLogout(userId);
@@ -146,6 +152,23 @@ const ChatWindow = () => {
   };
   const [search, setSearch] = useState(false);
 
+  // Thêm useEffect để lắng nghe sự kiện xóa lịch sử
+  useEffect(() => {
+    const handleRemoveAllHistoryMessages = (data) => {
+      const { conversationId } = data;
+      if (conversation.id === conversationId) {
+        dispatch(clearAllMessages());
+      }
+    };
+
+    socket.on('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
+
+    return () => {
+      socket.off('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
+    };
+  }, [conversation.id, dispatch]);
+
+
   return (
     <>
       <div className="w-3/4 flex flex-col">
@@ -168,10 +191,25 @@ const ChatWindow = () => {
         </div>
 
 
-        <ChatInput />
+        {
+          conversation.isGroup ? (
+            getUserRoleAndPermissions(conversation, userLogin.id)?.permissions?.sendMessage ? (
+              <ChatInput />
+            ) : (
+              <div className="flex items-center justify-center p-4 bg-gray-100">
+                <p className="text-gray-500">
+                  Chỉ <span className='text-blue-500'>trưởng / phó nhóm</span> được gửi tin nhắn vào nhóm.
+                </p>
+              </div>
+            )
+          ) : (
+            <ChatInput />
+          )
+        }
+
       </div>
 
-      <RightSlidebar search={search} setSearch={setSearch}/>
+      <RightSlidebar search={search} setSearch={setSearch} scrollToMessage={scrollToMessage} />
     </>
   );
 };

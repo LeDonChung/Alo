@@ -169,6 +169,9 @@ const MessageSlice = createSlice({
         },
         setConversationsShareMessage: (state, action) => {
             state.conversationsShareMessage = action.payload;
+        },
+        clearAllMessages: (state) => {
+            state.messages = [];
         }
     },
     extraReducers: (builder) => {
@@ -221,7 +224,8 @@ export const {
     handlerUpdateReaction,
     updateSeenAllMessage,
     setMessageRemoveOfMe,
-    setConversationsShareMessage
+    setConversationsShareMessage,
+    clearAllMessages
 } = MessageSlice.actions;
 
 export {
