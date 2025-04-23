@@ -1,9 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { getFriend } from '../../utils/AppUtils';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faKey, faEllipsis } from '@fortawesome/free-solid-svg-icons';
 
 const GroupMembers = ({ conversation, userLogin, setIsSetting, membersWithRoles }) => {
     const members = conversation.memberUserIds.map(userId => getFriend(conversation, userId));
+    const leaderId = conversation.roles.find(role => role.role === 'leader')?.userIds[0];
+    const viceLeaderIds = conversation.roles.find(role => role.role === 'vice_leader')?.userIds || [];
+    console.log("members", members);
+    console.log("conversation", conversation);
 
+
+
+    const [isOpenMenu, setIsOpenMenu] = useState(false);
+    const [memberSelected, setMemberSelected] = useState(null);
     return (
         <div className="w-full bg-white border-l border-gray-200 p-2 overflow-y-auto max-h-screen scrollbar-thin scrollbar-thumb-gray-300">
             {/* Header */}
@@ -22,22 +32,166 @@ const GroupMembers = ({ conversation, userLogin, setIsSetting, membersWithRoles 
             {/* Danh sách thành viên */}
             <div className="space-y-2">
                 {membersWithRoles.map((member, index) => (
-                    <div key={index} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md transition-colors">
+                    <div key={index} className="flex items-center space-x-3 p-2 hover:bg-gray-50 rounded-md transition-colors relative">
                         <img
                             src={member.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'}
                             alt={member.fullName}
                             className="w-10 h-10 rounded-full"
                         />
                         <div className="flex-1">
-                            <p className="text-sm font-medium text-gray-900">{member.fullName}</p>
-                            <p className="text-xs text-gray-500">{member.id === userLogin.id ? 'Bạn' : ''}</p>
-                            <p className="text-xs text-gray-500">{member.role === 'leader' ? 'Trưởng nhóm' : member.role === 'vice_leader' ? 'Phó nhóm' : 'Thành viên'}</p>
+                            <p className="text-sm font-medium text-gray-900">{member.id === userLogin.id ? 'Bạn' : member.fullName}</p>
+                            {
+                                leaderId === member.id && (
+                                    <>
+                                        <div className="flex items-center justify-center text-sm bg-slate-500 rounded-full px-2 py-1 w-4 h-4 absolute bottom-3 left-9">
+                                            <FontAwesomeIcon icon={faKey} className="text-yellow-400 text-[9px]" />
+                                        </div>
+                                        <p className="text-xs text-gray-500">Trường nhóm</p>
+                                    </>
+                                )
+                            }
+
+                            {
+                                viceLeaderIds.includes(member.id) && (
+                                    <>
+                                        <div className="flex items-center justify-center text-sm bg-slate-500 rounded-full px-2 py-1 w-4 h-4 absolute bottom-3 left-9">
+                                            <FontAwesomeIcon icon={faKey} className="text-white text-[9px]" />
+                                        </div>
+                                        <p className="text-xs text-gray-500">Phó nhóm</p>
+                                    </>
+                                )
+                            }
                         </div>
+
+                        {
+                            // trưởng nhóm: gỡ quyền phó nhóm, xóa khỏi nhóm -> thành viên khác; chính mình -> rời nhóm --> modal chọn nhóm trưởng mới trước khi rời
+                            // pho nhóm: xóa khỏi nhóm (thành viên không là nhóm trưởng và phó); chính mình -> rời nhóm
+                            // thành viên: rời nhóm
+                            userLogin.id === leaderId ? (
+                                <button
+                                    onClick={() => {
+                                        setIsOpenMenu(!isOpenMenu);
+                                        setMemberSelected(member);
+                                    }}
+                                    className="p-2 rounded-full hover:bg-gray-200 transition-colors"
+                                >
+                                    <FontAwesomeIcon icon={faEllipsis} className="text-gray-600" />
+                                </button>
+                            ) : (
+                                viceLeaderIds.includes(userLogin.id) && ((member.id !== userLogin.id && !viceLeaderIds.includes(member.id) && member.id !== leaderId) || (userLogin.id === member.id)) && (
+                                    <button
+                                        onClick={() => {
+                                            setIsOpenMenu(!isOpenMenu);
+                                            setMemberSelected(member);
+                                        }}
+                                        className="p-2 rounded-sm hover:bg-gray-200 transition-colors"
+                                    >
+                                        <FontAwesomeIcon icon={faEllipsis} className="text-gray-600" />
+                                    </button>
+                                )
+                            )
+                        }
+
+                        {
+                            userLogin.id === member.id && member.id !== leaderId && !viceLeaderIds.includes(member.id) && (
+                                <button
+                                    onClick={() => {
+                                        setIsOpenMenu(!isOpenMenu);
+                                        setMemberSelected(member);
+                                    }}
+                                    className="p-2 rounded-sm hover:bg-gray-200 transition-colors"
+                                >
+                                    <FontAwesomeIcon icon={faEllipsis} className="text-gray-600" />
+                                </button>
+                            )
+                        }
+
+                        {
+                            isOpenMenu && memberSelected?.id === member.id && (
+                                <MenuMember
+                                    leaderId={leaderId}
+                                    viceLeaderIds={viceLeaderIds}
+                                    member={memberSelected}
+                                    conversation={conversation}
+                                    isOpen={isOpenMenu}
+                                    userLogin={userLogin}
+                                    onClose={() => setIsOpenMenu(false)}
+                                />
+                            )
+                        }
                     </div>
                 ))}
             </div>
         </div>
     );
 };
+
+
+const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onClose, userLogin }) => {
+
+    if (!isOpen) return null;
+
+    return (
+        <>
+            <div className="absolute bg-white border border-gray-200 rounded-md shadow-lg z-10 right-10 mt-2 w-48">
+                {/* User login is leader */}
+                {
+                    userLogin.id === leaderId && (
+                        member.id === leaderId ? (
+                            <div className="w-full cursor-pointer" onClick={onClose}>
+                                <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Rời nhóm</p>
+                            </div>
+                        ) : (
+                            <>
+                                {
+                                    viceLeaderIds.includes(member.id) ? (
+                                        <div className="w-full cursor-pointer" onClick={onClose}>
+                                            <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Gỡ quyền phó nhóm</p>
+                                        </div>
+                                    ) : (
+                                        <div className="w-full cursor-pointer" onClick={onClose}>
+                                            <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Thêm phó nhóm</p>
+                                        </div>
+                                    )
+                                }
+                                <div className="w-full cursor-pointer" onClick={onClose}>
+                                    <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Xóa khỏi nhóm</p>
+                                </div>
+                            </>
+                        )
+                    )
+                }
+
+
+                {/* user login is vice_leader */}
+                {
+                    viceLeaderIds.includes(userLogin.id) && (
+                        member.id === userLogin.id ? (
+                            <div className="w-full cursor-pointer" onClick={onClose}>
+                                <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Rời nhóm</p>
+                            </div>
+                        ) : (
+                            member.id !== leaderId && (
+                                <div className="w-full cursor-pointer" onClick={onClose}>
+                                    <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Xóa khỏi nhóm</p>
+                                </div>
+                            )
+                        )
+                    )
+                }
+
+                {/* user login is member */}
+                {
+                    userLogin.id === member.id && member.id !== leaderId && !viceLeaderIds.includes(member.id) && (
+                        <div className="w-full cursor-pointer" onClick={onClose}>
+                            <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Rời nhóm</p>
+                        </div>
+                    )
+                }
+            </div>
+        </>
+    )
+
+}
 
 export default GroupMembers;

@@ -15,7 +15,7 @@ import { FilterScreen } from "../pages/inapp/FilterScreen";
 import { AccountNavigation } from "./AccountNavigation";
 import { useDispatch, useSelector } from "react-redux";
 import socket from "../../utils/socket";
-import { addConversation, addPinToConversation, getAllConversation, removePinToConversation, setConversation, updateLastMessage, updateProfileGroupById } from "../redux/slices/ConversationSlice";
+import { addConversation, addPinToConversation, getAllConversation, removePinToConversation, setConversation, updateLastMessage, updatePermissions, updateProfileGroupById } from "../redux/slices/ConversationSlice";
 import { addFriend, addFriendRequests, cancelFriend, getFriendByPhoneNumber, getFriends, getFriendsRequest, removeFriend, sendFriendRequest, setFriendRequests, setFriends, unfriend } from "../redux/slices/FriendSlice";
 import { showToast } from "../../utils/AppUtils";
 import { FlatList } from "react-native-gesture-handler";
@@ -221,6 +221,18 @@ export const InAppNavigation = () => {
       socket.off('receive-seen-message', handleReceiveSeenMessage);
     }
   })
+
+  useEffect(() => {
+    const handlerReceiveUpdateRoles = async (data) => {
+      console.log('receive-update-roles', data);
+      dispatch(updatePermissions({ conversationId: data.conversation.id, roles: data.conversation.roles }));
+    }
+    socket.on('receive-update-roles', handlerReceiveUpdateRoles);
+
+    return () => {
+      socket.off('receive-update-roles', handlerReceiveUpdateRoles);
+    }
+  }, [])
 
   // =============== HANDLE SOCKET FRIEND REQUEST ===============
   useEffect(() => {

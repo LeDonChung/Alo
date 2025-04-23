@@ -313,7 +313,7 @@ io.on("connection", (socket) => {
     })
 
 
-    socket.on('create_group', async (data) => {
+    socket.on('create-group', async (data) => {
         const { conversation } = data;
         const members = conversation.memberUserIds;
 
@@ -350,6 +350,48 @@ io.on("connection", (socket) => {
         const roomInfo = io.sockets.adapter.rooms.get(conversationId);
         console.log(`Room ${conversationId} has ${roomInfo ? roomInfo.size : 0} members`);
     });
+
+    socket.on('update-roles', async (data) => {
+        const { conversation } = data;
+
+        const members = conversation.memberUserIds;
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-update-roles', { conversation });
+            });
+        }
+    })
+
+    socket.on('add-members-to-group', async (data) => {
+        console.log("Thêm thành viên vào nhóm:", data);
+
+        const { conversation, memberSelected, memberInfo } = data;
+        const members = conversation.memberUserIds;
+
+        // gửi cho tất cả các thành viên trong nhóm
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-add-members-to-group', data);
+            });
+        }
+
+        // gửi cho tất cả các thành viên được chọn
+        for (const userId of memberSelected) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-add-members-to-group', data);
+            });
+        }
+
+
+    })
+
+
     // =====================
     // Helper functions
     // =====================
@@ -384,6 +426,73 @@ io.on("connection", (socket) => {
             });
         }
     }
+
+    // ##### WEB RTC #####
+
+    // Xử lý signaling
+    // Data: { roomId, data }
+    socket.on('offer', (data) => {
+        socket.to(data.roomId).emit('offer', data);
+    });
+
+    // Data: { roomId, data }
+    socket.on('answer', (data) => {
+        socket.to(data.roomId).emit('answer', data);
+    });
+
+    // Data: { roomId, data }
+    socket.on('ice-candidate', (data) => {
+        socket.to(data.roomId).emit('ice-candidate', data);
+    });
+
+    // incoming call
+    // Data: { conversation, caller, isVoiceCall }
+    socket.on('incoming-call', async (data) => {
+        const members = data.conversation.memberUserIds;
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-incoming-call', data);
+            });
+        }
+    });
+
+    // Chấp nhận cuộc gọi
+    socket.on('accept-call', async (data) => {
+        const members = data.conversation.memberUserIds;
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-accept-call', data);
+            });
+        }
+    });
+
+    // Từ chối cuộc gọi
+    socket.on('reject-call', async (data) => {
+        const members = data.conversation.memberUserIds;
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-reject-call', data);
+            });
+        }
+    });
+
+    // Kết thúc cuộc gọi
+    socket.on('end-call', async (data) => {
+        const members = data.conversation.memberUserIds;
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-end-call', data);
+            });
+        }
+    });
 });
 
 server.listen(process.env.SERVER_PORT, () => {

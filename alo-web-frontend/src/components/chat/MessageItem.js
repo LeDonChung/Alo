@@ -22,7 +22,7 @@ import {
 import socket from '../../utils/socket';
 import ModalForwardMessage from './ModalForwardMessage';
 import ModalReaction from './ModalReaction'; // Import component mới
-import showToast from '../../utils/AppUtils';
+import showToast, { getUserRoleAndPermissions } from '../../utils/AppUtils';
 
 const MessageItem = ({
   message,
@@ -307,7 +307,7 @@ const MessageItem = ({
       dispatch(setMessageUpdate({ messageId: message.id, status: 1 }));
       const resp = await dispatch(updateMessageStatus({ messageId: message.id, status: 1 }));
       const messageUpdate = resp.payload.data;
-      
+
       socket.emit('updateMessage', { message: messageUpdate, conversation });
     } catch (error) {
       console.error('Error recalling message:', error);
@@ -401,9 +401,21 @@ const MessageItem = ({
                       Lưu về máy
                     </li>
                   )}
-                  <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handlePinMessage}>
-                    Ghim tin nhắn
-                  </li>
+                  {
+                    conversation.isGroup ? (
+                      getUserRoleAndPermissions(conversation, userLogin.id)?.permissions?.pinMessages ? (
+                        <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handlePinMessage}>
+                          Ghim tin nhắn
+                        </li>
+                      ) : null // If no permission, render nothing
+                    ) : (
+                      <li className="px-2 py-1 hover:bg-gray-100 cursor-pointer" onClick={handlePinMessage}>
+                        Ghim tin nhắn
+                      </li>
+                    )
+                  }
+
+
                   <li
                     className="px-2 py-1 hover:bg-gray-100 cursor-pointer"
                     onClick={() => setShowDetailsModal(true)}

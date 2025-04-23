@@ -6,7 +6,7 @@ import 'lightgallery/css/lg-zoom.css';
 import 'lightgallery/css/lg-thumbnail.css';
 import lgZoom from 'lightgallery/plugins/zoom';
 import lgThumbnail from 'lightgallery/plugins/thumbnail';
-import { getFriend } from '../utils/AppUtils';
+import showToast, { getFriend, getUserRoleAndPermissions } from '../utils/AppUtils';
 import GroupMembers from './conversation/GroupMember';
 import GroupManagement from './conversation/GroupManager';
 import MediaStorage from './conversation/MediaStorage';
@@ -15,15 +15,19 @@ import { setConversation, removeAllHistoryMessages } from '../redux/slices/Conve
 import socket from '../utils/socket';
 import { toast } from 'react-toastify';
 import { clearAllMessages } from '../redux/slices/MessageSlice';
+import ModalAddMember from './conversation/ModalAddMember';
+import UpdateProfileGroup from './conversation/UpdateProfileGroup';
 
 
 
 
 const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
+
   const dispatch = useDispatch();
   const userLogin = useSelector(state => state.user.userLogin);
   const conversation = useSelector(state => state.conversation.conversation);
   const messages = useSelector(state => state.message.messages);
+  const [isOpenModalAddMember, setIsOpenModalAddMember] = useState(false);
 
   // Hàm lấy icon theo loại file
   const getFileIcon = (extension) => {
@@ -85,7 +89,7 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
   const [showManagement, setShowManagement] = useState(false);
   const [showMediaStorage, setShowMediaStorage] = useState(false);
   const [showFile, setShowFile] = useState(false);
-
+  const [isOpenUpdateProfileGroup, setIsOpenUpdateProfileGroup] = useState(false);
   const [membersWithRoles, setMembersWithRoles] = useState([]);
 
   // Hàm xử lý xóa lịch sử trò chuyện
@@ -119,6 +123,25 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
   };
 
 
+  // Lắng nghe sự kiện Socket.IO
+  useEffect(() => {
+    socket.on('receive-remove-all-history-messages', (data) => {
+      const { conversationId } = data;
+      if (conversationId === conversation.id) {
+        dispatch(setConversation({ ...conversation, messages: [], lastMessage: null }));
+        setPhotos([]);
+        setFiles([]);
+        setLinks([]);
+        setPhotosGroupByDate([]);
+        setFilesGroupByDate([]);
+        alert('Lịch sử trò chuyện đã được xóa bởi trưởng nhóm.');
+      }
+    });
+
+    return () => {
+      socket.off('receive-remove-all-history-messages');
+    };
+  }, [conversation, dispatch]);
 
   // Cập nhật state khi messages hoặc conversation thay đổi
   useEffect(() => {
@@ -211,11 +234,6 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
     conversation?.memberUserIds?.find(item => item !== userLogin.id)
   );
 
-  // Giả lập danh sách link (nếu message không có messageType là 'link')
-  const mockLinks = [
-    { content: 'https://docs.google.com', timestamp: new Date() },
-  ];
-
   useEffect(() => {
     if (isSetting) {
       setShowMembers(false);
@@ -230,6 +248,14 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
       setIsSetting(false);
     }
   }, [search])
+
+  const handlerShowProfileGroup = () => {
+    if(!getUserRoleAndPermissions(conversation, userLogin.id)?.permissions?.changeGroupInfo) {
+      showToast('Bạn không có quyền thay đổi thông tin nhóm', 'error');
+      return;
+    }
+    setIsOpenUpdateProfileGroup(true)
+  }
   const renderContent = () => {
     return (
       <div className="w-1/4 bg-white border-l border-gray-200 p-2 overflow-y-auto max-h-screen scrollbar-thin scrollbar-thumb-gray-300">
@@ -284,24 +310,41 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
                   <h3 className="text-base font-semibold text-gray-800 mb-2 text-center">Thông tin nhóm</h3>
                   <div className="flex flex-col items-center">
                     <div className="relative mb-3">
-                      <img
-                        src={
-                          conversation.isGroup
-                            ? conversation.avatar || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'
-                            : friend?.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'
-                        }
-                        alt="Avatar"
-                        className="w-20 h-20 rounded-full border border-gray-200"
-                      />
+                      {
+                        conversation.isGroup ? (
+                          <img
+                            onClick={() => handlerShowProfileGroup()}
+                            src={conversation.avatar || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'}
+                            alt="Avatar"
+                            className="w-20 h-20 rounded-full border border-gray-200 cursor-pointer"
+                          />
+                        ) : (
+                          <img
+                            src={friend?.avatarLink || 'https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg'}
+                            alt="Avatar"
+                            className="w-20 h-20 rounded-full border border-gray-200"
+                          />
+                        )
+                      }
+
                       {conversation.isGroup && (
                         <span className="absolute top-0 right-0 bg-blue-500 text-white text-xs font-semibold rounded-full w-6 h-6 flex items-center justify-center">
                           {conversation.memberUserIds.length}
                         </span>
                       )}
                     </div>
-                    <p className="text-lg font-semibold text-gray-900">
-                      {conversation.isGroup ? conversation.name : friend?.fullName || 'Không xác định'}
-                    </p>
+                    {
+                      conversation.isGroup ? (
+                        <p className="text-sm font-bold text-gray-900 cursor-pointer" onClick={() => handlerShowProfileGroup()}>{conversation.name}</p>
+                      ) : (
+                        <p className="text-sm font-bold text-gray-900 cursor-pointer">{friend?.fullName || 'Không xác định'}</p>
+                      )
+                    }
+                    {
+                      isOpenUpdateProfileGroup && <UpdateProfileGroup onClose={() => {
+                        setIsOpenUpdateProfileGroup(false);
+                      }} conversation={conversation}/>
+                    }
                     <div className="flex space-x-4 mt-4">
                       <button className="flex flex-col items-center text-gray-600 hover:text-blue-500 transition-colors">
                         <div className="rounded-full bg-gray-200 p-2">
@@ -327,7 +370,7 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
                       {conversation.isGroup ? (
                         <>
                           <button
-
+                            onClick={() => { setIsOpenModalAddMember(true) }}
                             className="flex flex-col items-center text-gray-600 hover:text-blue-500 transition-colors"
                           >
                             <div className="rounded-full bg-gray-200 p-2">
@@ -342,6 +385,8 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
                             </div>
                             <span className="text-sm mt-1">Thêm thành viên</span>
                           </button>
+                          <ModalAddMember isOpen={isOpenModalAddMember} onClose={() => { setIsOpenModalAddMember(false) }} userLogin={userLogin} conversation={conversation} />
+
                           <button
                             onClick={() => {
                               setIsSetting(false);

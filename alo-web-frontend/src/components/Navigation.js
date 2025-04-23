@@ -5,9 +5,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
-import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, updateConversationInList, } from "../redux/slices/ConversationSlice";
-import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage, seenOne, clearAllMessages } from "../redux/slices/MessageSlice";
+
+import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, addMemberGroup, updateProfileGroupById, updatePermissions } from "../redux/slices/ConversationSlice";
+import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage, seenOne } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
+import { addReceive, setCalling, setIncomingCall, setIsVideoCallOpen, setIsVoiceCallOpen } from "../redux/slices/CallSlice";
+import VideoCallModal from "./call/VideoCallModel";
 
 export const Navigation = () => {
     const dispatch = useDispatch();
@@ -311,8 +314,172 @@ export const Navigation = () => {
         };
     }, [conversation, conversations, dispatch]);
 
+    //lắng nghe sự kiện thêm thành viên vào nhóm từ server
+    useEffect(() => {
+        const handleReceiveAddMember = (data) => {
+            console.log("Nhận được sự kiện receive-add-member:", data);
+            const userLoginId = JSON.parse(localStorage.getItem("userLogin")).id;
+            const { conversation, memberSelected, memberInfo } = data;
+            conversation.memberUserIds = [...conversation.memberUserIds, ...memberSelected];
+            conversation.members = [...conversation.members, ...memberInfo];
+            if (memberSelected.includes(userLoginId)) {
+                showToast("Bạn đã được thêm vào nhóm" + conversation.name, "success");
+                dispatch(addConversation(conversation));
+            }
+            if (conversation.memberUserIds.includes(userLoginId)) {
+                dispatch(addMemberGroup({ conversationId: conversation.id, memberUserIds: memberSelected, memberInfo: memberInfo }));
+            }
+        }
+        socket.on("receive-add-members-to-group", handleReceiveAddMember);
+
+        return () => {
+            socket.off("receive-add-members-to-group", handleReceiveAddMember);
+        };
+    }, [])
+
+    
+    useEffect(() => {
+        const handlerReceiveUpdatedConversation = async (data) => {
+            console.log("Receive updated profile conversation", data);
+            const conversation = data.conversation;
+            await dispatch(updateProfileGroupById(conversation));
+        }
+
+        socket.on("receive_update_profile_group", handlerReceiveUpdatedConversation);
+
+        return () => {
+            socket.off("receive_update_profile_group", handlerReceiveUpdatedConversation);
+        }
+    }, []);
+
+    useEffect(() => {
+        const handlerReceiveUpdateRoles = async (data) => {
+            console.log('receive-update-roles', data);
+            dispatch(updatePermissions({ conversationId: data.conversation.id, roles: data.conversation.roles }));
+        }
+        socket.on('receive-update-roles', handlerReceiveUpdateRoles);
+
+        return () => {
+            socket.off('receive-update-roles', handlerReceiveUpdateRoles);
+        }
+    }, [])
+
+    const incomingCall = useSelector((state) => state.call.incomingCall);
+
+    useEffect(() => {
+        const handlerIncomingCall = (data) => {
+            console.log("receive-incoming-call", data);
+            dispatch(setIncomingCall(data));
+            dispatch(setCalling(false));
+        }
+        socket.on("receive-incoming-call", handlerIncomingCall);
+        return () => {
+            socket.off("receive-incoming-call", handlerIncomingCall);
+        }
+    }, [])
+
+
+    
+
+    const isVideoCallOpen = useSelector((state) => state.call.isVideoCallOpen);
+    const isVoiceCallOpen = useSelector((state) => state.call.isVoiceCallOpen);
+    const handleAcceptCall = async () => {
+        if (incomingCall) {
+            if (!incomingCall.isVoiceOnly) {
+                socket.emit('join-conversation', incomingCall.roomId);
+                socket.emit('accept-call', {
+                    ...incomingCall,
+                    receiver: userLogin,
+                })
+                dispatch(setConversation(incomingCall.conversation));
+                navigate('/me')
+                dispatch(setIsVideoCallOpen(true));
+                dispatch(setIncomingCall(null));
+                dispatch(setCalling(true));
+            }
+        }
+
+    }
+    const handlerRejectCall = async () => {
+        if (incomingCall) {
+            socket.emit('reject-call', {
+                ...incomingCall,
+                receiver: userLogin,
+            })
+            dispatch(setIncomingCall(null));
+            dispatch(setIsVoiceCallOpen(false));
+            dispatch(setIsVideoCallOpen(false));
+        }
+    }
     return (
         <>
+            {/* MODAL CALL */}
+            {
+                incomingCall && (
+                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+                        <div className="bg-white rounded-lg p-6 w-full max-w-sm text-center">
+                            <img
+                                src={
+                                    incomingCall.conversation.isGroup
+                                        ? incomingCall.conversation.avatar ||
+                                        "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"
+                                        : incomingCall.caller.avatarLink ||
+                                        "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"
+                                }
+                                alt="Caller Avatar"
+                                className="w-16 h-16 rounded-full mx-auto mb-4"
+                            />
+                            <p className="text-lg font-semibold">
+                                {incomingCall.conversation.isGroup ? incomingCall.conversation.name : incomingCall.caller.fullName}
+                            </p>
+                            <p className="text-gray-500 mb-4">
+                                {incomingCall.conversation.isGroup
+                                    ? `Cuộc gọi nhóm đến từ ${incomingCall.caller.fullName}...`
+                                    : "Cuộc gọi video đến..."}
+                            </p>
+                            <div className="flex justify-center space-x-4">
+                                <button
+                                    onClick={() => {
+                                        handleAcceptCall();
+                                    }}
+                                    className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+                                >
+                                    Chấp nhận
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        handlerRejectCall();
+                                    }}
+                                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+                                >
+                                    Từ chối
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                )
+
+            }
+
+            {/* MODAL VIDEO CALL */}
+            {isVideoCallOpen && (
+                <VideoCallModal
+                    isOpen={isVideoCallOpen}
+                    isVoiceOnly={!isVideoCallOpen}
+                    onClose={() => {
+                        setIsVideoCallOpen(false);
+                    }} />
+            )}
+
+            {/* MODAL VIDEO CALL */}
+            {isVoiceCallOpen && (
+                <VideoCallModal
+                    isOpen={isVoiceCallOpen}
+                    isVoiceOnly={!isVideoCallOpen}
+                    onClose={() => {
+                        setIsVoiceCallOpen(false);
+                    }} />
+            )}
             {/* Sidebar Navigation */}
             <div className="w-20 bg-blue-600 text-white flex flex-col items-center py-4 px-4 relative">
                 <div className="cursor-pointer" onClick={() => setShowProfileModal(true)}>

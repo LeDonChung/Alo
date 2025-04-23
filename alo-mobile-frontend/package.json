@@ -18,6 +18,7 @@
     "@react-navigation/stack": "^6.3.29",
     "@reduxjs/toolkit": "^2.3.0",
     "axios": "^1.6.8",
+    "date-fns": "^4.1.0",
     "dotenv": "^16.4.7",
     "emoji-picker-react": "^4.12.2",
     "expo": "~52.0.46",

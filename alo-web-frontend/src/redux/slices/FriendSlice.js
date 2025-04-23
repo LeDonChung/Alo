@@ -214,8 +214,6 @@ const FriendSlice = createSlice({
             state.friend = null;
         });
         builder.addCase(unfriend.fulfilled, (state, action) => {
-            console.log("action.payload.data", action.payload.data);
-
             state.friend = action.payload.data;
         });
         builder.addCase(unfriend.rejected, (state, action) => {
