@@ -371,9 +371,6 @@ io.on("connection", (socket) => {
 
     socket.on('update-roles', async (data) => {
         const { conversation } = data;
-        console.log("update-roles: ", conversation);
-        
-
         const members = conversation.memberUserIds;
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);

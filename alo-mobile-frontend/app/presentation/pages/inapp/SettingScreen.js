@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image, FlatList, Switch, Modal, TextInput, Button, Alert } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
@@ -12,6 +13,7 @@ import socket from '../../../utils/socket';
 export const SettingScreen = () => {
     const userLogin = useSelector(state => state.user.userLogin);
     const conversation = useSelector(state => state.conversation.conversation);
+    const leaderIds = conversation.roles.find(r => r.role === 'leader')?.userIds || [];
     const friend = conversation?.isGroup === false && conversation?.memberUserIds ?
         getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id)) :
         {};
@@ -484,14 +486,21 @@ export const SettingScreen = () => {
                     <Icon name="chat" size={24} color="#007AFF" style={styles.iconTap} />
                     <Text style={styles.tabText}>Tìm tin nhắn</Text>
                 </TouchableOpacity>
+
+                <TouchableOpacity style={styles.tab} onPress={() => navigation.navigate('addMember')}>
+                    <Icon name="group" size={28} color="#007AFF" style={styles.iconTap} />
+                    <Text style={styles.tabText}>Thêm thành viên</Text>
+                </TouchableOpacity>
+
                 {
                     conversation.isGroup && (
                         <TouchableOpacity style={styles.tab}>
                             <Icon name="group" size={28} color="#007AFF" style={styles.iconTap} />
-                            <Text style={styles.tabText}>Thành viên</Text>
+                            <Text style={styles.tabText}>Thê thành viên</Text>
                         </TouchableOpacity>
                     )
                 }
+
                 <TouchableOpacity style={styles.tab}>
                     <Icon name="image" size={24} color="#007AFF" style={styles.iconTap} />
                     <Text style={styles.tabText}>Đổi hình nền</Text>
@@ -522,6 +531,13 @@ export const SettingScreen = () => {
                                 <Text style={styles.optionText}>Cài đặt nhóm</Text>
                             </TouchableOpacity>
 
+
+                {/* Thêm các tùy chọn từ tab "Bình chọn" ngay sau "Cài đặt nhóm" */}
+                <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('group-members', { groupId: conversation.id, mode: 'view' })}>
+                    <Icon name="group" size={24} color="#000" />
+                    <Text style={styles.optionText}>Xem thành viên (5)</Text>
+                </TouchableOpacity>
+
                             <TouchableOpacity style={styles.option}>
                                 <Icon name="group" size={24} color="#000" />
                                 <Text style={styles.optionText}>Xem thành viên (5)</Text>
@@ -545,10 +561,10 @@ export const SettingScreen = () => {
                             {
                                 userRole.role === 'leader' && (
                                     <>
-                                        <TouchableOpacity style={styles.option}>
-                                            <Icon name="person-add-alt-1" size={24} color="#000" />
-                                            <Text style={styles.optionText}>Chuyển quyền trưởng nhóm</Text>
-                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('group-members', { groupId: conversation.id, mode: 'transferLeader' })}>
+                    <Icon name="person-add-alt-1" size={24} color="#000" />
+                    <Text style={styles.optionText}>Chuyển quyền trưởng nhóm</Text>
+                </TouchableOpacity>
                                         <TouchableOpacity style={styles.option} onPress={handleClearChatHistory}>
                                             <Icon name="delete" size={24} color="#FF0000" />
                                             <Text style={[styles.optionText, { color: '#FF0000' }]}>Xóa lịch sử trò chuyện</Text>

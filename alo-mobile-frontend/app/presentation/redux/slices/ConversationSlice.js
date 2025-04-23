@@ -48,6 +48,97 @@ const removePin = createAsyncThunk('ConversationSlice/removePin', async ({ conve
     }
 });
 
+const addMemberToGroup = createAsyncThunk(
+    'ConversationSlice/addMemberToGroup',
+    async ({ conversationId, memberUserIds }, { rejectWithValue }) => {
+      try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/add-member`, {
+          memberUserIds
+        });
+        return response.data;
+      } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+      }
+    }
+);
+
+const removeMemberToGroup = createAsyncThunk(
+    'ConversationSlice/removeMemberToGroup',
+    async ({ conversationId, memberUserId }, { rejectWithValue }) => {
+        try {
+            const response = await axiosInstance.post(`/api/conversation/${conversationId}/remove-member/${memberUserId}`);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+        }
+    }
+);
+
+const blockMemberToGroup = createAsyncThunk(
+    'ConversationSlice/blockMemberToGroup',
+    async ({ conversationId, memberUserId }, { rejectWithValue }) => {
+        try {
+            const response = await axiosInstance.post(`/api/conversation/${conversationId}/block/${memberUserId}`);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+        }
+    }
+);
+
+const unblockMemberToGroup = createAsyncThunk(
+    'ConversationSlice/unblockMemberToGroup',
+    async ({ conversationId, memberUserId }, { rejectWithValue }) => {
+        try {
+            const response = await axiosInstance.post(`/api/conversation/${conversationId}/unblock/${memberUserId}`);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+        }
+    }
+);
+
+const addViceLeaderToGroup = createAsyncThunk(
+    'ConversationSlice/addViceLeaderToGroup',
+    async ({ conversationId, memberUserId }, { rejectWithValue }) => {
+        try {
+            const response = await axiosInstance.post(
+                `/api/conversation/${conversationId}/add-vice-leader/${memberUserId}`
+            );
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+        }
+    }
+);
+
+const removeViceLeaderToGroup = createAsyncThunk(
+    'ConversationSlice/removeViceLeaderToGroup',
+    async ({ conversationId, memberUserIds }, { rejectWithValue }) => {
+        try {
+            const response = await axiosInstance.post(`/api/conversation/${conversationId}/remove-vice-leader/${memberUserIds}`);
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+        }
+    }
+);
+
+const changeLeader = createAsyncThunk(
+    'ConversationSlice/changeLeader',
+    async ({ conversationId, newLeaderId }, { rejectWithValue }) => {
+        try {
+            const response = await axiosInstance.post(
+                `/api/conversation/${conversationId}/change-leader/${newLeaderId}`
+            );
+            return response.data;
+        } catch (error) {
+            return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+        }
+    }
+);
+
+
 const createGroup = createAsyncThunk('ConversationSlice/createGroup', async ({ data, file }, { rejectWithValue }) => {
     try {
         const formData = new FormData();
@@ -171,6 +262,7 @@ const ConversationSlice = createSlice({
         setConversation: (state, action) => {
             state.conversation = action.payload;
         },
+        
         addConversation: (state, action) => {
             const newConversation = action.payload;
             const existingConversation = state.conversations.find(conversation => conversation.id === newConversation.id);
@@ -179,6 +271,18 @@ const ConversationSlice = createSlice({
             } else {
                 const index = state.conversations.findIndex(conversation => conversation.id === newConversation.id);
                 state.conversations[index] = newConversation;
+            }
+        },
+        addMemberGroup: (state, action) => {
+            const conversationId = action.payload.conversationId;
+            const memberUserIds = action.payload.memberUserIds;
+            const memberInfo = action.payload.memberInfo;
+            const conversation = state.conversations.find(conversation => conversation.id === conversationId);
+            if (conversation) {
+                conversation.members = [...conversation.members, ...memberInfo];
+                conversation.memberUserIds = [...conversation.memberUserIds, ...memberUserIds];
+                const index = state.conversations.findIndex(conversation => conversation.id === conversationId);
+                state.conversations[index] = conversation;
             }
         },
         updateProfileGroupById: (state, action) => {
@@ -360,6 +464,140 @@ const ConversationSlice = createSlice({
         });
         builder.addCase(removePin.rejected, (state, action) => {});
 
+        builder.addCase(addMemberToGroup.pending, (state) => {
+        });
+        builder.addCase(addMemberToGroup.fulfilled, (state, action) => {
+            let cons = state.conversation;
+            if (cons) {
+                cons.members = [...cons.members, ...action.payload.data.members];
+            } 
+            state.conversation = {...cons};
+        });
+        builder.addCase(addMemberToGroup.rejected, (state, action) => {
+        });
+
+        builder.addCase(removeMemberToGroup.pending, (state) => {
+        });
+        builder.addCase(removeMemberToGroup.fulfilled, (state, action) => {
+            let cons = state.conversation;
+            if (cons) {
+                cons.members = cons.members.filter(member => !action.payload.data.memberUserId.includes(member.id));
+            }
+            state.conversation = {...cons};
+        });
+        builder.addCase(removeMemberToGroup.rejected, (state, action) => {
+        });
+
+        builder.addCase(blockMemberToGroup.pending, (state) => {
+        });
+        builder.addCase(blockMemberToGroup.fulfilled, (state, action) => {
+            let cons = state.conversation;
+            if (cons) {
+                cons.members = cons.members.filter(member => !action.payload.data.memberUserId.includes(member.id));
+                cons.blockedMembers = [...cons.blockedMembers, ...action.payload.data.members];
+            }
+            state.conversation = {...cons};
+        });
+        builder.addCase(blockMemberToGroup.rejected, (state, action) => {
+        });
+
+        builder.addCase(unblockMemberToGroup.pending, (state) => {
+        });
+        builder.addCase(unblockMemberToGroup.fulfilled, (state, action) => {
+            let cons = state.conversation;
+            if (cons) {
+                cons.blockedMembers = cons.blockedMembers.filter(member => !action.payload.data.memberUserId.includes(member.id));
+                cons.members = [...cons.members, ...action.payload.data.members];
+            }
+            state.conversation = {...cons};
+        });
+        builder.addCase(unblockMemberToGroup.rejected, (state, action) => {
+        });
+
+        builder.addCase(addViceLeaderToGroup.pending, (state) => {
+        });
+        builder.addCase(addViceLeaderToGroup.fulfilled, (state, action) => {
+            let cons = state.conversation;
+            if (cons) {
+                cons.members = cons.members.map(member => {
+                    if (action.payload.data.memberUserIds.includes(member.id)) {
+                        return { ...member, isViceLeader: true };
+                    }
+                    return member;
+                });
+                cons.roles = cons.roles.map(role => {
+                    if (role.role === 'vice_leader') {
+                        return { ...role, userIds: [...role.userIds, ...action.payload.data.memberUserIds] };
+                    }
+                    return role;
+                });
+            }
+            state.conversation = {...cons};
+        });
+        builder.addCase(addViceLeaderToGroup.rejected, (state, action) => {
+        });
+
+        builder.addCase(removeViceLeaderToGroup.pending, (state) => {
+        });
+        builder.addCase(removeViceLeaderToGroup.fulfilled, (state, action) => {
+            let cons = state.conversation;
+            if (cons) {
+                cons.members = cons.members.map(member => {
+                    if (action.payload.data.memberUserIds.includes(member.id)) {
+                        return { ...member, isViceLeader: false };
+                    }
+                    return member;
+                });
+                cons.roles = cons.roles.map(role => {
+                    if (role.role === 'vice_leader') {
+                        return { ...role, userIds: role.userIds.filter(userId => !action.payload.data.memberUserIds.includes(userId)) };
+                    }
+                    return role;
+                });
+            }
+            state.conversation = {...cons};
+        });
+
+        builder.addCase(changeLeader.pending, (state) => {
+            state.loading = true;
+        });
+        
+        builder.addCase(changeLeader.fulfilled, (state, action) => {
+            let cons = state.conversation;
+        
+            if (cons) {
+                cons.members = cons.members.map((member) => {
+                    if (action.payload.data.newLeaderId === member.id) {
+                        return { ...member, isLeader: true };  
+                    } else {
+                        return { ...member, isLeader: false };
+                    }
+                });
+        
+                cons.roles = cons.roles.map((role) => {
+                    if (role.role === 'leader') {
+                        return { ...role, userIds: [action.payload.data.newLeaderId] };
+                    } else if (role.role === 'vice_leader') {
+                        return {
+                            ...role,
+                            userIds: role.userIds.filter(userId => userId !== action.payload.data.newLeaderId)
+                        };
+                    } else if (role.role === 'member') {
+                        return role;
+                    }
+                    return role;
+                });
+            }
+        
+            state.conversation = { ...cons };
+            state.loading = false; 
+        });
+        
+        builder.addCase(changeLeader.rejected, (state, action) => {
+            state.loading = false;
+            state.error = action.payload || "Lỗi khi thay đổi trưởng nhóm";
+        });
+        
         builder.addCase(createGroup.pending, (state) => {});
         builder.addCase(createGroup.fulfilled, (state, action) => {
             console.log(action.payload);
@@ -490,5 +728,6 @@ export {
     updateAllowSendMessageGroup, 
     updateAllowPinMessageGroup 
 };
+
 
 export default ConversationSlice.reducer;

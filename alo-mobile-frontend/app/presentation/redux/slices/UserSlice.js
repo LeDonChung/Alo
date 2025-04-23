@@ -19,6 +19,25 @@ const getProfile = createAsyncThunk('UserSlice/getProfile', async (token, { reje
         return rejectWithValue(error.response?.data);
     }
 });
+
+const getUserById = createAsyncThunk('UserSlice/getUserById', async (userId, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.get('/api/user/get-profile/' + userId);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data);
+    }
+});
+
+const getUserByIds = createAsyncThunk('UserSlice/getUserByIds', async (userIds, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/user/get-user-by-ids', { userIds });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data);
+    }
+});
+
 const uploadAvatar = createAsyncThunk('UserSlice/uploadAvatar', async (file, { rejectWithValue }) => {
     try {
         console.log("File: ", file);
@@ -241,9 +260,24 @@ const UserSlice = createSlice({
         builder.addCase(forgetPassword.rejected, (state, action) => {
         });
 
+        builder.addCase(getUserById.pending, (state) => {
+        });
+        builder.addCase(getUserById.fulfilled, (state, action) => {
+            state.userLogin = action.payload.data;
+        });
+        builder.addCase(getUserById.rejected, (state, action) => {
+            state.userLogin = null;
+        });
+
+        builder.addCase(getUserByIds.pending, (state) => {
+        });
+        builder.addCase(getUserByIds.fulfilled, (state, action) => {
+        });
+        builder.addCase(getUserByIds.rejected, (state, action) => {
+        });
     }
 });
 
 export const { setUserOnlines, setUserLogin } = UserSlice.actions;
-export { uploadAvatar, uploadBackground, getProfile, updateProfile, login, verifyOtp, generateOtp, logout, forgetPassword, changePassword };
+export { uploadAvatar, uploadBackground, getProfile, updateProfile, login, verifyOtp, generateOtp, logout, forgetPassword, changePassword, getUserById, getUserByIds };
 export default UserSlice.reducer;
