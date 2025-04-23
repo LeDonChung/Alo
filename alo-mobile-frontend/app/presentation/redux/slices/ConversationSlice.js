@@ -419,6 +419,19 @@ const ConversationSlice = createSlice({
                 state.conversations[conversationIndex].lastMessage = null;
             }
         },
+        removeMemberGroup: (state, action) => {
+            const conversationId = action.payload.conversationId;
+            const memberUserId = action.payload.memberUserIds;
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation.memberUserIds = state.conversation.memberUserIds.filter(id => id !== memberUserId);
+                state.conversation.members = state.conversation.members.filter(member => member.id !== memberUserId);
+            }
+            const conversationIndex = state.conversations.findIndex(convo => convo.id === conversationId);
+            if (conversationIndex !== -1) {
+                state.conversations[conversationIndex].memberUserIds = state.conversations[conversationIndex].memberUserIds.filter(id => id !== memberUserId);
+                state.conversations[conversationIndex].members = state.conversations[conversationIndex].members.filter(member => member.id !== memberUserId);
+            }
+        }
     },
     extraReducers: (builder) => {
         builder.addCase(getAllConversation.pending, (state) => {
@@ -712,7 +725,9 @@ export const {
     clearHistoryMessages, 
     memberLeaveGroup, 
     updatePermissions,
+    removeMemberGroup,
     handlerRemoveHistoryMessage,
+    addMemberGroup,
 } = ConversationSlice.actions;
 
 export { 
@@ -726,7 +741,14 @@ export {
     leaveGroup, 
     updateAllowUpdateProfileGroup, 
     updateAllowSendMessageGroup, 
-    updateAllowPinMessageGroup 
+    updateAllowPinMessageGroup ,
+    addMemberToGroup,
+    removeMemberToGroup,
+    blockMemberToGroup,
+    unblockMemberToGroup,
+    addViceLeaderToGroup,
+    removeViceLeaderToGroup,
+    changeLeader
 };
 
 

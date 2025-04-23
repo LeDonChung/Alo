@@ -50,17 +50,13 @@ export const AddMemberScreen = ({ navigation }) => {
     try {
         dispatch(addMemberToGroup({ conversationId: conversation.id, memberUserIds: selectedMembers }));
         dispatch(addMemberGroup({ conversationId: conversation.id, memberUserIds: selectedMembers, memberInfo: memberInfo }));
-
-        socket.emit("add-members-to-group", {conversation, memberSelected, memberInfo});
-
-        showToast("Thêm thành viên thành công!", 'success');
+        socket.emit("add-members-to-group", {conversation, selectedMembers, memberInfo});
+        showToast("success", "top", "Thành công", "Thêm thành viên thành công!");
         setSelectedMembers([]);
         setMemberInfo([]);
-        setFilteredConversations(filteredConversations);
-        setSearch("");
         navigation.goBack();
     }catch (error) {
-        showToast(error.message, 'error');
+      showToast("error", "top", "Lỗi", error.message || "Có lỗi xảy ra khi thêm thành viên");
     }
   };
 

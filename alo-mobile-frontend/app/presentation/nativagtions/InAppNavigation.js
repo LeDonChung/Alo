@@ -26,6 +26,7 @@ import { useDispatch, useSelector } from "react-redux";
 import socket from "../../utils/socket";
 import { 
   addConversation, 
+  removeConversation,
   addPinToConversation, 
   getAllConversation, 
   handlerRemoveHistoryMessage, 
@@ -529,7 +530,7 @@ export const InAppNavigation = () => {
       conversation.members = [...conversation.members, ...memberInfo];
   
       if (selectedMembers.includes(userLoginId)) {
-        showToast("Bạn đã được thêm vào nhóm " + conversation.name, "success");
+        showToast('success', 'top', 'Thông báo', 'Bạn đã được thêm vào nhóm ' + conversation.name);
         dispatch(addConversation(conversation));
       }
   
@@ -548,6 +549,30 @@ export const InAppNavigation = () => {
       socket.off("receive-add-members-to-group", handleReceiveAddMember);
     };
   }, []);
+
+   //lắng nghe sự kiện xóa thành viên khỏi nhóm từ server
+   useEffect(() => {
+    const handleReceiveRemoveMember = async (data) => {
+      console.log("Nhận được sự kiện receive-remove-member:", data);
+      const { conversation, memberUserId } = data;
+      const userLoginId = userLogin.id;
+      if (memberUserId === userLoginId) {
+        showToast('success', 'top', 'Thông báo', 'Bạn đã bị xóa khỏi nhóm ' + conversation.name);
+        dispatch(removeConversation(conversation.id));
+        navigation.navigate("home");
+      }else {
+        dispatch(removeMemberGroup({
+          conversationId: conversation.id,
+          memberUserId: memberUserId,
+        }));
+      }
+    }
+    socket.on("receive-remove-member", handleReceiveRemoveMember);
+
+        return () => {
+            socket.off("receive-remove-member", handleReceiveRemoveMember);
+        }
+   }, [])
   
   return (
     <SafeAreaView style={{ flex: 1, flexDirection: "column" }}>
