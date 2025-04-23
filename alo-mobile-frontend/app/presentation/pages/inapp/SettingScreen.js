@@ -98,7 +98,8 @@ export const SettingScreen = () => {
                                     // Xóa messages trong state local
                                     dispatch(clearAllMessages());
                                     dispatch(handlerRemoveHistoryMessage({ conversation: conversation }))
-
+                                    navigation.goBack();
+                                    // handler go home and can not go back
                                     // Emit socket event để thông báo cho các clients khác
                                     socket.emit('remove-all-history-messages', { conversation: conversation });
 

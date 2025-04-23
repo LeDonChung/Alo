@@ -242,7 +242,6 @@ export const InAppNavigation = () => {
 
         // Nếu đang ở cuộc trò chuyện bị xóa lịch sử
         dispatch(handlerRemoveHistoryMessage({ conversation }))
-        dispatch(setConversation(null))
         dispatch(clearAllMessages());
     };
 

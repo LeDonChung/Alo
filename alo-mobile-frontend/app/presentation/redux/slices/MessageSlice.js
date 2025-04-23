@@ -276,6 +276,7 @@ const MessageSlice = createSlice({
         });
         builder.addCase(getMessagesByConversationId.rejected, (state, action) => {
             state.isLoadMessage = false;
+            state.messages = [];
         });
 
         builder.addCase(forwardMessage.pending, (state) => {
