@@ -338,6 +338,18 @@ io.on("connection", (socket) => {
             });
         }
     })
+    // Xử lý sự kiện xóa lịch sử trò chuyện
+    socket.on('remove-all-history-messages', async (data) => {
+        const { conversationId } = data;
+        console.log(`Broadcasting remove history event to room ${conversationId}`);
+
+        // Gửi đến tất cả client trong phòng trừ người gửi
+        socket.to(conversationId).emit('receive-remove-all-history-messages', { conversationId });
+
+        // Log để debug
+        const roomInfo = io.sockets.adapter.rooms.get(conversationId);
+        console.log(`Room ${conversationId} has ${roomInfo ? roomInfo.size : 0} members`);
+    });
 
     socket.on('update-roles', async (data) => {
         const { conversation } = data;
@@ -351,26 +363,6 @@ io.on("connection", (socket) => {
             });
         }
     })
-
-    // // Xử lý sự kiện xóa lịch sử trò chuyện
-    // socket.on('remove-all-history-messages', async (data) => {
-    //     const { conversationId } = data;
-    //     // Lấy thông tin conversation từ backend để lấy danh sách thành viên
-    //     const conversationService = require("./src/service/conversation.service");
-    //     const conversation = await conversationService.getConversationById(conversationId);
-    //     if (!conversation) return;
-
-    //     const members = conversation.memberUserIds;
-    //     for (const userId of members) {
-    //         const socketIds = await findSocketIdsByUserId(userId);
-    //         const filteredSocketIds = socketIds.filter(id => id !== socket.id);
-    //         filteredSocketIds.forEach(id => {
-    //             io.to(id).emit('receive-remove-all-history-messages', { conversationId });
-    //         });
-    //     }
-    // });
-
-
 
     socket.on('add-members-to-group', async (data) => {
         console.log("Thêm thành viên vào nhóm:", data);

@@ -149,7 +149,6 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
         }
     };
 
-
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white rounded-lg shadow-lg w-[400px] max-h-[90vh] overflow-auto relative p-4">
@@ -161,6 +160,7 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                 </button>
 
                 <h2 className="text-lg font-semibold mb-2 text-center">Tạo nhóm</h2>
+
                 <div className="flex items-center justify-center border-b border-gray-300 mb-4">
                     <div className="relative">
                         <div className="h-[50px] w-[50px]" >
@@ -237,7 +237,6 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                     value={textSearch}
                     onChange={(e) => setTextSearch(e.target.value)}
                 />
-
 
                 {/* Danh sách bạn bè */}
                 <div className="flex flex-col overflow-auto max-h-[300px]">

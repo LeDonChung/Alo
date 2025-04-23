@@ -296,6 +296,8 @@ const ConversationSlice = createSlice({
         builder.addCase(removePin.rejected, (state, action) => {
         });
 
+        builder.addCase(removeAllHistoryMessages.pending, (state) => {
+            state.loading = true;
         // add member to group
         builder.addCase(addMemberToGroup.pending, (state) => {
         });
@@ -311,9 +313,6 @@ const ConversationSlice = createSlice({
         });
         builder.addCase(createGroup.rejected, (state, action) => { });
 
-        builder.addCase(removeAllHistoryMessages.pending, (state) => {
-            state.loading = true;
-            state.error = null;
         });
         builder.addCase(removeAllHistoryMessages.fulfilled, (state, action) => {
             state.loading = false;
