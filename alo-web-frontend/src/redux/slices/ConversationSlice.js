@@ -299,6 +299,7 @@ const ConversationSlice = createSlice({
                 state.conversations[conversationIndex].memberUserIds = state.conversations[conversationIndex].memberUserIds.filter(id => id !== memberUserId);
                 state.conversations[conversationIndex].members = state.conversations[conversationIndex].members.filter(member => member.id !== memberUserId);
             }
+        },
         handlerRemoveHistoryMessage: (state, action) => {
             const {conversation} = action.payload;
             if (state.conversation && state.conversation.id === conversation.id) {
@@ -310,8 +311,6 @@ const ConversationSlice = createSlice({
             if (conversationIndex !== -1) {
                 state.conversations[conversationIndex].lastMessage = null;
             }
-        }
-
         },
         removeConversation: (state, action) => {
             const conversationId = action.payload.conversationId;
@@ -478,7 +477,10 @@ export const {
     updateProfileGroupById, 
     clearHistoryMessages, 
     memberLeaveGroup, 
-    updatePermissions 
+    updatePermissions, 
+    addMemberGroup,
+    removeMemberGroup,
+    handlerRemoveHistoryMessage
 } = ConversationSlice.actions;
 
 export { 
@@ -489,9 +491,14 @@ export {
     createGroup, 
     updateProfileGroup, 
     removeAllHistoryMessages, 
-    leaveGroup, 
     updateAllowUpdateProfileGroup, 
     updateAllowSendMessageGroup, 
-    updateAllowPinMessageGroup 
+    updateAllowPinMessageGroup ,
+    addMemberToGroup,
+    removeMember,
+    blockMember,
+    removeViceLeader,
+    addViceLeader,
+
 };
 export default ConversationSlice.reducer;
