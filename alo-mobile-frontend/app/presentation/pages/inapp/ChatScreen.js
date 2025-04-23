@@ -511,19 +511,23 @@ export const ChatScreen = ({ route, navigation }) => {
             {`Kết quả thứ ${reversedIndex}/${searchResults.length}`}
           </Text>
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <TouchableOpacity
-              onPress={handlePrevious}
-              disabled={currentSearchIndex === 0}
-              style={{ padding: 10 }}
-            >
-              <Icon name="arrow-upward" size={24} color={currentSearchIndex === 0 ? '#ccc' : '#007AFF'} />
-            </TouchableOpacity>
+            
             <TouchableOpacity
               onPress={handleNext}
               disabled={currentSearchIndex === searchResults.length - 1}
               style={{ padding: 10 }}
             >
-              <Icon name="arrow-downward" size={24} color={currentSearchIndex === searchResults.length - 1 ? '#ccc' : '#007AFF'} />
+              <Icon name="arrow-upward" size={24} color={currentSearchIndex === searchResults.length - 1 ? '#ccc' : '#007AFF'} />
+
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              onPress={handlePrevious}
+              disabled={currentSearchIndex === 0}
+              style={{ padding: 10 }}
+            >
+              <Icon name="arrow-downward" size={24} color={currentSearchIndex === 0 ? '#ccc' : '#007AFF'} />
+
             </TouchableOpacity>
           </View>
         </View>
@@ -569,7 +573,7 @@ export const ChatScreen = ({ route, navigation }) => {
         conversation.isGroup ? (
           <>
             {
-              getUserRoleAndPermissions(conversation, userLogin.id).sendMessage ? (
+              getUserRoleAndPermissions(conversation, userLogin.id)?.permissions?.sendMessage ? (
                 <>
                   <InputComponent
                     setIsStickerPickerVisible={setIsStickerPickerVisible}

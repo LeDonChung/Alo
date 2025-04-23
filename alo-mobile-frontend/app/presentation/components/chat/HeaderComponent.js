@@ -64,14 +64,14 @@ const HeaderComponent = ({ isFriendOnline, getLastLoginMessage, lastLogout, scro
             </View>
           ) :(
           <View style={{ marginLeft: 20 }}>
-            <Text style={{ color: 'white', fontSize: 18 }}>{
+            <Text style={{ color: 'white', fontSize: 18, width: 150 }} numberOfLines={1}>{
               conversation.isGroup ? (
                 conversation.name
               ) : (
                 friend?.fullName
               )
             }</Text>
-            <Text style={{ color: 'white', fontSize: 12 }}>
+            <Text style={{ color: 'white', fontSize: 12 }} numberOfLines={1}>
               {
                 !conversation.isGroup ? (
                   isFriendOnline(conversation.memberUserIds.find(v => v !== userLogin.id))
@@ -91,10 +91,10 @@ const HeaderComponent = ({ isFriendOnline, getLastLoginMessage, lastLogout, scro
               <Icon name="search" size={20} color="white" />
             </TouchableOpacity>
           )}
-          <Icon name="phone" size={20} color="white" style={{ marginHorizontal: 10 }} />
-          <Icon name="video" size={20} color="white" style={{ marginHorizontal: 10 }} />
+          <Icon name="phone" size={18} color="white" style={{ marginHorizontal: 10 }} />
+          <Icon name="video" size={18} color="white" style={{ marginHorizontal: 10 }} />
           <TouchableOpacity onPress={() => navigation.navigate('setting')}>
-            <Icon name="info-circle" size={20} color="white" style={{ marginHorizontal: 10 }} />
+            <Icon name="info-circle" size={18} color="white" style={{ marginHorizontal: 10 }} />
           </TouchableOpacity>
         </View>
       </View>
