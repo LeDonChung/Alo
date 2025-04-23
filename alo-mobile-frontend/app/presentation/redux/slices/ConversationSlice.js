@@ -238,6 +238,7 @@ const ConversationSlice = createSlice({
         setConversation: (state, action) => {
             state.conversation = action.payload;
         },
+        
         addConversation: (state, action) => {
             const newConversation = action.payload;
             const existingConversation = state.conversations.find(conversation => conversation.id === newConversation.id);
@@ -246,6 +247,18 @@ const ConversationSlice = createSlice({
             } else {
                 const index = state.conversations.findIndex(conversation => conversation.id === newConversation.id);
                 state.conversations[index] = newConversation;
+            }
+        },
+        addMemberGroup: (state, action) => {
+            const conversationId = action.payload.conversationId;
+            const memberUserIds = action.payload.memberUserIds;
+            const memberInfo = action.payload.memberInfo;
+            const conversation = state.conversations.find(conversation => conversation.id === conversationId);
+            if (conversation) {
+                conversation.members = [...conversation.members, ...memberInfo];
+                conversation.memberUserIds = [...conversation.memberUserIds, ...memberUserIds];
+                const index = state.conversations.findIndex(conversation => conversation.id === conversationId);
+                state.conversations[index] = conversation;
             }
         },
         updateProfileGroupById: (state, action) => {
@@ -557,7 +570,7 @@ const ConversationSlice = createSlice({
 });
 
 
-export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket, addConversation, removeConversation, updateProfileGroupById, updatePermissions } = ConversationSlice.actions;
+export const { setConversation, updateLastMessage, addPinToConversation, removePinToConversation, updateConversationFromSocket, addConversation, addMemberGroup, removeConversation, updateProfileGroupById, updatePermissions } = ConversationSlice.actions;
 export {
     getAllConversation, getConversationById, createPin, removePin, createGroup, updateProfileGroup, addMemberToGroup, removeMemberToGroup, blockMemberToGroup, unblockMemberToGroup, addViceLeaderToGroup, removeViceLeaderToGroup, changeLeader ,
     updateAllowUpdateProfileGroup, updateAllowSendMessageGroup, updateAllowPinMessageGroup

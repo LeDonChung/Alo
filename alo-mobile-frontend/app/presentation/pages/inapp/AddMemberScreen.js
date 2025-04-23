@@ -3,8 +3,9 @@ import { View, Text, FlatList, TouchableOpacity, Image, } from "react-native";
 import { useSelector, useDispatch } from "react-redux";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { getAllConversation } from "../../redux/slices/ConversationSlice";
-import { addMemberToGroup } from "../../redux/slices/ConversationSlice";
+import { addMemberGroup, addMemberToGroup } from "../../redux/slices/ConversationSlice";
 import socket from "../../../utils/socket";
+import { showToast } from "../../../utils/AppUtils";
 
 export const AddMemberScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -15,6 +16,7 @@ export const AddMemberScreen = ({ navigation }) => {
   const userLogin = useSelector((state) => state.user.userLogin);
   const myUserId = userLogin.id;
   const currentGroupMemberIds = conversation.memberUserIds;
+  const [memberInfo, setMemberInfo] = useState([]);
 
   const [selectedMembers, setSelectedMembers] = useState([]);
 
@@ -47,10 +49,19 @@ export const AddMemberScreen = ({ navigation }) => {
 
     try {
         dispatch(addMemberToGroup({ conversationId: conversation.id, memberUserIds: selectedMembers }));
+        dispatch(addMemberGroup({ conversationId: conversation.id, memberUserIds: selectedMembers, memberInfo: memberInfo }));
+
+        socket.emit("add-members-to-group", {conversation, memberSelected, memberInfo});
+
+        showToast("Thêm thành viên thành công!", 'success');
+        setSelectedMembers([]);
+        setMemberInfo([]);
+        setFilteredConversations(filteredConversations);
+        setSearch("");
         navigation.goBack();
     }catch (error) {
-        console.error("Error adding members:", error);
-        }
+        showToast(error.message, 'error');
+    }
   };
 
   const isSelected = (userId) => selectedMembers.includes(userId);
