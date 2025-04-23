@@ -1200,8 +1200,11 @@ exports.leaveGroup = async (req, res) => {
         const token = authHeader && authHeader.split(' ')[1];
         const userId = userService.getUserIdFromToken(token);
         const { conversationId } = req.params;
+        console.log("conversationId: ", conversationId);
+        
 
         const conversation = await conversationService.getConversationById(conversationId);
+        
         if (!conversation) {
             return res.status(404).json({
                 status: 404,
@@ -1217,7 +1220,7 @@ exports.leaveGroup = async (req, res) => {
             });
         }
 
-        const roleLeader = conversation.roles.find(role => role.role === 'leader');
+        const roleLeader = conversation.roles.find(role => role.role === 'leader').userIds;
         if(roleLeader && roleLeader.includes(userId)) {
             return res.status(400).json({
                 status: 400,
