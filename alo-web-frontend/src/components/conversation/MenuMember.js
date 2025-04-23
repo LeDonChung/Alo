@@ -3,6 +3,9 @@ import { addViceLeader, blockMember, removeMember, removeMemberGroup, removeVice
 import showToast from "../../utils/AppUtils";
 import { useState } from "react";
 import socket from "../../utils/socket";
+import ModalOutGroup from "./ModalOutGroup";
+import ModalChangeLeader from "./ModalChangeLeader";
+import ModalConfirmBlockMember from "./ModalConfirmBlockMember";
 
 
 
@@ -11,6 +14,8 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
     const [isLoading, setIsLoading] = useState(false);
     const [isOpenConfirmBlock, setIsOpenConfirmBlock] = useState(false);
     const [isOpenOutGroup, setIsOpenOutGroup] = useState(false);
+    const [isOpenChangeLeader, setIsOpenChangeLeader] = useState(false);
+    const [newLeaderId, setNewLeaderId] = useState(leaderId);
     if (!isOpen) return null;
 
     const handleAddViceLeader = async (e) => {
@@ -20,7 +25,6 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
             const resp = await dispatch(addViceLeader({ conversationId: conversation.id, memberUserId: member.id }));
             const result = resp.payload?.data;
             await dispatch(updatePermissions({ conversationId: conversation.id, roles: result.roles }));
-
             socket.emit("update-roles", { conversation: result });
             showToast("Bạn đã bổ nhiệm " + member.fullName + " làm phó nhóm!", "info");
             onClose();
@@ -64,9 +68,12 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
                             {
                                 userLogin.id === leaderId && (
                                     member.id === leaderId ? (
-                                        <div className="w-full cursor-pointer" onClick={() => {setIsOpenOutGroup(true)}}>
-                                            <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Rời nhóm</p>
-                                        </div>
+                                        <>
+                                            <div className="w-full cursor-pointer" onClick={() => { setIsOpenChangeLeader(true) }}>
+                                                <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Rời nhóm</p>
+                                            </div>
+
+                                        </>
                                     ) : (
                                         <>
                                             {
@@ -95,7 +102,7 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
                             {
                                 viceLeaderIds.includes(userLogin.id) && (
                                     member.id === userLogin.id ? (
-                                        <div className="w-full cursor-pointer" onClick={() => {setIsOpenOutGroup(true)}}>
+                                        <div className="w-full cursor-pointer" onClick={() => { setIsOpenOutGroup(true) }}>
                                             <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Rời nhóm</p>
                                         </div>
                                     ) : (
@@ -110,6 +117,22 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
                                 )
                             }
 
+                            <ModalChangeLeader
+                                isOpen={isOpenChangeLeader}
+                                onClose={() => {
+                                    setIsOpenChangeLeader(false);
+                                    setIsOpenOutGroup(true);
+                                }}
+                                conversation={conversation}
+                                leaderId={leaderId}
+                                userLogin={userLogin}
+                                cancel={() => {
+                                    setIsOpenChangeLeader(false);
+                                    onClose();
+                                }}
+                                setNewLeaderId={setNewLeaderId}
+                            />
+
                             <ModalConfirmBlockMember
                                 isOpen={isOpenConfirmBlock}
                                 onClose={() => { setIsOpenConfirmBlock(false); }}
@@ -121,13 +144,25 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
                             {/* user login is member */}
                             {
                                 userLogin.id === member.id && member.id !== leaderId && !viceLeaderIds.includes(member.id) && (
-                                    <div className="w-full cursor-pointer" onClick={() => {setIsOpenOutGroup(true)}}>
+                                    <div className="w-full cursor-pointer" onClick={() => { setIsOpenOutGroup(true) }}>
                                         <p className="text-sm text-gray-700 px-4 py-2 hover:bg-gray-100">Rời nhóm</p>
                                     </div>
                                 )
                             }
 
-                            
+                            <ModalOutGroup
+                                isOpen={isOpenOutGroup}
+                                onClose={() => {
+                                    setIsOpenOutGroup(false);
+                                    onClose();
+
+                                }}
+                                conversation={conversation}
+                                newLeaderId={newLeaderId}
+                                leaderId={leaderId}
+                                userLogin={userLogin}
+                                member={member}
+                            />
                         </>
                     )
                 }
@@ -136,91 +171,6 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
         </>
     )
 
-}
-
-
-const ModalConfirmBlockMember = ({ isOpen, onClose, member, conversation, closeMenu }) => {
-    const [confirm, setConfirm] = useState(false);
-    const dispatch = useDispatch();
-    const [isLoading, setIsLoading] = useState(false);
-    if (!isOpen) return null;
-
-    const handleRemoveMember = async (e) => {
-        e.preventDefault();
-        setIsLoading(true);
-        try {
-            if (confirm) {
-                await dispatch(blockMember({ conversationId: conversation.id, memberUserId: member.id })).unwrap()
-                    .then(async (resp) => {
-                        await dispatch(removeMember({ conversationId: conversation.id, memberUserId: member.id })).unwrap()
-                            .then(async (result) => {
-                                await dispatch(removeMemberGroup({ conversationId: conversation.id, memberUserId: member.id }));
-                                socket.emit("remove-member", { conversation: conversation, memberUserId: member.id });
-                                showToast("Bạn đã xóa " + member.fullName + " khỏi nhóm và chặn người này tham gia lại!", "info");
-                            });
-                    });
-            } else {
-                await dispatch(removeMember({ conversationId: conversation.id, memberUserId: member.id })).unwrap()
-                    .then(async (result) => {
-                        await dispatch(removeMemberGroup({ conversationId: conversation.id, memberUserId: member.id }));
-                        socket.emit("remove-member", { conversation: conversation, memberUserId: member.id });
-                    });
-            }
-            setConfirm(false);
-            onClose();
-            closeMenu();
-
-        } catch (error) {
-            showToast(error.message, "error");
-        }
-
-        setIsLoading(false);
-    }
-
-    return (
-        <div className={`fixed inset-0 z-50 bg-black bg-opacity-50 ${isOpen ? "block" : "hidden"
-            } flex justify-center items-center`}>
-            <div className="bg-white rounded-lg shadow-lg w-[400px] p-4">
-                <div className="flex justify-between items-center mb-4 border-b border-gray-200 pb-2">
-                    <h2 className="text-lg font-semibold">Xác nhận</h2>
-                    <button onClick={onClose} className="text-gray-500 hover:text-gray-800">
-                        ✖
-                    </button>
-                </div>
-                {/* Add confirmation message here */}
-                <p className="text-sm text-gray-700">Xóa thành viên {member.fullName} khỏi nhóm.</p>
-
-                <div className="flex items-center mt-2">
-                    <input
-                        type="checkbox"
-                        id="confirmAction"
-                        name="confirmation"
-                        checked={confirm}
-                        onChange={(e) => setConfirm(e.target.checked)}
-                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                    />
-                    <label htmlFor="confirmAction" className="ml-2 text-sm text-gray-700">
-                        Chặn người này tham gia lại nhóm trong tương lai.
-                    </label>
-                </div>
-
-                <div className="flex justify-end mt-4">
-                    <button onClick={onClose} className="bg-gray-200 font-medium px-4 py-2 rounded hover:bg-gray-300 mr-2">Đóng</button>
-                    <button
-                        className="bg-blue-500 text-white px-4 py-2 font-medium rounded hover:bg-blue-600" onClick={(e) => { handleRemoveMember(e) }}>
-                        {
-                            isLoading ? (
-                                <div
-                                    className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin mx-auto"
-                                    aria-hidden="true"
-                                ></div>
-                            ) : "Đồng ý"
-                        }
-                    </button>
-                </div>
-            </div>
-        </div>
-    )
 }
 
 export default MenuMember;

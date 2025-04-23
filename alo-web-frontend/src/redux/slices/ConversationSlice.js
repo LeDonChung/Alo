@@ -90,6 +90,24 @@ const blockMember = createAsyncThunk('ConversationSlice/blockMember', async ({ c
     }
 });
 
+const changeLeader = createAsyncThunk('ConversationSlice/changeLeader', async ({ conversationId, memberUserId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/change-leader/${memberUserId}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
+const leaveGroup = createAsyncThunk('ConversationSlice/leaveGroup', async ({ conversationId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/leave-group`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
 const createGroup = createAsyncThunk('ConversationSlice/createGroup', async (data, { rejectWithValue }) => {
     try {
         const formData = new FormData();
@@ -321,7 +339,7 @@ const ConversationSlice = createSlice({
             if (conversationIndex !== -1) {
                 state.conversations.splice(conversationIndex, 1);
             }
-        }
+        },
     },
     extraReducers: (builder) => {
 
@@ -462,6 +480,22 @@ const ConversationSlice = createSlice({
         });
         builder.addCase(blockMember.rejected, (state, action) => {
         });
+
+        // change leader
+        builder.addCase(changeLeader.pending, (state) => {
+        });
+        builder.addCase(changeLeader.fulfilled, (state, action) => {
+        });
+        builder.addCase(changeLeader.rejected, (state, action) => {
+        });
+
+        // leave group
+        builder.addCase(leaveGroup.pending, (state) => {
+        });
+        builder.addCase(leaveGroup.fulfilled, (state, action) => {
+        });
+        builder.addCase(leaveGroup.rejected, (state, action) => {
+        });
     }
 });
 
@@ -480,7 +514,8 @@ export const {
     updatePermissions, 
     addMemberGroup,
     removeMemberGroup,
-    handlerRemoveHistoryMessage
+    handlerRemoveHistoryMessage,
+    
 } = ConversationSlice.actions;
 
 export { 
@@ -499,6 +534,8 @@ export {
     blockMember,
     removeViceLeader,
     addViceLeader,
+    changeLeader,
+    leaveGroup,
 
 };
 export default ConversationSlice.reducer;

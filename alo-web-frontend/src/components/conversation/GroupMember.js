@@ -10,6 +10,8 @@ const GroupMembers = ({ conversation, userLogin, setIsSetting, membersWithRoles 
     const leaderId = conversation.roles.find(role => role.role === 'leader')?.userIds[0];
     const viceLeaderIds = conversation.roles.find(role => role.role === 'vice_leader')?.userIds || [];
     const friends = useSelector((state) => state.friend.friends);
+    console.log("conversation: ", conversation);
+    
 
 
     const filterFriendId = () => {
