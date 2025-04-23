@@ -264,7 +264,7 @@ io.on("connection", (socket) => {
             filteredSocketIds.forEach(id => {
                 io.to(id).emit('receive-update-message', data);
             });
-            
+
         }
     })
 
@@ -313,10 +313,10 @@ io.on("connection", (socket) => {
     })
 
 
-    socket.on('create_group', async (data) => {
+    socket.on('create-group', async (data) => {
         const { conversation } = data;
         const members = conversation.memberUserIds;
-    
+
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);
             const filteredSocketIds = socketIds.filter(id => id !== socket.id);
@@ -325,6 +325,81 @@ io.on("connection", (socket) => {
             });
         }
     })
+
+    socket.on('update_profile_group', async (data) => {
+        const { conversation } = data;
+        const members = conversation.memberUserIds;
+
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive_update_profile_group', { conversation });
+            });
+        }
+    })
+
+    socket.on('update-roles', async (data) => {
+        const { conversation } = data;
+
+        const members = conversation.memberUserIds;
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-update-roles', { conversation });
+            });
+        }
+    })
+
+    // // Xử lý sự kiện xóa lịch sử trò chuyện
+    // socket.on('remove-all-history-messages', async (data) => {
+    //     const { conversationId } = data;
+    //     // Lấy thông tin conversation từ backend để lấy danh sách thành viên
+    //     const conversationService = require("./src/service/conversation.service");
+    //     const conversation = await conversationService.getConversationById(conversationId);
+    //     if (!conversation) return;
+
+    //     const members = conversation.memberUserIds;
+    //     for (const userId of members) {
+    //         const socketIds = await findSocketIdsByUserId(userId);
+    //         const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+    //         filteredSocketIds.forEach(id => {
+    //             io.to(id).emit('receive-remove-all-history-messages', { conversationId });
+    //         });
+    //     }
+    // });
+
+
+
+    socket.on('add-members-to-group', async (data) => {
+        console.log("Thêm thành viên vào nhóm:", data);
+
+        const { conversation, memberSelected, memberInfo } = data;
+        const members = conversation.memberUserIds;
+
+        // gửi cho tất cả các thành viên trong nhóm
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-add-members-to-group', data);
+            });
+        }
+
+        // gửi cho tất cả các thành viên được chọn
+        for (const userId of memberSelected) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-add-members-to-group', data);
+            });
+        }
+
+
+    })
+
+
     // =====================
     // Helper functions
     // =====================
@@ -359,6 +434,73 @@ io.on("connection", (socket) => {
             });
         }
     }
+
+    // ##### WEB RTC #####
+
+    // Xử lý signaling
+    // Data: { roomId, data }
+    socket.on('offer', (data) => {
+        socket.to(data.roomId).emit('offer', data);
+    });
+
+    // Data: { roomId, data }
+    socket.on('answer', (data) => {
+        socket.to(data.roomId).emit('answer', data);
+    });
+
+    // Data: { roomId, data }
+    socket.on('ice-candidate', (data) => {
+        socket.to(data.roomId).emit('ice-candidate', data);
+    });
+
+    // incoming call
+    // Data: { conversation, caller, isVoiceCall }
+    socket.on('incoming-call', async (data) => {
+        const members = data.conversation.memberUserIds;
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-incoming-call', data);
+            });
+        }
+    });
+
+    // Chấp nhận cuộc gọi
+    socket.on('accept-call', async (data) => {
+        const members = data.conversation.memberUserIds;
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-accept-call', data);
+            });
+        }
+    });
+
+    // Từ chối cuộc gọi
+    socket.on('reject-call', async (data) => {
+        const members = data.conversation.memberUserIds;
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-reject-call', data);
+            });
+        }
+    });
+
+    // Kết thúc cuộc gọi
+    socket.on('end-call', async (data) => {
+        const members = data.conversation.memberUserIds;
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-end-call', data);
+            });
+        }
+    });
 });
 
 server.listen(process.env.SERVER_PORT, () => {

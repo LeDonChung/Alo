@@ -49,7 +49,6 @@ export  const removeVietnameseTones = (str) => {
 
 export const getFriend = (conversation, userId) => {
     const friend = conversation.members.find(member => member.id === userId);
-    console.log('friend', friend);
     return friend;
 }
 

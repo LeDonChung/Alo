@@ -1,17 +1,10 @@
 import { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { getFriends } from "../redux/slices/FriendSlice";
-import FriendsOfUser from "../components/FriendsOfUser";
-import { text } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faCircleXmark, faUpload } from "@fortawesome/free-solid-svg-icons";
-import { SearchByPhone } from "../components/SearchByPhone";
-import { removeVietnameseTones } from "../utils/AppUtils";
-import { getAllConversation, createGroup, addConversation, setConversation } from "../redux/slices/ConversationSlice";
-import { userLogin } from "../utils/AppUtils";
-import socket from "../utils/socket";
-import { useNavigate } from "react-router-dom";
-
+import { faUpload } from "@fortawesome/free-solid-svg-icons";
+import showToast from "../../utils/AppUtils";
+import { updateProfileGroup, updateProfileGroupById } from "../../redux/slices/ConversationSlice";
+import socket from "../../utils/socket";
 // Thêm: Danh sách ảnh mặc định cho nhóm
 const defaultGroupImages = [
     "https://my-alo-bucket.s3.us-east-1.amazonaws.com/Image+Group/1_family.jpg",
@@ -29,50 +22,53 @@ const defaultGroupImages = [
 ];
 
 
-export default function CreateGroupPage({ isOpenGroup, onClose }) {
+export default function UpdateProfileGroup({ onClose, conversation }) {
     const dispatch = useDispatch();
-    const friends = useSelector((state) => state.friend.friends);
-    const [selected, setSelected] = useState([]);
-    const [groupName, setGroupName] = useState("");
-    const [textSearch, setTextSearch] = useState(""); // Quản lý textSearch trong CreateGroupPage
-    const [filteredFriends, setFilteredFriends] = useState([]);
+    const [groupName, setGroupName] = useState(conversation.name);
     const [avatarFile, setAvatarFile] = useState(null);
-    const [defaultAvatarUrl, setDefaultAvatarUrl] = useState(null);
-    const [error, setError] = useState("");
+    const [defaultAvatarUrl, setDefaultAvatarUrl] = useState(conversation.avatar);
     const [isLoading, setIsLoading] = useState(false);
     const [showDefaultImages, setShowDefaultImages] = useState(false);
-    const userLogin = useSelector((state) => state.user.userLogin);
-    const friendsFromRedux = useSelector((state) => state.friend.friends);
 
-    //Cập nhật DS bạn bè từ redux
-    useEffect(() => {
-        if (friendsFromRedux?.length > 0) {
-            let filtered = friendsFromRedux;
-
-            if (textSearch) {
-                filtered = friendsFromRedux.filter((friend) => {
-                    const friendName = removeVietnameseTones(
-                        friend.friendInfo.fullName.toLowerCase()
-                    );
-                    const searchText = removeVietnameseTones(textSearch.toLowerCase());
-                    return friendName.includes(searchText);
-                });
+    const handlerUpdateProfileGroup = async () => {
+        try {
+            if (!groupName) {
+                showToast("Tên nhóm không được để trống.", "info")
+                return;
+            }
+            let data = {
+                name: groupName,
             }
 
-            setFilteredFriends(filtered);
-        } else {
-            setFilteredFriends([]);
+            console.log('data', data)
+            setIsLoading(true);
+
+            if(!avatarFile) {
+                data.avatar = defaultAvatarUrl;
+                console.log("defaultAvatarUrl", defaultAvatarUrl)
+            }
+            console.log("data", data)
+            console.log("avatarFile", avatarFile)
+
+            await dispatch(updateProfileGroup({
+                conversationId: conversation.id,
+                data: data,
+                file: avatarFile ? avatarFile : null
+            })).unwrap().then((res) => {
+                dispatch(updateProfileGroupById(res.data));
+                showToast('Cập nhật ảnh đại diện nhóm thành công.', 'info');
+                socket.emit('update_profile_group', {
+                    conversation: res.data
+                });
+
+            })
+        } catch (error) {
+            console.error('Error updating group avatar:', error);
+            showToast('error', 'top', 'Lỗi', error.message || 'Cập nhật ảnh đại diện nhóm thất bại');
         }
-    }, [friendsFromRedux, textSearch]);
-
-
-
-    const toggleSelect = (id) => {
-        setSelected((prev) =>
-            prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-        );
-    };
-
+        setIsLoading(false);
+        onClose()
+    }
     // Hàm xử lý chọn file ảnh từ máy
     const handleAvatarChange = (e) => {
         const file = e.target.files[0];
@@ -95,61 +91,6 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
         setShowDefaultImages((prev) => !prev);
     };
 
-    const navigate = useNavigate();
-    const conversation = useSelector((state) => state.conversation.conversation);
-    // Hàm tạo nhóm
-    const handleCreateGroup = async () => {
-        if (!groupName.trim()) {
-            setError("Tên nhóm không được để trống.");
-            return;
-        }
-        if (selected.length < 2) {
-            setError("Phải chọn ít nhất 2 thành viên.");
-            return;
-        }
-
-        setIsLoading(true);
-        setError("");
-
-        try {
-            let data = {
-                name: groupName,
-                memberUserIds: [...selected, userLogin.id],
-            }
-
-            if(avatarFile) {
-                data.file = avatarFile;
-            } else {
-                data.avatar = defaultAvatarUrl;
-            }
-
-            console.log("Dữ liệu tạo nhóm:", data);
-            await dispatch(
-                createGroup(data)
-            ).unwrap().then((res) => {
-                dispatch(addConversation(res.data));
-
-                console.log("Gửi sự kiện create_group:", res.data);
-                socket.emit("create-group", { conversation: res.data });
-
-                const conversationId = res.data.id;
-                dispatch(setConversation(res.data))
-                socket.emit("join_conversation", conversationId);
-                navigate(`/me`);
-                console.log(`Tham gia phòng nhóm ${conversationId}`);
-                onClose();
-            })
-
-
-        } catch (err) {
-            console.error("Lỗi khi tạo nhóm:", err);
-            setError(err.message || "Đã có lỗi xảy ra. Vui lòng thử lại.");
-        } finally {
-            setIsLoading(false);
-        }
-    };
-
-
     return (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
             <div className="bg-white rounded-lg shadow-lg w-[400px] max-h-[90vh] overflow-auto relative p-4">
@@ -160,7 +101,7 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                     ✖
                 </button>
 
-                <h2 className="text-lg font-semibold mb-2 text-center">Tạo nhóm</h2>
+                <h2 className="text-lg font-semibold mb-2 text-center">Chỉnh sửa thông tin nhóm</h2>
                 <div className="flex items-center justify-center border-b border-gray-300 mb-4">
                     <div className="relative">
                         <div className="h-[50px] w-[50px]" >
@@ -230,57 +171,15 @@ export default function CreateGroupPage({ isOpenGroup, onClose }) {
                         </div>
                     </div>
                 )}
-                <input
-                    className="border p-2 rounded w-full mb-4"
-                    type="text"
-                    placeholder="Nhập tên, số điện thoại hoặc danh sách số điện thoại"
-                    value={textSearch}
-                    onChange={(e) => setTextSearch(e.target.value)}
-                />
-
-
-                {/* Danh sách bạn bè */}
-                <div className="flex flex-col overflow-auto max-h-[300px]">
-                    {filteredFriends.length === 0 && !isLoading ? (
-                        <p className="text-center text-gray-500">Không có bạn bè nào.</p>
-                    ) : (
-                        filteredFriends.map((friend) => (
-                            <button
-                                key={friend.friendInfo.id}
-                                className="flex p-3 hover:bg-gray-100"
-                                onClick={() => toggleSelect(friend.friendInfo.id)}
-                            >
-                                <img
-                                    src={
-                                        friend.friendInfo.avatarLink ||
-                                        "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"
-                                    }
-                                    alt={friend.friendInfo.fullName}
-                                    className="w-[30px] h-[30px] rounded-full"
-                                />
-                                <span className="ml-4 font-medium  mr-auto">
-                                    {friend.friendInfo.fullName}
-                                </span>
-                                <input
-                                    type="checkbox"
-                                    checked={selected.includes(friend.friendInfo.id)}
-                                    readOnly
-                                    className="cursor-pointer"
-                                />
-                            </button>
-                        ))
-                    )}
-                </div>
 
                 <button
-                    className={`p-2 rounded text-white w-full mt-4 ${selected.length >= 2 && groupName.trim() && !isLoading
+                    className={`p-2 rounded text-white w-full mt-4 ${!isLoading
                         ? "bg-blue-500 hover:bg-blue-600"
                         : "bg-gray-300 cursor-not-allowed"
                         }`}
-                    disabled={selected.length < 2 || !groupName.trim() || isLoading}
-                    onClick={handleCreateGroup}
+                    onClick={handlerUpdateProfileGroup}
                 >
-                    {isLoading ? "Đang tạo..." : "Tạo nhóm"}
+                    {isLoading ? "Đang cập nhật..." : "Sửa"}
                 </button>
             </div>
         </div>

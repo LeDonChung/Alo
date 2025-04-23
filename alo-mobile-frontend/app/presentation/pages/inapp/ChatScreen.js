@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Modal, Pressable, View } from 'react-native';
+import { Modal, Pressable, Text, View } from 'react-native';
 import { axiosInstance } from '../../../api/APIClient';
 import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
@@ -24,7 +24,7 @@ import ImageViewerComponent from '../../components/chat/ImageViewComponent';
 import { FlatList } from 'react-native-gesture-handler';
 import StickerPicker from '../../components/chat/StickerPicker';
 import { ActivityIndicator } from 'react-native-paper';
-import { getFriend, showToast } from '../../../utils/AppUtils';
+import { getFriend, getUserRoleAndPermissions, showToast } from '../../../utils/AppUtils';
 import { MenuComponent } from '../../components/chat/MenuConponent';
 import MessageDetailModal from '../../components/chat/MessageDetailModal';
 import ForwardMessageModal from '../../components/chat/ForwardMessageModal';
@@ -398,18 +398,47 @@ export const ChatScreen = ({ route, navigation }) => {
         selectedImage={selectedImage}
         setIsImageViewVisible={setIsImageViewVisible}
       />
-      <InputComponent
-        setIsStickerPickerVisible={setIsStickerPickerVisible}
-        isStickerPickerVisible={isStickerPickerVisible}
-        inputMessage={inputMessage}
-        setInputMessage={setInputMessage}
-        handlerSendMessage={handlerSendMessage}
-        handleSendFile={handleSendFile}
-        handlerSendImage={handleSendImage}
-        messageParent={messageParent}
-        clearMessageParent={() => dispatch(setMessageParent(null))}
-        friend={friend}
-      />
+      {
+        conversation.isGroup ? (
+          <>
+            {
+              getUserRoleAndPermissions(conversation, userLogin.id).sendMessage ? (
+                <>
+                  <InputComponent
+                    setIsStickerPickerVisible={setIsStickerPickerVisible}
+                    isStickerPickerVisible={isStickerPickerVisible}
+                    inputMessage={inputMessage}
+                    setInputMessage={setInputMessage}
+                    handlerSendMessage={handlerSendMessage}
+                    handleSendFile={handleSendFile}
+                    handlerSendImage={handleSendImage}
+                    messageParent={messageParent}
+                    clearMessageParent={() => dispatch(setMessageParent(null))}
+                    friend={friend}
+                  />
+                </>
+              ) : (
+                <View style={{ padding: 10, backgroundColor: '#fff', borderRadius: 8, margin: 10 }}>
+                  <Text style={{ color: '#000', fontWeight: '500', textAlign: 'center' }}>Chỉ <Text style={{ color: 'red' }}>trưởng / phó nhóm</Text> được gửi tin nhắn vào nhóm.</Text>
+                </View>
+              )
+            }
+          </>
+        ) : (
+          <InputComponent
+            setIsStickerPickerVisible={setIsStickerPickerVisible}
+            isStickerPickerVisible={isStickerPickerVisible}
+            inputMessage={inputMessage}
+            setInputMessage={setInputMessage}
+            handlerSendMessage={handlerSendMessage}
+            handleSendFile={handleSendFile}
+            handlerSendImage={handleSendImage}
+            messageParent={messageParent}
+            clearMessageParent={() => dispatch(setMessageParent(null))}
+            friend={friend}
+          />
+        )
+      }
       {isStickerPickerVisible && <StickerPicker onStickerSelect={handleStickerSelect} />}
       {isShowMenuInMessage && (
         <Modal visible={isShowMenuInMessage} transparent={true} animationType="none">

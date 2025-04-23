@@ -251,7 +251,7 @@ exports.deletePin = async (req, res) => {
         });
     }
 }
- 
+
 // CREATE GROUP CONVERSATION
 exports.createGroupConversation = async (req, res) => {
     try {
@@ -332,6 +332,7 @@ exports.createGroupConversation = async (req, res) => {
 
         if (req.file) {
             const file = req.file;
+            console.log("file: ", file)
             data.avatar = await fileService.uploadFile(file);
         } else {
             data.avatar = avatar;
@@ -380,7 +381,7 @@ exports.updateProfileGroup = async (req, res) => {
         const userId = userService.getUserIdFromToken(token);
 
         const { conversationId } = req.params;
-        let { name } = req.body;
+        let { name, avatar } = req.body;
 
         const conversation = await conversationService.getConversationById(conversationId);
 
@@ -410,13 +411,19 @@ exports.updateProfileGroup = async (req, res) => {
             });
         }
 
-        let avatar = conversation.avatar;
+        let newAvatar = conversation.avatar;
         if (req.file) {
             const file = req.file;
-            avatar = await fileService.uploadFile(file);
+            newAvatar = await fileService.uploadFile(file);
+        } else {
+            if (avatar) {
+                newAvatar = avatar;
+            } else {
+                newAvatar = conversation.avatar;
+            }
         }
 
-        const data = { name, avatar };
+        const data = { name, avatar: newAvatar };
 
         await conversationService.updateProfileGroup(conversationId, data);
 

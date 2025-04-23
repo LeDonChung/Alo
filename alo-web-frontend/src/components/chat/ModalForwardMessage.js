@@ -155,9 +155,9 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
                     />
                 </div>
 
-                <div>
+                <div >
                     <h3 className="text-sm font-semibold mb-2">Gần đây</h3>
-                    <ul className="space-y-2">
+                    <ul className="space-y-2  max-h-[400px] overflow-auto">
                         {conversationList.map((conversation) => (
                             <li key={conversation.id}
                                 className="flex items-center mb-2 hover:bg-gray-100 px-2 py-[5px] hover:rounded-md cursor-pointer"
@@ -185,7 +185,7 @@ const ModalForwardMessage = ({ isOpen, onClose, message, conversations }) => {
                                             return (
                                                 <div className="flex items-center">
                                                     <img
-                                                        src={conversation.avatarLink ? conversation.avatarLink : "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
+                                                        src={conversation.avatar ? conversation.avatar : "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
                                                         alt={conversation.name}
                                                         className="w-11 h-11 rounded-full mr-4"
                                                     />
