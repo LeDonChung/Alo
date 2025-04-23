@@ -251,6 +251,9 @@ const MessageSlice = createSlice({
             state.isSearching = false;
             state.error = null;
         },
+        clearAllMessages: (state) => {
+            state.messages = [];
+        }
     },
     extraReducers: (builder) => {
         builder.addCase(sendMessage.pending, (state) => {
@@ -353,6 +356,7 @@ export const {
     navigateToNextResult,
     resetSearch,
     clearMessages,
+    clearAllMessages
 } = MessageSlice.actions;
 
 export {

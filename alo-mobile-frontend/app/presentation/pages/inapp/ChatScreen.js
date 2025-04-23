@@ -60,7 +60,7 @@ export const ChatScreen = ({ route, navigation }) => {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchVisible, setIsSearchVisible] = useState(false);
-  const searchResults = useSelector((state) => state.message.searchResults);
+  const searchResults = useSelector((state) => state.message.searchResults || []);
   const currentSearchIndex = useSelector((state) => state.message.currentSearchIndex);
   const isSearching = useSelector((state) => state.message.isSearching);
   const error = useSelector((state) => state.message.error);
@@ -339,7 +339,7 @@ export const ChatScreen = ({ route, navigation }) => {
     if (index === messageSort.length - 1) return true;
     const nextMessage = messageSort[index + 1];
     return nextMessage ? nextMessage.senderId !== messageSort[index].senderId : true;
-  };
+  }; 
 
   const [isShowMenuInMessage, setIsShowMenuInMessage] = useState(false);
   const [selectedMessage, setSelectedMessage] = useState(null);

@@ -302,7 +302,19 @@ const ConversationSlice = createSlice({
                 const index = state.conversations.findIndex(convo => convo.id === conversationId);
                 state.conversations[index].roles = roles;
             }
-        }
+        },
+        handlerRemoveHistoryMessage: (state, action) => {
+            const {conversation} = action.payload;
+            if (state.conversation && state.conversation.id === conversation.id) {
+                state.conversation.lastMessage = null; 
+            }
+            const conversationIndex = state.conversations.findIndex(
+                (conv) => conv.id === conversation.id
+            );
+            if (conversationIndex !== -1) {
+                state.conversations[conversationIndex].lastMessage = null;
+            }
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(getAllConversation.pending, (state) => {
@@ -461,7 +473,8 @@ export const {
     updateProfileGroupById, 
     clearHistoryMessages, 
     memberLeaveGroup, 
-    updatePermissions 
+    updatePermissions,
+    handlerRemoveHistoryMessage,
 } = ConversationSlice.actions;
 
 export { 

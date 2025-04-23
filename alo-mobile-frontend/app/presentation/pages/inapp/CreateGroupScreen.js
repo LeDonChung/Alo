@@ -19,6 +19,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getGroupImageDefaut, showToast } from '../../../utils/AppUtils';
 import { addConversation, createGroup, setConversation } from '../../redux/slices/ConversationSlice';
 import socket from '../../../utils/socket';
+import { getMessagesByConversationId, setMessages } from '../../redux/slices/MessageSlice';
 
 export const CreateGroupScreen = () => {
     const navigation = useNavigation();
@@ -219,12 +220,12 @@ export const CreateGroupScreen = () => {
             // Kiểm tra xem người dùng đã chọn ảnh đại diện hay chưa
             if (!groupAvatar) {
                 setGroupAvatar(groupDefault[0]);
-            } 
+            }
             setIsLoading(true);
 
             const data = {
                 name: groupName,
-                memberUserIds: [...selected, userLogin.id], 
+                memberUserIds: [...selected, userLogin.id],
             };
 
             // Nếu là ảnh đại diện từ link thì data.avatar sẽ là link
@@ -241,7 +242,7 @@ export const CreateGroupScreen = () => {
                     type: 'image/jpeg',
                 };
             }
-            const result = await dispatch(createGroup({ data, file })).unwrap().then((res) => {
+            const result = await dispatch(createGroup({ data, file })).unwrap().then(async (res) => {
                 const data = res.data;
                 dispatch(addConversation(data));
                 dispatch(setConversation(data));
@@ -250,6 +251,7 @@ export const CreateGroupScreen = () => {
                     conversation: data
                 })
                 navigation.navigate('chat');
+
             })
         } catch (error) {
             console.error('Failed to create group:', error.data);

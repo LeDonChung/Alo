@@ -6,15 +6,18 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getFriend, getGroupImageDefaut, getUserRoleAndPermissions, showToast } from '../../../utils/AppUtils';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import { updateProfileGroup, updateProfileGroupById, removeAllHistoryMessages, setConversation, leaveGroup  } from '../../redux/slices/ConversationSlice';
-import { clearMessages } from '../../redux/slices/MessageSlice';
+import { updateProfileGroup, updateProfileGroupById, removeAllHistoryMessages, setConversation, leaveGroup, handlerRemoveHistoryMessage } from '../../redux/slices/ConversationSlice';
+import { clearAllMessages, clearMessages } from '../../redux/slices/MessageSlice';
 import socket from '../../../utils/socket';
 export const SettingScreen = () => {
     const userLogin = useSelector(state => state.user.userLogin);
     const conversation = useSelector(state => state.conversation.conversation);
-    const friend = conversation?.isGroup === false && conversation?.memberUserIds ? 
-    getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id)) : 
-    {};
+    const friend = conversation?.isGroup === false && conversation?.memberUserIds ?
+        getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id)) :
+        {};
+    //Lấy vai trò và quyền của userLogin
+    const userRole = conversation?.roles?.find(role => role.userIds.includes(userLogin.id));
+    const userPermissions = userRole?.permissions || {};
     const navigation = useNavigation();
     const [groupAvatar, setGroupAvatar] = useState(null);
     const [isEditGroupNameModalVisible, setEditGroupNameModalVisible] = useState(false);
@@ -89,25 +92,27 @@ export const SettingScreen = () => {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            const response = await dispatch(removeAllHistoryMessages({ 
-                                conversationId: conversation.id 
-                            })).unwrap();
-                            dispatch(clearMessages());
+                            try {
+                                await dispatch(removeAllHistoryMessages({ conversationId: conversation.id })).unwrap().then((res) => {
 
-                            if (response.data && response.data.conversation) {
-                                dispatch(setConversation(response.data.conversation));
+                                    // Xóa messages trong state local
+                                    dispatch(clearAllMessages());
+                                    dispatch(handlerRemoveHistoryMessage({ conversation: conversation }))
+
+                                    // Emit socket event để thông báo cho các clients khác
+                                    socket.emit('remove-all-history-messages', { conversation: conversation });
+
+                                    showToast('info', 'top', "Thông báo", 'Đã xóa toàn bộ lịch sử trò chuyện thành công!');
+                                })
+
+                            } catch (error) {
+                                console.error("Error in removeAllHistoryMessages:", error);
+                                showToast('error', 'top', "Thông báo", `${error.message}`);
                             }
-
-                            socket.emit('clear-history-messages', {
-                                conversationId: conversation.id,
-                                conversation: response.data?.conversation || conversation
-                            });
-                            
-                            showToast('success', 'top', 'Thông báo', 'Lịch sử trò chuyện đã được xóa.');
                             navigation.goBack();
                         } catch (error) {
                             console.error('Error clearing chat history:', error);
-                            showToast('error', 'top', 'Lỗi', error.message || 'Xóa lịch sử trò chuyện thất bại.');
+                            showToast('error', 'top', "Thông báo", `${error.message}`);
                         }
                     },
                 },
@@ -115,17 +120,17 @@ export const SettingScreen = () => {
             { cancelable: true }
         );
     };
-    
+
     const handleLeaveGroup = () => {
         if (!conversation) {
             showToast('error', 'top', 'Lỗi', 'Không thể tải thông tin nhóm');
             return;
         }
-    
-        const isGroupLeader = conversation?.roles?.some(role => 
+
+        const isGroupLeader = conversation?.roles?.some(role =>
             role.role === 'leader' && role.userIds.includes(userLogin.id)
         );
-        
+
         if (isGroupLeader) {
             Alert.alert(
                 'Thông báo',
@@ -134,7 +139,7 @@ export const SettingScreen = () => {
             );
             return;
         }
-        
+
         Alert.alert(
             'Rời nhóm',
             'Bạn có chắc chắn muốn rời khỏi nhóm chat này không?',
@@ -150,13 +155,13 @@ export const SettingScreen = () => {
                             const currentUserId = userLogin.id;
                             const currentUserName = userLogin.fullName;
                             dispatch(setConversation(null));
-                            
-                            const result = await dispatch(leaveGroup({ 
-                                conversationId: currentConversationId 
+
+                            const result = await dispatch(leaveGroup({
+                                conversationId: currentConversationId
                             })).unwrap();
-                            
+
                             console.log('Leave group response:', result);
-                            
+
                             if (result && result.status === 200) {
                                 socket.emit('leave-group', {
                                     conversationId: currentConversationId,
@@ -176,8 +181,8 @@ export const SettingScreen = () => {
                         } catch (error) {
                             console.error('Error leaving group:', error);
                             console.error('Error details:', JSON.stringify(error, null, 2));
-                            
-                            showToast('error', 'top', 'Lỗi', 
+
+                            showToast('error', 'top', 'Lỗi',
                                 error.message || 'Không thể rời nhóm. Vui lòng thử lại.');
                         }
                     },
@@ -536,15 +541,23 @@ export const SettingScreen = () => {
                                 <Text style={styles.optionText}>Cài đặt cá nhân</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={styles.option}>
-                                <Icon name="person-add-alt-1" size={24} color="#000" />
-                                <Text style={styles.optionText}>Chuyển quyền trưởng nhóm</Text>
-                            </TouchableOpacity>
+                            {
+                                userRole.role === 'leader' && (
+                                    <>
+                                        <TouchableOpacity style={styles.option}>
+                                            <Icon name="person-add-alt-1" size={24} color="#000" />
+                                            <Text style={styles.optionText}>Chuyển quyền trưởng nhóm</Text>
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.option} onPress={handleClearChatHistory}>
+                                            <Icon name="delete" size={24} color="#FF0000" />
+                                            <Text style={[styles.optionText, { color: '#FF0000' }]}>Xóa lịch sử trò chuyện</Text>
+                                        </TouchableOpacity>
+                                    </>
+                                )
+                            }
 
-                            <TouchableOpacity style={styles.option}  onPress={handleClearChatHistory}>
-                                <Icon name="delete" size={24} color="#FF0000" />
-                                <Text style={[styles.optionText, { color: '#FF0000' }]}>Xóa lịch sử trò chuyện</Text>
-                            </TouchableOpacity>
+
+
 
                             <TouchableOpacity style={styles.option}>
                                 <Icon name="logout" size={24} color="#FF0000" />
