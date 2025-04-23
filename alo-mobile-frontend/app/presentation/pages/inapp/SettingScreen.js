@@ -138,14 +138,20 @@ export const SettingScreen = () => {
             Alert.alert(
                 'Thông báo',
                 'Bạn đang là trưởng nhóm. Vui lòng chuyển quyền trưởng nhóm cho người khác trước khi rời nhóm.',
-                [{ text: 'Đã hiểu', style: 'default' }]
+                [
+                    {
+                        text: 'Chuyển quyền',
+                        onPress: () => navigation.navigate('group-members', { groupId: conversation.id, mode: 'transferLeader' }),
+                    },
+                    { text: 'Đã hiểu', style: 'cancel' }
+                ]
             );
             return;
         }
 
         Alert.alert(
             'Rời nhóm',
-            'Bạn có chắc chắn muốn rời khỏi nhóm chat này không?',
+            'Bạn có chắc chắn muốn rời khỏi nhóm chat này không? Hành động này không thể hoàn tác.',
             [
                 { text: 'Hủy', style: 'cancel' },
                 {
@@ -154,39 +160,32 @@ export const SettingScreen = () => {
                     onPress: async () => {
                         try {
                             showToast('info', 'top', 'Đang xử lý', 'Đang xử lý yêu cầu rời nhóm...');
+
                             const currentConversationId = conversation.id;
                             const currentUserId = userLogin.id;
                             const currentUserName = userLogin.fullName;
-                            dispatch(setConversation(null));
 
                             const result = await dispatch(leaveGroup({
                                 conversationId: currentConversationId
                             })).unwrap();
 
-                            console.log('Leave group response:', result);
-
-                            if (result && result.status === 200) {
-                                socket.emit('leave-group', {
-                                    conversationId: currentConversationId,
-                                    userId: currentUserId,
-                                    userName: currentUserName,
-                                    updatedConversation: result.data
+                            socket.emit('leave-group', {
+                                conversationId: currentConversationId,
+                                userId: currentUserId,
+                                userName: currentUserName,
+                                updatedConversation: result.data
+                            });
+                            showToast('success', 'bottom', 'Thông báo', 'Bạn đã rời khỏi nhóm thành công');
+                            setTimeout(() => {
+                                navigation.reset({
+                                    index: 0,
+                                    routes: [{ name: 'home' }],
                                 });
-
-                                showToast('success', 'bottom', 'Thông báo', 'Bạn đã rời khỏi nhóm thành công');
-
-                                setTimeout(() => {
-                                    navigation.navigate('home');
-                                }, 100);
-                            } else {
-                                throw new Error(result?.message || 'Không thể rời nhóm');
-                            }
+                            }, 100);
                         } catch (error) {
                             console.error('Error leaving group:', error);
-                            console.error('Error details:', JSON.stringify(error, null, 2));
-
                             showToast('error', 'top', 'Lỗi',
-                                error.message || 'Không thể rời nhóm. Vui lòng thử lại.');
+                                error.message || 'Không thể rời nhóm. Vui lòng thử lại sau.');
                         }
                     },
                 },
@@ -576,7 +575,7 @@ export const SettingScreen = () => {
 
 
 
-                            <TouchableOpacity style={styles.option}>
+                            <TouchableOpacity style={styles.option} onPress={handleLeaveGroup}>
                                 <Icon name="logout" size={24} color="#FF0000" />
                                 <Text style={[styles.optionText, { color: '#FF0000' }]}>Rời nhóm</Text>
                             </TouchableOpacity>

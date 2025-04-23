@@ -40,7 +40,7 @@ export const GroupMembersScreen = () => {
   const dispatch = useDispatch();
 
   useEffect(() => {
-    if (conversation) {
+    if (conversation && conversation.id === groupId) {
       const leaderIds =
         conversation.roles.find((r) => r.role === "leader")?.userIds || [];
       const viceLeaderIds =
@@ -62,7 +62,7 @@ export const GroupMembersScreen = () => {
 
       setMembers(filtered);
     }
-  }, [conversation, mode]);
+  }, [conversation, mode, userLogin, groupId]);
 
   useEffect(() => {
     switch (filterMode) {

@@ -22,7 +22,7 @@ import {
   resetSearch,
   clearMessages,
 } from '../../redux/slices/MessageSlice';
-import { removePin, clearHistoryMessages, memberLeaveGroup } from '../../redux/slices/ConversationSlice';
+import { removePin, clearHistoryMessages, memberLeaveGroup, updateLastMessage } from '../../redux/slices/ConversationSlice';
 import HeaderComponent from '../../components/chat/HeaderComponent';
 import InputComponent from '../../components/chat/InputComponent';
 import MessageItem from '../../components/chat/MessageItem';
@@ -272,46 +272,53 @@ export const ChatScreen = ({ route, navigation }) => {
     });
   };
   useEffect(() => {
-    if (!socket) return;
+    if (!socket || !conversation) return;
+
     const handleMemberLeave = (data) => {
-      const { conversationId, userId, userName, updatedConversation } = data;
+        const { conversationId, userId, userName, updatedConversation } = data;
 
-      console.log(`Nhận thông báo: ${userName} đã rời nhóm ${conversationId}`);
+        if (conversation.id === conversationId) {
+            dispatch(memberLeaveGroup({
+                conversationId,
+                userId,
+                updatedConversation
+            }));
 
-      if (conversation?.id === conversationId) {
-        dispatch(memberLeaveGroup({
-          conversationId,
-          userId,
-          updatedConversation,
-        }));
-        if (userId === userLogin.id) {
-          showToast('success', 'bottom', 'Thông báo', 'Bạn đã rời khỏi nhóm thành công');
-          navigation.navigate('home');
-        } else {
-          const systemMessage = {
-            id: uuidv4(),
-            conversationId,
-            sender: {
-              id: "system",
-              fullName: "Hệ thống"
-            },
-            content: `${userName} đã rời khỏi nhóm`,
-            contentType: "notification",
-            messageType: "notification",
-            timestamp: new Date().toISOString(),
-            status: 0
-          };
-
-          dispatch(addMessage(systemMessage));
+            if (userId === userLogin.id) {
+                showToast('success', 'bottom', 'Thông báo', 'Bạn đã rời khỏi nhóm thành công');
+                navigation.reset({
+                    index: 0,
+                    routes: [{ name: 'home' }],
+                });
+            } else {
+                const systemMessage = {
+                    id: uuidv4(),
+                    conversationId,
+                    sender: {
+                        id: 'system',
+                        fullName: 'Hệ thống',
+                    },
+                    content: `${userName} đã rời khỏi nhóm`,
+                    contentType: 'notification',
+                    messageType: 'notification',
+                    timestamp: new Date().toISOString(),
+                    status: 0,
+                };
+                dispatch(addMessage(systemMessage));
+                dispatch(updateLastMessage({
+                    conversationId,
+                    message: systemMessage
+                }));
+            }
         }
-      }
     };
 
     socket.on('member-leave-group', handleMemberLeave);
 
     return () => socket.off('member-leave-group', handleMemberLeave);
-  }, [socket, conversation, dispatch, userLogin.id, navigation]);
-  useEffect(() => {
+}, [socket, conversation, dispatch, userLogin.id, navigation]);
+
+useEffect(() => {
     socket.emit('join_conversation', conversation.id);
 
     if (!conversation.isGroup) {
