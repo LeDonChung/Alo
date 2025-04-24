@@ -492,11 +492,7 @@ const ConversationSlice = createSlice({
         builder.addCase(addMemberToGroup.pending, (state) => {
         });
         builder.addCase(addMemberToGroup.fulfilled, (state, action) => {
-            let cons = state.conversation;
-            if (cons) {
-                cons.members = [...cons.members, ...action.payload.data.members];
-            } 
-            state.conversation = {...cons};
+            
         });
         builder.addCase(addMemberToGroup.rejected, (state, action) => {
         });
