@@ -37,7 +37,8 @@ import {
   updatePermissions,
   updateProfileGroupById,
   removeMemberGroup,
-  addMemberGroup
+  addMemberGroup,
+  memberLeaveGroup
 } from "../redux/slices/ConversationSlice";
 
 import {
@@ -202,6 +203,37 @@ export const InAppNavigation = () => {
       );
     };
   }, []);
+
+  
+  useEffect(() => {
+    if (!socket || !conversation) return;
+
+    const handleMemberLeave = (data) => {
+        const { conversationId, userId, userName, updatedConversation } = data;
+
+        if (conversation.id === conversationId) {
+            dispatch(memberLeaveGroup({
+                conversationId,
+                userId,
+                updatedConversation
+            }));
+
+            if (userId === userLogin.id) {
+                showToast('success', 'bottom', 'Thông báo', 'Bạn đã rời khỏi nhóm thành công');
+                navigationRef.navigate('home');
+            } else {
+                dispatch(updateLastMessage({
+                    conversationId,
+                    message: systemMessage
+                }));
+            }
+        }
+    };
+
+    socket.on('member-leave-group', handleMemberLeave);
+
+    return () => socket.off('member-leave-group', handleMemberLeave);
+}, []);
   useEffect(() => {
     const handleReceivePinMessage = (data) => {
       console.log("Received pin message:", data);

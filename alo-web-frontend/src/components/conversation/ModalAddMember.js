@@ -26,9 +26,14 @@ const ModalAddMember = ({ isOpen, onClose, userLogin, conversation }) => {
 
 
                 await dispatch(addMemberToGroup({ conversationId: conversation.id, memberUserIds: memberSelected })).unwrap()
-                    .then(() => {
+                    .then((res) => {
                         //socket
-                        socket.emit("add-members-to-group", { conversation, memberSelected, memberInfo });
+                        socket.emit("add-members-to-group", {
+                            conversation: {
+                                ...conversation,
+                                roles: res.data.roles
+                            }, memberSelected, memberInfo
+                        });
                         showToast("Thêm thành viên thành công!", 'success');
                     });
 

@@ -13,7 +13,7 @@ const ConversationList = () => {
 
   const showLastMessage = (conversation) => {
     if(conversation.lastMessage.status === 2) return;
-    const friend = getFriend(conversation, conversation.lastMessage?.senderId)
+    const friend = conversation.lastMessage.sender;
     if (conversation.lastMessage) {
       let message = conversation.lastMessage.content;
       let messageStatus = conversation.lastMessage.status;

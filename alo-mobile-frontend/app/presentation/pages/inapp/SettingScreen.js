@@ -7,18 +7,18 @@ import { useDispatch, useSelector } from 'react-redux';
 import { getFriend, getGroupImageDefaut, getUserRoleAndPermissions, showToast } from '../../../utils/AppUtils';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
-import { updateProfileGroup, updateProfileGroupById, removeAllHistoryMessages, setConversation, leaveGroup, handlerRemoveHistoryMessage } from '../../redux/slices/ConversationSlice';
+import { updateProfileGroup, updateProfileGroupById, removeAllHistoryMessages, setConversation, leaveGroup, handlerRemoveHistoryMessage, removeConversation } from '../../redux/slices/ConversationSlice';
 import { clearAllMessages, clearMessages } from '../../redux/slices/MessageSlice';
 import socket from '../../../utils/socket';
 export const SettingScreen = () => {
     const userLogin = useSelector(state => state.user.userLogin);
     const conversation = useSelector(state => state.conversation.conversation);
-    const leaderIds = conversation.roles.find(r => r.role === 'leader')?.userIds || [];
+    const leaderIds = conversation.roles.find(r => r?.role === 'leader')?.userIds || [];
     const friend = conversation?.isGroup === false && conversation?.memberUserIds ?
         getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id)) :
         {};
     //Lấy vai trò và quyền của userLogin
-    const userRole = conversation?.roles?.find(role => role.userIds.includes(userLogin.id));
+    const userRole = conversation?.roles?.find(role => role?.userIds.includes(userLogin.id));
     const userPermissions = userRole?.permissions || {};
     const navigation = useNavigation();
     const [groupAvatar, setGroupAvatar] = useState(null);
@@ -131,7 +131,7 @@ export const SettingScreen = () => {
         }
 
         const isGroupLeader = conversation?.roles?.some(role =>
-            role.role === 'leader' && role.userIds.includes(userLogin.id)
+            role?.role === 'leader' && role?.userIds.includes(userLogin.id)
         );
 
         if (isGroupLeader) {
@@ -159,29 +159,13 @@ export const SettingScreen = () => {
                     style: 'destructive',
                     onPress: async () => {
                         try {
-                            showToast('info', 'top', 'Đang xử lý', 'Đang xử lý yêu cầu rời nhóm...');
-
-                            const currentConversationId = conversation.id;
-                            const currentUserId = userLogin.id;
-                            const currentUserName = userLogin.fullName;
-
-                            const result = await dispatch(leaveGroup({
-                                conversationId: currentConversationId
-                            })).unwrap();
-
-                            socket.emit('leave-group', {
-                                conversationId: currentConversationId,
-                                userId: currentUserId,
-                                userName: currentUserName,
-                                updatedConversation: result.data
-                            });
-                            showToast('success', 'bottom', 'Thông báo', 'Bạn đã rời khỏi nhóm thành công');
-                            setTimeout(() => {
-                                navigation.reset({
-                                    index: 0,
-                                    routes: [{ name: 'home' }],
+                            await dispatch(leaveGroup({ conversationId: conversation.id })).unwrap()
+                                .then(async (result) => {
+                                    navigation.navigate('home');
+                                    await dispatch(removeConversation({ conversationId: conversation.id }));
+                                    showToast('info', 'top', 'Thông báo', 'Bạn đã rời khỏi nhóm ' + conversation.name + ' .');
+                                    socket.emit("remove-member", { conversation: conversation, memberUserId: userLogin.id });
                                 });
-                            }, 100);
                         } catch (error) {
                             console.error('Error leaving group:', error);
                             showToast('error', 'top', 'Lỗi',
@@ -531,7 +515,7 @@ export const SettingScreen = () => {
                                 <Icon name="group" size={24} color="#000" />
                                 <Text style={styles.optionText}>Xem thành viên ({conversation.members.length})</Text>
                             </TouchableOpacity>
- 
+
 
                             <TouchableOpacity style={styles.option}>
                                 <Icon name="person-add" size={24} color="#000" />
@@ -544,7 +528,7 @@ export const SettingScreen = () => {
                             </TouchableOpacity>
 
                             {
-                                userRole.role === 'leader' && (
+                                userRole?.role === 'leader' && (
                                     <>
                                         <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('group-members', { groupId: conversation.id, mode: 'transferLeader' })}>
                                             <Icon name="person-add-alt-1" size={24} color="#000" />

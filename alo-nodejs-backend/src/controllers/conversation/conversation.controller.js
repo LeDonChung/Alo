@@ -45,7 +45,10 @@ exports.getConversationsByUserId = async (req, res) => {
                 }
 
                 // Lấy message cuối cùng trong cuộc trò chuyện
-                const lastMessage = await messageService.getLastMessageByConversationId(conversation.id);
+                let lastMessage = await messageService.getLastMessageByConversationId(conversation.id);
+                if(lastMessage) {
+                    lastMessage.sender = await userService.getUserById(lastMessage.senderId);
+                }
                 console.log("lastMessage: ", lastMessage)
                 return {
                     ...conversation,

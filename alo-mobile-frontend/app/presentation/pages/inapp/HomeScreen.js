@@ -54,7 +54,7 @@ export const HomeScreen = ({ navigation }) => {
       if (!item.lastMessage) return '';
       if(item.lastMessage.status === 2) return '';
  
-      const userSender = getFriend(item, item.lastMessage?.senderId);
+      const userSender = item.lastMessage.sender;
       const message = item.lastMessage;
       let content = message.content;
       let messageStatus = item.lastMessage.status;

@@ -271,52 +271,6 @@ export const ChatScreen = ({ route, navigation }) => {
       setLastLogout(res.data.data.lastLogout);
     });
   };
-  useEffect(() => {
-    if (!socket || !conversation) return;
-
-    const handleMemberLeave = (data) => {
-        const { conversationId, userId, userName, updatedConversation } = data;
-
-        if (conversation.id === conversationId) {
-            dispatch(memberLeaveGroup({
-                conversationId,
-                userId,
-                updatedConversation
-            }));
-
-            if (userId === userLogin.id) {
-                showToast('success', 'bottom', 'Thông báo', 'Bạn đã rời khỏi nhóm thành công');
-                navigation.reset({
-                    index: 0,
-                    routes: [{ name: 'home' }],
-                });
-            } else {
-                const systemMessage = {
-                    id: uuidv4(),
-                    conversationId,
-                    sender: {
-                        id: 'system',
-                        fullName: 'Hệ thống',
-                    },
-                    content: `${userName} đã rời khỏi nhóm`,
-                    contentType: 'notification',
-                    messageType: 'notification',
-                    timestamp: new Date().toISOString(),
-                    status: 0,
-                };
-                dispatch(addMessage(systemMessage));
-                dispatch(updateLastMessage({
-                    conversationId,
-                    message: systemMessage
-                }));
-            }
-        }
-    };
-
-    socket.on('member-leave-group', handleMemberLeave);
-
-    return () => socket.off('member-leave-group', handleMemberLeave);
-}, [socket, conversation, dispatch, userLogin.id, navigation]);
 
 useEffect(() => {
     socket.emit('join_conversation', conversation.id);
