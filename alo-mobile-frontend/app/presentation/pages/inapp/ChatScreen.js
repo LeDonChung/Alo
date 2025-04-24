@@ -333,8 +333,6 @@ useEffect(() => {
   const [messageSort, setMessageSort] = useState([]);
 
   useEffect(() => {
-    console.log("Messages:", messages);
-    console.log("Conversation:", messageSort);
     const sortedMessages = [...messages]
       .filter(message => message.status !== 2)
       .sort((a, b) => b.timestamp - a.timestamp);

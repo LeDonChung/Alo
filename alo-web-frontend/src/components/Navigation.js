@@ -315,6 +315,8 @@ export const Navigation = () => {
 
             if (memberSelected.includes(userLoginId)) {
                 showToast("Bạn đã được thêm vào nhóm " + conversation.name, "success");
+                conversation.memberUserIds.push(userLoginId);
+                conversation.members = [...conversation.members, ...memberInfo];                
                 dispatch(addConversation(conversation));
             }
             if (conversation.memberUserIds.includes(userLoginId) && !memberSelected.includes(userLoginId)) {

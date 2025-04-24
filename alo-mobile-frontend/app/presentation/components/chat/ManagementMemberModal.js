@@ -24,9 +24,10 @@ export const ManagementMemberModal = ({
   onPromoteVice,
   onRemoveVice,
   onBlock,
-  unBlock,
   onRemove,
 }) => {
+  if (!member || !conversation || !userLogin) return null;
+
   const leaderIds =
     conversation.roles.find((r) => r.role === "leader")?.userIds || [];
   const viceLeaderIds =
@@ -34,8 +35,84 @@ export const ManagementMemberModal = ({
 
   const isLeader = leaderIds.includes(userLogin.id);
   const isViceLeader = viceLeaderIds.includes(userLogin.id);
+  const isSelf = userLogin.id === member.id;
   const canManage = isLeader || isViceLeader;
-  if (!member || !conversation || !userLogin) return null;
+  const isMemberViceLeader = viceLeaderIds.includes(member.id);
+
+  const getOptions = () => {
+    const options = [];
+
+    // Leader options (except for themselves)
+    if (isLeader && !isSelf) {
+      options.push(
+        isMemberViceLeader ? (
+          <Option
+            key="remove-vice"
+            text="Gỡ vai trò phó nhóm"
+            onPress={() => {
+              onRemoveVice?.(member);
+              onClose();
+            }}
+          />
+        ) : (
+          <Option
+            key="promote-vice"
+            text="Bổ nhiệm làm phó nhóm"
+            onPress={() => {
+              onPromoteVice?.(member);
+              onClose();
+            }}
+          />
+        ),
+        <Option
+          key="block"
+          text="Chặn thành viên"
+          onPress={() => {
+            onBlock?.(member);
+            onClose();
+          }}
+        />,
+        <Option
+          key="remove"
+          text="Xóa khỏi nhóm"
+          onPress={() => {
+            onRemove?.(member);
+            onClose();
+          }}
+        />
+      );
+    }
+
+    // Vice Leader options (except for themselves)
+    if (isViceLeader && !isSelf) {
+      options.push(
+        <Option
+          key="remove"
+          text="Xóa khỏi nhóm"
+          onPress={() => {
+            onRemove?.(member);
+            onClose();
+          }}
+        />
+      );
+    }
+
+    // Leave group option for self (non-leader)
+    if (isSelf && !isLeader) {
+      options.push(
+        <Option
+          key="leave"
+          text="Rời nhóm"
+          onPress={() => {
+            onRemove?.(member);
+            onClose();
+          }}
+        />
+      );
+    }
+
+    return options;
+  };
 
   return (
     <Modal
@@ -57,55 +134,7 @@ export const ManagementMemberModal = ({
           />
           <Text style={styles.modalName}>{member.displayName}</Text>
 
-          {canManage && (
-            <View style={{ width: "100%" }}>
-              {conversation.blockedUserIds?.includes(member.id) ? (
-                // Nếu đang bị chặn chỉ hiển thị Bỏ chặn
-                <Option
-                  text="Bỏ chặn thành viên"
-                  onPress={() => {
-                    unBlock?.(member);
-                    onClose();
-                  }}
-                />
-              ) : (
-                // Nếu không bị chặn hiển thị các chức năng khác
-                <>
-                  {member.isViceLeader ? (
-                    <Option
-                      text="Gỡ vai trò phó nhóm"
-                      onPress={ () => {
-                        onRemoveVice?.(member);
-                        onClose();
-                      }}
-                    />
-                  ) : (
-                    <Option
-                      text="Bổ nhiệm làm phó nhóm"
-                      onPress={ () => {
-                         onPromoteVice?.(member);
-                        onClose();
-                      }}
-                    />
-                  )}
-                  <Option
-                    text="Chặn thành viên"
-                    onPress={() => {
-                      onBlock?.(member);
-                      onClose();
-                    }}
-                  />
-                  <Option
-                    text="Xóa khỏi nhóm"
-                    onPress={() => {
-                      onRemove?.(member);
-                      onClose();
-                    }}
-                  />
-                </>
-              )}
-            </View>
-          )}
+          {canManage || isSelf ? <View style={{ width: "100%" }}>{getOptions()}</View> : null}
         </View>
       </View>
     </Modal>

@@ -16,7 +16,13 @@ export const showToast = (type, position, title, content) => {
         text2Style: [GlobalStyles.textStyle, {}],
     })
 }
-
+export  const removeVietnameseTones = (str) => {
+    return str
+      .normalize("NFD") // Tách tổ hợp ký tự Unicode
+      .replace(/[\u0300-\u036f]/g, "") // Loại bỏ các dấu
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D");
+  };
 export const getFriend = (conversation, userId) => {
     const friend = conversation.members.find(member => member.id === userId);
     return friend;
