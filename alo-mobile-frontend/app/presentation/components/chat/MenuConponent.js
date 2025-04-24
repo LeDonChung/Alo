@@ -210,7 +210,7 @@ export const MenuComponent = ({ message, showMenuComponent, setShowDetailModal, 
                     conversation.isGroup ? (
                         <>
                             {
-                                getUserRoleAndPermissions(conversation, userLogin.id).pinMessages ? (
+                                getUserRoleAndPermissions(conversation, userLogin.id)?.permissions?.pinMessages ? (
                                     <>
                                         <TouchableOpacity style={styles.actionItem} onPress={() => {
                                             handlerClickPin(message);

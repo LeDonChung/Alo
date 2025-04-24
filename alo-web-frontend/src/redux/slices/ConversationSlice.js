@@ -376,7 +376,7 @@ const ConversationSlice = createSlice({
         builder.addCase(createPin.pending, (state) => {
         });
         builder.addCase(createPin.fulfilled, (state, action) => {
-            let cons = state.conversation;
+            let cons = state.conversation || [];
             if (cons && action.payload.data?.message) { // Kiểm tra action.payload.data và message
                 cons.pineds.unshift(action.payload.data);
                 if (cons.pineds.length > 5) {
