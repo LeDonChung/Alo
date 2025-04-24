@@ -16,6 +16,8 @@ import socket from '../utils/socket';
 import { clearAllMessages } from '../redux/slices/MessageSlice';
 import ModalAddMember from './conversation/ModalAddMember';
 import UpdateProfileGroup from './conversation/UpdateProfileGroup';
+import ModalOutGroup from './conversation/ModalOutGroup';
+import ModalChangeLeader from './conversation/ModalChangeLeader';
 
 
 
@@ -27,6 +29,12 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
   const conversation = useSelector(state => state.conversation.conversation);
   const messages = useSelector(state => state.message.messages);
   const [isOpenModalAddMember, setIsOpenModalAddMember] = useState(false);
+
+  // rời nhóm
+  const [isOpenOutGroup, setIsOpenOutGroup] = useState(false);
+  const [isOpenChangeLeader, setIsOpenChangeLeader] = useState(false);
+  const leaderId = conversation.roles.find(role => role.role === 'leader')?.userIds[0];
+  const [newLeaderId, setNewLeaderId] = useState(leaderId);
 
   // Hàm lấy icon theo loại file
   const getFileIcon = (extension) => {
@@ -588,12 +596,49 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
                         </button>
                       )}
                       {/* Hiển thị "Rời nhóm" cho tất cả thành viên */}
-                      <button className="w-full flex items-center space-x-3 p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors">
+                      <button
+                        onClick={() => {
+                          if (userLogin.id === leaderId) {
+                            setIsOpenChangeLeader(true);
+                          }
+                          else {
+                            setIsOpenOutGroup(true);
+                          }
+                        }}
+                        className="w-full flex items-center space-x-3 p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                         </svg>
                         <span className="text-sm">Rời nhóm</span>
                       </button>
+
+                      <ModalOutGroup
+                        isOpen={isOpenOutGroup}
+                        onClose={() => {
+                          setIsOpenOutGroup(false);
+                        }}
+                        conversation={conversation}
+                        newLeaderId={newLeaderId}
+                        leaderId={leaderId}
+                        userLogin={userLogin}
+                        member={userLogin}
+                      />
+
+                      <ModalChangeLeader
+                        isOpen={isOpenChangeLeader}
+                        onClose={() => {
+                          setIsOpenChangeLeader(false);
+                          setIsOpenOutGroup(true);
+                        }}
+                        conversation={conversation}
+                        leaderId={leaderId}
+                        userLogin={userLogin}
+                        cancel={() => {
+                          setIsOpenChangeLeader(false);
+                        }}
+                        setNewLeaderId={setNewLeaderId}
+                      />
+
                     </div>
                   </div>
                 )}
