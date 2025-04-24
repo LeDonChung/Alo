@@ -2,13 +2,14 @@ import React from 'react';
 import { View, Text, TouchableOpacity, TextInput } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome5';
 import AntDesign from 'react-native-vector-icons/AntDesign';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { PinComponent } from './PinComponent';
 import { useState } from 'react';
 import { useEffect } from 'react';
 import socket from '../../../utils/socket';
 import { getFriend } from '../../../utils/AppUtils';
 import { useNavigation } from '@react-navigation/native';
+import { setChooseTab } from '../../redux/slices/UserSlice';
 
 const HeaderComponent = ({ isFriendOnline, getLastLoginMessage, lastLogout, scrollToMessage, onDeletePin, onSearch, isSearchVisible, searchQuery, setSearchQuery, setIsSearchVisible }) => {
   const navigation = useNavigation();
@@ -31,10 +32,11 @@ const HeaderComponent = ({ isFriendOnline, getLastLoginMessage, lastLogout, scro
     // Cleanup interval
     return () => clearInterval(intervalId);
   }, [lastLogout]);
+  const dispatch = useDispatch();
   return (
     <View>
       <View style={{ backgroundColor: '#007AFF', padding: 10, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center' }}> 
           <AntDesign name="left" size={20} color="white" onPress={() => socket.emit("leave_conversation", conversation.id) && navigation.goBack()} />
           {isSearchVisible ? (
             <View style={{ flex: 1, flexDirection: 'row', alignItems: 'center', marginLeft: 10 }}>

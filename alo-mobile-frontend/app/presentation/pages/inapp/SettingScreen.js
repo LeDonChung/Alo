@@ -13,7 +13,7 @@ import socket from '../../../utils/socket';
 export const SettingScreen = () => {
     const userLogin = useSelector(state => state.user.userLogin);
     const conversation = useSelector(state => state.conversation.conversation);
-    const leaderIds = conversation.roles.find(r => r?.role === 'leader')?.userIds || [];
+    const leaderIds = conversation?.roles?.find(r => r?.role === 'leader')?.userIds || [];
     const friend = conversation?.isGroup === false && conversation?.memberUserIds ?
         getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id)) :
         {};

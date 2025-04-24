@@ -9,6 +9,7 @@ const initialState = {
     avatar: null,
     userLogin: null,
     userOnlines: [],
+    chooseTab: 'home'
 };
 
 const getProfile = createAsyncThunk('UserSlice/getProfile', async (token, { rejectWithValue }) => {
@@ -146,7 +147,10 @@ const UserSlice = createSlice({
         },
         setUserLogin: (state, action) => {
             state.userLogin = action.payload;
-        }
+        },
+        setChooseTab: (state, action) => {
+            state.chooseTab = action.payload;
+        } 
     },
     extraReducers: (builder) => {
         builder.addCase(login.pending, (state) => {
@@ -278,6 +282,6 @@ const UserSlice = createSlice({
     }
 });
 
-export const { setUserOnlines, setUserLogin } = UserSlice.actions;
+export const { setUserOnlines, setUserLogin, setChooseTab } = UserSlice.actions;
 export { uploadAvatar, uploadBackground, getProfile, updateProfile, login, verifyOtp, generateOtp, logout, forgetPassword, changePassword, getUserById, getUserByIds };
 export default UserSlice.reducer;

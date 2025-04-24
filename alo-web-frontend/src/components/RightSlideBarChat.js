@@ -33,7 +33,7 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
   // rời nhóm
   const [isOpenOutGroup, setIsOpenOutGroup] = useState(false);
   const [isOpenChangeLeader, setIsOpenChangeLeader] = useState(false);
-  const leaderId = conversation.roles.find(role => role.role === 'leader')?.userIds[0];
+  const leaderId = conversation.isGroup && conversation.roles.find(role => role.role === 'leader')?.userIds[0];
   const [newLeaderId, setNewLeaderId] = useState(leaderId);
 
   // Hàm lấy icon theo loại file
@@ -445,29 +445,6 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
                   )
                 }
 
-                {/* Bằng tin nhắn */}
-                <div className="border-b border-gray-200 pb-4">
-                  <div className="flex justify-between items-center">
-                    {
-                      conversation.isGroup ? (
-                        <h3 className="text-base font-semibold text-gray-800 mb-2">Bảng tin cộng đồng</h3>
-                      ) : (
-                        <h3 className="text-base font-semibold text-gray-800 mb-2">Show 2 tin gần nhất Tin nhắn</h3>
-                      )
-                    }
-                    <div className="rounded-full hover:bg-gray-200 p-2 cursor-pointer">
-                      <svg className="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7" />
-                      </svg>
-                    </div>
-                  </div>
-                  <div className="flex items-center space-x-3 mt-2 px-2 cursor-pointer hover:bg-slate-200 py-3">
-                    <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01m-.01 4h.01" />
-                    </svg>
-                    <p className="text-sm text-gray-700">Ghim</p>
-                  </div>
-                </div>
 
                 {/* Ảnh/Video */}
                 <div className="border-b border-gray-200 pb-4">

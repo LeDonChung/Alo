@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Modal, Pressable, View, TextInput, TouchableOpacity, Text } from 'react-native';
 import { axiosInstance } from '../../../api/APIClient';
-import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
+import { setChooseTab, setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice';
 import socket from '../../../utils/socket';
 import { v4 as uuidv4 } from 'uuid';
 import {
@@ -51,7 +51,9 @@ export const ChatScreen = ({ route, navigation }) => {
   const userLogin = useSelector(state => state.user.userLogin);
   const userOnlines = useSelector(state => state.user.userOnlines);
   const dispatch = useDispatch();
-
+  useEffect(() => {
+    dispatch(setChooseTab('chat'));
+  }, [])
   const conversation = useSelector(state => state.conversation.conversation);
   const friend = getFriend(
     conversation,

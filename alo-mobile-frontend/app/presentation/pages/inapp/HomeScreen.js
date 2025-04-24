@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Button, View, Text, FlatList, Image, TouchableOpacity, TextInput, RefreshControl, ActivityIndicator, } from "react-native";
 import { GlobalStyles } from "../../styles/GlobalStyles";
 import { useDispatch, useSelector } from "react-redux";
-import { setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice'
+import { setChooseTab, setUserLogin, setUserOnlines } from '../../redux/slices/UserSlice'
 import { getAllConversation, setConversation } from '../../redux/slices/ConversationSlice'
 import socket from "../../../utils/socket";
 import * as SecureStore from 'expo-secure-store';
@@ -38,22 +38,29 @@ export const HomeScreen = ({ navigation }) => {
     init();
   }, [userLogin?.id]);
   useEffect(() => {
+
     socket.on("users-online", ({ userIds }) => {
       dispatch(setUserOnlines(userIds));
     })
   }, []);
 
+  useEffect(() => {
+    const unsubscribe = navigation.addListener('focus', () => {
+      dispatch(setChooseTab('home')); 
+    });
 
+    return unsubscribe;
+  }, [navigation, dispatch]);
   const handlerChoostConversation = async (conversation) => {
     await dispatch(setConversation(conversation));
   }
   const renderItem = ({ item, handlerChoostConversation }) => {
     const friend = getFriend(item, item.memberUserIds.find((item) => item !== userLogin.id));
 
-    const getLastMessage = () => { 
+    const getLastMessage = () => {
       if (!item.lastMessage) return '';
-      if(item.lastMessage.status === 2) return '';
- 
+      if (item.lastMessage.status === 2) return '';
+
       const userSender = item.lastMessage.sender;
       const message = item.lastMessage;
       let content = message.content;

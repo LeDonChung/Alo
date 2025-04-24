@@ -70,12 +70,13 @@ import {
 
 import { useNavigation } from "@react-navigation/native";
 import { navigationRef } from "./NavigationService";
+import { setChooseTab } from "../redux/slices/UserSlice";
 
 const Tab = createBottomTabNavigator();
 
 export const InAppNavigation = () => {
   const [search, setSearch] = useState("");
-  const [chooseTab, setChooseTab] = useState("home");
+  const chooseTab = useSelector((state) => state.user.chooseTab);
   const userLogin = useSelector((state) => state.user.userLogin);
 
   const [searchResult, setSearchResult] = useState([]);
@@ -999,25 +1000,25 @@ export const InAppNavigation = () => {
           <Tab.Screen
             name="home"
             component={HomeNavigation}
-            listeners={{ focus: () => setChooseTab("home") }}
+            listeners={{ focus: () => dispatch(setChooseTab("home")) }}
             options={{ tabBarShowLabel: false }}
           />
           <Tab.Screen
             name="contact"
             component={ContactScreen}
-            listeners={{ focus: () => setChooseTab("contact") }}
+            listeners={{ focus: () => dispatch(setChooseTab("contact")) }}
             options={{ tabBarShowLabel: false }}
           />
           <Tab.Screen
             name="filter"
             component={FilterScreen}
-            listeners={{ focus: () => setChooseTab("filter") }}
+            listeners={{ focus: () => dispatch(setChooseTab("filter")) }}
             options={{ tabBarShowLabel: false }}
           />
           <Tab.Screen
             name="account"
             component={AccountNavigation}
-            listeners={{ focus: () => setChooseTab("account") }}
+            listeners={{ focus: () => dispatch(setChooseTab("account")) }}
             options={{ tabBarShowLabel: false }}
           />
         </Tab.Navigator>
