@@ -209,6 +209,15 @@ const updateProfileGroup = createAsyncThunk('ConversationSlice/updateProfileGrou
     }
 })
 
+const disbandGroup = createAsyncThunk('ConversationSlice/disbandGroup', async ({ conversationId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.delete(`/api/conversation/${conversationId}/disband-group`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
+
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
@@ -496,6 +505,15 @@ const ConversationSlice = createSlice({
         });
         builder.addCase(leaveGroup.rejected, (state, action) => {
         });
+
+
+        // leave group
+        builder.addCase(disbandGroup.pending, (state) => {
+        });
+        builder.addCase(disbandGroup.fulfilled, (state, action) => {
+        });
+        builder.addCase(disbandGroup.rejected, (state, action) => {
+        });
     }
 });
 
@@ -536,6 +554,7 @@ export {
     addViceLeader,
     changeLeader,
     leaveGroup,
+    disbandGroup
 
 };
 export default ConversationSlice.reducer;

@@ -31,6 +31,19 @@ export const Navigation = () => {
         });
     }
 
+    useEffect(() => {
+        // nhận giải tán nhóm
+        const handleDisbandGroup = async (data) => {
+            const { conversation } = data;
+            dispatch(removeConversation({ conversationId: conversation.id }));
+        }
+        socket.on("receive-disband-group", handleDisbandGroup)
+        return (
+            () => {
+                socket.off("receive-disband-group", handleDisbandGroup);
+            }
+        )
+    }, [])
 
     useEffect(() => {
         const handleLogoutChangedPassword = () => {

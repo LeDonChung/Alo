@@ -46,7 +46,7 @@ exports.getConversationsByUserId = async (req, res) => {
 
                 // Lấy message cuối cùng trong cuộc trò chuyện
                 let lastMessage = await messageService.getLastMessageByConversationId(conversation.id);
-                if(lastMessage) {
+                if (lastMessage) {
                     lastMessage.sender = await userService.getUserById(lastMessage.senderId);
                 }
                 console.log("lastMessage: ", lastMessage)
@@ -1204,10 +1204,10 @@ exports.leaveGroup = async (req, res) => {
         const userId = userService.getUserIdFromToken(token);
         const { conversationId } = req.params;
         console.log("conversationId: ", conversationId);
-        
+
 
         const conversation = await conversationService.getConversationById(conversationId);
-        
+
         if (!conversation) {
             return res.status(404).json({
                 status: 404,
@@ -1225,7 +1225,7 @@ exports.leaveGroup = async (req, res) => {
 
         const roleLeader = conversation.roles.find(role => role.role === 'leader').userIds;
 
-        if(roleLeader && roleLeader.includes(userId)) {
+        if (roleLeader && roleLeader.includes(userId)) {
             return res.status(400).json({
                 status: 400,
                 message: "Bạn không thể rời nhóm khi đang là trưởng nhóm.",
@@ -1241,10 +1241,71 @@ exports.leaveGroup = async (req, res) => {
             data: updatedConversation
         });
 
-    } catch (err) {        
+    } catch (err) {
         return res.status(500).json({
             status: 500,
             message: err.message || "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+};
+
+// DISBAND GROUP CONVERSATION
+exports.disbandGroup = async (req, res) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        const userId = userService.getUserIdFromToken(token);
+        const { conversationId } = req.params;
+
+        const conversation = await conversationService.getConversationById(conversationId);
+
+        if (!conversation) {
+            return res.status(404).json({
+                status: 400,
+                message: "Cuộc trò chuyện không tồn tại.",
+                data: null
+            });
+        }
+
+        if (!conversation.isGroup) {
+            return res.status(400).json({
+                status: 400,
+                message: "Chỉ có thể giải tán các cuộc trò chuyện nhóm.",
+                data: null
+            });
+        }
+
+        const leaderRole = conversation.roles.find(role => role.role === 'leader');
+        if (!leaderRole || !leaderRole.userIds.includes(userId)) {
+            return res.status(403).json({
+                status: 400,
+                message: "Bạn không có quyền giải tán nhóm. Chỉ trưởng nhóm có thể thực hiện hành động này.",
+                data: null
+            });
+        }
+
+        const updatedData = {
+            memberUserIds: [],
+            roles: conversation.roles.map(role => ({
+                ...role,
+                userIds: []
+            }))
+        };
+
+        const updatedConversation = await conversationService.disbandGroup(conversationId, updatedData);
+
+        return res.json({
+            status: 200,
+            message: "Giải tán nhóm thành công.",
+            data: updatedConversation
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
             data: null
         });
     }

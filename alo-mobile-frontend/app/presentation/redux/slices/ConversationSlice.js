@@ -249,6 +249,15 @@ const leaveGroup = createAsyncThunk('ConversationSlice/leaveGroup', async ({ con
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 });
+
+const disbandGroup = createAsyncThunk('ConversationSlice/disbandGroup', async ({ conversationId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.delete(`/api/conversation/${conversationId}/disband-group`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
@@ -606,6 +615,13 @@ const ConversationSlice = createSlice({
         });
         builder.addCase(leaveGroup.rejected, (state, action) => {
         })
+
+        builder.addCase(disbandGroup.pending, (state) => {
+        });
+        builder.addCase(disbandGroup.fulfilled, (state, action) => {
+        });
+        builder.addCase(disbandGroup.rejected, (state, action) => {
+        });
     }
 });
 
@@ -644,7 +660,8 @@ export {
     unblockMemberToGroup,
     addViceLeaderToGroup,
     removeViceLeaderToGroup,
-    changeLeader
+    changeLeader,
+    disbandGroup 
 };
 
 

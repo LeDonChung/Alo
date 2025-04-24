@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, TextInput, ScrollView, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useSelector, useDispatch } from 'react-redux';
-import { updateAllowPinMessageGroup, updateAllowSendMessageGroup, updateAllowUpdateProfileGroup, updatePermissions } from '../../redux/slices/ConversationSlice';
+import { updateAllowPinMessageGroup, updateAllowSendMessageGroup, updateAllowUpdateProfileGroup, updatePermissions, disbandGroup, removeConversation } from '../../redux/slices/ConversationSlice';
 import socket from '../../../utils/socket';
-import { getUserRoleAndPermissions } from '../../../utils/AppUtils';
+import { getUserRoleAndPermissions, showToast } from '../../../utils/AppUtils';
 import { useNavigation } from '@react-navigation/native';
 
 export const GroupManagerScreen = ({ setIsSetting }) => {
@@ -18,10 +18,11 @@ export const GroupManagerScreen = ({ setIsSetting }) => {
     const { permissions, role } = getUserRoleAndPermissions(conversation, userLogin.id);
     const dispatch = useDispatch();
     const isMember = role === 'member';
+    const navigation = useNavigation();
 
-    // Permission update handlers (unchanged from web version)
+    // Permission update handlers
     useEffect(() => {
-        const handlerAllowPermisstion = async () => {
+        const handlerAllowPermission = async () => {
             try {
                 await dispatch(updateAllowUpdateProfileGroup({
                     conversationId: conversation.id,
@@ -34,16 +35,16 @@ export const GroupManagerScreen = ({ setIsSetting }) => {
                 });
             } catch (error) {
                 setIsChangeProfileApproval(!isChangeProfileApproval);
-                // showToast(error.message || 'Có lỗi xảy ra trong quá trình cập nhật quyền thành viên nhóm. Vui lòng thử lại.', 'error');
+                showToast(error.message || 'Có lỗi xảy ra trong quá trình cập nhật quyền thành viên nhóm. Vui lòng thử lại.', 'error');
             }
         };
         if (isChangeProfileApproval !== memberRole.permissions.changeGroupInfo && !isMember) {
-            handlerAllowPermisstion();
+            handlerAllowPermission();
         }
-    }, [isChangeProfileApproval, isMember]);
+    }, [isChangeProfileApproval, isMember, dispatch, conversation.id, memberRole.permissions.changeGroupInfo]);
 
     useEffect(() => {
-        const handlerAllowPermisstion = async () => {
+        const handlerAllowPermission = async () => {
             try {
                 await dispatch(updateAllowSendMessageGroup({
                     conversationId: conversation.id,
@@ -56,13 +57,13 @@ export const GroupManagerScreen = ({ setIsSetting }) => {
                 });
             } catch (error) {
                 setIsSendMessage(!isSendMessage);
-                // showToast(error.message || 'Có lỗi xảy ra trong quá trình cập nhật quyền thành viên nhóm. Vui lòng thử lại.', 'error');
+                showToast(error.message || 'Có lỗi xảy ra trong quá trình cập nhật quyền thành viên nhóm. Vui lòng thử lại.', 'error');
             }
         };
         if (isSendMessage !== memberRole.permissions.sendMessage && !isMember) {
-            handlerAllowPermisstion();
+            handlerAllowPermission();
         }
-    }, [isSendMessage, isMember]);
+    }, [isSendMessage, isMember, dispatch, conversation.id, memberRole.permissions.sendMessage]);
 
     useEffect(() => {
         setIsChangeProfileApproval(memberRole.permissions.changeGroupInfo);
@@ -71,7 +72,7 @@ export const GroupManagerScreen = ({ setIsSetting }) => {
     }, [memberRole]);
 
     useEffect(() => {
-        const handlerAllowPermisstion = async () => {
+        const handlerAllowPermission = async () => {
             try {
                 await dispatch(updateAllowPinMessageGroup({
                     conversationId: conversation.id,
@@ -84,14 +85,46 @@ export const GroupManagerScreen = ({ setIsSetting }) => {
                 });
             } catch (error) {
                 setIsMessageLabeling(!isMessageLabeling);
-                // showToast(error.message || 'Có lỗi xảy ra trong quá trình cập nhật quyền thành viên nhóm. Vui lòng thử lại.', 'error');
+                showToast(error.message || 'Có lỗi xảy ra trong quá trình cập nhật quyền thành viên nhóm. Vui lòng thử lại.', 'error');
             }
         };
         if (isMessageLabeling !== memberRole.permissions.pinMessages && !isMember) {
-            handlerAllowPermisstion();
+            handlerAllowPermission();
         }
-    }, [isMessageLabeling, isMember]);
-    const navigation = useNavigation();
+    }, [isMessageLabeling, isMember, dispatch, conversation.id, memberRole.permissions.pinMessages]);
+
+    // Disband group handler with confirmation
+    const handlerDisbandGroup = () => {
+        Alert.alert(
+            'Xác nhận giải tán nhóm',
+            `Bạn có muốn xóa nhóm ${conversation.name || 'này'} hay không?`,
+            [
+                {
+                    text: 'Hủy',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Xác nhận',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            await dispatch(disbandGroup({ conversationId: conversation.id })).unwrap().then((res) => {
+                                socket.emit('disband-group', { conversation: conversation });
+                                dispatch(removeConversation({ conversationId: conversation.id }));
+                                showToast('info', 'top', 'Thông báo', 'Giải tán nhóm thành công');
+                                navigation.navigate('home'); 
+                            });
+                        } catch (error) {
+                            showToast('info', 'top', 'Thông báo', error.message || 'Có lỗi xảy ra trong quá trình giải tán nhóm. Vui lòng thử lại.');
+
+                        }
+                    },
+                },
+            ],
+            { cancelable: true }
+        );
+    };
+
     return (
         <ScrollView style={styles.container}>
             {/* Header */}
@@ -187,6 +220,7 @@ export const GroupManagerScreen = ({ setIsSetting }) => {
 
             {/* Dissolve Group Button */}
             <TouchableOpacity
+                onPress={handlerDisbandGroup}
                 style={[styles.dissolveButton, isMember && styles.disabledButton]}
                 disabled={isMember}
             >
@@ -208,10 +242,6 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         backgroundColor: '#007AFF',
         padding: 15,
-    },
-    backButton: {
-        padding: 8,
-        borderRadius: 9999,
     },
     headerTitle: {
         color: '#fff',

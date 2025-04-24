@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import showToast, { getUserRoleAndPermissions } from '../../utils/AppUtils';
 import { useDispatch } from 'react-redux';
-import { updateAllowPinMessageGroup, updateAllowSendMessageGroup, updateAllowUpdateProfileGroup, updatePermissions } from '../../redux/slices/ConversationSlice';
+import { disbandGroup, removeConversation, updateAllowPinMessageGroup, updateAllowSendMessageGroup, updateAllowUpdateProfileGroup, updatePermissions } from '../../redux/slices/ConversationSlice';
 import socket from '../../utils/socket';
 
 const GroupManagement = ({ setIsSetting }) => {
@@ -19,6 +19,24 @@ const GroupManagement = ({ setIsSetting }) => {
 
   // Check if the user is a 'member' to disable checkboxes
   const isMember = role === 'member';
+
+  const handlerDisbandGroup = async () => {
+    // Add confirmation prompt
+    const isConfirmed = window.confirm(`Bạn có muốn xóa nhóm ${conversation.name || 'này'} hay không?`);
+    if (!isConfirmed) {
+      return; // Exit if user cancels
+    }
+
+    try {
+      await dispatch(disbandGroup({ conversationId: conversation.id })).unwrap().then((res) => {
+        socket.emit('disband-group', { conversation: conversation });
+        dispatch(removeConversation({ conversationId: conversation.id }));
+        showToast('Giải tán nhóm thành công.', 'success');
+      });
+    } catch (error) {
+      showToast(error.message || 'Có lỗi xảy ra trong quá trình giải tán nhóm. Vui lòng thử lại.', 'error');
+    }
+  };
 
   useEffect(() => {
     const handlerAllowPermisstion = async () => {
@@ -200,6 +218,7 @@ const GroupManagement = ({ setIsSetting }) => {
       </div>
       <div className="mt-6">
         <button
+          onClick={() => handlerDisbandGroup()}
           className={`w-full py-1 bg-red-100 text-red-600 font-semibold rounded-lg transition-colors ${isMember ? 'opacity-50 cursor-not-allowed' : 'hover:bg-red-200'}`}
           disabled={isMember}
         >

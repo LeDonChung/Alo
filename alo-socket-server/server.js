@@ -421,6 +421,19 @@ io.on("connection", (socket) => {
         }
     });
 
+    socket.on('disband-group', async (data) => {
+        const { conversation } = data;
+        const members = conversation.memberUserIds;
+
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-disband-group', data);
+            });
+        }
+    })
+
 
     // =====================
     // Helper functions

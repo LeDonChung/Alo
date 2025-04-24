@@ -368,6 +368,33 @@ const updateAllMessagesStatusByConversationId = async (conversationId) => {
     }
 };
 
+
+const disbandGroup = async (conversationId, updateData) => {
+    try {
+
+        const params = {
+            TableName: 'Conversations',
+            Key: { id: conversationId },
+            UpdateExpression: 'SET memberUserIds = :emptyList, #roles = :roles, pineds = :emptyPineds, blockedUserIds = :emptyBlockedUserIds',
+            ExpressionAttributeNames: {
+                '#roles': 'roles'
+            },
+            ExpressionAttributeValues: {
+                ':emptyList': updateData.memberUserIds,
+                ':roles': updateData.roles,
+                ':emptyPineds': [],
+                ':emptyBlockedUserIds': []
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+
+        const result = await client.update(params).promise();
+        return result.Attributes;
+    } catch (err) {
+        console.error('Lỗi khi giải tán nhóm:', err);
+        throw err;
+    }
+}
 module.exports = {
     createConversation,
     getConversationsByUserId,
@@ -382,5 +409,6 @@ module.exports = {
     updateRoles,
     updateBlockedUserIds,
     updateAllMessagesStatusByConversationId,
-    leaveGroup
+    leaveGroup,
+    disbandGroup
 };

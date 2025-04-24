@@ -81,12 +81,15 @@ router.post('/:conversationId/allow-send-message',
     middleware.authenticateToken,
     conversationController.updateAllowSendMessage);
 
-router.post('/:conversationId/remove-all-history-messages',    
+router.post('/:conversationId/remove-all-history-messages',
     middleware.authenticateToken,
     conversationController.removeAllHistoryMessages);
 
 router.post('/:conversationId/leave-group',
     middleware.authenticateToken,
-    conversationController.leaveGroup);  
-    
+    conversationController.leaveGroup);
+
+router.delete('/:conversationId/disband-group',
+    middleware.authenticateToken,
+    conversationController.disbandGroup);
 module.exports = router;

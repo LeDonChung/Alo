@@ -329,7 +329,22 @@ export const InAppNavigation = () => {
     };
   }, []);
 
-
+  useEffect(() => {
+    // nhận giải tán nhóm
+    const handleDisbandGroup = async (data) => {
+        dispatch(removeConversation({ conversationId: data.conversation.id }));
+        if(conversation?.id === data.conversation.id) {
+            navigationRef.navigate("home");
+        } 
+        
+    }
+    socket.on("receive-disband-group", handleDisbandGroup)
+    return (
+        () => {
+            socket.off("receive-disband-group", handleDisbandGroup);
+        }
+    )
+}, [])
   useEffect(() => {
     const handleRemoveAllHistoryMessages = (data) => {
       console.log('Received remove all history messages:', data);
