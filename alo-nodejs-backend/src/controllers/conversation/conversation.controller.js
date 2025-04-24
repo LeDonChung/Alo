@@ -1221,6 +1221,7 @@ exports.leaveGroup = async (req, res) => {
         }
 
         const roleLeader = conversation.roles.find(role => role.role === 'leader').userIds;
+
         if(roleLeader && roleLeader.includes(userId)) {
             return res.status(400).json({
                 status: 400,

@@ -254,7 +254,14 @@ const updateAllowSendMessageGroup = createAsyncThunk('ConversationSlice/updateAl
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 });
-
+const leaveGroup = createAsyncThunk('ConversationSlice/leaveGroup', async ({ conversationId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/leave-group`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
@@ -365,43 +372,19 @@ const ConversationSlice = createSlice({
             }
         },
         memberLeaveGroup: (state, action) => {
-            const { conversationId, userId, updatedConversation } = action.payload;
-            if (state.conversations && state.conversations.length > 0) {
-                state.conversations = state.conversations.map(conv => {
-                    if (conv.id === conversationId) {
-                        if (updatedConversation) {
-                            return {
-                                ...conv,
-                                memberUserIds: updatedConversation.memberUserIds || [],
-                                roles: updatedConversation.roles || []
-                            };
-                        }
-                        return {
-                            ...conv,
-                            memberUserIds: conv.memberUserIds ? conv.memberUserIds.filter(id => id !== userId) : []
-                        };
-                    }
-                    return conv;
-                });
-            }
+            const conversationId = action.payload.conversationId;
+            const memberUserId = action.payload.userId;
             if (state.conversation && state.conversation.id === conversationId) {
-                if (userId === action.payload.currentUserId) {
-                    state.conversation = null;
-                } else if (updatedConversation) {
-                    state.conversation = {
-                        ...state.conversation,
-                        memberUserIds: updatedConversation.memberUserIds || [],
-                        roles: updatedConversation.roles || []
-                    };
-                } else {
-                    state.conversation = {
-                        ...state.conversation,
-                        memberUserIds: state.conversation.memberUserIds ? 
-                            state.conversation.memberUserIds.filter(id => id !== userId) : []
-                    };
-                }
+                state.conversation.memberUserIds = state.conversation.memberUserIds.filter(id => id !== memberUserId);
+                state.conversation.members = state.conversation.members.filter(member => member.id !== memberUserId);
             }
-        },
+            const conversationIndex = state.conversations.findIndex(convo => convo.id === conversationId);
+            if (conversationIndex !== -1) {
+                state.conversations[conversationIndex].memberUserIds = state.conversations[conversationIndex].memberUserIds.filter(id => id !== memberUserId);
+                state.conversations[conversationIndex].members = state.conversations[conversationIndex].members.filter(member => member.id !== memberUserId);
+            }
+
+        }, 
         updatePermissions: (state, action) => {
             const conversationId = action.payload.conversationId;
             const roles = action.payload.roles;
@@ -608,29 +591,6 @@ const ConversationSlice = createSlice({
             state.error = action.payload.message || "Xóa lịch sử thất bại";
         });
 
-        builder.addCase(leaveGroup.pending, (state) => {
-            state.error = null;
-            state.isLeaving = true;
-        });
-        builder.addCase(leaveGroup.fulfilled, (state, action) => {
-            state.isLeaving = false;
-            const conversationId = action.payload?.data?.conversationId || 
-                                   action.payload?.conversationId || 
-                                   action.meta.arg.conversationId;
-            state.conversations = state.conversations.filter(
-                conversation => conversation.id !== conversationId
-            );
-            if (state.conversation && state.conversation.id === conversationId) {
-                state.conversation = null;
-            }
-            state.error = null;
-        });
-        builder.addCase(leaveGroup.rejected, (state, action) => {
-            state.isLeaving = false;
-            state.error = action.payload?.message || 
-                          action.error?.message || 
-                          "Không thể rời nhóm chat. Vui lòng thử lại sau.";
-        });
 
         builder.addCase(updateAllowUpdateProfileGroup.pending, (state) => {});
         builder.addCase(updateAllowUpdateProfileGroup.fulfilled, (state, action) => {
@@ -679,6 +639,19 @@ const ConversationSlice = createSlice({
         builder.addCase(updateAllowPinMessageGroup.rejected, (state, action) => {
             state.error = action.payload?.message || "Cập nhật quyền thất bại";
         });
+      builder.addCase(leaveGroup.pending, (state) => {
+                state.error = null;
+            });
+            builder.addCase(leaveGroup.fulfilled, (state, action) => {
+                const conversationId = action.meta.arg.conversationId;
+                state.conversations = state.conversations.filter(conv => conv.id !== conversationId);
+                if (state.conversation?.id === conversationId) {
+                    state.conversation = null;
+                }
+            });
+            builder.addCase(leaveGroup.rejected, (state, action) => {
+                state.error = action.payload?.message || "Không thể rời nhóm";
+            })
     }
 });
 
