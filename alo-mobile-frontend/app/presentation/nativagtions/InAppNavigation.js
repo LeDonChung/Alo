@@ -10,6 +10,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
+import * as SecureStore from 'expo-secure-store';
 import { SafeAreaView } from "react-native-safe-area-context";
 import IconIO from "react-native-vector-icons/Ionicons";
 import IconMI from "react-native-vector-icons/MaterialIcons";
@@ -24,47 +25,50 @@ import { FilterScreen } from "../pages/inapp/FilterScreen";
 import { AccountNavigation } from "./AccountNavigation";
 import { useDispatch, useSelector } from "react-redux";
 import socket from "../../utils/socket";
-import { 
-  addConversation, 
+import {
+  addConversation,
   removeConversation,
-  addPinToConversation, 
-  getAllConversation, 
-  handlerRemoveHistoryMessage, 
-  removePinToConversation, 
-  setConversation, 
-  updateLastMessage, 
-  updatePermissions, 
-  updateProfileGroupById 
+  addPinToConversation,
+  getAllConversation,
+  handlerRemoveHistoryMessage,
+  removePinToConversation,
+  setConversation,
+  updateLastMessage,
+  updatePermissions,
+  updateProfileGroupById,
+  removeMemberGroup,
+  addMemberGroup
 } from "../redux/slices/ConversationSlice";
 
-import { 
-  addFriend, 
-  addFriendRequests, 
-  cancelFriend, 
-  getFriendByPhoneNumber, 
-  getFriends, 
-  getFriendsRequest, 
-  removeFriend, 
-  sendFriendRequest, 
-  setFriendRequests, 
-  setFriends, 
-  unfriend 
+import {
+  addFriend,
+  addFriendRequests,
+  cancelFriend,
+  getFriendByPhoneNumber,
+  getFriends,
+  getFriendsRequest,
+  removeFriend,
+  sendFriendRequest,
+  setFriendRequests,
+  setFriends,
+  unfriend
 } from "../redux/slices/FriendSlice";
 
 import { showToast } from "../../utils/AppUtils";
 import { FlatList } from "react-native-gesture-handler";
 import { ContactStyles } from "../styles/ContactStyle";
 
-import { 
-  clearAllMessages, 
-  handlerUpdateReaction, 
-  setMessageRemoveOfMe, 
-  setMessageUpdate, 
-  updateReaction, 
-  updateSeenAllMessage 
+import {
+  clearAllMessages,
+  handlerUpdateReaction,
+  setMessageRemoveOfMe,
+  setMessageUpdate,
+  updateReaction,
+  updateSeenAllMessage
 } from "../redux/slices/MessageSlice";
 
 import { useNavigation } from "@react-navigation/native";
+import { navigationRef } from "./NavigationService";
 
 const Tab = createBottomTabNavigator();
 
@@ -295,20 +299,20 @@ export const InAppNavigation = () => {
 
   useEffect(() => {
     const handleRemoveAllHistoryMessages = (data) => {
-        console.log('Received remove all history messages:', data);
-        const { conversation } = data;
+      console.log('Received remove all history messages:', data);
+      const { conversation } = data;
 
-        // Nếu đang ở cuộc trò chuyện bị xóa lịch sử
-        dispatch(handlerRemoveHistoryMessage({ conversation }))
-        dispatch(clearAllMessages());
+      // Nếu đang ở cuộc trò chuyện bị xóa lịch sử
+      dispatch(handlerRemoveHistoryMessage({ conversation }))
+      dispatch(clearAllMessages());
     };
 
     socket.on('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
 
     return () => {
-        socket.off('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
+      socket.off('receive-remove-all-history-messages', handleRemoveAllHistoryMessages);
     };
-}, []);
+  }, []);
   // =============== HANDLE SOCKET FRIEND REQUEST ===============
   useEffect(() => {
     const handleReceiveAcceptFriendRequest = async (data) => {
@@ -519,61 +523,58 @@ export const InAppNavigation = () => {
   const [showPopover, setShowPopover] = useState(false);
   const touchableRef = useRef();
 
-  //lắng nghe sự kiện thêm thành viên vào nhóm từ server
   useEffect(() => {
     const handleReceiveAddMember = async (data) => {
       console.log("Nhận được sự kiện receive-add-member:", data);
-      const userLoginId = userLogin.id;
-      const { conversation, selectedMembers, memberInfo } = data;
-  
-      conversation.memberUserIds = [...conversation.memberUserIds, ...selectedMembers];
-      conversation.members = [...conversation.members, ...memberInfo];
-  
-      if (selectedMembers.includes(userLoginId)) {
-        showToast('success', 'top', 'Thông báo', 'Bạn đã được thêm vào nhóm ' + conversation.name);
+      const user = JSON.parse(await SecureStore.getItemAsync("userLogin"));
+      const userLoginId = user.id;
+      console.log("User Login", userLoginId);
+      const { conversation, memberSelected, memberInfo } = data;
+
+      //nếu conversation.memberUserIds bao gồm userLoginId và 
+
+      if (memberSelected.includes(userLoginId)) {
+        conversation.memberUserIds.push(userLoginId);
+        conversation.members = [...conversation.members, ...memberInfo];
         dispatch(addConversation(conversation));
       }
-  
-      if (conversation.memberUserIds.includes(userLoginId)) {
-        dispatch(addMemberGroup({
-          conversationId: conversation.id,
-          memberUserIds: selectedMembers, 
-          memberInfo: memberInfo
-        }));
+      if (conversation.memberUserIds.includes(userLoginId) && !memberSelected.includes(userLoginId)) {
+        dispatch(addMemberGroup({ conversationId: conversation.id, memberUserIds: memberSelected, memberInfo: memberInfo }));
       }
-    };
-  
-    socket.on("receive-add-members-to-group", handleReceiveAddMember); 
-  
+    }
+    socket.on("receive-add-members-to-group", handleReceiveAddMember);
+
     return () => {
       socket.off("receive-add-members-to-group", handleReceiveAddMember);
     };
   }, []);
 
-   //lắng nghe sự kiện xóa thành viên khỏi nhóm từ server
-   useEffect(() => {
+  //lắng nghe sự kiện xóa thành viên khỏi nhóm từ server
+  useEffect(() => {
     const handleReceiveRemoveMember = async (data) => {
-      console.log("Nhận được sự kiện receive-remove-member:", data);
-      const { conversation, memberUserId } = data;
-      const userLoginId = userLogin.id;
-      if (memberUserId === userLoginId) {
-        showToast('success', 'top', 'Thông báo', 'Bạn đã bị xóa khỏi nhóm ' + conversation.name);
-        dispatch(removeConversation(conversation.id));
-        navigation.navigate("home");
-      }else {
-        dispatch(removeMemberGroup({
-          conversationId: conversation.id,
-          memberUserId: memberUserId,
-        }));
+      try {
+        console.log("Nhận được sự kiện receive-remove-member:", data);
+        const { conversation, memberUserId } = data;
+        const user = JSON.parse(await SecureStore.getItemAsync("userLogin"));
+        const userLoginId = user.id;
+        if (memberUserId === userLoginId) {
+
+          navigationRef.navigate("home");
+          dispatch(removeConversation({ conversationId: conversation.id }));
+        } else {
+          dispatch(removeMemberGroup({ conversationId: conversation.id, memberUserId: memberUserId }));
+        }
+      } catch (e) {
+        console.log(e);
       }
     }
     socket.on("receive-remove-member", handleReceiveRemoveMember);
 
-        return () => {
-            socket.off("receive-remove-member", handleReceiveRemoveMember);
-        }
-   }, [])
-  
+    return () => {
+      socket.off("receive-remove-member", handleReceiveRemoveMember);
+    }
+  }, []);
+
   return (
     <SafeAreaView style={{ flex: 1, flexDirection: "column" }}>
       {(chooseTab === "home" || chooseTab === "contact") && (
@@ -801,7 +802,7 @@ export const InAppNavigation = () => {
                               borderRadius: 20,
                               padding: 20,
                             }}
-                            onPress={() => {}} // Chặn sự kiện lan ra ngoài
+                            onPress={() => { }} // Chặn sự kiện lan ra ngoài
                           >
                             {/* Nội dung modal giữ nguyên */}
                             <View style={{ alignItems: "center" }}>

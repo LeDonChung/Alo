@@ -272,17 +272,23 @@ const ConversationSlice = createSlice({
                 const index = state.conversations.findIndex(conversation => conversation.id === newConversation.id);
                 state.conversations[index] = newConversation;
             }
-        },
+        }, 
         addMemberGroup: (state, action) => {
             const conversationId = action.payload.conversationId;
             const memberUserIds = action.payload.memberUserIds;
             const memberInfo = action.payload.memberInfo;
-            const conversation = state.conversations.find(conversation => conversation.id === conversationId);
-            if (conversation) {
-                conversation.members = [...conversation.members, ...memberInfo];
-                conversation.memberUserIds = [...conversation.memberUserIds, ...memberUserIds];
-                const index = state.conversations.findIndex(conversation => conversation.id === conversationId);
-                state.conversations[index] = conversation;
+
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation.memberUserIds = [...state.conversation.memberUserIds, ...memberUserIds];
+                state.conversation.members = [...state.conversation.members, ...memberInfo];
+            }
+ 
+            // Cập nhật danh sách conversations
+            const conversationIndex = state.conversations.findIndex(convo => convo.id === conversationId);
+            if (conversationIndex !== -1) {
+                state.conversations[conversationIndex].memberUserIds = [...state.conversations[conversationIndex].memberUserIds, ...memberUserIds];
+                state.conversations[conversationIndex].members = [...state.conversations[conversationIndex].members, ...memberInfo];
+
             }
         },
         updateProfileGroupById: (state, action) => {
@@ -299,8 +305,10 @@ const ConversationSlice = createSlice({
             }
         },
         removeConversation: (state, action) => {
-            const conversationId = action.payload;
-            const conversationIndex = state.conversations.findIndex(conversation => conversation.id === conversationId);
+            const conversationId = action.payload.conversationId;
+            
+            const conversationIndex = state.conversations.findIndex(convo => convo.id === conversationId);
+
             if (conversationIndex !== -1) {
                 state.conversations.splice(conversationIndex, 1);
             }
@@ -418,20 +426,24 @@ const ConversationSlice = createSlice({
             if (conversationIndex !== -1) {
                 state.conversations[conversationIndex].lastMessage = null;
             }
-        },
+        },  
         removeMemberGroup: (state, action) => {
             const conversationId = action.payload.conversationId;
-            const memberUserId = action.payload.memberUserIds;
-            if (state.conversation && state.conversation.id === conversationId) {
+            const memberUserId = action.payload.memberUserId;
+            console.log("removeMemberGroup", state.conversations)
+            // Xoas khoir nhoms
+            // Xoa khoi nhom dang chon
+            if (state.conversation && state.conversation?.id === conversationId) {
                 state.conversation.memberUserIds = state.conversation.memberUserIds.filter(id => id !== memberUserId);
-                state.conversation.members = state.conversation.members.filter(member => member.id !== memberUserId);
+                state.conversation.members = state.conversation.members.filter(member => member?.id !== memberUserId);
             }
+            // Xoa khoi nhoms dung index
             const conversationIndex = state.conversations.findIndex(convo => convo.id === conversationId);
             if (conversationIndex !== -1) {
                 state.conversations[conversationIndex].memberUserIds = state.conversations[conversationIndex].memberUserIds.filter(id => id !== memberUserId);
                 state.conversations[conversationIndex].members = state.conversations[conversationIndex].members.filter(member => member.id !== memberUserId);
             }
-        }
+        },
     },
     extraReducers: (builder) => {
         builder.addCase(getAllConversation.pending, (state) => {
@@ -492,11 +504,7 @@ const ConversationSlice = createSlice({
         builder.addCase(removeMemberToGroup.pending, (state) => {
         });
         builder.addCase(removeMemberToGroup.fulfilled, (state, action) => {
-            let cons = state.conversation;
-            if (cons) {
-                cons.members = cons.members.filter(member => !action.payload.data.memberUserId.includes(member.id));
-            }
-            state.conversation = {...cons};
+            
         });
         builder.addCase(removeMemberToGroup.rejected, (state, action) => {
         });
@@ -504,12 +512,7 @@ const ConversationSlice = createSlice({
         builder.addCase(blockMemberToGroup.pending, (state) => {
         });
         builder.addCase(blockMemberToGroup.fulfilled, (state, action) => {
-            let cons = state.conversation;
-            if (cons) {
-                cons.members = cons.members.filter(member => !action.payload.data.memberUserId.includes(member.id));
-                cons.blockedMembers = [...cons.blockedMembers, ...action.payload.data.members];
-            }
-            state.conversation = {...cons};
+             
         });
         builder.addCase(blockMemberToGroup.rejected, (state, action) => {
         });
@@ -530,22 +533,7 @@ const ConversationSlice = createSlice({
         builder.addCase(addViceLeaderToGroup.pending, (state) => {
         });
         builder.addCase(addViceLeaderToGroup.fulfilled, (state, action) => {
-            let cons = state.conversation;
-            if (cons) {
-                cons.members = cons.members.map(member => {
-                    if (action.payload.data.memberUserIds.includes(member.id)) {
-                        return { ...member, isViceLeader: true };
-                    }
-                    return member;
-                });
-                cons.roles = cons.roles.map(role => {
-                    if (role.role === 'vice_leader') {
-                        return { ...role, userIds: [...role.userIds, ...action.payload.data.memberUserIds] };
-                    }
-                    return role;
-                });
-            }
-            state.conversation = {...cons};
+            
         });
         builder.addCase(addViceLeaderToGroup.rejected, (state, action) => {
         });
@@ -553,22 +541,7 @@ const ConversationSlice = createSlice({
         builder.addCase(removeViceLeaderToGroup.pending, (state) => {
         });
         builder.addCase(removeViceLeaderToGroup.fulfilled, (state, action) => {
-            let cons = state.conversation;
-            if (cons) {
-                cons.members = cons.members.map(member => {
-                    if (action.payload.data.memberUserIds.includes(member.id)) {
-                        return { ...member, isViceLeader: false };
-                    }
-                    return member;
-                });
-                cons.roles = cons.roles.map(role => {
-                    if (role.role === 'vice_leader') {
-                        return { ...role, userIds: role.userIds.filter(userId => !action.payload.data.memberUserIds.includes(userId)) };
-                    }
-                    return role;
-                });
-            }
-            state.conversation = {...cons};
+            
         });
 
         builder.addCase(changeLeader.pending, (state) => {

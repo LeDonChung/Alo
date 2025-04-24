@@ -487,16 +487,11 @@ export const SettingScreen = () => {
                     <Text style={styles.tabText}>Tìm tin nhắn</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity style={styles.tab} onPress={() => navigation.navigate('addMember')}>
-                    <Icon name="group" size={28} color="#007AFF" style={styles.iconTap} />
-                    <Text style={styles.tabText}>Thêm thành viên</Text>
-                </TouchableOpacity>
-
                 {
                     conversation.isGroup && (
-                        <TouchableOpacity style={styles.tab}>
+                        <TouchableOpacity style={styles.tab} onPress={() => navigation.navigate('addMember')}>
                             <Icon name="group" size={28} color="#007AFF" style={styles.iconTap} />
-                            <Text style={styles.tabText}>Thê thành viên</Text>
+                            <Text style={styles.tabText}>Thêm thành viên</Text>
                         </TouchableOpacity>
                     )
                 }
@@ -532,16 +527,12 @@ export const SettingScreen = () => {
                             </TouchableOpacity>
 
 
-                {/* Thêm các tùy chọn từ tab "Bình chọn" ngay sau "Cài đặt nhóm" */}
-                <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('group-members', { groupId: conversation.id, mode: 'view' })}>
-                    <Icon name="group" size={24} color="#000" />
-                    <Text style={styles.optionText}>Xem thành viên (5)</Text>
-                </TouchableOpacity>
-
-                            <TouchableOpacity style={styles.option}>
+                            {/* Thêm các tùy chọn từ tab "Bình chọn" ngay sau "Cài đặt nhóm" */}
+                            <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('group-members', { groupId: conversation.id, mode: 'view' })}>
                                 <Icon name="group" size={24} color="#000" />
-                                <Text style={styles.optionText}>Xem thành viên (5)</Text>
+                                <Text style={styles.optionText}>Xem thành viên ({conversation.members.length})</Text>
                             </TouchableOpacity>
+ 
 
                             <TouchableOpacity style={styles.option}>
                                 <Icon name="person-add" size={24} color="#000" />
@@ -553,18 +544,13 @@ export const SettingScreen = () => {
                                 <Text style={styles.optionText}>Link nhóm</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={styles.option}>
-                                <Icon name="settings" size={24} color="#000" />
-                                <Text style={styles.optionText}>Cài đặt cá nhân</Text>
-                            </TouchableOpacity>
-
                             {
                                 userRole.role === 'leader' && (
                                     <>
                                         <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('group-members', { groupId: conversation.id, mode: 'transferLeader' })}>
-                    <Icon name="person-add-alt-1" size={24} color="#000" />
-                    <Text style={styles.optionText}>Chuyển quyền trưởng nhóm</Text>
-                </TouchableOpacity>
+                                            <Icon name="person-add-alt-1" size={24} color="#000" />
+                                            <Text style={styles.optionText}>Chuyển quyền trưởng nhóm</Text>
+                                        </TouchableOpacity>
                                         <TouchableOpacity style={styles.option} onPress={handleClearChatHistory}>
                                             <Icon name="delete" size={24} color="#FF0000" />
                                             <Text style={[styles.optionText, { color: '#FF0000' }]}>Xóa lịch sử trò chuyện</Text>

@@ -13,7 +13,7 @@ import { useRoute, useNavigation } from "@react-navigation/native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { ManagementMemberModal } from "../../components/chat/ManagementMemberModal";
 import { useDispatch, useSelector } from "react-redux";
-import { removeMemberToGroup, removeMemberGroup, blockMemberToGroup, unblockMemberToGroup, addViceLeaderToGroup, removeViceLeaderToGroup, getConversationById, changeLeader } from "../../redux/slices/ConversationSlice";
+import { removeMemberToGroup, removeMemberGroup, blockMemberToGroup, unblockMemberToGroup, addViceLeaderToGroup, removeViceLeaderToGroup, getConversationById, changeLeader, updatePermissions } from "../../redux/slices/ConversationSlice";
 import { getUserByIds } from "../../redux/slices/UserSlice";
 import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
 import socket from "../../../utils/socket";
@@ -59,11 +59,10 @@ export const GroupMembersScreen = () => {
       if (mode === "transferLeader") {
         filtered = filtered.filter((member) => !member.isLeader);
       } 
-
+ 
       setMembers(filtered);
     }
   }, [conversation, mode]);
-
   useEffect(() => {
     switch (filterMode) {
       case FILTERS.LEADER_AND_VICE:
@@ -121,16 +120,18 @@ export const GroupMembersScreen = () => {
     if (!member.isViceLeader) {
       const resp = await dispatch(addViceLeaderToGroup({ conversationId: conversation.id, memberUserId: member.id }));
       const result = resp.payload?.data;
+      dispatch(updatePermissions({ conversationId: conversation.id, roles: result.roles }));
       socket.emit("update-roles", { conversation: result });
-      showToast("Đã thêm phó nhóm thành công", "success");
+      showToast("info", "top", "Thông báo", "Đã thêm phó nhóm thành công");
     }
   };
   const handleRemoveVice = async (member) => {
     if (member.isViceLeader) {
       const resp = await dispatch(removeViceLeaderToGroup({ conversationId: conversation.id, memberUserIds: member.id }));
-      const result = resp.payload?.data;
+      const result = resp.payload?.data; 
+      dispatch(updatePermissions({ conversationId: conversation.id, roles: result.roles }));
       socket.emit("update-roles", { conversation: result });
-      showToast("Bạn đã gỡ phó nhóm thành công", "success");
+      showToast("info", "top", "Thông báo", "Bạn đã gỡ phó nhóm thành công");
     }
   };
   const handleBlock = (member) => {
@@ -147,10 +148,6 @@ export const GroupMembersScreen = () => {
           onPress: async () => {
             await dispatch(blockMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
             await dispatch(removeMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
-            await dispatch(getConversationById(conversation.id));
-            // setMembers((prevMembers) => {
-            //   return prevMembers.filter((m) => m.id !== member.id);
-            // });
           },
         },
       ]
@@ -206,9 +203,9 @@ const handleRemove = (member) => {
                 text: "Không chặn",
                 onPress: async () => {
                   try {
-                    // Chỉ xóa thành viên khỏi nhóm
-                    await dispatch(removeMemberGroup({ conversationId: conversation.id, memberUserId: member.id }));
                     await dispatch(removeMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
+                    // Chỉ xóa thành viên khỏi nhóm
+                    dispatch(removeMemberGroup({ conversationId: conversation.id, memberUserId: member.id }));
 
                     socket.emit("remove-member", { conversation: conversation, memberUserId: member.id });
                     showToast('success', 'top', 'Thành công', `Đã xóa ${member.displayName} khỏi nhóm`);
@@ -216,18 +213,18 @@ const handleRemove = (member) => {
                     // Cập nhật lại danh sách thành viên sau khi xóa
                     setMembers((prevMembers) => prevMembers.filter((m) => m.id !== member.id));
                   } catch (error) {
-                    showToast(error.message || "Có lỗi xảy ra", "error");
+                    console.log(error);
                   }
                 },
               },
               {
                 text: "Chặn",
                 onPress: async () => {
-                  try {
+                  try { 
                     // Vừa xóa vừa chặn thành viên
                     await dispatch(blockMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
-                    await dispatch(removeMemberGroup({ conversationId: conversation.id, memberUserId: member.id }));
                     await dispatch(removeMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
+                    await dispatch(removeMemberGroup({ conversationId: conversation.id, memberUserId: member.id }));
 
                     socket.emit("remove-member", { conversation: conversation, memberUserId: member.id });
                     showToast('success', 'top', 'Thành công', `Đã xóa ${member.displayName} khỏi nhóm và chặn họ`);
@@ -235,7 +232,8 @@ const handleRemove = (member) => {
                     // Cập nhật lại danh sách thành viên sau khi xóa
                     setMembers((prevMembers) => prevMembers.filter((m) => m.id !== member.id));
                   } catch (error) {
-                    showToast(error.message || "Có lỗi xảy ra", "error");
+                    console.log(error);
+                    showToast('error', 'top', 'Thất bại', `Không thể xóa ${member.displayName} khỏi nhóm`);
                   }
                 },
               },
