@@ -141,7 +141,7 @@ export const SettingScreen = () => {
                 [
                     {
                         text: 'Chuyển quyền',
-                        onPress: () => navigation.navigate('group-members', { groupId: conversation.id, mode: 'transferLeader' }),
+                        onPress: () => navigation.navigate('group-members', { groupId: conversation.id, mode: 'transferLeader', isOnlyChangeLeader: false }),
                     },
                     { text: 'Đã hiểu', style: 'cancel' }
                 ]
@@ -530,7 +530,7 @@ export const SettingScreen = () => {
                             {
                                 userRole?.role === 'leader' && (
                                     <>
-                                        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('group-members', { groupId: conversation.id, mode: 'transferLeader' })}>
+                                        <TouchableOpacity style={styles.option} onPress={() => navigation.navigate('group-members', { groupId: conversation.id, mode: 'transferLeader', isOnlyChangeLeader: true })}>
                                             <Icon name="person-add-alt-1" size={24} color="#000" />
                                             <Text style={styles.optionText}>Chuyển quyền trưởng nhóm</Text>
                                         </TouchableOpacity>
