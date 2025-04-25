@@ -50,11 +50,28 @@ exports.getConversationsByUserId = async (req, res) => {
                     lastMessage.sender = await userService.getUserById(lastMessage.senderId);
                 }
                 console.log("lastMessage: ", lastMessage)
+
+                // Lấy thông tin user bị chặn
+                const blockedUserIds = conversation.blockedUserIds || [];
+                const blockedUsers = [];
+                for (const blockedUserId of blockedUserIds) {
+                    let blockedUser;
+                    if (userCache.has(blockedUserId)) {
+                        blockedUser = userCache.get(blockedUserId);
+                    } else {
+                        blockedUser = await userService.getUserById(blockedUserId);
+                        userCache.set(blockedUserId, blockedUser);
+                    }
+                    blockedUsers.push(blockedUser);
+                }
+
+
                 return {
                     ...conversation,
                     members,
                     pineds: pinedMessages,
-                    lastMessage
+                    lastMessage,
+                    blocks: blockedUsers,
                 };
             })
         );

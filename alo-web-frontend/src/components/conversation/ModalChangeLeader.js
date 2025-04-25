@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useDispatch } from "react-redux";
-import { changeLeader } from "../../redux/slices/ConversationSlice";
+import { changeLeader, updatePermissions } from "../../redux/slices/ConversationSlice";
 import socket from "../../utils/socket";
 import showToast, { removeVietnameseTones } from "../../utils/AppUtils";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
@@ -8,7 +8,7 @@ import { faKey } from "@fortawesome/free-solid-svg-icons";
 import ModalOutGroup from "./ModalOutGroup";
 
 
-const ModalChangeLeader = ({ isOpen, onClose, conversation, leaderId, cancel, setNewLeaderId }) => {
+const ModalChangeLeader = ({ isOpen, onClose, conversation, leaderId, cancel, setNewLeaderId, isOnlyChangeLeader }) => {
     const [search, setSearch] = useState("");
     const listMember = conversation.members.filter((member) => member.id !== leaderId);
     const [members, setMembers] = useState(listMember);
@@ -29,8 +29,27 @@ const ModalChangeLeader = ({ isOpen, onClose, conversation, leaderId, cancel, se
         }
     }, [search]);
 
+    const [isLoading, setIsLoading] = useState(false);
     if (!isOpen) return null;
 
+    const handlerChangeLeader = async () => {
+        if (isOnlyChangeLeader) {
+            setIsLoading(true);
+            // chuyeern quyen truong nhom
+            await dispatch(changeLeader({ conversationId: conversation.id, memberUserId: leader })).unwrap()
+                .then(async (result) => {
+                    socket.emit("update-roles", { conversation: result.data });
+                    await dispatch(updatePermissions({ conversationId: conversation.id, roles: result.data.roles }));
+                });
+
+            setIsLoading(false);
+        } else {
+
+            setNewLeaderId(leader);
+        }
+        onClose();
+
+    }
     return (
         <div className={`fixed inset-0 z-50 bg-black bg-opacity-50 ${isOpen ? "block" : "hidden"
             } flex justify-center items-center`}>
@@ -105,13 +124,21 @@ const ModalChangeLeader = ({ isOpen, onClose, conversation, leaderId, cancel, se
                         </button>
 
                         <button
-                            onClick={(e) => { 
-                                onClose();
-                                setNewLeaderId(leader);                                
-                            }}
+                            onClick={(e) => handlerChangeLeader()}
                             className="bg-blue-600 text-white px-4 py-2 rounded-lg mr-2 hover:bg-blue-700 cursor-pointer"
                         >
-                            Chọn và tiếp tục
+                            {
+                                isLoading ? (
+                                    <div className="flex items-center justify-center w-full h-4">
+                                        <div
+                                            className="w-4 h-4 border-2 border-t-transparent border-white rounded-full animate-spin mx-auto"
+                                            aria-hidden="true"
+                                        ></div>
+                                    </div>
+                                ) : (
+                                    "Chọn và tiếp tục"
+                                )
+                            }
                         </button>
                     </div>
                 </div>

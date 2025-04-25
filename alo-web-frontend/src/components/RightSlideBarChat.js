@@ -233,7 +233,7 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
       setIsSetting(false);
     }
   }, [search])
-
+  const [isOnlyChangeLeader, setIsOnlyChangeLeader] = useState(false);
   const handlerShowProfileGroup = () => {
     if (!getUserRoleAndPermissions(conversation, userLogin.id)?.permissions?.changeGroupInfo) {
       showToast('Bạn không có quyền thay đổi thông tin nhóm', 'error');
@@ -546,17 +546,24 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
 
                       )
                     })}
-                  </div>
-                  <button
-                    onClick={() => {
-                      setIsSetting(false)
-                      setShowMediaStorage(true)
-                      setSearchImage(false);
-                    }}
+                    {
+                      files.length > 0 ? (
+                        <button
+                          onClick={() => {
+                            setIsSetting(false)
+                            setShowMediaStorage(true)
+                            setSearchImage(false);
+                          }}
 
-                    className="w-full mt-2 font-medium text-black bg-gray-300 hover:bg-gray-400 p-1 rounded-sm flex items-center justify-center">
-                    Xem tất cả
-                  </button>
+                          className="w-full mt-2 font-medium text-black bg-gray-300 hover:bg-gray-400 p-1 rounded-sm flex items-center justify-center">
+                          Xem tất cả
+                        </button>
+                      ) : (
+                        <p className="text-sm text-gray-500 text-center">Không có file</p>
+                      )
+                    }
+                  </div>
+
                 </div>
 
                 {conversation.isGroup && (
@@ -564,18 +571,41 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
                     <div className="space-y-2">
                       {/* Chỉ hiển thị "Xóa lịch sử trò chuyện" nếu user là leader */}
                       {userRole?.role === 'leader' && (
-                        <button
-                          onClick={handleRemoveAllHistoryMessages} className="w-full flex items-center space-x-3 p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                          </svg>
-                          <span className="text-sm">Xóa lịch sử trò chuyện</span>
-                        </button>
+                        <>
+                          <button
+                            onClick={handleRemoveAllHistoryMessages} className="w-full flex items-center space-x-3 p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                            <span className="text-sm">Xóa lịch sử trò chuyện</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              if (userLogin.id === leaderId) {
+                                setIsOpenChangeLeader(true);
+                                setIsOnlyChangeLeader(true);
+                              }
+                            }} className="w-full flex items-center space-x-3 p-2 text-red-500 hover:bg-red-50 rounded-md transition-colors">
+                            {/* icon nhóm trưởng */}
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11.049 2.927c.3-.921 1.603-.921 
+                                      1.902 0l1.518 4.674a1 1 0 00.95.69h4.91c.969 0 1.371 1.24.588 
+                                      1.81l-3.976 2.89a1 1 0 00-.364 1.118l1.518 
+                                      4.674c.3.921-.755 1.688-1.54 1.118L12 
+                                      17.347l-3.969 2.746c-.785.57-1.84-.197-1.54-1.118l1.518-4.674a1 
+                                      1 0 00-.364-1.118l-3.976-2.89c-.783-.57-.38-1.81.588-1.81h4.91a1 
+                                      1 0 00.95-.69l1.518-4.674z" />
+                            </svg>
+
+                            <span className="text-sm">Chuyển quyền nhóm trưởng</span>
+                          </button>
+                        </>
                       )}
                       {/* Hiển thị "Rời nhóm" cho tất cả thành viên */}
                       <button
                         onClick={() => {
                           if (userLogin.id === leaderId) {
+                            setIsOnlyChangeLeader(false);
                             setIsOpenChangeLeader(true);
                           }
                           else {
@@ -588,6 +618,7 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
                         </svg>
                         <span className="text-sm">Rời nhóm</span>
                       </button>
+
 
                       <ModalOutGroup
                         isOpen={isOpenOutGroup}
@@ -605,8 +636,13 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
                         isOpen={isOpenChangeLeader}
                         onClose={() => {
                           setIsOpenChangeLeader(false);
-                          setIsOpenOutGroup(true);
+                          if (isOnlyChangeLeader) {
+                            setIsOpenChangeLeader(false);
+                          } else {
+                            setIsOpenOutGroup(true);
+                          }
                         }}
+                        isOnlyChangeLeader={isOnlyChangeLeader}
                         conversation={conversation}
                         leaderId={leaderId}
                         userLogin={userLogin}

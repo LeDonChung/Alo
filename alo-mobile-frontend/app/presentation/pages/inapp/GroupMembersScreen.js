@@ -29,7 +29,7 @@ const FILTERS = {
 export const GroupMembersScreen = () => {
   const route = useRoute();
   const navigation = useNavigation();
-  const { groupId, mode } = route.params;
+  const { groupId, mode, isOnlyChangeLeader } = route.params;
   const [members, setMembers] = useState([]);
   const [filteredMembers, setFilteredMembers] = useState([]);
   const userLogin = useSelector((state) => state.user.userLogin);
@@ -106,15 +106,20 @@ export const GroupMembersScreen = () => {
               .then(async (result) => {
                 socket.emit("update-roles", { conversation: result.data });
                 await dispatch(updatePermissions({ conversationId: conversation.id, roles: result.data.roles }));
+                
+                if (isOnlyChangeLeader) {
+                  navigation.goBack()
+                } else {
+                  await dispatch(leaveGroup({ conversationId: conversation.id })).unwrap()
+                    .then(async (result) => {
+                      await dispatch(removeConversation({ conversationId: conversation.id }));
+                      showToast("info", "top", "Thông báo", "Bạn đã rời khỏi nhóm " + conversation.name);
+                      navigation.navigate('home')
+                      socket.emit("remove-member", { conversation: conversation, memberUserId: userLogin.id });
+                    });
+                  console.log("Updated roles: ", result.data.roles);
+                }
 
-                await dispatch(leaveGroup({ conversationId: conversation.id })).unwrap()
-                  .then(async (result) => {
-                    await dispatch(removeConversation({ conversationId: conversation.id }));
-                    showToast("info", "top", "Thông báo", "Bạn đã rời khỏi nhóm " + conversation.name);
-                    navigation.navigate('home')
-                    socket.emit("remove-member", { conversation: conversation, memberUserId: userLogin.id });
-                  });
-                console.log("Updated roles: ", result.data.roles);
 
               });
             setMembers((prevMembers) => {

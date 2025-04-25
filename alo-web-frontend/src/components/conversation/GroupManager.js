@@ -213,9 +213,6 @@ const GroupManagement = ({ setIsSetting }) => {
       <div className={`cursor-pointer hover:bg-gray-200 py-2 ${isMember ? 'pointer-events-none opacity-50' : ''}`}>
         <h4 className="text-sm font-semibold text-gray-700">Chặn khỏi nhóm</h4>
       </div>
-      <div className={`cursor-pointer hover:bg-gray-200 py-2 ${isMember ? 'pointer-events-none opacity-50' : ''}`}>
-        <h4 className="text-sm font-semibold text-gray-700">Trưởng nhóm & phó nhóm</h4>
-      </div>
       <div className="mt-6">
         <button
           onClick={() => handlerDisbandGroup()}
