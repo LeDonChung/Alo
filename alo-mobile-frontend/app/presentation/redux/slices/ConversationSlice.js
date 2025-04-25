@@ -423,6 +423,21 @@ const ConversationSlice = createSlice({
                 state.conversations[conversationIndex].members = state.conversations[conversationIndex].members.filter(member => member.id !== memberUserId);
             }
         },
+        handlerBlockMemberToGroup: (state, action) => {
+            const conversationId = action.payload.conversationId;
+            const member = action.payload.member;
+
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation.blockedUserIds.push(member.id);
+                state.conversation.blocks.push(member);
+            }
+
+            const conversationIndex = state.conversations.findIndex(convo => convo.id === conversationId);
+            if (conversationIndex !== -1) {
+                state.conversations[conversationIndex].blockedUserIds.push(member.id)
+                state.conversations[conversationIndex].blocks.push(member);
+            }
+        }
     },
     extraReducers: (builder) => {
         builder.addCase(getAllConversation.pending, (state) => {
@@ -640,6 +655,7 @@ export const {
     removeMemberGroup,
     handlerRemoveHistoryMessage,
     addMemberGroup,
+    handlerBlockMemberToGroup,
 } = ConversationSlice.actions;
 
 export {
