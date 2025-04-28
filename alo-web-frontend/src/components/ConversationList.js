@@ -30,6 +30,8 @@ const ConversationList = () => {
       if (conversation.lastMessage.senderId === userLogin.id) {
         return "Bạn: " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi");
       } else {
+        console.log(friend);
+        
         return (
           conversation.lastMessage
           && friend.fullName + ": " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi")

@@ -113,6 +113,15 @@ const changePassword = createAsyncThunk('UserSlice/changePassword', async (reque
     }
 });
 
+const checkPassword = createAsyncThunk('UserSlice/checkPassword', async (request, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/auth/check-password', request);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response.data);
+    }
+});
+
 const forgetPassword = createAsyncThunk('UserSlice/forgetPassword', async ({phoneNumber, passwordNew}, { rejectWithValue }) => {
     try {
         const response = await axiosInstance.post(`/api/auth/reset-password`, {
@@ -266,9 +275,18 @@ const UserSlice = createSlice({
         builder.addCase(forgetPassword.rejected, (state, action) => {
             state.errorResponse = action.payload;
         });
+
+        // Check password
+        builder.addCase(checkPassword.pending, (state) => {
+        });
+        builder.addCase(checkPassword.fulfilled, (state, action) => {
+        });
+        builder.addCase(checkPassword.rejected, (state, action) => {
+        });
     }
 });
 
 export const { setUserOnlines, setUserLogin } = UserSlice.actions;
-export { uploadAvatar, uploadBackground, getProfile, updateProfile, register, login, logout, generateOtp, verifyOtp, changePassword, forgetPassword };
+export { uploadAvatar, uploadBackground, getProfile, updateProfile, register, login, 
+    logout, generateOtp, verifyOtp, changePassword, forgetPassword, checkPassword };
 export default UserSlice.reducer;

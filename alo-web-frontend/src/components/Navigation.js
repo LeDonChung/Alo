@@ -1,8 +1,8 @@
 /* eslint-disable jsx-a11y/alt-text */
-import { useState, useRef, useEffect, use } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { changePassword, getProfile, logout, setUserLogin, setUserOnlines, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
+import { changePassword, checkPassword, getProfile, logout, setUserLogin, setUserOnlines, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
 import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, addMemberGroup, updateProfileGroupById, updatePermissions, removeConversation, removeMemberGroup, handlerRemoveHistoryMessage } from "../redux/slices/ConversationSlice";
@@ -10,6 +10,8 @@ import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessa
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 import { addReceive, setCalling, setIncomingCall, setIsVideoCallOpen, setIsVoiceCallOpen } from "../redux/slices/CallSlice";
 import VideoCallModal from "./call/VideoCallModel";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faCircleCheck } from "@fortawesome/free-solid-svg-icons";
 
 export const Navigation = () => {
     const dispatch = useDispatch();
@@ -336,7 +338,7 @@ export const Navigation = () => {
             const userLoginId = JSON.parse(localStorage.getItem("userLogin")).id;
             if (memberUserId === userLoginId) {
                 showToast("Bạn đã bị xóa khỏi nhóm " + conversation.name, "info");
-                await dispatch(removeConversation({conversationId: conversation.id}));
+                await dispatch(removeConversation({ conversationId: conversation.id }));
                 navigate("/me");
             } else {
                 dispatch(removeMemberGroup({ conversationId: conversation.id, memberUserId: memberUserId }));
@@ -576,6 +578,7 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
     const [isLoading, setIsLoading] = useState(false);
     const dispatch = useDispatch();
     const userLogin = useSelector((state) => state.user.userLogin);
+    const navigate = useNavigate();
 
     const inputOldPasswordRef = useRef(null);
     const inputNewPasswordRef = useRef(null);
@@ -590,6 +593,42 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
     const [validConfirmPassword, setValidConfirmPassword] = useState("");
     const [validOldPassword, setValidOldPassword] = useState("");
 
+    const [isLoadingCheckOldPassword, setIsLoadingCheckOldPassword] = useState(false);
+    const [isTrueOldPassword, setIsTrueOldPassword] = useState(false);
+
+    const handleLogout = async () => {
+        await dispatch(logout()).unwrap().then((res) => {
+            // remove 
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('refreshToken');
+            localStorage.removeItem('userLogin');
+            showToast("Vui lòng đăng nhập với mật khẩu mới.", "info");
+            socket.emit("logout", userLogin?.id);
+            navigate("/login");
+        });
+    }
+
+    const handleOnKeyDown = async (e) => {
+        setIsLoadingCheckOldPassword(true);
+        if (e.key === "Enter" || e.key === 'Tab') {
+            e.preventDefault();
+            try {
+                const request = {
+                    phoneNumber: userLogin.phoneNumber,
+                    password: oldPassword
+                }
+                await dispatch(checkPassword(request)).unwrap().then((res) => {
+                    setValidOldPassword("");
+                    setIsTrueOldPassword(true);
+                    inputNewPasswordRef.current.focus();
+                })
+            } catch (error) {
+                setValidOldPassword(error.message);
+                inputOldPasswordRef.current.focus();
+            }
+        }
+        setIsLoadingCheckOldPassword(false);
+    }
 
     const handlerActionChangePasswordProfile = async (e) => {
         e.preventDefault();
@@ -614,8 +653,6 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
             }
         }
 
-
-
         if (errors) {
             setIsLoading(false);
             return;
@@ -629,7 +666,7 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
         };
 
         try {
-            await dispatch(changePassword(data)).unwrap().then((res) => {
+            await dispatch(changePassword(data)).unwrap().then(async (res) => {
                 showToast("Đổi mật khẩu thành công", "success");
                 setIsLoading(false);
                 setOldPassword("");
@@ -637,6 +674,7 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
                 setConfirmPassword("");
                 setShowChangePasswordModal(false);
                 socket.emit("request-logout-changed-password", userLogin?.id);
+                
             })
         } catch (e) {
             console.log(e.message);
@@ -674,13 +712,31 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
                                     disabled
                                 />
 
-                                <label className="block mt-4 mb-2">Mật khẩu cũ</label>
+                                <label className="block mt-4 mb-2">Mật khẩu cũ
+                                    <span>
+                                        {
+                                            oldPassword && (
+                                                isLoadingCheckOldPassword ? (
+                                                    <div className="flex justify-center items-center">
+                                                        <div className="animate-spin rounded-full border-t-2 border-b-2 border-blue-500 w-4 h-4"></div>
+                                                    </div>
+                                                ) : (
+                                                    isTrueOldPassword && (
+                                                        <FontAwesomeIcon icon={faCircleCheck} className="text-green-700 ml-2" />
+                                                    )
+                                                )
+
+                                            )
+                                        }
+                                    </span>
+                                </label>
                                 <input
                                     type="password"
                                     className="w-full pl-2 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-0"
                                     placeholder="Mật khẩu cũ"
                                     value={oldPassword}
                                     ref={inputOldPasswordRef}
+                                    onKeyDown={(e) => { handleOnKeyDown(e) }}
                                     onChange={(e) => {
                                         setValidOldPassword("");
                                         setOldPassword(e.target.value);
@@ -695,11 +751,18 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
                                     placeholder="Mật khẩu mới"
                                     value={newPassword}
                                     ref={inputNewPasswordRef}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" || e.key === 'Tab') {
+                                            e.preventDefault();
+                                            inputConfirmPasswordRef.current.focus();
+                                        }
+                                    }}
                                     onChange={(e) => {
                                         setValidNewPassword("");
                                         setNewPassword(e.target.value);
                                     }}
                                 />
+
                                 {validNewPassword && <p className="text-red-500 text-sm mt-1">{validNewPassword}</p>}
 
                                 <label className="block mt-4 mb-2">Nhập lại mật khẩu mới</label>
@@ -709,6 +772,12 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
                                     placeholder="Nhập lại mật khẩu mới"
                                     value={confirmPassword}
                                     ref={inputConfirmPasswordRef}
+                                    onKeyDown={(e) => {
+                                        if (e.key === "Enter" || e.key === 'Tab') {
+                                            e.preventDefault();
+                                            handlerActionChangePasswordProfile(e);
+                                        }
+                                    }}
                                     onChange={(e) => {
                                         setValidConfirmPassword("");
                                         setConfirmPassword(e.target.value);
