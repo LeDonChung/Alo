@@ -1,7 +1,9 @@
 import groupFriendData from '../data/groupFriendData';
 import { React, useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useDispatch, useSelector } from "react-redux";
 import { faMagnifyingGlass, faChevronDown, faChevronRight, faTag } from "@fortawesome/free-solid-svg-icons";
+import { removeVietnameseTones } from '../utils/AppUtils';
 
 
 const categoryList = [
@@ -12,21 +14,24 @@ const categoryList = [
 ];
 
 const typeFilter = [
-  { id: 1, name: "Tên (A-Z)" },
-  { id: 2, name: "Tên (Z-A)" },
-  { id: 3, name: "Hoạt động (cũ → mới)" },
-  { id: 4, name: "Hoạt động (mới → cũ)" },
+  { id: 1, name: "Tên (A-Z)", key: "asc" },
+  { id: 2, name: "Tên (Z-A)", key: "desc" },
+  { id: 3, name: "Hoạt động (cũ → mới)", key: "old" },
+  { id: 4, name: "Hoạt động (mới → cũ)", key: "new" },
 ]
 
 
 
 
 export default function GroupsOfUser() {
-  const groupsFriend = groupFriendData;
+  const dispatch = useDispatch();
+  const conversations = useSelector(state => state.conversation.conversations);
   const [categories, setCategories] = useState(categoryList);
   const [typeFilters, setTypeFilters] = useState(typeFilter);
-  const [groups, setGroups] = useState(groupsFriend);
-  const [groupCharList, setGroupCharList] = useState([]);
+
+  const [groups, setGroups] = useState([]); // Danh sách nhóm đã được lọc từ conversations
+  const [groupCharList, setGroupCharList] = useState([]); // Danh sách nhóm đã được phân loại và sắp xếp
+
 
   const [openCategory, setOpenCategory] = useState(false);
   const [openTypeFilter, setOpenTypeFilter] = useState(false);
@@ -37,95 +42,88 @@ export default function GroupsOfUser() {
 
   const dropdownRef = useRef(null);
 
+  useEffect(() => {
+    const filterGroups = conversations.filter((group) => {
+      return group.isGroup === true;
+    });
+    setGroups(filterGroups);
+  }, [conversations]);
+
   // Lọc danh sách nhóm theo tên A-Z hoặc Z-A
   // Lọc danh sách nhóm theo theo thời gian tạo
-  const groupAndSortFriends = (groupFriendList, sortOrder) => {
-    // Hàm chuẩn hóa ký tự để so sánh tên
-    const normalizeName = (name) => {
-      return name
-        .normalize('NFD') // Tách dấu
-        .replace(/[\u0300-\u036f]/g, '') // Xóa dấu
-        .replace(/Đ/g, 'D') // Chuyển Đ thành D
-        .replace(/đ/g, 'd') // Chuyển đ thành d
-        .toUpperCase(); // Viết hoa để so sánh
-    };
 
-    // Hàm so sánh tên
-    const compareByName = (a, b) => {
-      const nameA = normalizeName(a.name);
-      const nameB = normalizeName(b.name);
-      if (nameA < nameB) return -1;
-      if (nameA > nameB) return 1;
-      return 0;
-    };
-
+  const groupAndSortOldAndNew = (groupList) => {
     // Hàm so sánh theo ngày tạo (giả sử createDate dạng ISO string hoặc timestamp hợp lệ)
     const compareByDate = (a, b) => {
-      const dateA = new Date(a.createDate);
-      const dateB = new Date(b.createDate);
+      const dateA = new Date(a.lastMessage ? a.lastMessage.timestamp : a.createdAt);
+      const dateB = new Date(b.lastMessage ? b.lastMessage.timestamp : b.createdAt);
       return dateA - dateB;
     };
-
-    // Xác định kiểu sắp xếp
-    let sortedList = [...groupFriendList];
-    if (sortOrder === 'asc') {
-      sortedList.sort(compareByName);
-    } else if (sortOrder === 'desc') {
-      sortedList.sort((a, b) => compareByName(b, a)); // Đảo ngược so với asc
-    } else if (sortOrder === 'old') {
-      sortedList.sort(compareByDate); // Cũ nhất -> Mới nhất
+    let sortedList = [...groupList];
+    const sortOrder = selectedTypeFilter.key;
+    if (sortOrder === 'old') {
+      sortedList.sort((a, b) => compareByDate(a, b)); // Cũ nhất -> Mới nhất
     } else if (sortOrder === 'new') {
       sortedList.sort((a, b) => compareByDate(b, a)); // Mới nhất -> Cũ nhất
     }
 
-    // Gom nhóm (chỉ gom theo ký tự đầu tiên của tên khi sắp xếp theo tên)
-    let groupList = [];
-    if (sortOrder === 'asc' || sortOrder === 'desc') {
-      const groupedObject = sortedList.reduce((acc, friend) => {
-        const firstChar = normalizeName(friend.name).charAt(0);
+    let groupedList = [];
+    groupedList = [{
+      id: 1,
+      char: null, // Không có ký tự nhóm
+      list: sortedList,
+    }];
+
+    return groupedList;
+  }
+
+  const groupAndSortByStartChar = (groupList) => {
+    if (groupList && groupList.length > 0) {
+      const sortedList = [...groupList].sort((a, b) => { // Changed from [...friends] to [...groupListSorted]
+        const aName = a.name;
+        const bName = b.name;
+        const nameA = removeVietnameseTones(aName).toLowerCase();
+        const nameB = removeVietnameseTones(bName).toLowerCase();
+
+        if (nameA < nameB) return selectedTypeFilter.key === 'asc' ? -1 : 1;
+        if (nameA > nameB) return selectedTypeFilter.key === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      const groupedObject = sortedList.reduce((acc, gr) => {
+        const frName = gr.name;
+        const firstChar = removeVietnameseTones(frName).charAt(0).toUpperCase();
+
         if (!acc[firstChar]) acc[firstChar] = [];
-        acc[firstChar].push(friend);
+        acc[firstChar].push(gr);
         return acc;
       }, {});
 
-      // Chuyển từ object về mảng
-      groupList = Object.entries(groupedObject).map(([char, list], index) => ({
+      // Đưa về dạng mảng
+      const resultList = Object.entries(groupedObject).map(([char, list], index) => ({
         id: index + 1,
         char,
         list,
       }));
-    } else {
-      // Nếu sắp xếp theo ngày, không cần gom nhóm theo ký tự đầu mà để nguyên danh sách
-      groupList = [{
-        id: 1,
-        char: null, // Không có ký tự nhóm
-        list: sortedList,
-      }];
+      return resultList;
     }
-
-    console.log("Group list: ", groupList);
-    return groupList;
-  };
+  }
 
 
   useEffect(() => {
-    // Lọc theo type 
-    const filteredGroups = () => {
-      const typeFilterId = selectedTypeFilter.id;
-      if (typeFilterId === 1 || typeFilterId === 2) {
-        const sortOrder = typeFilterId === 1 ? 'asc' : 'desc';
-        return groupAndSortFriends(groupsFriend, sortOrder);
-      } else if (typeFilterId === 3 || typeFilterId === 4) {
-        const sortOrder = typeFilterId === 3 ? 'old' : 'new';
-        return groupAndSortFriends(groupsFriend, sortOrder);
+    const fillter = () => {
+      if (selectedTypeFilter.key === 'old' || selectedTypeFilter.key === 'new') {
+        const groupList = groupAndSortOldAndNew(groups);
+        setGroupCharList(groupList);
+      } else {
+        const groupList = groupAndSortByStartChar(groups);
+        setGroupCharList(groupList);
       }
     }
 
-    filteredGroups();
+    fillter();
 
-    setGroupCharList(filteredGroups);
-
-  }, [selectedTypeFilter, selectedCategory]);
+  }, [selectedTypeFilter, selectedCategory, textSearch, groups]);
 
 
   useEffect(() => {
@@ -168,11 +166,10 @@ export default function GroupsOfUser() {
 
                 {/* filter type */}
                 <select
-                  className="pl-2 pr-2 bg-white rounded-[5px] h-[35px] w-1/5 hover:bg-gray-100 border border-gray-200 ml-2"
+                  className="pl-2 pr-2 bg-white rounded-[5px] h-[35px] w-1/5 hover:bg-gray-100 border border-gray-200 ml-2 focus:outline-gray-200 focus:border-none focus:ring-0"
                   value={selectedTypeFilter?.id}
                   onChange={(e) => {
                     const selectedItem = typeFilters.find((item) => item.id === parseInt(e.target.value));
-
                     setSelectedTypeFilter(selectedItem); // Cập nhật state
                   }}
                 >
@@ -278,7 +275,7 @@ export default function GroupsOfUser() {
                               {/* Left - Avatar + Thông tin */}
                               <div className="flex items-center">
                                 {/* Avatar */}
-                                <img src={group.groupAvatar} alt={group.name} className="w-[40px] h-[40px] rounded-full object-cover" />
+                                <img src={group.avatar} alt={group.name} className="w-[40px] h-[40px] rounded-full object-cover" />
 
                                 {/* Tên nhóm + Số lượng thành viên + Category */}
                                 <div className="flex flex-col ml-2">
@@ -287,7 +284,7 @@ export default function GroupsOfUser() {
 
                                   {/* Số lượng thành viên + Category nếu có */}
                                   <div className="flex items-center gap-2 text-sm text-gray-500">
-                                    <span>{group.members.length} thành viên</span>
+                                    <span>{group.memberUserIds.length} thành viên</span>
                                     {group.category && (
                                       <div className="flex items-center">
                                         <FontAwesomeIcon icon={faTag} style={{ color: group.category.color }} size="15" />

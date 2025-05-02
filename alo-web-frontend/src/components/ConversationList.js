@@ -9,7 +9,7 @@ const ConversationList = () => {
 
   const userLogin = useSelector(state => state.user.userLogin);
 
-  const conversations = useSelector(state => state.conversation.conversations);
+  const conversations = useSelector(state => state.conversation.conversations);  
 
   const showLastMessage = (conversation) => {
     if(conversation.lastMessage.status === 2) return;
