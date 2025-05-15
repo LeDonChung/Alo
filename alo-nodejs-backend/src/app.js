@@ -24,7 +24,7 @@ app.use(cors({
         }
     }
 }));
-
+console.log('Allowed origins:', allowedOrigins);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
