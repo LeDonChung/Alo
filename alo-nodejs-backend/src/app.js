@@ -1,5 +1,5 @@
 const express = require('express');
-const cors = require('cors');
+const cors = require('cors'); // Import CORS middleware
 
 // Định nghĩa các route
 const authRoutes = require('./routes/auth.route');
@@ -11,29 +11,26 @@ const { createAllTables } = require('./services/initDB');
 
 const app = express();
 
-// Cấu hình CORS
 const allowedOrigins = [
-    'https://alo-tawny.vercel.app',  // Production
-    'http://localhost:3000',         // Local development 
-    'http://127.0.0.1:3000'          // Local development alternative
-  ];
+  'https://alo-tawny.vercel.app',
+  'http://localhost:3000'
+];
 
-  const corsOptions = {
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-  };
+const corsOptions = {
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      console.log(`Origin bị từ chối: ${origin}`);
+      callback(new Error('Không được phép bởi CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  credentials: true,
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+};
 
 app.use(cors(corsOptions));
-
-app.options('*', cors(corsOptions));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
@@ -46,14 +43,13 @@ app.use((req, res, next) => {
   next();
 });
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
 app.use('/api/friend', friendRoutes);
 app.use('/api/message', messageRoutes);
 app.use('/api/conversation', conversationRoutes);
 
-// Tạo bảng nếu cần (bạn gọi khi chạy lần đầu hoặc tùy theo logic)
- // createAllTables();
+// Tạo table
+// createAllTables()
 
 module.exports = app;
