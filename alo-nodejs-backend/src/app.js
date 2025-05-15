@@ -22,7 +22,10 @@ app.use((req, res, next) => {
 });
 
 // Cấu hình cors
-app.use(cors());
+app.use(cors({
+    origin: 'https://alo-tawny.vercel.app', 
+    methods: ['GET', 'POST', 'PUT', 'DELETE']
+}));
 
 // Sử dụng các route đã định nghĩa
 app.use('/api/auth', authRoutes);

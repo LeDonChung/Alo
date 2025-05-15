@@ -8,13 +8,16 @@ const redis = require('./src/config/RedisClient');
 const { updateLastLogout } = require("./src/service/user.service");
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: 'https://alo-tawny.vercel.app',
+    optionsSuccessStatus: 200
+}));
 
 const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: ["http://localhost:3000"],
+        origin: ["https://alo-tawny.vercel.app"],
         methods: ["GET", "POST"],
         credentials: true,
     },

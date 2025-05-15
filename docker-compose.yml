@@ -48,23 +48,6 @@ services:
       - redis
     networks:
       - alo-network
-
-  web-frontend:
-    build: ./alo-web-frontend
-    image: ledonchung/alo-web-frontend
-    container_name: alo_web_frontend
-    ports:
-      - "3000:80"
-    environment:
-      - REACT_APP_SOCKET_URL=${REACT_APP_SOCKET_URL}
-      - REACT_APP_API_URL=${REACT_APP_API_URL}
-    depends_on:
-      - socket-server
-      - nodejs-backend
-    restart: always
-    networks:
-      - alo-network
-
 networks:
   alo-network:
     driver: bridge
