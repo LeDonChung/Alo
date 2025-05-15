@@ -73,7 +73,7 @@ pipeline {
                             set -e
 
                             if [ ! -d "${deployDir}" ]; then
-                                git clone -b ${BRANCH_DEPLOY} https://github.com/LeDonChung/CardioTrackBackend.git ${deployDir}
+                                git clone -b ${BRANCH_DEPLOY} https://github.com/LeDonChung/Alo.git ${deployDir}
                             else
                                 cd ${deployDir}
                                 git fetch origin
