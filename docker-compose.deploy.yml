@@ -11,6 +11,7 @@ services:
       - alo-network
 
   nodejs-backend:
+    image: ledonchung/alo-nodejs-server
     container_name: alo-nodejs-backend
     ports:
       - "5000:5000"
