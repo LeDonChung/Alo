@@ -14,20 +14,28 @@ const allowedOrigins = [
   'http://localhost:3000'
 ];
 app.use(cors({
-    origin: function (origin, callback) {
+    origin: function(origin, callback) {
         if (!origin || allowedOrigins.includes(origin)) {
             callback(null, true);
         } else {
             callback(new Error('Not allowed by CORS'));
         }
-    }
+    },
+    credentials: true
 }));
+
 
 const server = http.createServer(app);
 
 const io = new Server(server, {
     cors: {
-        origin: ["https://alo-tawny.vercel.app"],
+        origin: function(origin, callback) {
+            if (!origin || allowedOrigins.includes(origin)) {
+                callback(null, true);
+            } else {
+                callback(new Error("Not allowed by CORS"));
+            }
+        },
         methods: ["GET", "POST"],
         credentials: true,
     },
