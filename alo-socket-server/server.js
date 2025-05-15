@@ -8,15 +8,20 @@ const redis = require('./src/config/RedisClient');
 const { updateLastLogout } = require("./src/service/user.service");
 
 const app = express();
-const corsOptions = {
-    origin: 'https://alo-tawny.vercel.app',
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-    credentials: true,
-    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
-};
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+const allowedOrigins = [
+  'https://alo-tawny.vercel.app',
+  'http://localhost:3000'
+];
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || allowedOrigins.includes(origin)) {
+            callback(null, true);
+        } else {
+            callback(new Error('Not allowed by CORS'));
+        }
+    }
+}));
 
 const server = http.createServer(app);
 
