@@ -12,12 +12,24 @@ const { createAllTables } = require('./services/initDB');
 const app = express();
 
 // Cấu hình CORS
-const corsOptions = {
-  origin: 'https://alo-tawny.vercel.app',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
-  credentials: true,
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
-};
+const allowedOrigins = [
+    'https://alo-tawny.vercel.app',  // Production
+    'http://localhost:3000',         // Local development 
+    'http://127.0.0.1:3000'          // Local development alternative
+  ];
+
+  const corsOptions = {
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.indexOf(origin) !== -1) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+  };
 
 app.use(cors(corsOptions));
 
