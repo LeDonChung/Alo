@@ -40,6 +40,7 @@ pipeline {
                         for (svc in services) {
                             def image = "${DOCKER_HUB_REPO}/${svc}"
                             sh "docker tag ${svc} ${image}:${env.BUILD_NUMBER}"
+                            sh "docker tag ${svc} ${image}:latest"          // Thêm dòng này
                             sh "docker push ${image}:${env.BUILD_NUMBER}"
                             sh "docker push ${image}:latest"
                         }
@@ -47,6 +48,7 @@ pipeline {
                 }
             }
         }
+
 
         stage('Deploy to DigitalOcean') {
             steps {
