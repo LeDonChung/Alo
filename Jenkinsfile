@@ -15,6 +15,14 @@ pipeline {
                 git branch: "${BRANCH_DEPLOY}", url: 'https://github.com/LeDonChung/Alo.git'
             }
         }
+        stage('Load .env') {
+            steps {
+                withCredentials([file(credentialsId: 'env-alo', variable: 'ENV_FILE')]) {
+                    sh 'rm -f .env'
+                    sh 'cp "$ENV_FILE" .env'
+                }
+            }
+        }
 
         stage('Build Docker Images') {
             steps {
@@ -47,6 +55,10 @@ pipeline {
                     usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')
                 ]) {
                     sh """
+                        scp -i $KEY -o StrictHostKeyChecking=no .env $USER@$remoteHost:${deployDir}/.env || true
+                     """
+
+                    sh """
                         ssh -i $KEY -o StrictHostKeyChecking=no $USER@$OCEAN_HOST << EOF
                         set -e
 
@@ -60,10 +72,10 @@ pipeline {
                         fi
 
                         cd $DEPLOY_DIR
-                        echo "$DOCKER_PASSWORD" | docker login -u "$DOCKER_USERNAME" --password-stdin
-                        docker-compose down
-                        docker-compose pull
-                        docker-compose up -d
+                        echo "$DOCKER_PASSWORD" | docker login --username "$DOCKER_USERNAME" --password-stdin
+                        docker-compose -f docker-compose.deploy.yml --env-file .env down
+                        docker-compose -f docker-compose.deploy.yml --env-file .env pull
+                        docker-compose -f docker-compose.deploy.yml --env-file .env up -d
                     """
                 }
             }
