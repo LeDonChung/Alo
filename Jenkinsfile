@@ -57,7 +57,7 @@ pipeline {
                     usernamePassword(credentialsId: 'docker-hub-credentials', usernameVariable: 'DOCKER_USERNAME', passwordVariable: 'DOCKER_PASSWORD')
                 ]) {
                     sh """
-                        scp -i $KEY -o StrictHostKeyChecking=no .env $USER@$remoteHost:${deployDir}/.env || true
+                        scp -i $KEY -o StrictHostKeyChecking=no .env $USER@$remoteHost:${DEPLOY_DIR}/.env || true
                      """
 
                     sh """
