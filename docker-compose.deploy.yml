@@ -11,7 +11,6 @@ services:
       - alo-network
 
   nodejs-backend:
-    build: ./alo-nodejs-backend
     container_name: alo-nodejs-backend
     ports:
       - "5000:5000"
@@ -30,7 +29,6 @@ services:
       - alo-network
 
   socket-server:
-    build: ./alo-socket-server
     image: ledonchung/alo-socket-server
     container_name: alo-socket-server
     ports:
@@ -50,7 +48,6 @@ services:
       - alo-network
 
   web-frontend:
-    build: ./alo-web-frontend
     image: ledonchung/alo-web-frontend
     container_name: alo_web_frontend
     ports:
