@@ -9,7 +9,7 @@ import { useNavigation } from '@react-navigation/native';
 
 export const GroupManagerScreen = ({ setIsSetting }) => {
     const conversation = useSelector((state) => state.conversation.conversation);
-    const memberRole = conversation.roles.find((role) => role.role === 'member');
+    const memberRole = conversation.roles?.find((role) => role.role === 'member');
     const [isChangeProfileApproval, setIsChangeProfileApproval] = useState(memberRole.permissions.changeGroupInfo);
     const [isMessageLabeling, setIsMessageLabeling] = useState(memberRole.permissions.pinMessages);
     const [isSendMessage, setIsSendMessage] = useState(memberRole.permissions.sendMessage);
@@ -112,7 +112,7 @@ export const GroupManagerScreen = ({ setIsSetting }) => {
                                 socket.emit('disband-group', { conversation: conversation });
                                 dispatch(removeConversation({ conversationId: conversation.id }));
                                 showToast('info', 'top', 'Thông báo', 'Giải tán nhóm thành công');
-                                navigation.navigate('home'); 
+                                navigation.navigate('home');
                             });
                         } catch (error) {
                             showToast('info', 'top', 'Thông báo', error.message || 'Có lỗi xảy ra trong quá trình giải tán nhóm. Vui lòng thử lại.');
@@ -219,13 +219,17 @@ export const GroupManagerScreen = ({ setIsSetting }) => {
             </TouchableOpacity>
 
             {/* Dissolve Group Button */}
-            <TouchableOpacity
-                onPress={handlerDisbandGroup}
-                style={[styles.dissolveButton, isMember && styles.disabledButton]}
-                disabled={isMember}
-            >
-                <Text style={styles.dissolveButtonText}>Giải tán nhóm</Text>
-            </TouchableOpacity>
+            {
+                role === 'leader' && (
+                    <TouchableOpacity
+                        onPress={handlerDisbandGroup}
+                        style={[styles.dissolveButton, isMember && styles.disabledButton]}
+                        disabled={isMember}
+                    >
+                        <Text style={styles.dissolveButtonText}>Giải tán nhóm</Text>
+                    </TouchableOpacity>
+                )
+            }
         </ScrollView>
     );
 };

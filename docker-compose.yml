@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  redis:
+    image: redis:alpine
+    container_name: alo-redis
+    ports:
+      - "6379:6379"
+    restart: always
+    networks:
+      - alo-network
+
+  nodejs-backend:
+    build: ./alo-nodejs-backend
+    container_name: alo-nodejs-backend
+    ports:
+      - "5000:5000"
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - SERVER_PORT=${SERVER_PORT_NODE}
+    restart: always
+    depends_on:
+      - redis
+    networks:
+      - alo-network
+
+  socket-server:
+    build: ./alo-socket-server
+    container_name: alo-socket-server
+    ports:
+      - "5001:5001"
+    environment:
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_BUCKET_NAME=${AWS_BUCKET_NAME}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - SERVER_PORT=${SERVER_PORT_SOCKET}
+    restart: always
+    depends_on:
+      - redis
+    networks:
+      - alo-network
+
+  web-frontend:
+    build: ./alo-web-frontend
+    container_name: alo_web_frontend
+    ports:
+      - "3000:80"
+    environment:
+      - REACT_APP_SOCKET_URL=${REACT_APP_SOCKET_URL}
+      - REACT_APP_API_URL=${REACT_APP_API_URL}
+    depends_on:
+      - socket-server
+      - nodejs-backend
+    restart: always
+    networks:
+      - alo-network
+
+networks:
+  alo-network:
+    driver: bridge
