@@ -5,7 +5,7 @@ pipeline {
         BRANCH_DEPLOY = 'test-deploy'
         OCEAN_HOST = "68.183.184.48"
         DOCKER_HUB_REPO = 'ledonchung'
-        SERVICES = 'alo-web-frontend alo-nodejs-backend alo-socket-server'
+        SERVICES = 'alo-nodejs-backend alo-socket-server'
         DEPLOY_DIR = '/home/$USER/alo'
     }
 

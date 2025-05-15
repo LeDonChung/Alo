@@ -18,20 +18,26 @@ app.use((req, res, next) => {
     console.log('Headers:', req.headers);
     console.log('Body:', req.body);
     console.log(`[${req.method}] ${req.path}`);
-    next(); 
+    next();
 });
 
 // Cấu hình cors
-app.use(cors({
-    origin: 'https://alo-tawny.vercel.app', 
-    methods: ['GET', 'POST', 'PUT', 'DELETE']
-}));
+const corsOptions = {
+    origin: 'https://alo-tawny.vercel.app',
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
+
 
 // Sử dụng các route đã định nghĩa
 app.use('/api/auth', authRoutes);
 app.use('/api/user', userRoutes);
-app.use('/api/friend',friendRoutes);
-app.use('/api/message',messageRoutes);
+app.use('/api/friend', friendRoutes);
+app.use('/api/message', messageRoutes);
 app.use('/api/conversation', conversationRoutes);
 // Tạo table
 // createAllTables()
