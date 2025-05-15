@@ -60,7 +60,7 @@ pipeline {
                 ]) {
                     script {
                         def remoteHost = env.OCEAN_HOST
-                        def deployDir = "/home/jenkins/alo"
+                        def deployDir = "/home/$USER/alo"
 
                         // Gửi file .env từ Jenkins sang Ocean
                         sh """
