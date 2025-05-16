@@ -108,7 +108,6 @@ pipeline {
                             docker-compose -f docker-compose.deploy.yml --env-file .env pull
 
                             docker-compose -f docker-compose.deploy.yml --env-file .env up -d
-                            EOF
                         """
                     }
                 }
