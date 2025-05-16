@@ -555,5 +555,6 @@ io.on("connection", (socket) => {
 });
 
 server.listen(process.env.SERVER_PORT, () => {
+    console.log('Allowed origins:', allowedOrigins);
     console.log(`Server running at http://localhost:${process.env.SERVER_PORT}`);
 });
