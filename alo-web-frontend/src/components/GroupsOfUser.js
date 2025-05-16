@@ -4,6 +4,8 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useDispatch, useSelector } from "react-redux";
 import { faMagnifyingGlass, faChevronDown, faChevronRight, faTag } from "@fortawesome/free-solid-svg-icons";
 import { removeVietnameseTones } from '../utils/AppUtils';
+import SelectTypeFilter from './friend/SelectTypeFilter';
+import SelectCategoryFilter from './friend/SelectCategoryFilter';
 
 
 const categoryList = [
@@ -34,7 +36,6 @@ export default function GroupsOfUser() {
 
 
   const [openCategory, setOpenCategory] = useState(false);
-  const [openTypeFilter, setOpenTypeFilter] = useState(false);
 
   const [selectedCategory, setSelectedCategory] = useState({ id: 0, name: "Tất cả" });
   const [selectedTypeFilter, setSelectedTypeFilter] = useState(typeFilters[3]);
@@ -49,11 +50,8 @@ export default function GroupsOfUser() {
     setGroups(filterGroups);
   }, [conversations]);
 
-  // Lọc danh sách nhóm theo tên A-Z hoặc Z-A
-  // Lọc danh sách nhóm theo theo thời gian tạo
-
   const groupAndSortOldAndNew = (groupList) => {
-    // Hàm so sánh theo ngày tạo (giả sử createDate dạng ISO string hoặc timestamp hợp lệ)
+    // Hàm so sánh theo ngày tạo hoặc thời gian của lastMessage (giả sử createDate dạng ISO string hoặc timestamp hợp lệ)
     const compareByDate = (a, b) => {
       const dateA = new Date(a.lastMessage ? a.lastMessage.timestamp : a.createdAt);
       const dateB = new Date(b.lastMessage ? b.lastMessage.timestamp : b.createdAt);
@@ -79,7 +77,7 @@ export default function GroupsOfUser() {
 
   const groupAndSortByStartChar = (groupList) => {
     if (groupList && groupList.length > 0) {
-      const sortedList = [...groupList].sort((a, b) => { // Changed from [...friends] to [...groupListSorted]
+      const sortedList = [...groupList].sort((a, b) => {
         const aName = a.name;
         const bName = b.name;
         const nameA = removeVietnameseTones(aName).toLowerCase();
@@ -112,18 +110,44 @@ export default function GroupsOfUser() {
 
   useEffect(() => {
     const fillter = () => {
-      if (selectedTypeFilter.key === 'old' || selectedTypeFilter.key === 'new') {
-        const groupList = groupAndSortOldAndNew(groups);
-        setGroupCharList(groupList);
+      if (conversations && textSearch === "") {
+        if (selectedTypeFilter.key === 'old' || selectedTypeFilter.key === 'new') {
+          const groupList = groupAndSortOldAndNew(groups);
+          setGroupCharList(groupList);
+        } else {
+          const groupList = groupAndSortByStartChar(groups);
+          setGroupCharList(groupList);
+        }
       } else {
-        const groupList = groupAndSortByStartChar(groups);
-        setGroupCharList(groupList);
+        let groupsDefault = [];
+        if (conversations) {
+          if (selectedTypeFilter.key === 'old' || selectedTypeFilter.key === 'new') {
+            groupsDefault = groupAndSortOldAndNew(groups);
+            const newGroups = groupsDefault[0].list.filter((group) => {
+              const groupName = removeVietnameseTones(group.name).toLowerCase();
+              const searchText = removeVietnameseTones(textSearch).toLowerCase();
+              return groupName.includes(searchText);
+            });
+            groupsDefault[0].list = newGroups;
+            setGroupCharList(groupsDefault);
+          } else {
+            groupsDefault = groupAndSortByStartChar(groups);
+            const newGroups = groupsDefault.map((group) => {
+              const newList = group.list.filter((groupItem) => {
+                const groupName = removeVietnameseTones(groupItem.name).toLowerCase();
+                const searchText = removeVietnameseTones(textSearch).toLowerCase();
+                return groupName.includes(searchText);
+              });
+              return newList.length > 0 ? { ...group, list: newList } : null;
+            }).filter(group => group !== null);
+            setGroupCharList(newGroups);
+          }
+        }
       }
     }
-
     fillter();
 
-  }, [selectedTypeFilter, selectedCategory, textSearch, groups]);
+  }, [selectedTypeFilter, selectedCategory, groups, textSearch]);
 
 
   useEffect(() => {
@@ -165,93 +189,16 @@ export default function GroupsOfUser() {
 
 
                 {/* filter type */}
-                <select
-                  className="pl-2 pr-2 bg-white rounded-[5px] h-[35px] w-1/5 hover:bg-gray-100 border border-gray-200 ml-2 focus:outline-gray-200 focus:border-none focus:ring-0"
-                  value={selectedTypeFilter?.id}
-                  onChange={(e) => {
-                    const selectedItem = typeFilters.find((item) => item.id === parseInt(e.target.value));
-                    setSelectedTypeFilter(selectedItem); // Cập nhật state
-                  }}
-                >
-                  {typeFilters.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
+                <SelectTypeFilter selectFilter={selectedTypeFilter} setSelectFilter={setSelectedTypeFilter} listTypeFilter={typeFilters} />
 
 
                 {/* filter category */}
-                <div ref={dropdownRef} className="relative inline-block text-left w-1/5 min-w-[150px] ml-2">
-                  {/* Button hiển thị nội dung chọn */}
-                  <button
-                    onClick={() => setOpenCategory(!openCategory)}
-                    className="pl-2 pr-2 bg-white rounded-[5px] h-[35px] w-full hover:bg-gray-100 border border-gray-200 flex justify-between items-center"
-                  >
-
-                    <span>{selectedCategory.name}</span>
-                    <FontAwesomeIcon icon={faChevronDown} className="text-gray-500" size="15" />
-                  </button>
-
-                  {/* Dropdown content */}
-                  {openCategory && (
-                    <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg">
-                      {/* Option: Tất cả */}
-                      <div
-                        onClick={() => {
-                          setSelectedCategory({ id: 0, name: "Tất cả" });
-                          setOpenCategory(false);
-                        }}
-                        className={`px-4 py-2 cursor-pointer hover:bg-gray-100 ${selectedCategory.id === 0 ? "font-semibold" : ""
-                          }`}
-                      >
-                        Tất cả
-                      </div>
-
-                      {/* Phân loại có submenu */}
-                      <div className="relative group">
-                        <div className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-100">
-                          <span>Phân loại</span>
-                          <FontAwesomeIcon icon={faChevronRight} className="text-gray-500" size="15" />
-                        </div>
-
-                        {/* Submenu: Danh sách phân loại */}
-                        <div className="absolute left-[-180px] top-0 ml-1 w-[180px] bg-white border rounded-lg shadow-lg opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200">
-                          {categories.map((cat) => (
-                            <div
-                              key={cat.id}
-                              onClick={() => {
-                                setSelectedCategory(cat);
-                                setOpenCategory(false);
-                              }}
-                              className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-100"
-                            >
-                              <span
-                                className="inline-block w-3 h-3 rounded-full mr-2"
-                                style={{ backgroundColor: cat.color }}
-                              ></span>
-                              <span>{cat.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Divider */}
-                      <div className="border-t my-1"></div>
-
-                      {/* Quản lý thẻ phân loại */}
-                      <div
-                        onClick={() => {
-                          alert("Quản lý thẻ phân loại");
-                          setOpenCategory(false);
-                        }}
-                        className="px-4 py-2 text-blue-500 cursor-pointer hover:bg-gray-100"
-                      >
-                        Quản lý thẻ phân loại
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <SelectCategoryFilter
+                  selectCategory={selectedCategory}
+                  setSelectCategory={setSelectedCategory}
+                  listCategory={categories}
+                  dropdownRef={dropdownRef}
+                  open={openCategory} setOpen={setOpenCategory} />
               </div>
 
               {/* List group */}
