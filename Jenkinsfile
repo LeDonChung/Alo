@@ -27,7 +27,7 @@ pipeline {
         stage('Build Docker Images') {
             steps {
                 script {
-                    sh 'docker-compose --env-file .env build'
+                    sh 'docker-compose --env-file .env build --no-cache'
                 }
             }
         }
