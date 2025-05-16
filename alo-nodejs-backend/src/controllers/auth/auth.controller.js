@@ -1,4 +1,4 @@
-const jwt = require('jsonwebtoken');
+ const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const userService = require('../../services/user.service');
 const redis = require('../../config/RedisClient');
@@ -231,9 +231,6 @@ exports.changePassword = async (req, res) => {
         return res.status(401).json({ message: 'Tài khoản không tồn tại.' });
     }
 
-
-
-
     // Kiểm tra mật khẩu cũ
     if (!bcrypt.compareSync(oldPassword, account.password)) {
         return res.status(401).json({ message: 'Mật khẩu cũ không đúng.' });
@@ -251,6 +248,31 @@ exports.changePassword = async (req, res) => {
         status: 200,
         data: null,
         message: "Đổi mật khẩu thành công."
+    })
+}
+
+exports.checkPassword = async (req, res) => {
+    const { phoneNumber, password } = req.body;
+
+    const account = await userService.findByPhoneNumber(phoneNumber);
+    console.log('phoneNumber: ', phoneNumber);
+    console.log('password: ', password);
+
+    
+    // Kiểm tra tài khoản có tồn tại không
+    if (!account) {
+        return res.status(401).json({ message: 'Tài khoản không tồn tại.' });
+    }
+
+    // Kiểm tra mật khẩu cũ
+    if (!bcrypt.compareSync(password, account.password)) {
+        return res.status(401).json({ message: 'Mật khẩu cũ không đúng.' });
+    }
+
+    return res.json({
+        status: 200,
+        data: null,
+        message: "Mật khẩu chính xác."
     })
 }
 
