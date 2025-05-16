@@ -52,7 +52,7 @@ pipeline {
                     script {
                         def services = env.SERVICES.split(" ")
                         for (svc in services) {
-                            def localImage = "${svc}:latest"  // Tên image theo docker-compose mặc định
+                            def localImage = "${DOCKER_HUB_REPO}/${svc}:latest"  // Tên image theo docker-compose mặc định
                             def remoteImage = "${DOCKER_HUB_REPO}/${svc}"
 
                             echo "Tagging local image ${localImage} to ${remoteImage}:${env.BUILD_NUMBER} and latest"
