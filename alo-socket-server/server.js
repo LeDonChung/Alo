@@ -11,40 +11,29 @@ const app = express();
 console.log("hi1")
 
 const allowedOrigins = [
-  'https://alo-tawny.vercel.app',
-  'http://localhost:3000'
+    'https://alo-tawny.vercel.app',
+    'http://localhost:3000'
 ];
-console.log(allowedOrigins)
-app.use(cors({
-    origin: function(origin, callback) {
-        if (!origin || allowedOrigins.includes(origin)) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-    methods: ["GET", "POST"],
-    
-}));
+console.log("Alowed origins:", allowedOrigins);
+
+app.use(cors());
 
 
 const server = http.createServer(app);
 console.log("hi2")
 const io = new Server(server, {
     cors: {
-        origin: function(origin, callback) {
-            if (!origin || allowedOrigins.includes(origin)) {
-                callback(null, true);
-            } else {
-                callback(new Error("Not allowed by CORS"));
-            }
-        },
+        origin: [
+            "https://alo-tawny.vercel.app",
+            'http://localhost:3000'
+        ],
         methods: ["GET", "POST"],
         credentials: true,
     },
 });
 console.log("hi3")
+console.log("Alowed origins:", allowedOrigins);
+
 io.on("connection", (socket) => {
     console.log("Người dùng kết nối: " + socket.id);
 
@@ -363,10 +352,10 @@ io.on("connection", (socket) => {
             });
         }
     })
-    
+
     socket.on('leave-group', async (data) => {
         const { conversationId, userId, userName, updatedConversation } = data;
-        
+
         console.log(`User ${userName} (${userId}) leaving group ${conversationId}`);
 
         if (!conversationId || !userId || !userName) {
@@ -437,7 +426,7 @@ io.on("connection", (socket) => {
         const { conversation, memberUserId } = data;
         const members = conversation.memberUserIds;
 
-        for(const userId of members) {
+        for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);
             const filteredSocketIds = socketIds.filter(id => id !== socket.id);
             filteredSocketIds.forEach(id => {
