@@ -12,6 +12,7 @@ services:
 
   nodejs-backend:
     build: ./alo-nodejs-backend
+    image: ledonchung/alo-nodejs-backend
     container_name: alo-nodejs-backend
     ports:
       - "5000:5000"

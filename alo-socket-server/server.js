@@ -1,8 +1,10 @@
+console.log("hi12")
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 require("dotenv").config();
+console.log("hi13")
 
 const redis = require('./src/config/RedisClient');
 const { updateLastLogout } = require("./src/service/user.service");
