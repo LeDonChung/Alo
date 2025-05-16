@@ -1,7 +1,11 @@
 import groupFriendData from '../data/groupFriendData';
 import { React, useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { useDispatch, useSelector } from "react-redux";
 import { faMagnifyingGlass, faChevronDown, faChevronRight, faTag } from "@fortawesome/free-solid-svg-icons";
+import { removeVietnameseTones } from '../utils/AppUtils';
+import SelectTypeFilter from './friend/SelectTypeFilter';
+import SelectCategoryFilter from './friend/SelectCategoryFilter';
 
 
 const categoryList = [
@@ -12,24 +16,26 @@ const categoryList = [
 ];
 
 const typeFilter = [
-  { id: 1, name: "Tên (A-Z)" },
-  { id: 2, name: "Tên (Z-A)" },
-  { id: 3, name: "Hoạt động (cũ → mới)" },
-  { id: 4, name: "Hoạt động (mới → cũ)" },
+  { id: 1, name: "Tên (A-Z)", key: "asc" },
+  { id: 2, name: "Tên (Z-A)", key: "desc" },
+  { id: 3, name: "Hoạt động (cũ → mới)", key: "old" },
+  { id: 4, name: "Hoạt động (mới → cũ)", key: "new" },
 ]
 
 
 
 
 export default function GroupsOfUser() {
-  const groupsFriend = groupFriendData;
+  const dispatch = useDispatch();
+  const conversations = useSelector(state => state.conversation.conversations);
   const [categories, setCategories] = useState(categoryList);
   const [typeFilters, setTypeFilters] = useState(typeFilter);
-  const [groups, setGroups] = useState(groupsFriend);
-  const [groupCharList, setGroupCharList] = useState([]);
+
+  const [groups, setGroups] = useState([]); // Danh sách nhóm đã được lọc từ conversations
+  const [groupCharList, setGroupCharList] = useState([]); // Danh sách nhóm đã được phân loại và sắp xếp
+
 
   const [openCategory, setOpenCategory] = useState(false);
-  const [openTypeFilter, setOpenTypeFilter] = useState(false);
 
   const [selectedCategory, setSelectedCategory] = useState({ id: 0, name: "Tất cả" });
   const [selectedTypeFilter, setSelectedTypeFilter] = useState(typeFilters[3]);
@@ -37,95 +43,111 @@ export default function GroupsOfUser() {
 
   const dropdownRef = useRef(null);
 
-  // Lọc danh sách nhóm theo tên A-Z hoặc Z-A
-  // Lọc danh sách nhóm theo theo thời gian tạo
-  const groupAndSortFriends = (groupFriendList, sortOrder) => {
-    // Hàm chuẩn hóa ký tự để so sánh tên
-    const normalizeName = (name) => {
-      return name
-        .normalize('NFD') // Tách dấu
-        .replace(/[\u0300-\u036f]/g, '') // Xóa dấu
-        .replace(/Đ/g, 'D') // Chuyển Đ thành D
-        .replace(/đ/g, 'd') // Chuyển đ thành d
-        .toUpperCase(); // Viết hoa để so sánh
-    };
+  useEffect(() => {
+    const filterGroups = conversations.filter((group) => {
+      return group.isGroup === true;
+    });
+    setGroups(filterGroups);
+  }, [conversations]);
 
-    // Hàm so sánh tên
-    const compareByName = (a, b) => {
-      const nameA = normalizeName(a.name);
-      const nameB = normalizeName(b.name);
-      if (nameA < nameB) return -1;
-      if (nameA > nameB) return 1;
-      return 0;
-    };
-
-    // Hàm so sánh theo ngày tạo (giả sử createDate dạng ISO string hoặc timestamp hợp lệ)
+  const groupAndSortOldAndNew = (groupList) => {
+    // Hàm so sánh theo ngày tạo hoặc thời gian của lastMessage (giả sử createDate dạng ISO string hoặc timestamp hợp lệ)
     const compareByDate = (a, b) => {
-      const dateA = new Date(a.createDate);
-      const dateB = new Date(b.createDate);
+      const dateA = new Date(a.lastMessage ? a.lastMessage.timestamp : a.createdAt);
+      const dateB = new Date(b.lastMessage ? b.lastMessage.timestamp : b.createdAt);
       return dateA - dateB;
     };
-
-    // Xác định kiểu sắp xếp
-    let sortedList = [...groupFriendList];
-    if (sortOrder === 'asc') {
-      sortedList.sort(compareByName);
-    } else if (sortOrder === 'desc') {
-      sortedList.sort((a, b) => compareByName(b, a)); // Đảo ngược so với asc
-    } else if (sortOrder === 'old') {
-      sortedList.sort(compareByDate); // Cũ nhất -> Mới nhất
+    let sortedList = [...groupList];
+    const sortOrder = selectedTypeFilter.key;
+    if (sortOrder === 'old') {
+      sortedList.sort((a, b) => compareByDate(a, b)); // Cũ nhất -> Mới nhất
     } else if (sortOrder === 'new') {
       sortedList.sort((a, b) => compareByDate(b, a)); // Mới nhất -> Cũ nhất
     }
 
-    // Gom nhóm (chỉ gom theo ký tự đầu tiên của tên khi sắp xếp theo tên)
-    let groupList = [];
-    if (sortOrder === 'asc' || sortOrder === 'desc') {
-      const groupedObject = sortedList.reduce((acc, friend) => {
-        const firstChar = normalizeName(friend.name).charAt(0);
+    let groupedList = [];
+    groupedList = [{
+      id: 1,
+      char: null, // Không có ký tự nhóm
+      list: sortedList,
+    }];
+
+    return groupedList;
+  }
+
+  const groupAndSortByStartChar = (groupList) => {
+    if (groupList && groupList.length > 0) {
+      const sortedList = [...groupList].sort((a, b) => {
+        const aName = a.name;
+        const bName = b.name;
+        const nameA = removeVietnameseTones(aName).toLowerCase();
+        const nameB = removeVietnameseTones(bName).toLowerCase();
+
+        if (nameA < nameB) return selectedTypeFilter.key === 'asc' ? -1 : 1;
+        if (nameA > nameB) return selectedTypeFilter.key === 'asc' ? 1 : -1;
+        return 0;
+      });
+
+      const groupedObject = sortedList.reduce((acc, gr) => {
+        const frName = gr.name;
+        const firstChar = removeVietnameseTones(frName).charAt(0).toUpperCase();
+
         if (!acc[firstChar]) acc[firstChar] = [];
-        acc[firstChar].push(friend);
+        acc[firstChar].push(gr);
         return acc;
       }, {});
 
-      // Chuyển từ object về mảng
-      groupList = Object.entries(groupedObject).map(([char, list], index) => ({
+      // Đưa về dạng mảng
+      const resultList = Object.entries(groupedObject).map(([char, list], index) => ({
         id: index + 1,
         char,
         list,
       }));
-    } else {
-      // Nếu sắp xếp theo ngày, không cần gom nhóm theo ký tự đầu mà để nguyên danh sách
-      groupList = [{
-        id: 1,
-        char: null, // Không có ký tự nhóm
-        list: sortedList,
-      }];
+      return resultList;
     }
-
-    console.log("Group list: ", groupList);
-    return groupList;
-  };
+  }
 
 
   useEffect(() => {
-    // Lọc theo type 
-    const filteredGroups = () => {
-      const typeFilterId = selectedTypeFilter.id;
-      if (typeFilterId === 1 || typeFilterId === 2) {
-        const sortOrder = typeFilterId === 1 ? 'asc' : 'desc';
-        return groupAndSortFriends(groupsFriend, sortOrder);
-      } else if (typeFilterId === 3 || typeFilterId === 4) {
-        const sortOrder = typeFilterId === 3 ? 'old' : 'new';
-        return groupAndSortFriends(groupsFriend, sortOrder);
+    const fillter = () => {
+      if (conversations && textSearch === "") {
+        if (selectedTypeFilter.key === 'old' || selectedTypeFilter.key === 'new') {
+          const groupList = groupAndSortOldAndNew(groups);
+          setGroupCharList(groupList);
+        } else {
+          const groupList = groupAndSortByStartChar(groups);
+          setGroupCharList(groupList);
+        }
+      } else {
+        let groupsDefault = [];
+        if (conversations) {
+          if (selectedTypeFilter.key === 'old' || selectedTypeFilter.key === 'new') {
+            groupsDefault = groupAndSortOldAndNew(groups);
+            const newGroups = groupsDefault[0].list.filter((group) => {
+              const groupName = removeVietnameseTones(group.name).toLowerCase();
+              const searchText = removeVietnameseTones(textSearch).toLowerCase();
+              return groupName.includes(searchText);
+            });
+            groupsDefault[0].list = newGroups;
+            setGroupCharList(groupsDefault);
+          } else {
+            groupsDefault = groupAndSortByStartChar(groups);
+            const newGroups = groupsDefault.map((group) => {
+              const newList = group.list.filter((groupItem) => {
+                const groupName = removeVietnameseTones(groupItem.name).toLowerCase();
+                const searchText = removeVietnameseTones(textSearch).toLowerCase();
+                return groupName.includes(searchText);
+              });
+              return newList.length > 0 ? { ...group, list: newList } : null;
+            }).filter(group => group !== null);
+            setGroupCharList(newGroups);
+          }
+        }
       }
     }
+    fillter();
 
-    filteredGroups();
-
-    setGroupCharList(filteredGroups);
-
-  }, [selectedTypeFilter, selectedCategory]);
+  }, [selectedTypeFilter, selectedCategory, groups, textSearch]);
 
 
   useEffect(() => {
@@ -167,94 +189,16 @@ export default function GroupsOfUser() {
 
 
                 {/* filter type */}
-                <select
-                  className="pl-2 pr-2 bg-white rounded-[5px] h-[35px] w-1/5 hover:bg-gray-100 border border-gray-200 ml-2"
-                  value={selectedTypeFilter?.id}
-                  onChange={(e) => {
-                    const selectedItem = typeFilters.find((item) => item.id === parseInt(e.target.value));
-
-                    setSelectedTypeFilter(selectedItem); // Cập nhật state
-                  }}
-                >
-                  {typeFilters.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
-                    </option>
-                  ))}
-                </select>
+                <SelectTypeFilter selectFilter={selectedTypeFilter} setSelectFilter={setSelectedTypeFilter} listTypeFilter={typeFilters} />
 
 
                 {/* filter category */}
-                <div ref={dropdownRef} className="relative inline-block text-left w-1/5 min-w-[150px] ml-2">
-                  {/* Button hiển thị nội dung chọn */}
-                  <button
-                    onClick={() => setOpenCategory(!openCategory)}
-                    className="pl-2 pr-2 bg-white rounded-[5px] h-[35px] w-full hover:bg-gray-100 border border-gray-200 flex justify-between items-center"
-                  >
-
-                    <span>{selectedCategory.name}</span>
-                    <FontAwesomeIcon icon={faChevronDown} className="text-gray-500" size="15" />
-                  </button>
-
-                  {/* Dropdown content */}
-                  {openCategory && (
-                    <div className="absolute z-10 mt-1 w-full bg-white border rounded-lg shadow-lg">
-                      {/* Option: Tất cả */}
-                      <div
-                        onClick={() => {
-                          setSelectedCategory({ id: 0, name: "Tất cả" });
-                          setOpenCategory(false);
-                        }}
-                        className={`px-4 py-2 cursor-pointer hover:bg-gray-100 ${selectedCategory.id === 0 ? "font-semibold" : ""
-                          }`}
-                      >
-                        Tất cả
-                      </div>
-
-                      {/* Phân loại có submenu */}
-                      <div className="relative group">
-                        <div className="flex items-center justify-between px-4 py-2 cursor-pointer hover:bg-gray-100">
-                          <span>Phân loại</span>
-                          <FontAwesomeIcon icon={faChevronRight} className="text-gray-500" size="15" />
-                        </div>
-
-                        {/* Submenu: Danh sách phân loại */}
-                        <div className="absolute left-[-180px] top-0 ml-1 w-[180px] bg-white border rounded-lg shadow-lg opacity-0 group-hover:opacity-100 invisible group-hover:visible transition-all duration-200">
-                          {categories.map((cat) => (
-                            <div
-                              key={cat.id}
-                              onClick={() => {
-                                setSelectedCategory(cat);
-                                setOpenCategory(false);
-                              }}
-                              className="flex items-center px-4 py-2 cursor-pointer hover:bg-gray-100"
-                            >
-                              <span
-                                className="inline-block w-3 h-3 rounded-full mr-2"
-                                style={{ backgroundColor: cat.color }}
-                              ></span>
-                              <span>{cat.name}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Divider */}
-                      <div className="border-t my-1"></div>
-
-                      {/* Quản lý thẻ phân loại */}
-                      <div
-                        onClick={() => {
-                          alert("Quản lý thẻ phân loại");
-                          setOpenCategory(false);
-                        }}
-                        className="px-4 py-2 text-blue-500 cursor-pointer hover:bg-gray-100"
-                      >
-                        Quản lý thẻ phân loại
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <SelectCategoryFilter
+                  selectCategory={selectedCategory}
+                  setSelectCategory={setSelectedCategory}
+                  listCategory={categories}
+                  dropdownRef={dropdownRef}
+                  open={openCategory} setOpen={setOpenCategory} />
               </div>
 
               {/* List group */}
@@ -278,7 +222,7 @@ export default function GroupsOfUser() {
                               {/* Left - Avatar + Thông tin */}
                               <div className="flex items-center">
                                 {/* Avatar */}
-                                <img src={group.groupAvatar} alt={group.name} className="w-[40px] h-[40px] rounded-full object-cover" />
+                                <img src={group.avatar} alt={group.name} className="w-[40px] h-[40px] rounded-full object-cover" />
 
                                 {/* Tên nhóm + Số lượng thành viên + Category */}
                                 <div className="flex flex-col ml-2">
@@ -287,7 +231,7 @@ export default function GroupsOfUser() {
 
                                   {/* Số lượng thành viên + Category nếu có */}
                                   <div className="flex items-center gap-2 text-sm text-gray-500">
-                                    <span>{group.members.length} thành viên</span>
+                                    <span>{group.memberUserIds.length} thành viên</span>
                                     {group.category && (
                                       <div className="flex items-center">
                                         <FontAwesomeIcon icon={faTag} style={{ color: group.category.color }} size="15" />
