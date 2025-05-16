@@ -8,6 +8,7 @@ const redis = require('./src/config/RedisClient');
 const { updateLastLogout } = require("./src/service/user.service");
 
 const app = express();
+console.log("hi1")
 
 const allowedOrigins = [
   'https://alo-tawny.vercel.app',
@@ -29,7 +30,7 @@ app.use(cors({
 
 
 const server = http.createServer(app);
-
+console.log("hi2")
 const io = new Server(server, {
     cors: {
         origin: function(origin, callback) {
@@ -43,7 +44,7 @@ const io = new Server(server, {
         credentials: true,
     },
 });
-
+console.log("hi3")
 io.on("connection", (socket) => {
     console.log("Người dùng kết nối: " + socket.id);
 
