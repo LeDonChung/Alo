@@ -338,10 +338,10 @@ io.on("connection", (socket) => {
             });
         }
     })
-    
+
     socket.on('leave-group', async (data) => {
         const { conversationId, userId, userName, updatedConversation } = data;
-        
+
         console.log(`User ${userName} (${userId}) leaving group ${conversationId}`);
 
         if (!conversationId || !userId || !userName) {
@@ -412,7 +412,7 @@ io.on("connection", (socket) => {
         const { conversation, memberUserId } = data;
         const members = conversation.memberUserIds;
 
-        for(const userId of members) {
+        for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);
             const filteredSocketIds = socketIds.filter(id => id !== socket.id);
             filteredSocketIds.forEach(id => {
@@ -430,6 +430,19 @@ io.on("connection", (socket) => {
             const filteredSocketIds = socketIds.filter(id => id !== socket.id);
             filteredSocketIds.forEach(id => {
                 io.to(id).emit('receive-disband-group', data);
+            });
+        }
+    })
+
+    socket.on('update-token', async (data) => {
+        const { id, token } = data;
+        const members = data.memberUserIds;
+        console.log("Cập nhật token cho các thành viên trong cuộc trò chuyện:", members, id, token)
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-update-token', data);
             });
         }
     })

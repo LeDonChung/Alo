@@ -3,9 +3,37 @@ const userService = require('../../services/user.service');
 const conversationService = require('../../services/conversation.service');
 const messageService = require('../../services/message.service');
 const fileService = require('../../services/file.service');
+const { v4: uuidv4 } = require('uuid');
+exports.getConversationByToken = async (req, res) => {
+    try {
+        const token = req.params.token;
+        const conversation = await conversationService.getConversationByToken(token);
+
+        if (!conversation) {
+            return res.status(404).json({
+                status: 404,
+                message: "Cuộc trò chuyện không tồn tại.",
+                data: null
+            });
+        }
+
+        return res.json({
+            status: 200,
+            data: conversation,
+            message: "Lấy thông tin cuộc trò chuyện thành công."
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
 exports.updateCreateAt = async (req, res) => {
     try {
-        
+
         const conversations = await conversationService.getAllConversations();
         conversations.filter(c => !c.isGroup).forEach(async conv => {
             await conversationService.updateCreateAt(conv.id);
@@ -294,6 +322,13 @@ exports.deletePin = async (req, res) => {
     }
 }
 
+
+function generateRandomCode(length = 9) {
+    const uuid = uuidv4().replace(/-/g, ''); // xóa dấu -
+    return uuid.substring(0, length);
+}
+
+
 // CREATE GROUP CONVERSATION
 exports.createGroupConversation = async (req, res) => {
     try {
@@ -323,7 +358,19 @@ exports.createGroupConversation = async (req, res) => {
             });
         }
 
+        // Generate random code
+        let code = null;
+        // Kiểm tra code tồn tại
+        do {
+            code = generateRandomCode(9);
+            const existingConversation = await conversationService.getConversationByToken(code);
+            if (!existingConversation) {
+                break;
+            }
+        } while (true);
+
         const data = {
+            token: code,
             name,
             memberUserIds,
             isGroup: true,
@@ -340,7 +387,8 @@ exports.createGroupConversation = async (req, res) => {
                         sendMessage: true,
                         removeMember: true,
                         blockMember: true,
-                        addMember: true
+                        addMember: true,
+                        joinGroupByLink: true
                     }
                 },
                 {
@@ -352,7 +400,8 @@ exports.createGroupConversation = async (req, res) => {
                         sendMessage: true,
                         removeMember: true,
                         blockMember: true,
-                        addMember: true
+                        addMember: true,
+                        joinGroupByLink: true
                     }
                 },
                 {
@@ -366,7 +415,8 @@ exports.createGroupConversation = async (req, res) => {
                         sendMessage: true,
                         removeMember: false,
                         blockMember: false,
-                        addMember: true
+                        addMember: true,
+                        joinGroupByLink: true
                     }
                 }
             ]
@@ -1189,6 +1239,70 @@ exports.updateAllowSendMessage = async (req, res) => {
         });
     }
 };
+// UPDATE ALLOW JOIN GROUP BY LINK FOR MEMBER
+exports.updateAllowJoinGroupByLink = async (req, res) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        const userId = userService.getUserIdFromToken(token);
+        const { conversationId, } = req.params;
+        const { allow } = req.body;
+
+        const conversation = await conversationService.getConversationById(conversationId);
+
+        if (!conversation) {
+            return res.status(404).json({
+                status: 404,
+                message: "Cuộc trò chuyện không tồn tại.",
+                data: null
+            });
+        }
+
+        // Kiểm tra quyền (chỉ leader hoặc vice leader)
+        const role = conversation.roles.find(role => role.userIds.includes(userId));
+        if (!role || (role.role !== 'leader' && role.role !== 'vice_leader')) {
+            return res.status(404).json({
+                status: 404,
+                message: "Bạn không có quyền thay đổi quyền gửi tin nhắn.",
+                data: null
+            });
+        }
+
+        // Cập nhật quyền
+        conversation.roles = conversation.roles.map(role => {
+            if (role.role === 'member') {
+                return {
+                    ...role,
+                    permissions: {
+                        ...role.permissions,
+                        joinGroupByLink: allow
+                    }
+                };
+            }
+            return role;
+        });
+
+        console.log(
+            "conversation.roles: ", conversation.roles,
+            "allow: ", allow
+        )
+        const data = await conversationService.updateRoles(conversationId, conversation.roles);
+
+        return res.json({
+            status: 200,
+            message: "Cập nhật quyền gửi tin nhắn thành công.",
+            data: data
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+};
 // REMOVE ALL HISTORY MESSAGES
 exports.removeAllHistoryMessages = async (req, res) => {
     try {
@@ -1349,3 +1463,151 @@ exports.disbandGroup = async (req, res) => {
         });
     }
 };
+
+// JOIN GROUP BY Link: join-by-link/:conversationId
+exports.joinGroupByLink = async (req, res) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        const userId = userService.getUserIdFromToken(token);
+
+        const { conversationId } = req.params;
+
+        const conversation = await conversationService.getConversationById(conversationId);
+        if (!conversation) {
+            return res.status(404).json({
+                status: 404,
+                message: "Cuộc trò chuyện không tồn tại.",
+                data: null
+            });
+        }
+
+        // Check if the user is allowed to join via link
+        let memberRole = conversation.roles.find(role => role.role === 'member');
+        if (memberRole && !memberRole.permissions?.joinGroupByLink) {
+            return res.status(404).json({
+                status: 404,
+                message: "Hiện tại cuộc trò chuyện không cho phép tham gia bằng link nhóm.",
+                data: null
+            });
+        }
+
+        const memberUserIds = [userId];
+        const newMemberUserIds = memberUserIds.filter(memberUserId => !conversation.memberUserIds.includes(memberUserId));
+
+        if (newMemberUserIds.length === 0) {
+            return res.status(400).json({
+                status: 400,
+                message: "Bạn đã là thành viên của cuộc trò chuyện.",
+                data: null
+            });
+        }
+
+        // Add the user to the member role
+        memberRole = conversation.roles.find(role => role.role === "member");
+        if (memberRole) {
+            memberRole.userIds.push(...newMemberUserIds);
+        }
+
+        // Update roles to ensure unique user IDs
+        conversation.roles = conversation.roles.map(role => {
+            if (role.role === "member") {
+                return {
+                    ...role,
+                    userIds: [...new Set(role.userIds)]
+                };
+            }
+            return role;
+        });
+
+        // Reuse the service to update the conversation
+        const data = await conversationService.addNewMember(conversationId, {
+            memberUserIds: newMemberUserIds,
+            roles: conversation.roles
+        });
+
+        const userCache = new Map();
+        const members = [];
+
+        for (const memberUserId of data.memberUserIds) {
+            let memberUser;
+            if (userCache.has(memberUserId)) {
+                memberUser = userCache.get(memberUserId);
+            } else {
+                memberUser = await userService.getUserById(memberUserId);
+                userCache.set(memberUserId, memberUser);
+            }
+            members.push(memberUser);
+        }
+
+        // Lấy message cuối cùng
+        const lastMessage = await messageService.getLastMessageByConversationId(conversation.id);
+
+        return res.json({
+            status: 200,
+            message: "Bạn đã tham gia vào cuộc trò chuyện thành công.",
+            data: {
+                ...data,
+                members: members,
+                lastMessage: lastMessage,
+            }
+        });
+
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+};
+
+exports.changeToken = async (req, res) => {
+    try {
+        const authHeader = req.headers['authorization'];
+        const token = authHeader && authHeader.split(' ')[1];
+        const userId = userService.getUserIdFromToken(token);
+
+        const { conversationId } = req.params;
+
+        const conversation = await conversationService.getConversationById(conversationId);
+        if (!conversation) {
+            return res.status(404).json({
+                status: 404,
+                message: "Cuộc trò chuyện không tồn tại.",
+                data: null
+            });
+        }
+
+        // Kiểm tra quyền (chỉ leader hoặc vice leader)
+        const role = conversation.roles.find(role => role.userIds.includes(userId));
+        if (!role || (role.role !== 'leader' && role.role !== 'vice_leader')) {
+            return res.status(404).json({
+                status: 404,
+                message: "Bạn không có quyền thay đổi quyền cập nhật thông tin nhóm.",
+                data: null
+            });
+        }
+
+        let code = null;
+        // Kiểm tra code tồn tại
+        do {
+            code = generateRandomCode(9);
+            const existingConversation = await conversationService.getConversationByToken(code);
+            if (!existingConversation) {
+                break;
+            }
+        } while (true);
+
+        const updatedConversation = await conversationService.updateTokenGroup(conversationId, code);
+
+        return res.json({
+            status: 200,
+            message: "Cập nhật token thành công.",
+            data: updatedConversation
+        });
+    } catch (err) {
+        console.error(err);
+    }
+}
