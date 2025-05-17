@@ -32,6 +32,7 @@ export default {
     extra: {
       API_URL: process.env.API_URL,
       SOCKET_URL: process.env.SOCKET_URL,
+      WEB_URL: process.env.WEB_URL,
       eas: {
         projectId: "6b0cf9c3-93ec-4d38-8bd7-6a73731ebe3a"
       }

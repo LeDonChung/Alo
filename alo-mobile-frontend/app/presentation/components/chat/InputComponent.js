@@ -129,8 +129,9 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
             {messageParent.status === 1 ? 'Tin nhắn đã bị thu hồi' :
               messageParent.messageType === 'text' ? messageParent.content :
                 messageParent.messageType === 'image' ? '[Hình ảnh]' :
-                  messageParent.messageType === 'file' ? '[Tệp đính kèm]' :
-                    '[Sticker]'}
+                  messageParent.messageType === 'file' ? '[Tệp đính kèm]'
+                    : messageParent.messageType === 'sticker' ? '[Sticker]' : 
+                      messageParent.messageType === 'link' ? messageParent.content: '' }
           </Text>
         </View>
         <TouchableOpacity onPress={() => dispatch(setMessageParent(null))}>

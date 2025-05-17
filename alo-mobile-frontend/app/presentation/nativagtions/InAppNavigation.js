@@ -38,7 +38,8 @@ import {
   updateProfileGroupById,
   removeMemberGroup,
   addMemberGroup,
-  memberLeaveGroup
+  memberLeaveGroup,
+  updateToken
 } from "../redux/slices/ConversationSlice";
 
 import {
@@ -205,36 +206,51 @@ export const InAppNavigation = () => {
     };
   }, []);
 
-  
+
   useEffect(() => {
     if (!socket || !conversation) return;
 
     const handleMemberLeave = (data) => {
-        const { conversationId, userId, userName, updatedConversation } = data;
+      const { conversationId, userId, userName, updatedConversation } = data;
 
-        if (conversation.id === conversationId) {
-            dispatch(memberLeaveGroup({
-                conversationId,
-                userId,
-                updatedConversation
-            }));
+      if (conversation.id === conversationId) {
+        dispatch(memberLeaveGroup({
+          conversationId,
+          userId,
+          updatedConversation
+        }));
 
-            if (userId === userLogin.id) {
-                showToast('success', 'bottom', 'Thông báo', 'Bạn đã rời khỏi nhóm thành công');
-                navigationRef.navigate('home');
-            } else {
-                dispatch(updateLastMessage({
-                    conversationId,
-                    message: systemMessage
-                }));
-            }
+        if (userId === userLogin.id) {
+          showToast('success', 'bottom', 'Thông báo', 'Bạn đã rời khỏi nhóm thành công');
+          navigationRef.navigate('home');
+        } else {
+          dispatch(updateLastMessage({
+            conversationId,
+            message: systemMessage
+          }));
         }
+      }
     };
 
     socket.on('member-leave-group', handleMemberLeave);
 
     return () => socket.off('member-leave-group', handleMemberLeave);
-}, []);
+  }, []);
+
+  // receive-update-token
+  // lắng nghe sự kiện cập nhật token từ server
+  useEffect(() => {
+    const handleReceiveUpdateToken = async (data) => {
+      console.log("Nhận được sự kiện receive-update-token:", data);
+      const { token, id } = data;
+      dispatch(updateToken({ conversationId: id, token }));
+    }
+    socket.on("receive-update-token", handleReceiveUpdateToken);
+
+    return () => {
+      socket.off("receive-update-token", handleReceiveUpdateToken);
+    }
+  }, []);
   useEffect(() => {
     const handleReceivePinMessage = (data) => {
       console.log("Received pin message:", data);
@@ -332,19 +348,19 @@ export const InAppNavigation = () => {
   useEffect(() => {
     // nhận giải tán nhóm
     const handleDisbandGroup = async (data) => {
-        dispatch(removeConversation({ conversationId: data.conversation.id }));
-        if(conversation?.id === data.conversation.id) {
-            navigationRef.navigate("home");
-        } 
-        
+      dispatch(removeConversation({ conversationId: data.conversation.id }));
+      if (conversation?.id === data.conversation.id) {
+        navigationRef.navigate("home");
+      }
+
     }
     socket.on("receive-disband-group", handleDisbandGroup)
     return (
-        () => {
-            socket.off("receive-disband-group", handleDisbandGroup);
-        }
+      () => {
+        socket.off("receive-disband-group", handleDisbandGroup);
+      }
     )
-}, [])
+  }, [])
   useEffect(() => {
     const handleRemoveAllHistoryMessages = (data) => {
       console.log('Received remove all history messages:', data);

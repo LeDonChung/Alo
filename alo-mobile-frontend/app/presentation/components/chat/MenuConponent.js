@@ -133,7 +133,10 @@ export const MenuComponent = ({ message, showMenuComponent, setShowDetailModal, 
                 content = message.fileLink;
                 break;
             case 'sticker':
-                content = `[Sticker] ${message.fileLink}`;
+                content = `${message.fileLink}`;
+                break;
+            case 'link':
+                content = `${message.content}`;
                 break;
             default:
                 content = 'Không thể sao chép nội dung này.';
@@ -193,7 +196,7 @@ export const MenuComponent = ({ message, showMenuComponent, setShowDetailModal, 
 
                 <TouchableOpacity style={styles.actionItem} onPress={handleReply}>
                     <Icon name="reply" size={24} color="#6B21A8" />
-                    <Text style={styles.textCenter}X>Trả lời</Text>
+                    <Text style={styles.textCenter} X>Trả lời</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={styles.actionItem} onPress={() => {
                     showMenuComponent(false);
