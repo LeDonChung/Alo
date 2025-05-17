@@ -1,16 +1,18 @@
 import { io } from 'socket.io-client';
 import Constants from 'expo-constants';
 const SOCKET_URL = Constants.expoConfig?.extra?.SOCKET_URL;
-
 const socket = io(SOCKET_URL, {
     withCredentials: true,
-});
-socket.on("connect", () => {
-    console.log("Connected to socket server:", socket.id);
+    transports: ['websocket'],
 });
 
-socket.on("connect_error", (error) => {
-    console.error("Socket connection error:", error);
+socket.on("connect_error", (err) => {
+    console.error("Socket connect error:", err);
+});
+
+socket.on("disconnect", (reason) => {
+    console.log("Socket disconnected:", reason);
 });
 
 export default socket;
+

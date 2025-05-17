@@ -81,6 +81,10 @@ router.post('/:conversationId/allow-send-message',
     middleware.authenticateToken,
     conversationController.updateAllowSendMessage);
 
+router.post('/:conversationId/allow-join-group-by-link',
+    middleware.authenticateToken,
+    conversationController.updateAllowJoinGroupByLink);
+
 router.post('/:conversationId/remove-all-history-messages',
     middleware.authenticateToken,
     conversationController.removeAllHistoryMessages);
@@ -92,4 +96,18 @@ router.post('/:conversationId/leave-group',
 router.delete('/:conversationId/disband-group',
     middleware.authenticateToken,
     conversationController.disbandGroup);
+
+router.post('/update-created-at',
+    conversationController.updateCreateAt);
+router.get('/token/:token',
+    middleware.authenticateToken,
+    conversationController.getConversationByToken);
+
+router.post('/join-by-link/:conversationId',
+    middleware.authenticateToken,
+    conversationController.joinGroupByLink);
+
+router.post('/:conversationId/change-token',
+    middleware.authenticateToken,
+    conversationController.changeToken);
 module.exports = router;

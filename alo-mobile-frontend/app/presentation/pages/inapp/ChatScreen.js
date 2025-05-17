@@ -85,7 +85,14 @@ export const ChatScreen = ({ route, navigation }) => {
   }, [navigation]);
 
   const isFriendOnline = userId => userOnlines.includes(userId);
-
+  const isURL = (text) => {
+    try {
+      const url = new URL(text);
+      return url.protocol === 'http:' || url.protocol === 'https:';
+    } catch (_) {
+      return false;
+    }
+  };
   const handlerSendMessage = async (customInputMessage = null) => {
     const messageData = customInputMessage || inputMessage;
     const { content, messageType, file } = messageData;
@@ -126,6 +133,11 @@ export const ChatScreen = ({ route, navigation }) => {
     } else if (messageType === 'sticker') {
       newMessageTemp.fileLink = messageData.fileLink;
       message.fileLink = messageData.fileLink;
+    } else if (messageType === 'text') {
+      if (isURL(content)) {
+        newMessageTemp.messageType = 'link';
+        message.messageType = 'link';
+      }
     }
 
     try {
@@ -274,7 +286,7 @@ export const ChatScreen = ({ route, navigation }) => {
     });
   };
 
-useEffect(() => {
+  useEffect(() => {
     socket.emit('join_conversation', conversation.id);
 
     if (!conversation.isGroup) {
@@ -293,10 +305,10 @@ useEffect(() => {
       .filter(message => message.status !== 2)
       .sort((a, b) => b.timestamp - a.timestamp);
     setMessageSort(sortedMessages);
-    
+
   }, [messages, conversation.lastMessage, conversation.pineds]);
 
-  
+
   const showAvatar = index => {
     if (index === messageSort?.length - 1) return true;
     const nextMessage = messageSort[index + 1];

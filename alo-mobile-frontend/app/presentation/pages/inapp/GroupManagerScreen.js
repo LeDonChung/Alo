@@ -2,18 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch, TextInput, ScrollView, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useSelector, useDispatch } from 'react-redux';
-import { updateAllowPinMessageGroup, updateAllowSendMessageGroup, updateAllowUpdateProfileGroup, updatePermissions, disbandGroup, removeConversation } from '../../redux/slices/ConversationSlice';
+import { updateAllowPinMessageGroup, updateAllowSendMessageGroup, updateAllowUpdateProfileGroup, updatePermissions, disbandGroup, removeConversation, updateAllowJoinGroupByLink, changeTokenGroup, updateToken } from '../../redux/slices/ConversationSlice';
 import socket from '../../../utils/socket';
 import { getUserRoleAndPermissions, showToast } from '../../../utils/AppUtils';
 import { useNavigation } from '@react-navigation/native';
-
+import Constants from 'expo-constants';
+import * as Clipboard from 'expo-clipboard';
 export const GroupManagerScreen = ({ setIsSetting }) => {
     const conversation = useSelector((state) => state.conversation.conversation);
     const memberRole = conversation.roles?.find((role) => role.role === 'member');
     const [isChangeProfileApproval, setIsChangeProfileApproval] = useState(memberRole.permissions.changeGroupInfo);
     const [isMessageLabeling, setIsMessageLabeling] = useState(memberRole.permissions.pinMessages);
     const [isSendMessage, setIsSendMessage] = useState(memberRole.permissions.sendMessage);
-    const [isLinkUsage, setIsLinkUsage] = useState(false);
+    const [isJoinGroupByLink, setIsJoinGroupByLink] = useState(memberRole.permissions.joinGroupByLink);
     const userLogin = useSelector((state) => state.user.userLogin);
     const { permissions, role } = getUserRoleAndPermissions(conversation, userLogin.id);
     const dispatch = useDispatch();
@@ -70,7 +71,39 @@ export const GroupManagerScreen = ({ setIsSetting }) => {
         setIsMessageLabeling(memberRole.permissions.pinMessages);
         setIsSendMessage(memberRole.permissions.sendMessage);
     }, [memberRole]);
+    useEffect(() => {
+        const handlerAllowPermisstion = async () => {
+            try {
+                await dispatch(updateAllowJoinGroupByLink({
+                    conversationId: conversation.id,
+                    allow: isJoinGroupByLink
+                })).unwrap().then((res) => {
+                    const roles = res.data.roles;
+                    dispatch(updatePermissions({ conversationId: res.data.id, roles }));
+                    setIsJoinGroupByLink(isJoinGroupByLink);
+                    socket.emit('update-roles', { conversation: res.data });
+                });
+            } catch (error) {
+                setIsJoinGroupByLink(!isJoinGroupByLink);
+                showToast(error.message || 'Có lỗi xảy ra trong quá trình cập nhật quyền thành viên nhóm. Vui lòng thử lại.', 'error');
+            }
+        };
+        if (isJoinGroupByLink !== memberRole.permissions?.joinGroupByLink && !isMember) {
+            handlerAllowPermisstion();
+        }
+    }, [isJoinGroupByLink, isMember]);
 
+    const handlerChangeToken = async () => {
+        try {
+            await dispatch(changeTokenGroup({ conversationId: conversation.id })).unwrap().then((res) => {
+                const { token, id } = res.data;
+                dispatch(updateToken({ conversationId: id, token }));
+                socket.emit('update-token', res.data);
+            });
+        } catch (error) {
+            showToast(error.message || 'Có lỗi xảy ra trong quá trình đổi link tham gia nhóm. Vui lòng thử lại.', 'error');
+        }
+    }
     useEffect(() => {
         const handlerAllowPermission = async () => {
             try {
@@ -186,25 +219,32 @@ export const GroupManagerScreen = ({ setIsSetting }) => {
                 <View style={styles.toggleRow}>
                     <Text style={styles.toggleLabel}>Cho phép dùng link tham gia nhóm</Text>
                     <Switch
-                        value={isLinkUsage}
-                        onValueChange={() => setIsLinkUsage(!isLinkUsage)}
+                        value={isJoinGroupByLink}
+                        onValueChange={() => setIsJoinGroupByLink(!isJoinGroupByLink)}
                         disabled={isMember}
                         trackColor={{ false: '#d1d5db', true: '#2563eb' }}
                         thumbColor="#fff"
                     />
                 </View>
-                {isLinkUsage && (
+                {isJoinGroupByLink && (
                     <View style={styles.linkContainer}>
                         <TextInput
-                            value="zalo.me/g/proxcu147"
+                            value={`alo.me/g/${conversation.token}`}
                             editable={false}
                             style={styles.linkInput}
                         />
-                        <TouchableOpacity style={styles.iconButton} disabled={isMember}>
+                        <TouchableOpacity style={styles.iconButton} disabled={isMember} onPress={async () => {
+                                // copy link nhóm
+                                const content = `${Constants.expoConfig?.extra?.WEB_URL}/g/${conversation.token}`;
+                                console.log(content)
+                                await Clipboard.setStringAsync(content);
+                            }}>
                             <Icon name="content-copy" size={20} color="#000" />
                         </TouchableOpacity>
-                        <TouchableOpacity style={styles.iconButton} disabled={isMember}>
-                            <Icon name="share" size={20} color="#000" />
+                        <TouchableOpacity style={styles.iconButton} disabled={isMember} onPress={() => {
+                            handlerChangeToken();
+                        }}>
+                            <Icon name="autorenew" size={22} color="#000" />
                         </TouchableOpacity>
                     </View>
                 )}

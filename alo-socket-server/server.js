@@ -450,6 +450,19 @@ io.on("connection", (socket) => {
         }
     })
 
+    socket.on('update-token', async (data) => {
+        const { id, token } = data;
+        const members = data.memberUserIds;
+        console.log("Cập nhật token cho các thành viên trong cuộc trò chuyện:", members, id, token)
+        for (const userId of members) {
+            const socketIds = await findSocketIdsByUserId(userId);
+            const filteredSocketIds = socketIds.filter(id => id !== socket.id);
+            filteredSocketIds.forEach(id => {
+                io.to(id).emit('receive-update-token', data);
+            });
+        }
+    })
+
 
     // =====================
     // Helper functions

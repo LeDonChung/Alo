@@ -1,6 +1,35 @@
 const { client } = require("../config/DynamoDB");
 const { v4: uuidv4 } = require('uuid');
 
+const updateCreateAt = async (conversationId) => {
+    try {
+        const params = {
+            TableName: 'Conversations',
+            Key: { id: conversationId },
+            UpdateExpression: 'SET createdAt = :createdAt',
+            ExpressionAttributeValues: {
+                ':createdAt': Date.now()
+            }
+        };
+        console.log(params);
+        await client.update(params).promise();
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
+const getAllConversations = async () => {
+    try {
+        const params = {
+            TableName: 'Conversations',
+        };
+        const data = await client.scan(params).promise();
+        return data.Items;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
 const createConversation = async (data) => {
     try {
         const params = {
@@ -11,6 +40,7 @@ const createConversation = async (data) => {
                 createdBy: data.createdBy,
                 isGroup: data.isGroup,
                 isCalling: data.isCalling,
+                createdAt: Date.now(),
                 memberUserIds: data.memberUserIds,
             }
         };
@@ -37,7 +67,8 @@ const createGroupConversation = async (data) => {
                 isGroup: true,
                 blockedUserIds: data.blockedUserIds,
                 roles: data.roles,
-                memberUserIds: data.memberUserIds
+                memberUserIds: data.memberUserIds,
+                token: data.token
             }
         };
         console.log(params);
@@ -221,7 +252,7 @@ const removeMember = async (conversationId, data) => {
 const leaveGroup = async (conversationId, userId) => {
     try {
         const conversation = await getConversationById(conversationId);
-        
+
         if (!conversation) {
             throw new Error('Cuộc trò chuyện không tồn tại.');
         }
@@ -240,7 +271,7 @@ const leaveGroup = async (conversationId, userId) => {
         }
 
         const updatedMemberUserIds = conversation.memberUserIds.filter(id => id !== userId);
-        
+
         let updatedRoles = [];
         if (conversation.roles && Array.isArray(conversation.roles)) {
             updatedRoles = conversation.roles.map(role => ({
@@ -264,7 +295,7 @@ const leaveGroup = async (conversationId, userId) => {
         };
 
         const result = await client.update(params).promise();
-        
+
         return result.Attributes;
     } catch (error) {
         console.error('Lỗi khi rời nhóm:', error);
@@ -395,7 +426,53 @@ const disbandGroup = async (conversationId, updateData) => {
         throw err;
     }
 }
+const getConversationByToken = async (token) => {
+    try {
+        const params = {
+            TableName: 'Conversations',
+            FilterExpression: '#token = :token',
+            ExpressionAttributeNames: {
+                '#token': 'token'
+            },
+            ExpressionAttributeValues: {
+                ':token': token
+            }
+        };
+        const data = await client.scan(params).promise();
+        return data.Items[0];
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
+
+const updateTokenGroup = async (conversationId, token) => {
+    try {
+        const params = {
+            TableName: 'Conversations',
+            Key: { id: conversationId },
+            UpdateExpression: 'set #token = :token',
+            ExpressionAttributeNames: {
+                '#token': 'token'
+            },
+            ExpressionAttributeValues: {
+                ':token': token
+            },
+            ReturnValues: 'ALL_NEW'
+        };
+
+        const data = await client.update(params).promise();
+        return data.Attributes;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+};
+
+
 module.exports = {
+    updateTokenGroup,
+    getConversationByToken,
     createConversation,
     getConversationsByUserId,
     getConversationByMembers,
@@ -410,5 +487,7 @@ module.exports = {
     updateBlockedUserIds,
     updateAllMessagesStatusByConversationId,
     leaveGroup,
-    disbandGroup
+    disbandGroup,
+    updateCreateAt,
+    getAllConversations
 };

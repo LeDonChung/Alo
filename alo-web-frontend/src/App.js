@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { useDispatch } from 'react-redux';
 import { getFriends } from './redux/slices/FriendSlice';
 import { ForgetPassword } from './pages/ForgetPassword';
+import { GroupInfo } from './pages/GroupInfo';
 
 function App() {
   const dispatch = useDispatch();
@@ -46,7 +47,7 @@ function App() {
           <Route path="/me" element={<HomePage />} />
           <Route path="/contact" element={<ContactPage />} />
         </Route>
-
+        <Route path="/g/:token" element={<GroupInfo />} />
         {/* 404 Not Found */}
         <Route path="*" element={<h1>404 - Page Not Found</h1>} />
       </Routes>

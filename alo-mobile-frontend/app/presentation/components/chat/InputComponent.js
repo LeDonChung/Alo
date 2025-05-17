@@ -4,7 +4,6 @@ import Icon from 'react-native-vector-icons/FontAwesome5';
 import IconMI from 'react-native-vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import * as Permissions from 'expo-permissions';
 import OptionModal from './OptionModal';
 import { showToast } from '../../../utils/AppUtils';
 import { useDispatch, useSelector } from 'react-redux';
@@ -130,8 +129,9 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
             {messageParent.status === 1 ? 'Tin nhắn đã bị thu hồi' :
               messageParent.messageType === 'text' ? messageParent.content :
                 messageParent.messageType === 'image' ? '[Hình ảnh]' :
-                  messageParent.messageType === 'file' ? '[Tệp đính kèm]' :
-                    '[Sticker]'}
+                  messageParent.messageType === 'file' ? '[Tệp đính kèm]'
+                    : messageParent.messageType === 'sticker' ? '[Sticker]' : 
+                      messageParent.messageType === 'link' ? messageParent.content: '' }
           </Text>
         </View>
         <TouchableOpacity onPress={() => dispatch(setMessageParent(null))}>
