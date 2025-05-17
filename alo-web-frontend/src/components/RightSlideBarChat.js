@@ -99,7 +99,7 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
   const [isOpenUpdateProfileGroup, setIsOpenUpdateProfileGroup] = useState(false);
   const [membersWithRoles, setMembersWithRoles] = useState([]);
   // Kiểm tra quyền của conversation 
-  let memberRole = conversation.roles.find(role => role.role === 'member');
+  let memberRole = conversation.roles?.find(role => role.role === 'member');
 
   // Hàm xử lý xóa lịch sử trò chuyện
   const handleRemoveAllHistoryMessages = async () => {

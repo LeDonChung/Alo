@@ -10,6 +10,9 @@ import * as ImagePicker from 'expo-image-picker';
 import { updateProfileGroup, updateProfileGroupById, removeAllHistoryMessages, setConversation, leaveGroup, handlerRemoveHistoryMessage, removeConversation } from '../../redux/slices/ConversationSlice';
 import { clearAllMessages, clearMessages } from '../../redux/slices/MessageSlice';
 import socket from '../../../utils/socket';
+import Constants from 'expo-constants';
+import * as Clipboard from 'expo-clipboard';
+
 export const SettingScreen = () => {
     const userLogin = useSelector(state => state.user.userLogin);
     const conversation = useSelector(state => state.conversation.conversation);
@@ -522,7 +525,12 @@ export const SettingScreen = () => {
                                 <Text style={styles.optionText}>Duyệt thành viên</Text>
                             </TouchableOpacity>
 
-                            <TouchableOpacity style={styles.option}>
+                            <TouchableOpacity style={styles.option} onPress={async () => {
+                                // copy link nhóm
+                                const content = `${Constants.expoConfig?.extra?.WEB_URL}/g/${conversation.token}`;
+                                console.log(content)
+                                await Clipboard.setStringAsync(content);
+                            }}>
                                 <Icon name="link" size={24} color="#000" />
                                 <Text style={styles.optionText}>Link nhóm</Text>
                             </TouchableOpacity>

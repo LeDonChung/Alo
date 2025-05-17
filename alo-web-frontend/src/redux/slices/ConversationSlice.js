@@ -250,6 +250,14 @@ const changeTokenGroup = createAsyncThunk('ConversationSlice/changeTokenGroup', 
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 })
+const getLinkPreview = createAsyncThunk('ConversationSlice/getLinkPreview', async (url, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.get('/api/message/get-link-preview?link=' + url);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
@@ -594,6 +602,13 @@ const ConversationSlice = createSlice({
         builder.addCase(changeTokenGroup.rejected, (state, action) => {
         });
 
+        builder.addCase(getLinkPreview.pending, (state) => {
+        });
+        builder.addCase(getLinkPreview.fulfilled, (state, action) => {
+        });
+        builder.addCase(getLinkPreview.rejected, (state, action) => {
+        });
+
     }
 });
 
@@ -639,6 +654,7 @@ export {
     getConversationByToken,
     joinGroupByLink,
     updateAllowJoinGroupByLink,
-    changeTokenGroup
+    changeTokenGroup,
+    getLinkPreview
 };
 export default ConversationSlice.reducer;

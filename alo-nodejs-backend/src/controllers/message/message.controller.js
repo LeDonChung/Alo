@@ -4,7 +4,26 @@ const messageService = require('../../services/message.service');
 const conversationService = require('../../services/conversation.service');
 const { v4: uuidv4 } = require('uuid');
 const fileService = require('../../services/file.service');
+const { getLinkPreview } = require('link-preview-js');
 
+exports.getLinkPreviewMessage = async (req, res) => {
+    const { link } = req.query;
+    try {
+        const data = await getLinkPreview(link);
+        return res.status(200).json({
+            status: 200,
+            data: data,
+            message: "Lấy link preview thành công."
+        })
+    } catch (err) {
+        console.log(err)
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
 
 exports.createMessage = async (req, res) => {
     try {
@@ -45,7 +64,7 @@ exports.createMessage = async (req, res) => {
             request.fileLink = await fileService.uploadFile(req.file);
         }
 
-        const allowedTypes = ['text', 'sticker', 'image', 'file'];
+        const allowedTypes = ['text', 'sticker', 'image', 'file', 'link', 'log'];
         if (!allowedTypes.includes(messageType)) {
             return res.status(400).json({
                 status: 400,

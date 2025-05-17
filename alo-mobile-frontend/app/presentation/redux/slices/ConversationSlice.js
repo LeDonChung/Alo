@@ -7,6 +7,7 @@ const initialState = {
     conversation: null,
     error: null,
     isLeaving: false, // Added from leaveGroup pending case
+    conversationInvite: null
 };
 
 const getAllConversation = createAsyncThunk(
@@ -258,10 +259,61 @@ const disbandGroup = createAsyncThunk('ConversationSlice/disbandGroup', async ({
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 })
+
+const updateAllowJoinGroupByLink = createAsyncThunk('ConversationSlice/updateAllowJoinGroupByLink', async ({ conversationId, allow }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/allow-join-group-by-link`, { allow: allow });
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
+
+const getConversationByToken = createAsyncThunk('ConversationSlice/getConversationByToken', async (token, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.get(`/api/conversation/token/${token}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
+const joinGroupByLink = createAsyncThunk('ConversationSlice/joinGroupByLink', async ({ conversationId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/join-by-link/${conversationId}`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
+const changeTokenGroup = createAsyncThunk('ConversationSlice/changeTokenGroup', async ({ conversationId }, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post(`/api/conversation/${conversationId}/change-token`);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
     reducers: {
+        updateToken: (state, action) => {
+            const conversationId = action.payload.conversationId;
+            const token = action.payload.token;
+            console.log("token", token)
+            console.log("state.conversation", conversationId)
+            // Cập nhật conversation hiện tại đang chọn nếu có
+            if (state.conversation && state.conversation.id === conversationId) {
+                state.conversation.token = token;
+            }
+            // Cập nhật danh sách conversations
+            const conversation = state.conversations.find(conversation => conversation.id === conversationId);
+            if (conversation) {
+                conversation.token = token;
+                const index = state.conversations.findIndex(convo => convo.id === conversationId);
+                state.conversations[index].token = token;
+            }
+        },
         setConversation: (state, action) => {
             state.conversation = action.payload;
         },
@@ -539,7 +591,7 @@ const ConversationSlice = createSlice({
         });
 
         builder.addCase(changeLeader.fulfilled, (state, action) => {
-            
+
         });
 
         builder.addCase(changeLeader.rejected, (state, action) => {
@@ -637,6 +689,34 @@ const ConversationSlice = createSlice({
         });
         builder.addCase(disbandGroup.rejected, (state, action) => {
         });
+        builder.addCase(updateAllowJoinGroupByLink.fulfilled, (state) => {
+
+        })
+
+        builder.addCase(updateAllowJoinGroupByLink.rejected, (state) => {
+
+        })
+        builder.addCase(getConversationByToken.pending, (state) => {
+        });
+        builder.addCase(getConversationByToken.fulfilled, (state, action) => {
+            state.conversationInvite = action.payload.data;
+        });
+        builder.addCase(getConversationByToken.rejected, (state, action) => {
+        });
+
+        builder.addCase(joinGroupByLink.pending, (state) => {
+        });
+        builder.addCase(joinGroupByLink.fulfilled, (state, action) => {
+        });
+        builder.addCase(joinGroupByLink.rejected, (state, action) => {
+        });
+
+        builder.addCase(changeTokenGroup.pending, (state) => {
+        });
+        builder.addCase(changeTokenGroup.fulfilled, (state, action) => {
+        });
+        builder.addCase(changeTokenGroup.rejected, (state, action) => {
+        });
     }
 });
 
@@ -656,6 +736,7 @@ export const {
     handlerRemoveHistoryMessage,
     addMemberGroup,
     handlerBlockMemberToGroup,
+    updateToken
 } = ConversationSlice.actions;
 
 export {
@@ -677,7 +758,11 @@ export {
     addViceLeaderToGroup,
     removeViceLeaderToGroup,
     changeLeader,
-    disbandGroup 
+    disbandGroup,
+    updateAllowJoinGroupByLink,
+    getConversationByToken,
+    joinGroupByLink,
+    changeTokenGroup,
 };
 
 

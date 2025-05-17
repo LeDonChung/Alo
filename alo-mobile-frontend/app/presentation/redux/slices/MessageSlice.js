@@ -18,7 +18,14 @@ const initialState = {
     currentSearchIndex: 0,
     error: null,
 };
-
+const getLinkPreview = createAsyncThunk('ConversationSlice/getLinkPreview', async (url, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.get('/api/message/get-link-preview?link=' + url);
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
 const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ message, file }, { rejectWithValue }) => {
     try {
         const formData = new FormData();
@@ -339,6 +346,12 @@ const MessageSlice = createSlice({
             state.searchResults = [];
             state.error = action.payload?.message || "Lỗi không xác định";
         });
+        builder.addCase(getLinkPreview.pending, (state) => {
+        });
+        builder.addCase(getLinkPreview.fulfilled, (state, action) => {
+        });
+        builder.addCase(getLinkPreview.rejected, (state, action) => {
+        });
     }
 });
 
@@ -371,6 +384,7 @@ export {
     seenOne,
     removeOfMe,
     searchMessages,
+    getLinkPreview
 };
 
 export default MessageSlice.reducer;

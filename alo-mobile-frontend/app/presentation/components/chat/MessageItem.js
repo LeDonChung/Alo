@@ -3,6 +3,7 @@ import { View, Text, Image, TouchableOpacity, Modal, Pressable } from 'react-nat
 import { Video } from 'expo-av';
 import { ReactionListComponent } from './ReactionListComponent';
 import { useSelector } from 'react-redux';
+import { LinkPreview } from './LinkPreview';
 
 const MessageItem = ({ item, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted, handlerRemoveAllAction, scrollToMessage, searchKeyword  }) => {
   const userLogin = useSelector(state => state.user.userLogin);
@@ -102,7 +103,7 @@ const MessageItem = ({ item, setSelectedImage, setIsImageViewVisible, showAvatar
           <Text style={{ color: '#4B5563', fontSize: 14, fontStyle: 'italic' }}>
             Tin nhắn đã được thu hồi
           </Text>
-        ) : messageParent.messageType === 'text' ? (
+        ) : messageParent.messageType === 'text' || messageParent.messageType === 'link' ? (
           <Text style={{ color: '#4B5563', fontSize: 14 }} numberOfLines={2} ellipsizeMode="tail">
             {messageParent.content}
           </Text>
@@ -199,6 +200,13 @@ const MessageItem = ({ item, setSelectedImage, setIsImageViewVisible, showAvatar
                 {messageType === 'text' && item.content && (
                   <View style={{ backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
                     {highlightSearchKeyword(item.content)}
+                  </View>
+                )}
+
+                {/* Text Link */}
+                {messageType === 'link' && item.content && (
+                  <View style={{ backgroundColor: isSent ? '#dbeafe' : 'white', padding: 10, borderRadius: 10 }}>
+                    <LinkPreview url={item.content} />
                   </View>
                 )}
 
