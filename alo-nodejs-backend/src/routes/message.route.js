@@ -25,6 +25,7 @@ router.post(
     middleware.authenticateToken,
     messageController.createMessage
 );
+router.get('/get-link-preview', messageController.getLinkPreviewMessage);
 router.get(
     '/get-messages/:conversationId',
     middleware.authenticateToken,

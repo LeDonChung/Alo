@@ -9,7 +9,7 @@ const ConversationList = () => {
 
   const userLogin = useSelector(state => state.user.userLogin);
 
-  const conversations = useSelector(state => state.conversation.conversations);  
+  const conversations = useSelector(state => state.conversation.conversations);
 
   const sortedConversations = conversations
     .slice()
@@ -24,7 +24,7 @@ const ConversationList = () => {
   }, [])
 
   const showLastMessage = (conversation) => {
-    if(conversation.lastMessage.status === 2) return;
+    if (conversation.lastMessage.status === 2) return;
     const friend = conversation.lastMessage.sender;
     if (conversation.lastMessage) {
       let message = conversation.lastMessage.content;
@@ -38,12 +38,14 @@ const ConversationList = () => {
         message = '[Tệp tin]';
       } else if (conversation.lastMessage.messageType === 'video') {
         message = '[Video]';
+      } else if (conversation.lastMessage.messageType === 'link') {
+        message = '[Link]';
       }
       if (conversation.lastMessage.senderId === userLogin.id) {
         return "Bạn: " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi");
       } else {
         console.log(friend);
-        
+
         return (
           conversation.lastMessage
           && friend.fullName + ": " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi")

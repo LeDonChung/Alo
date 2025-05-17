@@ -23,6 +23,7 @@ import socket from '../../utils/socket';
 import ModalForwardMessage from './ModalForwardMessage';
 import ModalReaction from './ModalReaction'; // Import component mới
 import showToast, { getUserRoleAndPermissions } from '../../utils/AppUtils';
+import { LinkPreview } from './LinkPreview';
 
 const MessageItem = ({
   message,
@@ -504,6 +505,9 @@ const MessageItem = ({
                 </p>
                 <div className="text-gray-500 font-normal">
                   {message.messageParent.messageType === 'text' && <p>{message.messageParent.content}</p>}
+                  {message.messageParent.messageType === 'link' &&
+                    <p>{message.messageParent.content}</p>
+                  }
                   {message.messageParent.messageType === 'image' && <p className="">[Hình ảnh]</p>}
                   {message.messageParent.messageType === 'file' && (
                     <p className="">[File] {extractOriginalName(message.messageParent.fileLink)}</p>
@@ -542,6 +546,9 @@ const MessageItem = ({
                 {(message.status === 0 || message.status === -1) && (
                   <>
                     {message.messageType === 'text' && <p className="text-sm text-gray-800">{message.content}</p>}
+                    {message.messageType === 'link' &&
+                      <LinkPreview url={message.content} />
+                    }
                     {message.messageType === 'sticker' && (
                       <img src={message.fileLink} alt="sticker" className="w-20 h-20" loading="lazy" />
                     )}
@@ -729,6 +736,9 @@ const MessageItem = ({
                 {message.status === 0 ? (
                   <>
                     {message.messageType === 'text' && <p className="text-gray-800 break-words">{message.content}</p>}
+                    {message.messageType === 'link' &&
+                      <LinkPreview url={message.content} />
+                    }
                     {message.messageType === 'image' && (
                       message.fileLink.includes('.mp4') ? (
                         <video
