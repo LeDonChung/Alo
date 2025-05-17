@@ -3,9 +3,11 @@ import { React, useState, useEffect, useRef } from 'react';
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { useDispatch, useSelector } from "react-redux";
 import { faMagnifyingGlass, faChevronDown, faChevronRight, faTag } from "@fortawesome/free-solid-svg-icons";
-import { removeVietnameseTones } from '../utils/AppUtils';
+import showToast, { removeVietnameseTones } from '../utils/AppUtils';
 import SelectTypeFilter from './friend/SelectTypeFilter';
 import SelectCategoryFilter from './friend/SelectCategoryFilter';
+import { setConversation } from '../redux/slices/ConversationSlice';
+import { useNavigate } from 'react-router-dom';
 
 
 const categoryList = [
@@ -27,6 +29,8 @@ const typeFilter = [
 
 export default function GroupsOfUser() {
   const dispatch = useDispatch();
+  const userLogin = JSON.parse(localStorage.getItem("userLogin"));
+  const navigate = useNavigate();
   const conversations = useSelector(state => state.conversation.conversations);
   const [categories, setCategories] = useState(categoryList);
   const [typeFilters, setTypeFilters] = useState(typeFilter);
@@ -163,6 +167,20 @@ export default function GroupsOfUser() {
     };
   }, []);
 
+  const handleNavigateChat = async (e, conversationId) => {
+    e.preventDefault();
+    try {
+      const conversation = conversations.find((conversation) => {
+        return conversation.id === conversationId;
+      });
+      await dispatch(setConversation(conversation));
+      navigate('/me')
+    } catch (error) {
+      console.error("Error navigating to chat:", error);
+      showToast("Đã xảy ra lỗi khi mở cuộc trò chuyện. Vui lòng thử lại.", "error");
+    }
+  }
+
   return (
     <div className="flex-1 flex flex-col w-full h-full bg-[#EBECF0]">
       {/* header */}
@@ -218,7 +236,7 @@ export default function GroupsOfUser() {
                       <div className="flex flex-col">
                         {
                           groupChar.list && groupChar.list.map((group) => (
-                            <div key={group.id} className="flex items-center justify-between p-2 hover:bg-gray-100 rounded-md">
+                            <div key={group.id} className="flex items-center justify-between p-2 hover:bg-gray-100 rounded-md" onClick={(e) => handleNavigateChat(e, group.id)}>
                               {/* Left - Avatar + Thông tin */}
                               <div className="flex items-center">
                                 {/* Avatar */}

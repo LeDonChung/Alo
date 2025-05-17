@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import socket from '../utils/socket';
 import { useDispatch, useSelector } from 'react-redux';
 import { setConversation } from '../redux/slices/ConversationSlice';
@@ -10,6 +10,18 @@ const ConversationList = () => {
   const userLogin = useSelector(state => state.user.userLogin);
 
   const conversations = useSelector(state => state.conversation.conversations);  
+
+  const sortedConversations = conversations
+    .slice()
+    .sort((a, b) => {
+      const aTime = a.lastMessage?.timestamp || a.createdAt;
+      const bTime = b.lastMessage?.timestamp || b.createdAt;
+      return bTime - aTime;
+    });
+
+  useEffect(() => {
+    
+  }, [])
 
   const showLastMessage = (conversation) => {
     if(conversation.lastMessage.status === 2) return;
@@ -65,7 +77,7 @@ const ConversationList = () => {
 
     <div className=" bg-white border-r border-gray-200 py-4 overflow-y-auto max-h-[2000px] scrollable">
       <div>
-        {(conversations && conversations.length > 0) ? conversations.map((conversation) => {
+        {(sortedConversations && sortedConversations.length > 0) ? sortedConversations.map((conversation) => {
           const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id))
           return (
             <div
