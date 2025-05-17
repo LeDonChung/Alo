@@ -14,7 +14,7 @@ export const GroupInfo = () => {
     useEffect(() => {
         const handlerGetConversation = async () => {
             const tokenJwt = localStorage.getItem("accessToken");
-            if (!tokenJwt) {
+            if (!tokenJwt || userLogin === null) {
                 // 2s sau sẽ chuyển về trang login
                 showToast("Bạn cần đăng nhập để vào nhóm này", "error");
                 setTimeout(() => {
