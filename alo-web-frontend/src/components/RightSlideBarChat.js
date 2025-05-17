@@ -98,6 +98,8 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
   const [showFile, setShowFile] = useState(false);
   const [isOpenUpdateProfileGroup, setIsOpenUpdateProfileGroup] = useState(false);
   const [membersWithRoles, setMembersWithRoles] = useState([]);
+  // Kiểm tra quyền của conversation 
+  let memberRole = conversation.roles.find(role => role.role === 'member');
 
   // Hàm xử lý xóa lịch sử trò chuyện
   const handleRemoveAllHistoryMessages = async () => {
@@ -434,12 +436,35 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
                         <p className="text-sm text-gray-700">{conversation.memberUserIds.length} thành viên</p>
                       </div>
 
-                      <div className="mt-2 px-2">
-                        <a href="#" className="text-sm text-blue-500 hover:underline">
-                          Link tham gia nhóm
-                        </a>
-                        <p className="text-xs text-gray-500 truncate">palo.me/g/proxunX47</p>
-                      </div>
+                      {
+                        memberRole && memberRole.permissions?.joinGroupByLink && (
+                          <div className="mt-2 ">
+                            <div className='flex space-x-3 cursor-pointer hover:bg-slate-200 py-3 px-2 items-center' onClick={() => {
+                              const host = window.location.origin + '/g/';
+                              const fullLink = host + conversation.token;
+
+                              navigator.clipboard.writeText(fullLink).then(() => {
+                                showToast('Đã sao chép liên kết nhóm vào clipboard', 'success');
+                              });
+                            }}>
+                              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" >
+                                <path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1" />
+                                <path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1" />
+                              </svg>
+                              <div className='flex-1'>
+
+                                <p className="text-sm ">
+                                  Link tham gia nhóm
+                                </p>
+                                <p className="text-xs  truncate text-blue-500">alo.me/g/{conversation.token}</p>
+                              </div>
+                              <svg width="26px" height="26px" viewBox="0 -0.5 25 25" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path fill-rule="evenodd" clip-rule="evenodd" d="M17.676 14.248C17.676 15.8651 16.3651 17.176 14.748 17.176H7.428C5.81091 17.176 4.5 15.8651 4.5 14.248V6.928C4.5 5.31091 5.81091 4 7.428 4H14.748C16.3651 4 17.676 5.31091 17.676 6.928V14.248Z" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> <path d="M10.252 20H17.572C19.1891 20 20.5 18.689 20.5 17.072V9.75195" stroke="#000000" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
+                              <svg width="26px" height="26px" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"> <path d="M8.0001 10.1308C9.61344 8.97671 11.4547 8.57075 13 8.57075V6.22616C13 5.26817 13 4.78917 13.2952 4.65662C13.5903 4.52407 13.9484 4.8423 14.6644 5.47875L18.6367 9.00968C20.2053 10.404 20.9896 11.1012 20.9896 11.9993C20.9896 12.8975 20.2053 13.5946 18.6367 14.989L14.6644 18.5199C13.9484 19.1563 13.5903 19.4746 13.2952 19.342C13 19.2095 13 18.7305 13 17.7725V15.4279C9.4 15.4279 5.5 17.1422 4 19.9993C4 17.5676 4.37726 15.621 5.0001 14.0735" stroke="#1C274C" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"></path> </g></svg>
+                            </div>
+                          </div>
+                        )
+                      }
+
                     </div>
 
                   )

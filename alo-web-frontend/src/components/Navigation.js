@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { changePassword, checkPassword, getProfile, logout, setUserLogin, setUserOnlines, updateLastLogin, updateProfile, uploadAvatar, uploadBackground } from "../redux/slices/UserSlice";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
-import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, addMemberGroup, updateProfileGroupById, updatePermissions, removeConversation, removeMemberGroup, handlerRemoveHistoryMessage } from "../redux/slices/ConversationSlice";
+import { addPinToConversation, getAllConversation, removePinToConversation, updateLastMessage, addConversation, setConversation, addMemberGroup, updateProfileGroupById, updatePermissions, removeConversation, removeMemberGroup, handlerRemoveHistoryMessage, updateToken } from "../redux/slices/ConversationSlice";
 import { setMessageRemoveOfMe, setMessages, setMessageUpdate, updateSeenAllMessage, addMessage, seenOne, clearAllMessages } from "../redux/slices/MessageSlice";
 import { addFriend, addFriendsRequest, getFriends, getFriendsRequest, removeFriend, setFriends, setFriendsRequest } from "../redux/slices/FriendSlice";
 import { addReceive, setCalling, setIncomingCall, setIsVideoCallOpen, setIsVoiceCallOpen } from "../redux/slices/CallSlice";
@@ -331,7 +331,7 @@ export const Navigation = () => {
             if (memberSelected.includes(userLoginId)) {
                 showToast("Bạn đã được thêm vào nhóm " + conversation.name, "success");
                 conversation.memberUserIds.push(userLoginId);
-                conversation.members = [...conversation.members, ...memberInfo];                
+                conversation.members = [...conversation.members, ...memberInfo];
                 dispatch(addConversation(conversation));
             }
             if (conversation.memberUserIds.includes(userLoginId) && !memberSelected.includes(userLoginId)) {
@@ -363,6 +363,21 @@ export const Navigation = () => {
 
         return () => {
             socket.off("receive-remove-member", handleReceiveRemoveMember);
+        }
+    }, []);
+
+    // receive-update-token
+    // lắng nghe sự kiện cập nhật token từ server
+    useEffect(() => {
+        const handleReceiveUpdateToken = async (data) => {
+            console.log("Nhận được sự kiện receive-update-token:", data);
+            const { token, id } = data;
+            dispatch(updateToken({ conversationId: id, token }));
+        }
+        socket.on("receive-update-token", handleReceiveUpdateToken);
+
+        return () => {
+            socket.off("receive-update-token", handleReceiveUpdateToken);
         }
     }, []);
 
@@ -689,7 +704,7 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
                 setConfirmPassword("");
                 setShowChangePasswordModal(false);
                 socket.emit("request-logout-changed-password", userLogin?.id);
-                
+
             })
         } catch (e) {
             console.log(e.message);

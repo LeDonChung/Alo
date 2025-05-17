@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useSelector } from 'react-redux';
 import showToast, { getUserRoleAndPermissions } from '../../utils/AppUtils';
 import { useDispatch } from 'react-redux';
-import { disbandGroup, removeConversation, updateAllowPinMessageGroup, updateAllowSendMessageGroup, updateAllowUpdateProfileGroup, updatePermissions } from '../../redux/slices/ConversationSlice';
+import { changeTokenGroup, disbandGroup, removeConversation, updateAllowJoinGroupByLink, updateAllowPinMessageGroup, updateAllowSendMessageGroup, updateAllowUpdateProfileGroup, updatePermissions, updateToken } from '../../redux/slices/ConversationSlice';
 import socket from '../../utils/socket';
 
 const GroupManagement = ({ setIsSetting }) => {
@@ -12,6 +12,7 @@ const GroupManagement = ({ setIsSetting }) => {
   const [isChangeProfileApproval, setIsChangeProfileApproval] = useState(memberRole.permissions.changeGroupInfo);
   const [isMessageLabeling, setIsMessageLabeling] = useState(memberRole.permissions.pinMessages);
   const [isSendMessage, setIsSendMessage] = useState(memberRole.permissions.sendMessage);
+  const [isJoinGroupByLink, setIsJoinGroupByLink] = useState(memberRole.permissions.joinGroupByLink);
   const [isLinkUsage, setIsLinkUsage] = useState(false);
   const userLogin = useSelector((state) => state.user.userLogin);
   const { permissions, role } = getUserRoleAndPermissions(conversation, userLogin.id); // Destructure role and permissions
@@ -83,6 +84,28 @@ const GroupManagement = ({ setIsSetting }) => {
   }, [isSendMessage, isMember]);
 
   useEffect(() => {
+    const handlerAllowPermisstion = async () => {
+      try {
+        await dispatch(updateAllowJoinGroupByLink({
+          conversationId: conversation.id,
+          allow: isJoinGroupByLink
+        })).unwrap().then((res) => {
+          const roles = res.data.roles;
+          dispatch(updatePermissions({ conversationId: res.data.id, roles }));
+          setIsJoinGroupByLink(isJoinGroupByLink);
+          socket.emit('update-roles', { conversation: res.data });
+        });
+      } catch (error) {
+        setIsJoinGroupByLink(!isJoinGroupByLink);
+        showToast(error.message || 'Có lỗi xảy ra trong quá trình cập nhật quyền thành viên nhóm. Vui lòng thử lại.', 'error');
+      }
+    };
+    if (isJoinGroupByLink !== memberRole.permissions?.joinGroupByLink && !isMember) {
+      handlerAllowPermisstion();
+    }
+  }, [isJoinGroupByLink, isMember]);
+
+  useEffect(() => {
     setIsChangeProfileApproval(memberRole.permissions.changeGroupInfo);
     setIsMessageLabeling(memberRole.permissions.pinMessages);
     setIsSendMessage(memberRole.permissions.sendMessage);
@@ -110,6 +133,17 @@ const GroupManagement = ({ setIsSetting }) => {
     }
   }, [isMessageLabeling, isMember]);
 
+  const handlerChangeToken = async () => {
+    try {
+      await dispatch(changeTokenGroup({ conversationId: conversation.id })).unwrap().then((res) => {
+        const { token, id } = res.data;
+        dispatch(updateToken({ conversationId: id, token }));
+        socket.emit('update-token', res.data);
+      });
+    } catch (error) {
+      showToast(error.message || 'Có lỗi xảy ra trong quá trình đổi link tham gia nhóm. Vui lòng thử lại.', 'error');
+    }
+  }
   return (
     <div className="w-80 bg-white border-l border-gray-200 p-4 overflow-y-auto max-h-screen scrollbar-thin scrollbar-thumb-gray-300">
       {/* Header */}
@@ -177,42 +211,46 @@ const GroupManagement = ({ setIsSetting }) => {
           <label className="relative inline-flex items-center cursor-pointer">
             <input
               type="checkbox"
-              checked={isLinkUsage}
-              onChange={() => setIsLinkUsage(!isLinkUsage)}
+              checked={isJoinGroupByLink}
+              onChange={() => setIsJoinGroupByLink(!isJoinGroupByLink)}
               className="sr-only peer"
               disabled={isMember} // Disable if user is a member
             />
             <div className={`w-11 h-6 bg-gray-200 rounded-full peer ${isMember ? '' : 'peer-checked:bg-blue-600'}`}>
-              <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${isLinkUsage && !isMember ? 'translate-x-5' : 'translate-x-1'}`}></div>
+              <div className={`w-5 h-5 bg-white rounded-full shadow-md transform transition-transform ${isJoinGroupByLink && !isMember ? 'translate-x-5' : 'translate-x-1'}`}></div>
             </div>
           </label>
         </div>
-        {isLinkUsage && (
+        {isJoinGroupByLink && (
           <div className="mt-3 flex items-center space-x-2">
             <input
               type="text"
-              value="zalo.me/g/proxcu147"
+              value={`alo/g/${conversation.token}`}
               readOnly
-              className="flex-1 p-2 border border-gray-300 rounded-lg text-gray-700"
+              className="flex-1 p-2 border border-gray-300 rounded-lg text-gray-700 outline-none focus:ring-2 focus:ring-blue-500"
             />
-            <button className="p-2 rounded-full hover:bg-gray-200" disabled={isMember}>
+            <button className="p-2 rounded-full hover:bg-gray-200" disabled={isMember} onClick={() => {
+              const host = window.location.origin + '/g/';
+              const fullLink = host + conversation.token;
+
+              navigator.clipboard.writeText(fullLink).then(() => {
+                showToast('Đã sao chép liên kết nhóm vào clipboard', 'success');
+              });
+            }}>
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
               </svg>
             </button>
-            <button className="p-2 rounded-full hover:bg-gray-200" disabled={isMember}>
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 8h2a2 2 0 012 2v6a2 2 0 01-2 2h-2v4l-4-4H9a2 2 0 01-2-2v-6a2 2 0 012-2h2m-2 0V6a2 2 0 012-2h2a2 2 0 012 2v2" />
-              </svg>
+            <button className="p-2 rounded-full hover:bg-gray-200" disabled={isMember} onClick={() => {
+              handlerChangeToken();
+            }}>
+              <svg fill="#000000" width="19px" height="19px" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><g id="SVGRepo_bgCarrier" stroke-width="0"></g><g id="SVGRepo_tracerCarrier" stroke-linecap="round" stroke-linejoin="round"></g><g id="SVGRepo_iconCarrier"><path d="M1,12A11,11,0,0,1,17.882,2.7l1.411-1.41A1,1,0,0,1,21,2V6a1,1,0,0,1-1,1H16a1,1,0,0,1-.707-1.707l1.128-1.128A8.994,8.994,0,0,0,3,12a1,1,0,0,1-2,0Zm21-1a1,1,0,0,0-1,1,9.01,9.01,0,0,1-9,9,8.9,8.9,0,0,1-4.42-1.166l1.127-1.127A1,1,0,0,0,8,17H4a1,1,0,0,0-1,1v4a1,1,0,0,0,.617.924A.987.987,0,0,0,4,23a1,1,0,0,0,.707-.293L6.118,21.3A10.891,10.891,0,0,0,12,23,11.013,11.013,0,0,0,23,12,1,1,0,0,0,22,11Z"></path></g></svg>
             </button>
           </div>
         )}
       </div>
 
-      {/* Other Sections */}
-      <div className={`cursor-pointer hover:bg-gray-200 py-2 ${isMember ? 'pointer-events-none opacity-50' : ''}`}>
-        <h4 className="text-sm font-semibold text-gray-700">Chặn khỏi nhóm</h4>
-      </div>
+
       <div className="mt-6">
         <button
           onClick={() => handlerDisbandGroup()}
