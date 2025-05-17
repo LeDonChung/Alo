@@ -1,6 +1,35 @@
 const { client } = require("../config/DynamoDB");
 const { v4: uuidv4 } = require('uuid');
 
+const updateCreateAt = async (conversationId) => {
+    try {
+        const params = {
+            TableName: 'Conversations',
+            Key: { id: conversationId },
+            UpdateExpression: 'SET createdAt = :createdAt',
+            ExpressionAttributeValues: {
+                ':createdAt': Date.now()
+            }
+        };
+        console.log(params);
+        await client.update(params).promise();
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
+const getAllConversations = async () => {
+    try {
+        const params = {
+            TableName: 'Conversations',
+        };
+        const data = await client.scan(params).promise();
+        return data.Items;
+    } catch (err) {
+        console.error(err);
+        throw new Error(err);
+    }
+}
 const createConversation = async (data) => {
     try {
         const params = {
@@ -11,6 +40,7 @@ const createConversation = async (data) => {
                 createdBy: data.createdBy,
                 isGroup: data.isGroup,
                 isCalling: data.isCalling,
+                createdAt: Date.now(),
                 memberUserIds: data.memberUserIds,
             }
         };
@@ -410,5 +440,7 @@ module.exports = {
     updateBlockedUserIds,
     updateAllMessagesStatusByConversationId,
     leaveGroup,
-    disbandGroup
+    disbandGroup,
+    updateCreateAt,
+    getAllConversations
 };

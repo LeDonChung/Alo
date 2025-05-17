@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from "react";
 import { View, Text, FlatList, Image, TextInput, TouchableOpacity, Switch, Modal, StyleSheet, ActivityIndicator } from "react-native";
 import Icon from "react-native-vector-icons/MaterialIcons";
 import { ContactStyles } from "../../../styles/ContactStyle";
+import IconFA from "react-native-vector-icons/FontAwesome";
 import { useDispatch, useSelector } from "react-redux";
 import {
   getFriends,
@@ -19,6 +20,7 @@ import FriendRequests from "./FriendRequests";
 import socket from "../../../../utils/socket";
 import { FriendComponent } from "./FriendComponent";
 import { getAllConversation } from "../../../redux/slices/ConversationSlice";
+import { ConversationComponent } from "./ConversationComponent";
 
 const ContactScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -81,8 +83,8 @@ const ContactScreen = ({ navigation }) => {
         socket.emit('accept-friend-request-for-me', {
           userId: userLogin.id,
           friendId: friendId,
-          updatedFriendsRequest: updatedFriendsRequest, 
-          friendInfo: { 
+          updatedFriendsRequest: updatedFriendsRequest,
+          friendInfo: {
             id: item.senderId,
             fullName: item.fullName,
             avatarLink: item.avatarLink,
@@ -192,10 +194,25 @@ const ContactScreen = ({ navigation }) => {
           )}
           {activeTab === "Nhóm" && (
             <View>
-              <TouchableOpacity style={ContactStyles.groupHeader} onPress={() => setSubScreen("createGroup")}>
-                <Icon name="group-add" size={20} color="#121212" style={ContactStyles.menuIcon} />
+              <TouchableOpacity style={ContactStyles.groupHeader} onPress={() => {
+                navigation.navigate("create-group")
+              }}>
+                <IconFA
+                  name="users"
+                  size={20}
+                  color="#fff"
+                  style={ContactStyles.menuIcon}
+                />
                 <Text style={ContactStyles.groupHeaderText}>Tạo nhóm</Text>
+                
               </TouchableOpacity>
+              {
+                  isLoading ? (
+                    <ActivityIndicator style={{ marginTop: 20 }} size="small" color="blue" />
+                  ) : (
+                    <ConversationComponent />
+                  )
+                }
             </View>
           )}
         </>

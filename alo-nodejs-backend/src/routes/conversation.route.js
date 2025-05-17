@@ -92,4 +92,7 @@ router.post('/:conversationId/leave-group',
 router.delete('/:conversationId/disband-group',
     middleware.authenticateToken,
     conversationController.disbandGroup);
+
+router.post('/update-created-at', 
+    conversationController.updateCreateAt);
 module.exports = router;

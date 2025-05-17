@@ -4,7 +4,6 @@ import Icon from 'react-native-vector-icons/FontAwesome5';
 import IconMI from 'react-native-vector-icons/MaterialIcons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
-import * as Permissions from 'expo-permissions';
 import OptionModal from './OptionModal';
 import { showToast } from '../../../utils/AppUtils';
 import { useDispatch, useSelector } from 'react-redux';

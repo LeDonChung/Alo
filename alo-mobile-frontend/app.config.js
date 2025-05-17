@@ -2,11 +2,11 @@ import 'dotenv/config';
 
 export default {
   expo: {
-    name: "alo-mobile-frontend",
+    name: "Alo",
     slug: "alo-mobile-frontend",
     version: "1.0.0",
     orientation: "portrait",
-    icon: "./assets/icon.png",
+    icon: "./assets/logo.png",
     userInterfaceStyle: "light",
     newArchEnabled: true,
     splash: {
@@ -19,9 +19,10 @@ export default {
     },
     android: {
       adaptiveIcon: {
-        foregroundImage: "./assets/adaptive-icon.png",
+        foregroundImage: "./assets/logo.png",
         backgroundColor: "#ffffff"
-      }
+      },
+      package: "com.ledonchung398.alomobilefrontend"
     },
     web: {
       favicon: "./assets/favicon.png"
@@ -31,6 +32,9 @@ export default {
     extra: {
       API_URL: process.env.API_URL,
       SOCKET_URL: process.env.SOCKET_URL,
+      eas: {
+        projectId: "6b0cf9c3-93ec-4d38-8bd7-6a73731ebe3a"
+      }
     }
   }
 };

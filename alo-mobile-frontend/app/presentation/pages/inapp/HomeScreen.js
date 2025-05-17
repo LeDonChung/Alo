@@ -13,6 +13,14 @@ export const HomeScreen = ({ navigation }) => {
   const userLogin = useSelector((state) => state.user.userLogin)
 
   const conversations = useSelector(state => state.conversation.conversations);
+  
+  const sortedConversations = conversations
+    .slice()
+    .sort((a, b) => {
+      const aTime = a.lastMessage?.timestamp || a.createdAt; 
+      const bTime = b.lastMessage?.timestamp || b.createdAt;
+      return bTime - aTime;
+    });
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = async () => {
@@ -46,7 +54,7 @@ export const HomeScreen = ({ navigation }) => {
 
   useEffect(() => {
     const unsubscribe = navigation.addListener('focus', () => {
-      dispatch(setChooseTab('home')); 
+      dispatch(setChooseTab('home'));
     });
 
     return unsubscribe;
@@ -178,7 +186,7 @@ export const HomeScreen = ({ navigation }) => {
                   colors={['transparent']}
                   tintColor="transparent"
                 />}
-              data={conversations}
+              data={sortedConversations}
               renderItem={(item) => renderItem({ item: item.item, handlerChoostConversation })}
               keyExtractor={(item) => item.id}
               ListEmptyComponent={

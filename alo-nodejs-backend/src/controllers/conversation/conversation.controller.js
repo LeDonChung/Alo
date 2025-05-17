@@ -3,6 +3,28 @@ const userService = require('../../services/user.service');
 const conversationService = require('../../services/conversation.service');
 const messageService = require('../../services/message.service');
 const fileService = require('../../services/file.service');
+exports.updateCreateAt = async (req, res) => {
+    try {
+        
+        const conversations = await conversationService.getAllConversations();
+        conversations.filter(c => !c.isGroup).forEach(async conv => {
+            await conversationService.updateCreateAt(conv.id);
+        });
+
+        return res.json({
+            status: 200,
+            message: "Cập nhật thời gian tạo cuộc trò chuyện thành công.",
+            data: null
+        });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({
+            status: 500,
+            message: "Đã có lỗi xảy ra. Vui lòng thử lại sau.",
+            data: null
+        });
+    }
+}
 exports.getConversationsByUserId = async (req, res) => {
     try {
         const authHeader = req.headers['authorization'];
