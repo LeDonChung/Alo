@@ -5,6 +5,7 @@ import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import showToast from "../../utils/AppUtils";
 import { updateProfileGroup, updateProfileGroupById } from "../../redux/slices/ConversationSlice";
 import socket from "../../utils/socket";
+import { addMessage, sendMessage, updateMessage } from "../../redux/slices/MessageSlice";
 // Thêm: Danh sách ảnh mặc định cho nhóm
 const defaultGroupImages = [
     "https://my-alo-bucket.s3.us-east-1.amazonaws.com/Image+Group/1_family.jpg",
@@ -22,7 +23,7 @@ const defaultGroupImages = [
 ];
 
 
-export default function UpdateProfileGroup({ onClose, conversation }) {
+export default function UpdateProfileGroup({ onClose, conversation, userLogin }) {
     const dispatch = useDispatch();
     const [groupName, setGroupName] = useState(conversation.name);
     const [avatarFile, setAvatarFile] = useState(null);
@@ -43,7 +44,7 @@ export default function UpdateProfileGroup({ onClose, conversation }) {
             console.log('data', data)
             setIsLoading(true);
 
-            if(!avatarFile) {
+            if (!avatarFile) {
                 data.avatar = defaultAvatarUrl;
                 console.log("defaultAvatarUrl", defaultAvatarUrl)
             }
@@ -54,9 +55,66 @@ export default function UpdateProfileGroup({ onClose, conversation }) {
                 conversationId: conversation.id,
                 data: data,
                 file: avatarFile ? avatarFile : null
-            })).unwrap().then((res) => {
+            })).unwrap().then(async (res) => {
+                if (avatarFile !== null || (defaultAvatarUrl !== null && defaultAvatarUrl !== conversation.avatar)) {
+                    const requestId = Date.now() + Math.random();
+                    const message = {
+                        id: requestId,
+                        requestId: requestId,
+                        senderId: userLogin.id,
+                        conversationId: conversation.id,
+                        content: `${userLogin.fullName} đổi ảnh đại diện nhóm`,
+                        messageType: "system",
+                        timestamp: Date.now(),
+                        seen: [],
+                        sender: userLogin,
+                    }
+
+                    dispatch(addMessage(message));
+
+                    const sendRes = await dispatch(sendMessage({ message, file: null })).unwrap();
+                    const sentMessage = {
+                        ...sendRes.data,
+                        sender: userLogin,
+                    };
+
+                    dispatch(updateMessage(sentMessage));
+                    socket.emit('send-message', {
+                        conversation,
+                        message: sentMessage,
+                    });
+                }
+
+                if (groupName !== conversation.name) {
+                    const requestId = Date.now() + Math.random();
+                    const message = {
+                        id: requestId,
+                        requestId: requestId,
+                        senderId: userLogin.id,
+                        conversationId: conversation.id,
+                        content: `${userLogin.fullName} đã đổi tên nhóm thành "${groupName}"`,
+                        messageType: "system",
+                        timestamp: Date.now(),
+                        seen: [],
+                        sender: userLogin,
+                    }
+
+                    dispatch(addMessage(message));
+
+                    const sendRes = await dispatch(sendMessage({ message, file: null })).unwrap();
+                    const sentMessage = {
+                        ...sendRes.data,
+                        sender: userLogin,
+                    };
+
+                    dispatch(updateMessage(sentMessage));
+                    socket.emit('send-message', {
+                        conversation,
+                        message: sentMessage,
+                    });
+                }
+
                 dispatch(updateProfileGroupById(res.data));
-                showToast('Cập nhật ảnh đại diện nhóm thành công.', 'info');
                 socket.emit('update_profile_group', {
                     conversation: res.data
                 });
@@ -64,7 +122,7 @@ export default function UpdateProfileGroup({ onClose, conversation }) {
             })
         } catch (error) {
             console.error('Error updating group avatar:', error);
-            showToast('error', 'top', 'Lỗi', error.message || 'Cập nhật ảnh đại diện nhóm thất bại');
+            showToast(error.message, 'error');
         }
         setIsLoading(false);
         onClose()
