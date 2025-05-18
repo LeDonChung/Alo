@@ -5,6 +5,7 @@ import { QRCodeCanvas } from 'qrcode.react';
 import { useParams } from "react-router-dom";
 import showToast from "../utils/AppUtils";
 import socket from "../utils/socket";
+import { addMessage, sendMessage, updateMessage } from "../redux/slices/MessageSlice";
 
 export const GroupInfo = () => {
     const { token } = useParams();
@@ -47,7 +48,32 @@ export const GroupInfo = () => {
         }
         try {
             // Tham gia nhóm
-            await dispatch(joinGroupByLink({ conversationId: conversationInvite.id })).unwrap().then((res) => {
+            await dispatch(joinGroupByLink({ conversationId: conversationInvite.id })).unwrap().then(async (res) => {
+
+                const message = {
+                    senderId: userLogin.id,
+                    conversationId: conversationInvite.id,
+                    content: `${userLogin.fullName} đã tham gia nhóm bằng link`,
+                    messageType: "system",
+                    timestamp: Date.now(),
+                    seen: [],
+                    sender: userLogin,
+                }
+
+                dispatch(addMessage(message));
+
+                const sendRes = await dispatch(sendMessage({ message, file: null })).unwrap();
+                const sentMessage = {
+                    ...sendRes.data,
+                    sender: userLogin,
+                };
+
+                dispatch(updateMessage(sentMessage));
+                socket.emit('send-message', {
+                    conversation: conversationInvite,
+                    message: sentMessage,
+                });
+
                 showToast("Tham gia nhóm thành công", "success");
                 // dùng socket yêu cầu những người trong nhóm thêm member vào nhóm
                 //socket
@@ -62,6 +88,7 @@ export const GroupInfo = () => {
                 setTimeout(() => {
                     window.location.href = `/me`;
                 }, 2000);
+
             })
         } catch (error) {
             console.error("Error joining group:", error);
