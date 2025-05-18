@@ -193,6 +193,7 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
                                 member={member}
                                 conversation={conversation}
                                 closeMenu={onClose}
+                                userLogin={userLogin}
                             />
 
                             {/* user login is member */}
