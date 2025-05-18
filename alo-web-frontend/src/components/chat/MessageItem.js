@@ -15,6 +15,9 @@ import {
   updateReaction,
   removeOfMe,
   setMessageRemoveOfMe,
+  addMessage,
+  sendMessage,
+  updateMessage,
 } from '../../redux/slices/MessageSlice';
 import {
   createPin,
@@ -318,7 +321,53 @@ const MessageItem = ({
   const handlePinMessage = useCallback(async () => {
     try {
       setContextMenu({ visible: false, x: 0, y: 0, messageId: null });
-      await dispatch(createPin({ conversationId: message.conversationId, messageId: message.id })).unwrap().then((res) => {
+      await dispatch(createPin({ conversationId: message.conversationId, messageId: message.id })).unwrap().then(async (res) => {
+
+        let contentMessage = '';
+        if (message.messageType === 'text') {
+          contentMessage = `${userLogin.fullName} đã ghim tin nhắn`;
+        } else if (message.messageType === 'image') {
+          contentMessage = `${userLogin.fullName} đã ghim một hình ảnh`;
+        }
+        else if (message.messageType === 'file') {
+          contentMessage = `${userLogin.fullName} đã ghim một file "${extractOriginalName(message.fileLink)}"`;
+        }
+        else if (message.messageType === 'sticker') {
+          contentMessage = `${userLogin.fullName} đã ghim một sticker`;
+        }
+        else if (message.messageType === 'link') {
+          contentMessage = `${userLogin.fullName} đã ghim một liên kết`;
+        }
+        else {
+          contentMessage = `${userLogin.fullName} đã ghim một tin nhắn`;
+        }
+        const requestId = Date.now() + Math.random();
+        const systemMessage = {
+          id: requestId,
+          requestId: requestId,
+          senderId: userLogin.id,
+          conversationId: conversation.id,
+          content: contentMessage,
+          messageType: "system",
+          timestamp: Date.now(),
+          seen: [],
+          sender: userLogin,
+        }
+
+        dispatch(addMessage(systemMessage));
+
+        const sendRes = await dispatch(sendMessage({ message: systemMessage, file: null })).unwrap();
+        const sentMessage = {
+          ...sendRes.data,
+          sender: userLogin,
+        };
+
+        dispatch(updateMessage(sentMessage));
+        socket.emit('send-message', {
+          conversation,
+          message: sentMessage,
+        });
+
         socket.emit('pin-message', {
           conversation: conversation,
           pin: res.data

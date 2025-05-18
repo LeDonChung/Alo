@@ -24,7 +24,10 @@ const ModalOutGroup = ({ isOpen, onClose, conversation, userLogin, newLeaderId, 
                         await dispatch(removeConversation({ conversationId: conversation.id }));
                         showToast("Bạn đã rời khỏi nhóm " + conversation.name + " .", 'info');
                         socket.emit("remove-member", { conversation: conversation, memberUserId: member.id });
+                        const requestId = Date.now() + Math.random();
                         const message = {
+                            id: requestId,
+                            requestId: requestId,
                             senderId: userLogin.id,
                             conversationId: conversation.id,
                             content: `${userLogin.fullName} đã rời khỏi nhóm`,

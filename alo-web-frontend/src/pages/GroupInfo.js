@@ -49,8 +49,10 @@ export const GroupInfo = () => {
         try {
             // Tham gia nhóm
             await dispatch(joinGroupByLink({ conversationId: conversationInvite.id })).unwrap().then(async (res) => {
-
+                const requestId = Date.now() + Math.random();
                 const message = {
+                    id: requestId,
+                    requestId: requestId,
                     senderId: userLogin.id,
                     conversationId: conversationInvite.id,
                     content: `${userLogin.fullName} đã tham gia nhóm bằng link`,

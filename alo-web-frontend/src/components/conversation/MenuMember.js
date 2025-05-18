@@ -26,7 +26,10 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
             const resp = await dispatch(addViceLeader({ conversationId: conversation.id, memberUserId: member.id }));
             const result = resp.payload?.data;
             await dispatch(updatePermissions({ conversationId: conversation.id, roles: result.roles }));
+            const requestId = Date.now() + Math.random();
             const message = {
+                id: requestId,
+                requestId: requestId,
                 senderId: userLogin.id,
                 conversationId: conversation.id,
                 content: `${member.fullName} đã được bổ nhiệm thành phó nhóm`,
@@ -66,8 +69,10 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
             const resp = await dispatch(removeViceLeader({ conversationId: conversation.id, memberUserId: member.id }));
             const result = resp.payload?.data;
             await dispatch(updatePermissions({ conversationId: conversation.id, roles: result.roles }));
-
+            const requestId = Date.now() + Math.random();
             const message = {
+                id: requestId,
+                requestId: requestId,
                 senderId: userLogin.id,
                 conversationId: conversation.id,
                 content: `${member.fullName} không còn là phó nhóm`,

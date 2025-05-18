@@ -39,7 +39,10 @@ const ModalChangeLeader = ({ isOpen, onClose, conversation, leaderId, cancel, se
             // chuyeern quyen truong nhom
             await dispatch(changeLeader({ conversationId: conversation.id, memberUserId: leader })).unwrap()
                 .then(async (result) => {
+                    const requestId = Date.now() + Math.random();
                     const message = {
+                        id: requestId,
+                        requestId: requestId,
                         senderId: userLogin.id,
                         conversationId: conversation.id,
                         content: `${userLogin.fullName} đã bổ nhiệm ${members.find((member) => member.id === leader).fullName} làm trưởng nhóm mới`,

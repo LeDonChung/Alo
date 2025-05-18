@@ -37,7 +37,10 @@ const ModalAddMember = ({ isOpen, onClose, userLogin, conversation }) => {
                 for (let friend of memberInfo) {
                     memberAdded.push(`${friend.fullName}`);
                 }
+                const requestId = Date.now() + Math.random();
                 const message = {
+                    id: requestId,
+                    requestId: requestId,
                     senderId: userLogin.id,
                     conversationId: conversation.id,
                     content: `${memberAdded.join(", ")} đã được thêm vào nhóm`,
