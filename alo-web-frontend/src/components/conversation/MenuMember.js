@@ -6,6 +6,7 @@ import socket from "../../utils/socket";
 import ModalOutGroup from "./ModalOutGroup";
 import ModalChangeLeader from "./ModalChangeLeader";
 import ModalConfirmBlockMember from "./ModalConfirmBlockMember";
+import { addMessage, sendMessage, updateMessage } from "../../redux/slices/MessageSlice";
 
 
 
@@ -25,6 +26,30 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
             const resp = await dispatch(addViceLeader({ conversationId: conversation.id, memberUserId: member.id }));
             const result = resp.payload?.data;
             await dispatch(updatePermissions({ conversationId: conversation.id, roles: result.roles }));
+            const message = {
+                senderId: userLogin.id,
+                conversationId: conversation.id,
+                content: `${member.fullName} đã được bổ nhiệm thành phó nhóm`,
+                messageType: "system",
+                timestamp: Date.now(),
+                seen: [],
+                sender: userLogin,
+            }
+
+            dispatch(addMessage(message));
+
+            const sendRes = await dispatch(sendMessage({ message, file: null })).unwrap();
+            const sentMessage = {
+                ...sendRes.data,
+                sender: userLogin,
+            };
+
+            dispatch(updateMessage(sentMessage));
+            socket.emit('send-message', {
+                conversation,
+                message: sentMessage,
+            });
+
             socket.emit("update-roles", { conversation: result });
             showToast("Bạn đã bổ nhiệm " + member.fullName + " làm phó nhóm!", "info");
             onClose();
@@ -41,6 +66,30 @@ const MenuMember = ({ leaderId, viceLeaderIds, member, conversation, isOpen, onC
             const resp = await dispatch(removeViceLeader({ conversationId: conversation.id, memberUserId: member.id }));
             const result = resp.payload?.data;
             await dispatch(updatePermissions({ conversationId: conversation.id, roles: result.roles }));
+
+            const message = {
+                senderId: userLogin.id,
+                conversationId: conversation.id,
+                content: `${member.fullName} không còn là phó nhóm`,
+                messageType: "system",
+                timestamp: Date.now(),
+                seen: [],
+                sender: userLogin,
+            }
+
+            dispatch(addMessage(message));
+
+            const sendRes = await dispatch(sendMessage({ message, file: null })).unwrap();
+            const sentMessage = {
+                ...sendRes.data,
+                sender: userLogin,
+            };
+
+            dispatch(updateMessage(sentMessage));
+            socket.emit('send-message', {
+                conversation,
+                message: sentMessage,
+            });
 
             socket.emit("update-roles", { conversation: result });
             showToast("Bạn đã gỡ quyền phó nhóm của " + member.fullName + "!", "info");

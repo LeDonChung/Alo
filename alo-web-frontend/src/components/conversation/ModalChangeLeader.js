@@ -6,9 +6,10 @@ import showToast, { removeVietnameseTones } from "../../utils/AppUtils";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faKey } from "@fortawesome/free-solid-svg-icons";
 import ModalOutGroup from "./ModalOutGroup";
+import { addMessage, sendMessage, updateMessage } from "../../redux/slices/MessageSlice";
 
 
-const ModalChangeLeader = ({ isOpen, onClose, conversation, leaderId, cancel, setNewLeaderId, isOnlyChangeLeader }) => {
+const ModalChangeLeader = ({ isOpen, onClose, conversation, leaderId, cancel, setNewLeaderId, isOnlyChangeLeader, userLogin }) => {
     const [search, setSearch] = useState("");
     const listMember = conversation.members.filter((member) => member.id !== leaderId);
     const [members, setMembers] = useState(listMember);
@@ -38,6 +39,30 @@ const ModalChangeLeader = ({ isOpen, onClose, conversation, leaderId, cancel, se
             // chuyeern quyen truong nhom
             await dispatch(changeLeader({ conversationId: conversation.id, memberUserId: leader })).unwrap()
                 .then(async (result) => {
+                    const message = {
+                        senderId: userLogin.id,
+                        conversationId: conversation.id,
+                        content: `${userLogin.fullName} đã bổ nhiệm ${members.find((member) => member.id === leader).fullName} làm trưởng nhóm mới`,
+                        messageType: "system",
+                        timestamp: Date.now(),
+                        seen: [],
+                        sender: userLogin,
+                    }
+
+                    dispatch(addMessage(message));
+
+                    const sendRes = await dispatch(sendMessage({ message, file: null })).unwrap();
+                    const sentMessage = {
+                        ...sendRes.data,
+                        sender: userLogin,
+                    };
+
+                    dispatch(updateMessage(sentMessage));
+                    socket.emit('send-message', {
+                        conversation,
+                        message: sentMessage,
+                    });
+
                     socket.emit("update-roles", { conversation: result.data });
                     await dispatch(updatePermissions({ conversationId: conversation.id, roles: result.data.roles }));
                 });
@@ -55,7 +80,7 @@ const ModalChangeLeader = ({ isOpen, onClose, conversation, leaderId, cancel, se
             } flex justify-center items-center`}>
             <div className="bg-white rounded-lg shadow-lg w-[500px] p-4">
                 <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-lg font-semibold">Chọn trưởng nhóm mới trước khi rời</h2>
+                    <h2 className="text-lg font-semibold">Chọn trưởng nhóm mới</h2>
                     <button onClick={cancel} className="text-gray-500 hover:text-gray-800">
                         ✖
                     </button>
