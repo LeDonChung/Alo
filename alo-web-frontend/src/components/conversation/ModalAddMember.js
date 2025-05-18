@@ -5,6 +5,7 @@ import { useSelector } from "react-redux";
 import showToast from "../../utils/AppUtils";
 import { addMemberGroup, addMemberToGroup } from "../../redux/slices/ConversationSlice";
 import socket from "../../utils/socket";
+import { addMessage, sendMessage, updateMessage } from "../../redux/slices/MessageSlice";
 
 const ModalAddMember = ({ isOpen, onClose, userLogin, conversation }) => {
     const dispatch = useDispatch();
@@ -23,22 +24,44 @@ const ModalAddMember = ({ isOpen, onClose, userLogin, conversation }) => {
         if (memberSelected.length > 0) {
 
             try {
+                const res = await dispatch(addMemberToGroup({ conversationId: conversation.id, memberUserIds: memberSelected })).unwrap();
 
+                //socket
+                socket.emit("add-members-to-group", {
+                    conversation: {
+                        ...conversation,
+                        roles: res.data.roles
+                    }, memberSelected, memberInfo
+                });
+                let memberAdded = [];
+                for (let friend of memberInfo) {
+                    memberAdded.push(`${friend.fullName}`);
+                }
+                const message = {
+                    senderId: userLogin.id,
+                    conversationId: conversation.id,
+                    content: `${memberAdded.join(", ")} đã được thêm vào nhóm`,
+                    messageType: "system",
+                    timestamp: Date.now(),
+                    seen: [],
+                    sender: userLogin,
+                }
 
-                await dispatch(addMemberToGroup({ conversationId: conversation.id, memberUserIds: memberSelected })).unwrap()
-                    .then((res) => {
-                        //socket
-                        socket.emit("add-members-to-group", {
-                            conversation: {
-                                ...conversation,
-                                roles: res.data.roles
-                            }, memberSelected, memberInfo
-                        });
-                        showToast("Thêm thành viên thành công!", 'success');
-                    });
+                dispatch(addMessage(message));
+
+                const sendRes = await dispatch(sendMessage({ message, file: null })).unwrap();
+                const sentMessage = {
+                    ...sendRes.data,
+                    sender: userLogin,
+                };
+
+                dispatch(updateMessage(sentMessage));
+                socket.emit('send-message', {
+                    conversation,
+                    message: sentMessage,
+                });
 
                 await dispatch(addMemberGroup({ conversationId: conversation.id, memberUserIds: memberSelected, memberInfo: memberInfo }));
-
 
                 setMemberSelected([]);
                 setMemberInfo([]);

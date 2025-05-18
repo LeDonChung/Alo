@@ -20,7 +20,7 @@ const ConversationList = () => {
     });
 
   useEffect(() => {
-    
+
   }, [])
 
   const showLastMessage = (conversation) => {
@@ -41,20 +41,23 @@ const ConversationList = () => {
       } else if (conversation.lastMessage.messageType === 'link') {
         message = '[Link]';
       }
-      if (conversation.lastMessage.senderId === userLogin.id) {
-        return "Bạn: " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi");
+      if (conversation.lastMessage.messageType === 'system') {
+        return message;
       } else {
-        console.log(friend);
+        if (conversation.lastMessage.senderId === userLogin.id) {
+          return "Bạn: " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi");
+        } else {
+          console.log(friend);
 
-        return (
-          conversation.lastMessage
-          && friend.fullName + ": " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi")
-        );
+          return (
+            conversation.lastMessage
+            && friend.fullName + ": " + (messageStatus === 0 ? message : "Tin nhắn đã thu hồi")
+          );
 
+        }
       }
     }
-  }
-
+  };
 
   const getLastTimeMessage = (time) => {
     const now = new Date();
@@ -73,10 +76,11 @@ const ConversationList = () => {
     } else {
       return `${timeX.toLocaleDateString('vi-VN')}`;
     }
-  }
-  const selectedConversation = useSelector(state => state.conversation.conversation);
-  return (
+  };
 
+  const selectedConversation = useSelector(state => state.conversation.conversation);
+
+  return (
     <div className=" bg-white border-r border-gray-200 py-4 overflow-y-auto max-h-[2000px] scrollable">
       <div>
         {(sortedConversations && sortedConversations.length > 0) ? sortedConversations.map((conversation) => {

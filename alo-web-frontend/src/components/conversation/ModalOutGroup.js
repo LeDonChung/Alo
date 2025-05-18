@@ -6,6 +6,7 @@ import socket from "../../utils/socket";
 import { useDispatch } from "react-redux";
 import { changeLeader, leaveGroup, removeConversation, updatePermissions } from "../../redux/slices/ConversationSlice";
 import ModalChangeLeader from "./ModalChangeLeader";
+import { addMessage, sendMessage } from "../../redux/slices/MessageSlice";
 
 
 const ModalOutGroup = ({ isOpen, onClose, conversation, userLogin, newLeaderId, leaderId, member }) => {
@@ -15,10 +16,6 @@ const ModalOutGroup = ({ isOpen, onClose, conversation, userLogin, newLeaderId, 
     const handleOutGroup = async (e) => {
         e.preventDefault();
         setIsLoading(true);
-        console.log("leader old: ", leaderId);
-        console.log("new leader: ", newLeaderId);
-
-
         if (newLeaderId === leaderId) {
             // thanh vien out
             try {
@@ -27,6 +24,27 @@ const ModalOutGroup = ({ isOpen, onClose, conversation, userLogin, newLeaderId, 
                         await dispatch(removeConversation({ conversationId: conversation.id }));
                         showToast("Bạn đã rời khỏi nhóm " + conversation.name + " .", 'info');
                         socket.emit("remove-member", { conversation: conversation, memberUserId: member.id });
+                        const message = {
+                            senderId: userLogin.id,
+                            conversationId: conversation.id,
+                            content: `${userLogin.fullName} đã rời khỏi nhóm`,
+                            messageType: "system",
+                            timestamp: Date.now(),
+                            seen: [],
+                            sender: userLogin,
+                        }
+
+                        dispatch(addMessage(message));
+
+                        const sendRes = await dispatch(sendMessage({ message, file: null })).unwrap();
+                        const sentMessage = {
+                            ...sendRes.data,
+                            sender: userLogin,
+                        };
+                        socket.emit('send-message', {
+                            conversation,
+                            message: sentMessage,
+                        });
                     });
 
 
