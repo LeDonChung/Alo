@@ -108,7 +108,9 @@ export const GroupMembersScreen = () => {
                 .then(async (result) => {
 
                   socket.emit("update-roles", { conversation: result.data });
+                  console.log("Updated roles: ");
                   await dispatch(updatePermissions({ conversationId: conversation.id, roles: result.data.roles }));
+                  console.log("Success Updated roles: ");
 
                   const requestId = Date.now() + Math.random();
                   const message = {
@@ -122,18 +124,21 @@ export const GroupMembersScreen = () => {
                     sender: userLogin,
                   }
 
+                  console.log("Send message: ", message);
                   dispatch(addMessage(message));
-                  await dispatch(sendMessage({ message, file: null })).unwrap()
+                  await dispatch(sendMessage({ message, file: undefined })).unwrap()
                     .then((res) => {
                       const sentMessage = {
                         ...res.data,
                         sender: userLogin,
                       };
+                      console.log("Start Send message: ", message);
 
                       socket.emit('send-message', {
                         conversation,
                         message: sentMessage,
                       });
+                      console.log("End message: ", message);
 
                       dispatch(updateMessage(sentMessage));
                     });
