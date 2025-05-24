@@ -51,41 +51,51 @@ export const LoginPage = () => {
         setIsLoading(false);
     }
 
-    return <>
-        <div className="bg-blue-100 flex items-center justify-center min-h-screen">
-
-            <div>
+    return (
+        <div className="bg-blue-100 flex items-center justify-center min-h-screen px-4 sm:px-6 md:px-8">
+            <div className="w-full max-w-sm sm:max-w-md md:max-w-lg">
                 <div>
-                    <h1 className="text-2xl font-bold text-center text-blue-600 mb-2">Alo</h1>
-                    <p className="text-center font-medium mb-6">Đăng nhập tài khoản Alo để kết nối với ứng dụng Alo Web</p>
+                    <h1 className="text-3xl md:text-4xl font-bold text-center text-blue-600 mb-2">Alo</h1>
+                    <p className="text-center font-medium mb-6 text-sm md:text-base">Đăng nhập tài khoản Alo để kết nối với ứng dụng Alo Web</p>
                 </div>
-                <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
-
+                <div className="bg-white rounded-xl shadow-md p-6 sm:p-8 md:p-10">
                     <div className="border-b border-gray-300 mb-6">
-                        <h2 className="text-center font-medium pb-2">Đăng nhập với mật khẩu</h2>
+                        <h2 className="text-center font-medium pb-2 text-base md:text-lg">Đăng nhập với mật khẩu</h2>
                     </div>
+    
                     <div className="mb-4 relative">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
-                            <i className="fas fa-mobile-alt "></i>
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
+                            <i className="fas fa-mobile-alt"></i>
                         </span>
-                        <input className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded"
+                        <input
+                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-sm md:text-base"
                             value={userLogin.phoneNumber}
                             onChange={(e) => setUserLogin({ ...userLogin, phoneNumber: e.target.value })}
-                            type="text" id="phone"
-                            placeholder="Số điện thoại" />
+                            type="text"
+                            id="phone"
+                            placeholder="Số điện thoại"
+                        />
                     </div>
+    
                     <div className="mb-6 relative">
-                        <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+                        <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                             <i className="fas fa-lock"></i>
                         </span>
-                        <input className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded"
+                        <input
+                            className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-sm md:text-base"
                             value={userLogin.password}
                             onChange={(e) => setUserLogin({ ...userLogin, password: e.target.value })}
                             type="password"
                             id="password"
-                            placeholder="Mật khẩu" />
+                            placeholder="Mật khẩu"
+                        />
                     </div>
-                    <button type='button' onClick={e => handleSubmitLogin(e)} className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200">
+    
+                    <button
+                        type="button"
+                        onClick={handleSubmitLogin}
+                        className="w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200 text-sm md:text-base"
+                    >
                         {isLoading ? (
                             <div className="flex justify-center items-center">
                                 <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
@@ -94,14 +104,13 @@ export const LoginPage = () => {
                             "Đăng nhập với mật khẩu"
                         )}
                     </button>
-
+    
                     <div className="flex justify-between mt-4 text-sm text-gray-600">
                         <Link to={'/register'} className="hover:underline">Đăng ký</Link>
                         <Link to={'/forget-password'} className="hover:underline">Quên mật khẩu</Link>
                     </div>
                 </div>
             </div>
-
         </div>
-    </>
+    );
 }

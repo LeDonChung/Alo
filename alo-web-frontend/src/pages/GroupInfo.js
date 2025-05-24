@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { getConversationByToken, joinGroupByLink } from "../redux/slices/ConversationSlice";
 import { QRCodeCanvas } from 'qrcode.react';
@@ -12,6 +12,8 @@ export const GroupInfo = () => {
     const dispatch = useDispatch();
     const conversationInvite = useSelector((state) => state.conversation.conversationInvite);
     const userLogin = localStorage.getItem("userLogin") ? JSON.parse(localStorage.getItem("userLogin")) : null;
+    const [joining, setJoining] = useState(false);
+
     useEffect(() => {
         const handlerGetConversation = async () => {
             const tokenJwt = localStorage.getItem("accessToken");
@@ -40,6 +42,7 @@ export const GroupInfo = () => {
     }, [token]);
 
     const handlerJoinGroup = async () => {
+        setJoining(true)
         // Kiểm tra quyền của conversation 
         let memberRole = conversationInvite.roles.find(role => role.role === 'member');
         if (memberRole && !memberRole.permissions?.joinGroupByLink) {
@@ -96,6 +99,7 @@ export const GroupInfo = () => {
             console.error("Error joining group:", error);
             showToast(error.message || "Tham gia nhóm thất bại", "error");
         }
+        setJoining(false);
     }
 
     return (
@@ -130,7 +134,7 @@ export const GroupInfo = () => {
                                     handlerJoinGroup()
                                 }} // Replace with actual join logic
                             >
-                                <span>Tham gia nhóm</span>
+                                {joining ? <span>Đang tham gia...</span> : <span>Tham gia nhóm</span>}
                             </button>
 
                         </div>
