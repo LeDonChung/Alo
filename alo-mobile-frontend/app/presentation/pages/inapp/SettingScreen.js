@@ -8,7 +8,7 @@ import { getFriend, getGroupImageDefaut, getUserRoleAndPermissions, showToast } 
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { updateProfileGroup, updateProfileGroupById, removeAllHistoryMessages, setConversation, leaveGroup, handlerRemoveHistoryMessage, removeConversation } from '../../redux/slices/ConversationSlice';
-import { addMessage, clearAllMessages, clearMessages, sendMessage } from '../../redux/slices/MessageSlice';
+import { addMessage, clearAllMessages, clearMessages, sendMessage, updateMessage } from '../../redux/slices/MessageSlice';
 import socket from '../../../utils/socket';
 import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
@@ -68,9 +68,35 @@ export const SettingScreen = () => {
                 conversationId: conversation.id,
                 data,
                 file: null
-            })).unwrap().then((res) => {
+            })).unwrap().then(async (res) => {
+                const requestId = Date.now() + Math.random();
+                const message = {
+                    id: requestId,
+                    requestId: requestId,
+                    senderId: userLogin.id,
+                    conversationId: conversation.id,
+                    content: `${userLogin.fullName} đổi tên nhóm thành "${groupName}"`,
+                    messageType: "system",
+                    timestamp: Date.now(),
+                    seen: [],
+                    sender: userLogin,
+                }
+
+                dispatch(addMessage(message));
+
+                const sendRes = await dispatch(sendMessage({ message, file: null })).unwrap();
+                const sentMessage = {
+                    ...sendRes.data,
+                    sender: userLogin,
+                };
+
+                dispatch(updateMessage(sentMessage));
+                socket.emit('send-message', {
+                    conversation,
+                    message: sentMessage,
+                });
                 dispatch(updateProfileGroupById(res.data));
-                showToast('error', 'top', 'Thông báo', res.message || 'Cập nhật ảnh đại diện nhóm thành công.');
+                showToast('error', 'top', 'Thông báo', res.message || 'Cập nhật tên nhóm thành công.');
                 socket.emit('update_profile_group', {
                     conversation: res.data
                 });
@@ -292,7 +318,33 @@ export const SettingScreen = () => {
                     conversationId: conversation.id,
                     data,
                     file
-                })).unwrap().then((res) => {
+                })).unwrap().then(async (res) => {
+                    const requestId = Date.now() + Math.random();
+                    const message = {
+                        id: requestId,
+                        requestId: requestId,
+                        senderId: userLogin.id,
+                        conversationId: conversation.id,
+                        content: `${userLogin.fullName} đổi ảnh đại diện nhóm`,
+                        messageType: "system",
+                        timestamp: Date.now(),
+                        seen: [],
+                        sender: userLogin,
+                    }
+
+                    dispatch(addMessage(message));
+
+                    const sendRes = await dispatch(sendMessage({ message, file: null })).unwrap();
+                    const sentMessage = {
+                        ...sendRes.data,
+                        sender: userLogin,
+                    };
+
+                    dispatch(updateMessage(sentMessage));
+                    socket.emit('send-message', {
+                        conversation,
+                        message: sentMessage,
+                    });
                     dispatch(updateProfileGroupById(res.data));
                     showToast('error', 'top', 'Thông báo', res.message || 'Cập nhật ảnh đại diện nhóm thành công.');
                     socket.emit('update_profile_group', {
