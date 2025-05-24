@@ -271,7 +271,38 @@ export const GroupMembersScreen = () => {
           text: "Xác nhận",
           onPress: async () => {
             await dispatch(blockMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
-            await dispatch(removeMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
+            await dispatch(removeMemberToGroup({ conversationId: conversation.id, memberUserId: member.id })).unwrap().then(async (result) => {
+              const requestId = Date.now() + Math.random();
+              const message = {
+                requestId,
+                senderId: userLogin.id,
+                conversationId: conversation.id,
+                content: `${member.displayName} đã được ${userLogin.fullName} xóa khỏi nhóm`,
+                messageType: "system",
+                timestamp: Date.now(),
+                seen: [],
+                sender: userLogin,
+              }
+
+              console.log("Send message: ", message);
+              dispatch(addMessage(message));
+              await dispatch(sendMessage({ message, file: undefined })).unwrap()
+                .then((res) => {
+                  const sentMessage = {
+                    ...res.data,
+                    sender: userLogin,
+                  };
+                  console.log("Start Send message: ", message);
+
+                  socket.emit('send-message', {
+                    conversation,
+                    message: sentMessage,
+                  });
+                  console.log("End message: ", message);
+
+                  dispatch(updateMessage(sentMessage));
+                });
+            });
           },
         },
       ]

@@ -8,7 +8,7 @@ import { getFriend, getGroupImageDefaut, getUserRoleAndPermissions, showToast } 
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
 import { updateProfileGroup, updateProfileGroupById, removeAllHistoryMessages, setConversation, leaveGroup, handlerRemoveHistoryMessage, removeConversation } from '../../redux/slices/ConversationSlice';
-import { clearAllMessages, clearMessages } from '../../redux/slices/MessageSlice';
+import { addMessage, clearAllMessages, clearMessages, sendMessage } from '../../redux/slices/MessageSlice';
 import socket from '../../../utils/socket';
 import Constants from 'expo-constants';
 import * as Clipboard from 'expo-clipboard';
@@ -164,6 +164,32 @@ export const SettingScreen = () => {
                         try {
                             await dispatch(leaveGroup({ conversationId: conversation.id })).unwrap()
                                 .then(async (result) => {
+
+                                    const requestId = Date.now() + Math.random();
+                                    const message = {
+                                        id: requestId,
+                                        requestId: requestId,
+                                        senderId: userLogin.id,
+                                        conversationId: conversation.id,
+                                        content: `${userLogin.fullName} đã rời khỏi nhóm`,
+                                        messageType: "system",
+                                        timestamp: Date.now(),
+                                        seen: [],
+                                        sender: userLogin,
+                                    }
+
+                                    dispatch(addMessage(message));
+
+                                    const sendRes = await dispatch(sendMessage({ message, file: null })).unwrap();
+                                    const sentMessage = {
+                                        ...sendRes.data,
+                                        sender: userLogin,
+                                    };
+                                    socket.emit('send-message', {
+                                        conversation,
+                                        message: sentMessage,
+                                    });
+
                                     navigation.navigate('home');
                                     await dispatch(removeConversation({ conversationId: conversation.id }));
                                     showToast('info', 'top', 'Thông báo', 'Bạn đã rời khỏi nhóm ' + conversation.name + ' .');
