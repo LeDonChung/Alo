@@ -108,7 +108,9 @@ export const GroupMembersScreen = () => {
                 .then(async (result) => {
 
                   socket.emit("update-roles", { conversation: result.data });
+                  console.log("Updated roles: ");
                   await dispatch(updatePermissions({ conversationId: conversation.id, roles: result.data.roles }));
+                  console.log("Success Updated roles: ");
 
                   const requestId = Date.now() + Math.random();
                   const message = {
@@ -122,18 +124,21 @@ export const GroupMembersScreen = () => {
                     sender: userLogin,
                   }
 
+                  console.log("Send message: ", message);
                   dispatch(addMessage(message));
-                  await dispatch(sendMessage({ message, file: null })).unwrap()
+                  await dispatch(sendMessage({ message, file: undefined })).unwrap()
                     .then((res) => {
                       const sentMessage = {
                         ...res.data,
                         sender: userLogin,
                       };
+                      console.log("Start Send message: ", message);
 
                       socket.emit('send-message', {
                         conversation,
                         message: sentMessage,
                       });
+                      console.log("End message: ", message);
 
                       dispatch(updateMessage(sentMessage));
                     });
@@ -172,11 +177,46 @@ export const GroupMembersScreen = () => {
 
   const handlePromoteVice = async (member) => {
     if (!member.isViceLeader) {
-      const resp = await dispatch(addViceLeaderToGroup({ conversationId: conversation.id, memberUserId: member.id }));
-      const result = resp.payload?.data;
-      dispatch(updatePermissions({ conversationId: conversation.id, roles: result.roles }));
-      socket.emit("update-roles", { conversation: result });
-      showToast("info", "top", "Thông báo", "Đã thêm phó nhóm thành công");
+      try {
+        const resp = await dispatch(addViceLeaderToGroup({ conversationId: conversation.id, memberUserId: member.id }));
+        const result = resp.payload?.data;
+        console.log("Success adding vice leader: ", result);
+        dispatch(updatePermissions({ conversationId: conversation.id, roles: result.roles }));
+        //send message system
+        const requestId = Date.now() + Math.random();
+        const message = {
+          requestId,
+          senderId: userLogin.id,
+          conversationId: conversation.id,
+          content: `${member.fullName} đã được bổ nhiệm thành phó nhóm`,
+          messageType: "system",
+          timestamp: Date.now(),
+          seen: [],
+          sender: userLogin,
+        }
+
+        console.log("Send message: ", message);
+        dispatch(addMessage(message));
+        await dispatch(sendMessage({ message, file: undefined })).unwrap().then((res) => {
+          const sentMessage = {
+            ...res.data,
+            sender: userLogin,
+          };
+          console.log("Start Send message: ", message);
+
+          socket.emit('send-message', {
+            conversation,
+            message: sentMessage,
+          });
+          console.log("End message: ", message);
+
+          dispatch(updateMessage(sentMessage));
+        });
+        socket.emit("update-roles", { conversation: result });
+        showToast("info", "top", "Thông báo", "Đã thêm phó nhóm thành công");
+      } catch (error) {
+        console.log("Error adding vice leader: ", error);
+      }
     }
   };
   const handleRemoveVice = async (member) => {
@@ -184,6 +224,36 @@ export const GroupMembersScreen = () => {
       const resp = await dispatch(removeViceLeaderToGroup({ conversationId: conversation.id, memberUserIds: member.id }));
       const result = resp.payload?.data;
       dispatch(updatePermissions({ conversationId: conversation.id, roles: result.roles }));
+      //send message system
+      const requestId = Date.now() + Math.random();
+      const message = {
+        requestId,
+        senderId: userLogin.id,
+        conversationId: conversation.id,
+        content: `${member.fullName} không còn là phó nhóm`,
+        messageType: "system",
+        timestamp: Date.now(),
+        seen: [],
+        sender: userLogin,
+      }
+
+      console.log("Send message: ", message);
+      dispatch(addMessage(message));
+      await dispatch(sendMessage({ message, file: undefined })).unwrap().then((res) => {
+        const sentMessage = {
+          ...res.data,
+          sender: userLogin,
+        };
+        console.log("Start Send message: ", message);
+
+        socket.emit('send-message', {
+          conversation,
+          message: sentMessage,
+        });
+        console.log("End message: ", message);
+
+        dispatch(updateMessage(sentMessage));
+      });
       socket.emit("update-roles", { conversation: result });
       showToast("info", "top", "Thông báo", "Bạn đã gỡ phó nhóm thành công");
     }
@@ -201,7 +271,38 @@ export const GroupMembersScreen = () => {
           text: "Xác nhận",
           onPress: async () => {
             await dispatch(blockMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
-            await dispatch(removeMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
+            await dispatch(removeMemberToGroup({ conversationId: conversation.id, memberUserId: member.id })).unwrap().then(async (result) => {
+              const requestId = Date.now() + Math.random();
+              const message = {
+                requestId,
+                senderId: userLogin.id,
+                conversationId: conversation.id,
+                content: `${member.displayName} đã được ${userLogin.fullName} xóa khỏi nhóm`,
+                messageType: "system",
+                timestamp: Date.now(),
+                seen: [],
+                sender: userLogin,
+              }
+
+              console.log("Send message: ", message);
+              dispatch(addMessage(message));
+              await dispatch(sendMessage({ message, file: undefined })).unwrap()
+                .then((res) => {
+                  const sentMessage = {
+                    ...res.data,
+                    sender: userLogin,
+                  };
+                  console.log("Start Send message: ", message);
+
+                  socket.emit('send-message', {
+                    conversation,
+                    message: sentMessage,
+                  });
+                  console.log("End message: ", message);
+
+                  dispatch(updateMessage(sentMessage));
+                });
+            });
           },
         },
       ]
@@ -257,7 +358,38 @@ export const GroupMembersScreen = () => {
                   text: "Không chặn",
                   onPress: async () => {
                     try {
-                      await dispatch(removeMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
+                      await dispatch(removeMemberToGroup({ conversationId: conversation.id, memberUserId: member.id })).unwrap().then(async (result) => {
+                        const requestId = Date.now() + Math.random();
+                        const message = {
+                          requestId,
+                          senderId: userLogin.id,
+                          conversationId: conversation.id,
+                          content: `${member.displayName} đã được ${userLogin.fullName} xóa khỏi nhóm`,
+                          messageType: "system",
+                          timestamp: Date.now(),
+                          seen: [],
+                          sender: userLogin,
+                        }
+
+                        console.log("Send message: ", message);
+                        dispatch(addMessage(message));
+                        await dispatch(sendMessage({ message, file: undefined })).unwrap()
+                          .then((res) => {
+                            const sentMessage = {
+                              ...res.data,
+                              sender: userLogin,
+                            };
+                            console.log("Start Send message: ", message);
+
+                            socket.emit('send-message', {
+                              conversation,
+                              message: sentMessage,
+                            });
+                            console.log("End message: ", message);
+
+                            dispatch(updateMessage(sentMessage));
+                          });
+                      })
                       // Chỉ xóa thành viên khỏi nhóm
                       dispatch(removeMemberGroup({ conversationId: conversation.id, memberUserId: member.id }));
 
@@ -277,7 +409,38 @@ export const GroupMembersScreen = () => {
                     try {
                       // Vừa xóa vừa chặn thành viên
                       await dispatch(blockMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
-                      await dispatch(removeMemberToGroup({ conversationId: conversation.id, memberUserId: member.id }));
+                      await dispatch(removeMemberToGroup({ conversationId: conversation.id, memberUserId: member.id })).unwrap().then(async (result) => {
+                        const requestId = Date.now() + Math.random();
+                        const message = {
+                          requestId,
+                          senderId: userLogin.id,
+                          conversationId: conversation.id,
+                          content: `${member.displayName} đã được ${userLogin.fullName} xóa khỏi nhóm`,
+                          messageType: "system",
+                          timestamp: Date.now(),
+                          seen: [],
+                          sender: userLogin,
+                        }
+
+                        console.log("Send message: ", message);
+                        dispatch(addMessage(message));
+                        await dispatch(sendMessage({ message, file: undefined })).unwrap()
+                          .then((res) => {
+                            const sentMessage = {
+                              ...res.data,
+                              sender: userLogin,
+                            };
+                            console.log("Start Send message: ", message);
+
+                            socket.emit('send-message', {
+                              conversation,
+                              message: sentMessage,
+                            });
+                            console.log("End message: ", message);
+
+                            dispatch(updateMessage(sentMessage));
+                          });
+                      });
                       await dispatch(removeMemberGroup({ conversationId: conversation.id, memberUserId: member.id }));
 
                       socket.emit("remove-member", { conversation: conversation, memberUserId: member.id });

@@ -14,6 +14,7 @@ import Icon from "react-native-vector-icons/MaterialIcons";
 import { addMemberGroup, addMemberToGroup } from "../../redux/slices/ConversationSlice";
 import socket from "../../../utils/socket";
 import { showToast, removeVietnameseTones } from "../../../utils/AppUtils";
+import { addMessage, sendMessage, updateMessage } from "../../redux/slices/MessageSlice";
 
 export const AddMemberScreen = ({ navigation }) => {
   const dispatch = useDispatch();
@@ -65,7 +66,7 @@ export const AddMemberScreen = ({ navigation }) => {
           conversationId: conversation.id,
           memberUserIds: selectedMembers,
         })
-      ).unwrap().then((res) => {
+      ).unwrap().then(async (res) => {
         dispatch(
           addMemberGroup({
             conversationId: conversation.id,
@@ -73,6 +74,35 @@ export const AddMemberScreen = ({ navigation }) => {
             memberInfo,
           })
         );
+
+        //send message system
+        const memberAdded = memberInfo.map((member) => member.fullName);
+        const requestId = Date.now() + Math.random();
+        const message = {
+          id: requestId,
+          requestId: requestId,
+          senderId: userLogin.id,
+          conversationId: conversation.id,
+          content: `${memberAdded.join(", ")} đã được thêm vào nhóm`,
+          messageType: "system",
+          timestamp: Date.now(),
+          seen: [],
+          sender: userLogin,
+        }
+
+        dispatch(addMessage(message));
+
+        const sendRes = await dispatch(sendMessage({ message, file: null })).unwrap();
+        const sentMessage = {
+          ...sendRes.data,
+          sender: userLogin,
+        };
+
+        dispatch(updateMessage(sentMessage));
+        socket.emit('send-message', {
+          conversation,
+          message: sentMessage,
+        });
 
         socket.emit("add-members-to-group", {
           conversation: {
