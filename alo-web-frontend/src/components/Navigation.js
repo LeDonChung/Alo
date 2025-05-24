@@ -720,129 +720,120 @@ const ChangePasswordModal = ({ setShowChangePasswordModal }) => {
         <>
             <div className="fixed inset-0 bg-black opacity-50 z-40"></div>
             {userLogin && (
-                <div className="fixed inset-0 flex justify-center items-center z-50">
-                    <form id="updateProfile" onSubmit={(e) => handlerActionChangePasswordProfile(e)}>
-                        <div className="bg-white rounded-lg shadow-lg w-[400px] p-4">
-                            <div className="flex items-center">
-                                <button
-                                    className="text-gray-600 mr-2"
-                                    onClick={() => { setShowChangePasswordModal(false); }}
-                                >
-                                    <i className="fas fa-arrow-left"></i>
-                                </button>
-                                <h2 className="text-lg font-semibold text-center flex-1">Đổi mật khẩu</h2>
-                            </div>
-                            <div className="p-4">
-                                {/* Nhập tên hiển thị */}
-                                <label className="block mb-2">Số điện thoại</label>
-                                <input
-                                    type="text"
-                                    className="border w-full p-2 rounded"
-                                    value={userLogin.phoneNumber}
-                                    disabled
-                                />
+                <div className="fixed inset-0 flex justify-center items-center z-50 px-4">
+                    <form onSubmit={handlerActionChangePasswordProfile} className="w-full max-w-md bg-white rounded-lg shadow-lg p-5">
+                        {/* Header */}
+                        <div className="flex items-center mb-4">
+                            <button
+                                type="button"
+                                className="text-gray-600 mr-2"
+                                onClick={() => setShowChangePasswordModal(false)}
+                            >
+                                <i className="fas fa-arrow-left"></i>
+                            </button>
+                            <h2 className="text-lg font-semibold text-center flex-1">Đổi mật khẩu</h2>
+                        </div>
 
-                                <label className="block mt-4 mb-2">Mật khẩu cũ
-                                    <span>
-                                        {
-                                            oldPassword && (
-                                                isLoadingCheckOldPassword ? (
-                                                    <div className="flex justify-center items-center">
-                                                        <div className="animate-spin rounded-full border-t-2 border-b-2 border-blue-500 w-4 h-4"></div>
-                                                    </div>
-                                                ) : (
-                                                    isTrueOldPassword && (
-                                                        <FontAwesomeIcon icon={faCircleCheck} className="text-green-700 ml-2" />
-                                                    )
-                                                )
+                        {/* Phone number (disabled) */}
+                        <label className="block mb-2 text-sm">Số điện thoại</label>
+                        <input
+                            type="text"
+                            className="border w-full p-2 rounded bg-gray-100 text-sm"
+                            value={userLogin.phoneNumber}
+                            disabled
+                        />
 
-                                            )
-                                        }
-                                    </span>
-                                </label>
-                                <input
-                                    type="password"
-                                    className="w-full pl-2 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-0"
-                                    placeholder="Mật khẩu cũ"
-                                    value={oldPassword}
-                                    ref={inputOldPasswordRef}
-                                    onKeyDown={(e) => { handleOnKeyDown(e) }}
-                                    onChange={(e) => {
-                                        setValidOldPassword("");
-                                        setOldPassword(e.target.value);
-                                    }}
-                                />
-                                {validOldPassword && <p className="text-red-500 text-sm mt-1">{validOldPassword}</p>}
+                        {/* Old Password */}
+                        <label className="block mt-4 mb-2 text-sm">Mật khẩu cũ
+                            {oldPassword && (
+                                isLoadingCheckOldPassword ? (
+                                    <span className="inline-block ml-2 animate-spin border-t-2 border-b-2 border-blue-500 rounded-full w-4 h-4"></span>
+                                ) : isTrueOldPassword && (
+                                    <FontAwesomeIcon icon={faCircleCheck} className="text-green-600 ml-2" />
+                                )
+                            )}
+                        </label>
+                        <input
+                            type="password"
+                            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-200 text-sm"
+                            placeholder="Mật khẩu cũ"
+                            value={oldPassword}
+                            ref={inputOldPasswordRef}
+                            onKeyDown={handleOnKeyDown}
+                            onChange={(e) => {
+                                setValidOldPassword("");
+                                setOldPassword(e.target.value);
+                            }}
+                        />
+                        {validOldPassword && <p className="text-red-500 text-sm mt-1">{validOldPassword}</p>}
 
-                                <label className="block mt-4 mb-2">Mật khẩu mới</label>
-                                <input
-                                    type="password"
-                                    className="w-full pl-2 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-0"
-                                    placeholder="Mật khẩu mới"
-                                    value={newPassword}
-                                    ref={inputNewPasswordRef}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter" || e.key === 'Tab') {
-                                            e.preventDefault();
-                                            inputConfirmPasswordRef.current.focus();
-                                        }
-                                    }}
-                                    onChange={(e) => {
-                                        setValidNewPassword("");
-                                        setNewPassword(e.target.value);
-                                    }}
-                                />
+                        {/* New Password */}
+                        <label className="block mt-4 mb-2 text-sm">Mật khẩu mới</label>
+                        <input
+                            type="password"
+                            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-200 text-sm"
+                            placeholder="Mật khẩu mới"
+                            value={newPassword}
+                            ref={inputNewPasswordRef}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === 'Tab') {
+                                    e.preventDefault();
+                                    inputConfirmPasswordRef.current.focus();
+                                }
+                            }}
+                            onChange={(e) => {
+                                setValidNewPassword("");
+                                setNewPassword(e.target.value);
+                            }}
+                        />
+                        {validNewPassword && <p className="text-red-500 text-sm mt-1">{validNewPassword}</p>}
 
-                                {validNewPassword && <p className="text-red-500 text-sm mt-1">{validNewPassword}</p>}
+                        {/* Confirm Password */}
+                        <label className="block mt-4 mb-2 text-sm">Nhập lại mật khẩu mới</label>
+                        <input
+                            type="password"
+                            className="w-full px-3 py-2 border rounded focus:outline-none focus:ring focus:ring-blue-200 text-sm"
+                            placeholder="Nhập lại mật khẩu mới"
+                            value={confirmPassword}
+                            ref={inputConfirmPasswordRef}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" || e.key === 'Tab') {
+                                    e.preventDefault();
+                                    handlerActionChangePasswordProfile(e);
+                                }
+                            }}
+                            onChange={(e) => {
+                                setValidConfirmPassword("");
+                                setConfirmPassword(e.target.value);
+                            }}
+                        />
+                        {validConfirmPassword && <p className="text-red-500 text-sm mt-1">{validConfirmPassword}</p>}
 
-                                <label className="block mt-4 mb-2">Nhập lại mật khẩu mới</label>
-                                <input
-                                    type="password"
-                                    className="w-full pl-2 pr-3 py-2 border border-gray-300 rounded focus:outline-none focus:ring-0"
-                                    placeholder="Nhập lại mật khẩu mới"
-                                    value={confirmPassword}
-                                    ref={inputConfirmPasswordRef}
-                                    onKeyDown={(e) => {
-                                        if (e.key === "Enter" || e.key === 'Tab') {
-                                            e.preventDefault();
-                                            handlerActionChangePasswordProfile(e);
-                                        }
-                                    }}
-                                    onChange={(e) => {
-                                        setValidConfirmPassword("");
-                                        setConfirmPassword(e.target.value);
-                                    }}
-                                />
-                                {validConfirmPassword && <p className="text-red-500 text-sm mt-1">{validConfirmPassword}</p>}
-
-
-                                {/* Nút cập nhật */}
-                                <div className="flex justify-between mt-4">
-                                    <button
-                                        className="bg-gray-400 text-white px-4 py-2 rounded"
-                                        onClick={() => setShowChangePasswordModal(false)}
-                                    >
-                                        Hủy
-                                    </button>
-                                    <button
-                                        type="submit"
-                                        className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                                        disabled={isLoading}
-                                    >
-                                        {isLoading ? (
-                                            <div className="flex justify-center items-center">
-                                                <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
-                                            </div>
-                                        ) : (
-                                            "Cập nhật"
-                                        )}
-                                    </button>
-                                </div>
-                            </div>
+                        {/* Buttons */}
+                        <div className="flex justify-between mt-6">
+                            <button
+                                type="button"
+                                className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 text-sm"
+                                onClick={() => setShowChangePasswordModal(false)}
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                type="submit"
+                                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 flex items-center justify-center text-sm"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <span className="animate-spin rounded-full border-t-2 border-b-2 border-white w-5 h-5"></span>
+                                ) : (
+                                    "Cập nhật"
+                                )}
+                            </button>
                         </div>
                     </form>
                 </div>
             )}
+
         </>
     );
 };
@@ -892,76 +883,91 @@ export const ProfileModal = ({ setShowProfileModal, setShowUpdateModal }) => {
         dispatch(uploadAvatar(file))
     };
 
-    return <>
-        {/* Overlay Làm Mờ */}
-        <div className="fixed inset-0 bg-black opacity-50 z-40"></div>
+    return (
+        <>
+            {/* Overlay Làm Mờ */}
+            <div className="fixed inset-0 bg-black opacity-50 z-40"></div>
 
-        {/* Modal */}
-        <div className="fixed inset-0 flex justify-center items-center z-50">
-            <div className="bg-white rounded-lg shadow-lg w-[400px]">
-                {/* Header */}
-                <div className="relative">
-                    <input
-                        type="file"
-                        accept="image/*"
-                        className="hidden"
-                        ref={fileBackgroundRef}
-                        onChange={handleFileBackgroundChange}
-                        id="fileBackground"
-                    />
+            {/* Modal */}
+            <div className="fixed inset-0 flex justify-center items-center z-50 px-4">
+                <div className="bg-white rounded-lg shadow-lg w-full max-w-md">
 
-                    <img onClick={handlerBackgroundClick}
-                        src={
-                            userLogin?.backgroundLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"
-                        } className="w-full h-32 object-cover rounded-t-lg cursor-pointer" />
-                    <button className="absolute top-3 right-3 text-gray-700" onClick={() => setShowProfileModal(false)}>✖</button>
-                </div>
-                {/* Avatar & Info */}
-                <div className="flex flex-col items-center -mt-10">
+                    {/* Header - Background */}
                     <div className="relative">
-                        <img src={
-                            userLogin?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"
-                        } className="w-20 h-20 rounded-full border-4 border-white" />
-
-                        <div
-                            className="absolute bottom-0 right-0 bg-gray-200 p-1 rounded-full cursor-pointer flex items-center justify-center"
-                            onClick={handleCameraClick}
-                        >
-                            📷
-                        </div>
-                        {/* Ẩn input và kích hoạt khi bấm vào icon */}
                         <input
                             type="file"
                             accept="image/*"
                             className="hidden"
-                            ref={fileInputRef}
-                            onChange={handleFileChange}
-                            id="fileInput"
+                            ref={fileBackgroundRef}
+                            onChange={handleFileBackgroundChange}
+                            id="fileBackground"
                         />
+                        <img
+                            onClick={handlerBackgroundClick}
+                            src={userLogin?.backgroundLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
+                            className="w-full h-32 object-cover rounded-t-lg cursor-pointer"
+                            alt="Background"
+                        />
+                        <button
+                            className="absolute top-3 right-3 text-gray-700 text-xl"
+                            onClick={() => setShowProfileModal(false)}
+                        >
+                            ✖
+                        </button>
                     </div>
-                    <h2 className="text-lg font-semibold mt-2 py-2">{userLogin.fullName}</h2>
-                </div>
-                {/* Thông tin cá nhân */}
-                <div className="p-4 border-t-4">
-                    <div className="text-gray-700 space-y-2">
-                        <p><strong className="mr-6">Giới tính:</strong> {userLogin.gender !== undefined ? userLogin.gender : "Chưa cập nhật"}</p>
-                        <p><strong className="mr-4">Ngày sinh: </strong> {
-                            userLogin.birthDay !== undefined ? new Date(userLogin.birthDay).toLocaleDateString("vi-VN") : "Chưa cập nhật"
-                        }</p>
-                        <p><strong className="mr-2">Điện thoại:</strong> {
-                            userLogin.phoneNumber
-                        }</p>
-                        <p className="text-sm text-gray-500">Chỉ bạn bè có lưu số của bạn trong danh bạ máy xem được số này.</p>
+
+                    {/* Avatar + Tên */}
+                    <div className="flex flex-col items-center -mt-10">
+                        <div className="relative">
+                            <img
+                                src={userLogin?.avatarLink || "https://my-alo-bucket.s3.amazonaws.com/1742401840267-OIP%20%282%29.jpg"}
+                                className="w-24 h-24 md:w-20 md:h-20 rounded-full border-4 border-white object-cover"
+                                alt="Avatar"
+                            />
+                            <div
+                                className="absolute bottom-0 right-0 bg-gray-200 p-1 rounded-full cursor-pointer flex items-center justify-center"
+                                onClick={handleCameraClick}
+                            >
+                                📷
+                            </div>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                className="hidden"
+                                ref={fileInputRef}
+                                onChange={handleFileChange}
+                                id="fileInput"
+                            />
+                        </div>
+                        <h2 className="text-lg font-semibold mt-3 text-center px-2">{userLogin.fullName}</h2>
                     </div>
-                    <button className="w-full mt-4 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600"
-                        onClick={() => { setShowProfileModal(false); setShowUpdateModal(true); }}
-                    >
-                        Cập nhật
-                    </button>
+
+                    {/* Info */}
+                    <div className="p-4 border-t-4">
+                        <div className="text-gray-700 space-y-2 text-sm md:text-base">
+                            <p><strong className="mr-6">Giới tính:</strong> {userLogin.gender ?? "Chưa cập nhật"}</p>
+                            <p><strong className="mr-4">Ngày sinh:</strong> {
+                                userLogin.birthDay ? new Date(userLogin.birthDay).toLocaleDateString("vi-VN") : "Chưa cập nhật"
+                            }</p>
+                            <p><strong className="mr-2">Điện thoại:</strong> {userLogin.phoneNumber}</p>
+                            <p className="text-sm text-gray-500">Chỉ bạn bè có lưu số của bạn trong danh bạ máy xem được số này.</p>
+                        </div>
+
+                        <button
+                            className="w-full mt-4 bg-blue-500 text-white py-2 rounded-lg hover:bg-blue-600 text-sm md:text-base"
+                            onClick={() => {
+                                setShowProfileModal(false);
+                                setShowUpdateModal(true);
+                            }}
+                        >
+                            Cập nhật
+                        </button>
+                    </div>
                 </div>
             </div>
-        </div>
-    </>
+        </>
+    );
+
 
 }
 
@@ -1031,113 +1037,128 @@ export const UpdateProfileModal = ({ setShowProfileModal, setShowUpdateModal }) 
         <>
             <div className="fixed inset-0 bg-black opacity-50 z-40"></div>
             {userLogin && (
-                <div className="fixed inset-0 flex justify-center items-center z-50">
-                    <form id="updateProfile" onSubmit={(e) => handlerActionUpdateProfile(e)}>
-                        <div className="bg-white rounded-lg shadow-lg w-[400px] p-4">
-                            <div className="flex items-center">
-                                <button
-                                    className="text-gray-600 mr-2"
-                                    onClick={() => { setShowUpdateModal(false); setShowProfileModal(true); }}
-                                >
-                                    <i className="fas fa-arrow-left"></i>
-                                </button>
-                                <h2 className="text-lg font-semibold text-center flex-1">Cập nhật thông tin</h2>
-                            </div>
-                            <div className="p-4">
-                                {/* Nhập tên hiển thị */}
-                                <label className="block mb-2">Tên hiển thị</label>
-                                <input
-                                    type="text"
-                                    className="border w-full p-2 rounded"
-                                    value={name}
-                                    onChange={(e) => setName(e.target.value)}
-                                />
+                <div className="fixed inset-0 flex justify-center items-center z-50 p-4">
+                    <form
+                        id="updateProfile"
+                        onSubmit={(e) => handlerActionUpdateProfile(e)}
+                        className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 sm:p-8"
+                    >
+                        <div className="flex items-center mb-4">
+                            <button
+                                type="button"
+                                className="text-gray-600 mr-2"
+                                onClick={() => {
+                                    setShowUpdateModal(false);
+                                    setShowProfileModal(true);
+                                }}
+                            >
+                                <i className="fas fa-arrow-left"></i>
+                            </button>
+                            <h2 className="text-lg font-semibold text-center flex-1">Cập nhật thông tin</h2>
+                        </div>
+                        <div>
+                            {/* Tên hiển thị */}
+                            <label className="block mb-2 text-sm font-medium text-gray-700">Tên hiển thị</label>
+                            <input
+                                type="text"
+                                className="border border-gray-300 rounded w-full p-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                value={name}
+                                onChange={(e) => setName(e.target.value)}
+                            />
 
-                                {/* Chọn giới tính */}
-                                <label className="block mt-4 mb-2">Giới tính</label>
-                                <div className="flex space-x-4">
-                                    <label className="flex items-center">
-                                        <input
-                                            type="radio"
-                                            name="gender"
-                                            value="Nam"
-                                            checked={gender === "Nam"}
-                                            onChange={() => setGender("Nam")}
-                                            className="mr-2"
-                                        />
-                                        Nam
-                                    </label>
-                                    <label className="flex items-center">
-                                        <input
-                                            type="radio"
-                                            name="gender"
-                                            value="Nữ"
-                                            checked={gender === "Nữ"}
-                                            onChange={() => setGender("Nữ")}
-                                            className="mr-2"
-                                        />
-                                        Nữ
-                                    </label>
-                                </div>
-
-                                {/* Chọn ngày sinh */}
-                                <label className="block mt-4 mb-2">Ngày sinh</label>
-                                <div className="flex space-x-2">
-                                    {/* Chọn ngày */}
-                                    <select
-                                        className="border p-2 rounded"
-                                        value={selectedDay}
-                                        onChange={(e) => setSelectedDay(e.target.value)}
-                                    >
-                                        {days.map(day => (
-                                            <option key={day} value={day}>{day}</option>
-                                        ))}
-                                    </select>
-                                    {/* Chọn tháng */}
-                                    <select
-                                        className="border p-2 rounded"
-                                        value={selectedMonth}
-                                        onChange={(e) => setSelectedMonth(e.target.value)}
-                                    >
-                                        {months.map(month => (
-                                            <option key={month} value={month}>{month}</option>
-                                        ))}
-                                    </select>
-                                    {/* Chọn năm */}
-                                    <select
-                                        className="border p-2 rounded"
-                                        value={selectedYear}
-                                        onChange={(e) => setSelectedYear(e.target.value)}
-                                    >
-                                        {years.map(year => (
-                                            <option key={year} value={year}>{year}</option>
-                                        ))}
-                                    </select>
-                                </div>
+                            {/* Giới tính */}
+                            <label className="block mt-4 mb-2 text-sm font-medium text-gray-700">Giới tính</label>
+                            <div className="flex space-x-4">
+                                <label className="flex items-center cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="gender"
+                                        value="Nam"
+                                        checked={gender === "Nam"}
+                                        onChange={() => setGender("Nam")}
+                                        className="mr-2"
+                                    />
+                                    Nam
+                                </label>
+                                <label className="flex items-center cursor-pointer">
+                                    <input
+                                        type="radio"
+                                        name="gender"
+                                        value="Nữ"
+                                        checked={gender === "Nữ"}
+                                        onChange={() => setGender("Nữ")}
+                                        className="mr-2"
+                                    />
+                                    Nữ
+                                </label>
                             </div>
 
-                            {/* Nút cập nhật */}
-                            <div className="flex justify-between mt-4">
-                                <button
-                                    className="bg-gray-400 text-white px-4 py-2 rounded"
-                                    onClick={() => setShowUpdateModal(false)}
+                            {/* Ngày sinh */}
+                            <label className="block mt-4 mb-2 text-sm font-medium text-gray-700">Ngày sinh</label>
+                            <div className="flex space-x-2">
+                                {/* Ngày */}
+                                <select
+                                    className="border border-gray-300 rounded p-2 w-1/3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={selectedDay}
+                                    onChange={(e) => setSelectedDay(e.target.value)}
                                 >
-                                    Hủy
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
-                                    disabled={isLoading}
+                                    {days.map((day) => (
+                                        <option key={day} value={day}>
+                                            {day}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {/* Tháng */}
+                                <select
+                                    className="border border-gray-300 rounded p-2 w-1/3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={selectedMonth}
+                                    onChange={(e) => setSelectedMonth(e.target.value)}
                                 >
-                                    {isLoading ? (
-                                        <div className="flex justify-center items-center">
-                                            <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
-                                        </div>
-                                    ) : (
-                                        "Cập nhật"
-                                    )}
-                                </button>
+                                    {months.map((month) => (
+                                        <option key={month} value={month}>
+                                            {month}
+                                        </option>
+                                    ))}
+                                </select>
+
+                                {/* Năm */}
+                                <select
+                                    className="border border-gray-300 rounded p-2 w-1/3 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    value={selectedYear}
+                                    onChange={(e) => setSelectedYear(e.target.value)}
+                                >
+                                    {years.map((year) => (
+                                        <option key={year} value={year}>
+                                            {year}
+                                        </option>
+                                    ))}
+                                </select>
                             </div>
+                        </div>
+
+                        {/* Nút cập nhật */}
+                        <div className="flex justify-between mt-6">
+                            <button
+                                type="button"
+                                className="bg-gray-400 text-white px-4 py-2 rounded hover:bg-gray-500 transition"
+                                onClick={() => setShowUpdateModal(false)}
+                            >
+                                Hủy
+                            </button>
+                            <button
+                                type="submit"
+                                className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 transition disabled:opacity-50"
+                                disabled={isLoading}
+                            >
+                                {isLoading ? (
+                                    <div className="flex justify-center items-center">
+                                        <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                                    </div>
+                                ) : (
+                                    "Cập nhật"
+                                )}
+                            </button>
                         </div>
                     </form>
                 </div>

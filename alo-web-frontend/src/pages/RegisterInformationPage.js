@@ -70,39 +70,40 @@ export const RegisterInformationPage = () => {
     setIsLoading(false);
   }
   return (
-    <div className="bg-blue-100 flex items-center justify-center min-h-screen">
-      <div>
+    <div className="bg-blue-100 flex items-center justify-center min-h-screen px-4">
+      <div className="w-full max-w-sm sm:max-w-md md:max-w-lg">
         <div>
-          <h1 className="text-2xl font-bold text-center text-blue-600 mb-2">Alo</h1>
-          <p className="text-center font-medium mb-6">
+          <h1 className="text-3xl font-bold text-center text-blue-600 mb-2">Alo</h1>
+          <p className="text-center font-medium mb-6 text-sm md:text-base">
             Đăng ký tài khoản Alo để kết nối với ứng dụng Alo Web
           </p>
         </div>
-        <div className="bg-white rounded-lg shadow-lg p-8 w-full max-w-md">
+  
+        <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8 md:p-10">
           <div className="border-b border-gray-300 mb-6">
-            <h2 className="text-center font-medium pb-2">Hoàn tất đăng ký</h2>
+            <h2 className="text-center font-medium pb-2 text-base md:text-lg">Hoàn tất đăng ký</h2>
           </div>
+  
           <form onSubmit={handleSubmit}>
             <div className="mt-4 relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                 <i className="fas fa-mobile-alt"></i>
               </span>
               <input
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-sm md:text-base"
                 type="text"
-                id="phone"
                 value={userRegister.phoneNumber || ''}
                 disabled
               />
             </div>
+  
             <div className="mt-4 relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                 <i className="fas fa-user"></i>
               </span>
               <input
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-sm md:text-base"
                 type="text"
-                id="fullName"
                 placeholder="Họ và tên"
                 value={userRegister.fullName}
                 onChange={(e) => {
@@ -112,15 +113,14 @@ export const RegisterInformationPage = () => {
               />
             </div>
             {validFullName && <p className="text-red-500 text-sm mt-1">{validFullName}</p>}
-
+  
             <div className="mt-4 relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                 <i className="fas fa-lock"></i>
               </span>
               <input
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-sm md:text-base"
                 type="password"
-                id="password"
                 placeholder="Mật khẩu"
                 value={userRegister.password}
                 onChange={(e) => {
@@ -130,15 +130,14 @@ export const RegisterInformationPage = () => {
               />
             </div>
             {validPassword && <p className="text-red-500 text-sm mt-1">{validPassword}</p>}
-
+  
             <div className="mt-4 relative">
-              <span className="absolute inset-y-0 left-0 flex items-center pl-3">
+              <span className="absolute inset-y-0 left-0 flex items-center pl-3 text-gray-500">
                 <i className="fas fa-lock"></i>
               </span>
               <input
-                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded"
+                className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded text-sm md:text-base"
                 type="password"
-                id="rePassword"
                 placeholder="Nhập lại mật khẩu"
                 value={userRegister.rePassword}
                 onChange={(e) => {
@@ -148,32 +147,32 @@ export const RegisterInformationPage = () => {
               />
             </div>
             {validRePassword && <p className="text-red-500 text-sm mt-1">{validRePassword}</p>}
-
+  
             <button
               type="submit"
-              className="mt-4 w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200"
+              className="mt-6 w-full bg-blue-600 text-white py-2 rounded-xl hover:bg-blue-700 transition duration-200 text-sm md:text-base"
             >
-              {
-                isLoading ? (
-                  <div className="flex justify-center items-center">
-                    <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
-                  </div>
-                ) : (
-                  "Đăng ký"
-                )
-              }
+              {isLoading ? (
+                <div className="flex justify-center items-center">
+                  <div className="animate-spin rounded-full border-t-2 border-b-2 border-white w-4 h-4"></div>
+                </div>
+              ) : (
+                "Đăng ký"
+              )}
             </button>
           </form>
+  
           <div className="flex justify-between mt-4 text-sm text-gray-600">
-            <a href="#" className="hover:underline"
-              onClick={() => {
-                navigate('/login');
-              }}
-            >Đăng nhập</a>
-            <a href="#" className="hover:underline">Quên mật khẩu</a>
+            <a href="#" onClick={() => navigate('/login')} className="hover:underline">
+              Đăng nhập
+            </a>
+            <a href="#" className="hover:underline">
+              Quên mật khẩu
+            </a>
           </div>
         </div>
       </div>
     </div>
   );
+  
 };
