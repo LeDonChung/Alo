@@ -5,7 +5,7 @@ import { ReactionListComponent } from './ReactionListComponent';
 import { useSelector } from 'react-redux';
 import { LinkPreview } from './LinkPreview';
 
-const MessageItem = ({ item, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted, handlerRemoveAllAction, scrollToMessage, searchKeyword  }) => {
+const MessageItem = ({ item, setSelectedImage, setIsImageViewVisible, showAvatar, showTime, setIsShowMenuInMessage, setSelectedMessage, isHighlighted, handlerRemoveAllAction, scrollToMessage, searchKeyword }) => {
   const userLogin = useSelector(state => state.user.userLogin);
 
   const isSent = item.senderId === userLogin.id;
@@ -20,28 +20,6 @@ const MessageItem = ({ item, setSelectedImage, setIsImageViewVisible, showAvatar
     const parts = fileNameDecoded.split(" - ");
     return parts[parts.length - 1];
   };
-  if (item && (item.messageType === "notification" || item.contentType === "notification")) {
-    return (
-        <View style={{
-          alignItems: 'center',
-          marginVertical: 10,
-          paddingHorizontal: 16,
-        }}>
-            <Text style={{
-              fontSize: 12,
-              color: '#888',
-              textAlign: 'center',
-              backgroundColor: '#f0f0f0',
-              paddingHorizontal: 12,
-              paddingVertical: 6,
-              borderRadius: 12,
-              overflow: 'hidden',
-            }}>
-                {item.content}
-            </Text>
-        </View>
-    );
-  }
 
   const getFileIcon = (extension) => {
     const iconSize = { width: 24, height: 24 };
@@ -155,6 +133,29 @@ const MessageItem = ({ item, setSelectedImage, setIsImageViewVisible, showAvatar
       </Text>
     );
   };
+
+  if (item && (item.messageType === "system")) {
+    return (
+      <View style={{
+        alignItems: 'center',
+        marginVertical: 5,
+        paddingHorizontal: 10,
+      }}>
+        <Text style={{
+          fontSize: 12,
+          color: '#888',
+          textAlign: 'center',
+          backgroundColor: '#fff',
+          paddingHorizontal: 12,
+          paddingVertical: 6,
+          borderRadius: 30,
+          overflow: 'hidden',
+        }}>
+          {item.content}
+        </Text>
+      </View>
+    );
+  }
 
   return (
     (item && !item.removeOfme?.includes(userLogin.id)) && (

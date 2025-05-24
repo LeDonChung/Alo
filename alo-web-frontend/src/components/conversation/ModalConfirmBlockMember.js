@@ -3,9 +3,10 @@ import { useDispatch } from "react-redux";
 import { blockMember, removeMember, removeMemberGroup } from "../../redux/slices/ConversationSlice";
 import socket from "../../utils/socket";
 import showToast from "../../utils/AppUtils";
+import { addMessage, sendMessage } from "../../redux/slices/MessageSlice";
 
 
-const ModalConfirmBlockMember = ({ isOpen, onClose, member, conversation, closeMenu }) => {
+const ModalConfirmBlockMember = ({ isOpen, onClose, member, conversation, closeMenu, userLogin }) => {
     const [confirm, setConfirm] = useState(false);
     const dispatch = useDispatch();
     const [isLoading, setIsLoading] = useState(false);
@@ -20,14 +21,64 @@ const ModalConfirmBlockMember = ({ isOpen, onClose, member, conversation, closeM
                     .then(async (resp) => {
                         await dispatch(removeMember({ conversationId: conversation.id, memberUserId: member.id })).unwrap()
                             .then(async (result) => {
+
+                                const requestId = Date.now() + Math.random();
+                                const message = {
+                                    id: requestId,
+                                    requestId: requestId,
+                                    senderId: userLogin.id,
+                                    conversationId: conversation.id,
+                                    content: `${member.fullName} đã được ${userLogin.fullName} xóa khỏi nhóm`,
+                                    messageType: "system",
+                                    timestamp: Date.now(),
+                                    seen: [],
+                                    sender: userLogin,
+                                }
+
+                                dispatch(addMessage(message));
+
+                                const sendRes = await dispatch(sendMessage({ message, file: null })).unwrap();
+                                const sentMessage = {
+                                    ...sendRes.data,
+                                    sender: userLogin,
+                                };
+                                socket.emit('send-message', {
+                                    conversation,
+                                    message: sentMessage,
+                                });
                                 await dispatch(removeMemberGroup({ conversationId: conversation.id, memberUserId: member.id }));
                                 socket.emit("remove-member", { conversation: conversation, memberUserId: member.id });
-                                showToast("Bạn đã xóa " + member.fullName + " khỏi nhóm và chặn người này tham gia lại!", "info");
+
                             });
                     });
             } else {
                 await dispatch(removeMember({ conversationId: conversation.id, memberUserId: member.id })).unwrap()
                     .then(async (result) => {
+                        const requestId = Date.now() + Math.random();
+                        const message = {
+                            id: requestId,
+                            requestId: requestId,
+                            senderId: userLogin.id,
+                            conversationId: conversation.id,
+                            content: `${member.fullName} đã được ${userLogin.fullName} xóa khỏi nhóm`,
+                            messageType: "system",
+                            timestamp: Date.now(),
+                            seen: [],
+                            sender: userLogin,
+                        }
+
+                        dispatch(addMessage(message));
+
+                        const sendRes = await dispatch(sendMessage({ message, file: null })).unwrap();
+                        const sentMessage = {
+                            ...sendRes.data,
+                            sender: userLogin,
+                        };
+                        socket.emit('send-message', {
+                            conversation,
+                            message: sentMessage,
+                        });
+
                         await dispatch(removeMemberGroup({ conversationId: conversation.id, memberUserId: member.id }));
                         socket.emit("remove-member", { conversation: conversation, memberUserId: member.id });
                     });

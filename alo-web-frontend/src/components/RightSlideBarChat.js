@@ -330,7 +330,7 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
                     {
                       isOpenUpdateProfileGroup && <UpdateProfileGroup onClose={() => {
                         setIsOpenUpdateProfileGroup(false);
-                      }} conversation={conversation} />
+                      }} conversation={conversation} userLogin={userLogin} />
                     }
                     <div className="flex space-x-4 mt-4">
                       <button className="flex flex-col items-center text-gray-600 hover:text-blue-500 transition-colors">

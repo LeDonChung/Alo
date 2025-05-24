@@ -1,6 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { axiosInstance } from "../../../api/APIClient";
-import * as SecureStore from 'expo-secure-store';
 
 const initialState = {
     isSending: false,
@@ -28,30 +27,48 @@ const getLinkPreview = createAsyncThunk('ConversationSlice/getLinkPreview', asyn
 });
 const sendMessage = createAsyncThunk('MessageSlice/sendMessage', async ({ message, file }, { rejectWithValue }) => {
     try {
-        const formData = new FormData();
-        if (file) {
+        console.log(file)
+        // Nếu có file thì dùng FormData
+        if (file) { 
+            const formData = new FormData();
             formData.append("file", {
                 uri: file.uri,
                 name: file.name,
                 type: file.type
             });
-        }
-
-        for (const key in message) {
-            formData.append(key, message[key]);
-        }
-
-        const response = await axiosInstance.post('/api/message/create-message', formData, {
-            headers: {
-                "Content-Type": "multipart/form-data"
+            for (const key in message) {
+                formData.append(key, message[key]);
             }
-        });
-        return response.data;
+
+            const response = await axiosInstance.post('/api/message/create-message', formData, {
+                headers: {
+                    "Content-Type": "multipart/form-data"
+                }
+            });
+
+            return response.data;
+        } else {
+            // Nếu không có file, gửi JSON bình thường
+            const response = await axiosInstance.post('/api/message/create-message', message, {
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            });
+
+            return response.data;
+        }
+
     } catch (error) {
-        console.log(error);
+        console.log("===== AXIOS ERROR =====");
+        console.log("Message:", error.message);
+        console.log("Code:", error.code);
+        console.log("Config:", error.config);
+        console.log("Request:", error.request);
+        console.log("Response:", error.response); // thường là undefined trong Network Error
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 });
+
 
 const getMessagesByConversationId = createAsyncThunk('MessageSlice/getMessagesByConversationId', async (conversationId, { rejectWithValue }) => {
     try {
@@ -251,9 +268,9 @@ const MessageSlice = createSlice({
             state.messages = state.messages.map(message => ({
                 ...message,
                 status: 2
-            }));      
+            }));
             state.messageParent = null;
-            state.searchResults = [];   
+            state.searchResults = [];
             state.currentSearchIndex = 0;
             state.isSearching = false;
             state.error = null;

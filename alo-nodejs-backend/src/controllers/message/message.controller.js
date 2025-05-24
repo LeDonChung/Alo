@@ -64,7 +64,7 @@ exports.createMessage = async (req, res) => {
             request.fileLink = await fileService.uploadFile(req.file);
         }
 
-        const allowedTypes = ['text', 'sticker', 'image', 'file', 'link', 'log'];
+        const allowedTypes = ['text', 'sticker', 'image', 'file', 'link', 'log', 'system'];
         if (!allowedTypes.includes(messageType)) {
             return res.status(400).json({
                 status: 400,

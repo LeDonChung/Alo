@@ -5,7 +5,6 @@ const initialState = {
     conversations: [],
     conversation: null,
     conversationInvite: null,
-
 };
 
 
@@ -628,7 +627,7 @@ export const {
     addMemberGroup,
     removeMemberGroup,
     handlerRemoveHistoryMessage,
-    updateToken
+    updateToken,
 
 } = ConversationSlice.actions;
 

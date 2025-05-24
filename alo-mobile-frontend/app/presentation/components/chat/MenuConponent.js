@@ -10,7 +10,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
-import { setMessageParent, updateMessageStatus, setMessageUpdate, removeOfMe, setMessageRemoveOfMe } from '../../redux/slices/MessageSlice';
+import { setMessageParent, updateMessageStatus, setMessageUpdate, removeOfMe, setMessageRemoveOfMe, addMessage, sendMessage, updateMessage } from '../../redux/slices/MessageSlice';
 import { ReactionBar } from './ReactionBar';
 
 export const MenuComponent = ({ message, showMenuComponent, setShowDetailModal, setShowForwardModal }) => {
@@ -31,8 +31,53 @@ export const MenuComponent = ({ message, showMenuComponent, setShowDetailModal, 
     const handlerClickPin = async (message) => {
         try {
             showMenuComponent(false);
-            await dispatch(createPin({ conversationId: message.conversationId, messageId: message.id })).unwrap().then((res) => {
+            await dispatch(createPin({ conversationId: message.conversationId, messageId: message.id })).unwrap().then(async (res) => {
                 console.log(res);
+                let contentMessage = '';
+                if (message.messageType === 'text') {
+                    contentMessage = `${userLogin.fullName} đã ghim tin nhắn`;
+                } else if (message.messageType === 'image') {
+                    contentMessage = `${userLogin.fullName} đã ghim một hình ảnh`;
+                }
+                else if (message.messageType === 'file') {
+                    contentMessage = `${userLogin.fullName} đã ghim một file`;
+                }
+                else if (message.messageType === 'sticker') {
+                    contentMessage = `${userLogin.fullName} đã ghim một sticker`;
+                }
+                else if (message.messageType === 'link') {
+                    contentMessage = `${userLogin.fullName} đã ghim một liên kết`;
+                }
+                else {
+                    contentMessage = `${userLogin.fullName} đã ghim một tin nhắn`;
+                }
+                const requestId = Date.now() + Math.random();
+                const systemMessage = {
+                    id: requestId,
+                    requestId: requestId,
+                    senderId: userLogin.id,
+                    conversationId: conversation.id,
+                    content: contentMessage,
+                    messageType: "system",
+                    timestamp: Date.now(),
+                    seen: [],
+                    sender: userLogin,
+                }
+
+                dispatch(addMessage(systemMessage));
+
+                const sendRes = await dispatch(sendMessage({ message: systemMessage, file: null })).unwrap();
+                const sentMessage = {
+                    ...sendRes.data,
+                    sender: userLogin,
+                };
+
+                dispatch(updateMessage(sentMessage));
+                socket.emit('send-message', {
+                    conversation,
+                    message: sentMessage,
+                });
+
                 socket.emit('pin-message', {
                     conversation: conversation,
                     pin: res.data
