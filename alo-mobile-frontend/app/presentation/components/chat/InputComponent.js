@@ -8,6 +8,7 @@ import OptionModal from './OptionModal';
 import { showToast } from '../../../utils/AppUtils';
 import { useDispatch, useSelector } from 'react-redux';
 import { setMessageParent } from '../../redux/slices/MessageSlice';
+import { replaceEmoticonsWithEmoji } from '../../../utils/Emoji';
 
 const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isStickerPickerVisible, setIsStickerPickerVisible, handleSendFile, handlerSendImage }) => {
   const [isOptionModalVisible, setOptionModalVisible] = useState(false);
@@ -141,7 +142,7 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
     );
   };
 
-
+ 
   return (
     <View style={{ backgroundColor: 'white', padding: 10, flexDirection: 'column', alignItems: 'center', borderTopWidth: 1, borderColor: '#EDEDED' }}>
       {messageParent && renderParentMessage()}
@@ -156,7 +157,9 @@ const InputComponent = ({ inputMessage, setInputMessage, handlerSendMessage, isS
         <TextInput
           placeholder="Tin nhắn"
           value={inputMessage.content}
-          onChangeText={(text) => setInputMessage({ ...inputMessage, content: text })}
+          onChangeText={(text) => {
+            setInputMessage({ ...inputMessage, content: replaceEmoticonsWithEmoji(text) })
+          }}
           style={{ flex: 1, backgroundColor: 'white', padding: 10, borderRadius: 20, marginHorizontal: 10 }}
         />
 

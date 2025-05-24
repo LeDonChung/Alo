@@ -12,6 +12,8 @@ import 'lightgallery/css/lg-thumbnail.css';
 import lgZoom from 'lightgallery/plugins/zoom';
 import lgThumbnail from 'lightgallery/plugins/thumbnail';
 import socket from '../../utils/socket';
+import * as emojiToolkit from 'emoji-toolkit';
+import { replaceEmoticonsWithEmoji } from '../../utils/Emoji';
 
 const ChatInput = () => {
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
@@ -471,7 +473,10 @@ const ChatInput = () => {
           type="text"
           onPaste={(e) => handlePaste(e)}
           value={images && images.length > 0 ? '' : inputMessage.content}
-          onChange={(e) => setInputMessage({ ...inputMessage, content: e.target.value })}
+          
+          onChange={(e) => {
+            setInputMessage({ ...inputMessage, content: replaceEmoticonsWithEmoji(e.target.value) })
+          }}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && !e.shiftKey) {
               e.preventDefault(); // Prevent default Enter behavior (e.g., adding a newline)
