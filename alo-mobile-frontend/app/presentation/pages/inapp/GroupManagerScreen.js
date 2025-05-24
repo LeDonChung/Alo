@@ -71,6 +71,7 @@ export const GroupManagerScreen = ({ setIsSetting }) => {
         setIsMessageLabeling(memberRole.permissions.pinMessages);
         setIsSendMessage(memberRole.permissions.sendMessage);
     }, [memberRole]);
+    
     useEffect(() => {
         const handlerAllowPermisstion = async () => {
             try {

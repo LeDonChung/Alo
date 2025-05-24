@@ -91,14 +91,18 @@ export const HomeScreen = ({ navigation }) => {
           break;
       }
 
-      if (message.senderId === userLogin.id) {
-        return "Bạn: " + (messageStatus === 0 ? content : "Tin nhắn đã thu hồi");
+      if (message.messageType === 'system') {
+        return content;
       } else {
-        return (
-          item.lastMessage
-          && userSender?.fullName + ": " + (messageStatus === 0 ? content : "Tin nhắn đã thu hồi")
-        );
+        if (message.senderId === userLogin.id) {
+          return "Bạn: " + (messageStatus === 0 ? content : "Tin nhắn đã thu hồi");
+        } else {
+          return (
+            item.lastMessage
+            && userSender?.fullName + ": " + (messageStatus === 0 ? content : "Tin nhắn đã thu hồi")
+          );
 
+        }
       }
 
     };

@@ -18,6 +18,7 @@ import { getUserByIds } from "../../redux/slices/UserSlice";
 import { get } from "react-native/Libraries/TurboModule/TurboModuleRegistry";
 import socket from "../../../utils/socket";
 import { showToast } from "../../../utils/AppUtils";
+import { addMessage, sendMessage, updateMessage } from "../../redux/slices/MessageSlice";
 
 const FILTERS = {
   ALL: "all",
@@ -101,35 +102,68 @@ export const GroupMembersScreen = () => {
         {
           text: "Xác nhận",
           onPress: async () => {
-            // chuyeern quyen truong nhom
-            await dispatch(changeLeader({ conversationId: conversation.id, newLeaderId: member.id })).unwrap()
-              .then(async (result) => {
-                socket.emit("update-roles", { conversation: result.data });
-                await dispatch(updatePermissions({ conversationId: conversation.id, roles: result.data.roles }));
-                
-                if (isOnlyChangeLeader) {
-                  navigation.goBack()
-                } else {
-                  await dispatch(leaveGroup({ conversationId: conversation.id })).unwrap()
-                    .then(async (result) => {
-                      await dispatch(removeConversation({ conversationId: conversation.id }));
-                      showToast("info", "top", "Thông báo", "Bạn đã rời khỏi nhóm " + conversation.name);
-                      navigation.navigate('home')
-                      socket.emit("remove-member", { conversation: conversation, memberUserId: userLogin.id });
+            try {
+              // chuyeern quyen truong nhom
+              await dispatch(changeLeader({ conversationId: conversation.id, newLeaderId: member.id })).unwrap()
+                .then(async (result) => {
+
+                  socket.emit("update-roles", { conversation: result.data });
+                  await dispatch(updatePermissions({ conversationId: conversation.id, roles: result.data.roles }));
+
+                  const requestId = Date.now() + Math.random();
+                  const message = {
+                    requestId,
+                    senderId: userLogin.id,
+                    conversationId: conversation.id,
+                    content: `${userLogin.fullName} đã bổ nhiệm ${members.find((m) => m.id === member.id).fullName} làm trưởng nhóm mới`,
+                    messageType: "system",
+                    timestamp: Date.now(),
+                    seen: [],
+                    sender: userLogin,
+                  }
+
+                  dispatch(addMessage(message));
+                  await dispatch(sendMessage({ message, file: null })).unwrap()
+                    .then((res) => {
+                      const sentMessage = {
+                        ...res.data,
+                        sender: userLogin,
+                      };
+
+                      socket.emit('send-message', {
+                        conversation,
+                        message: sentMessage,
+                      });
+
+                      dispatch(updateMessage(sentMessage));
                     });
-                  console.log("Updated roles: ", result.data.roles);
-                }
+
+                  if (isOnlyChangeLeader) {
+                    navigation.goBack()
+                  } else {
+                    await dispatch(leaveGroup({ conversationId: conversation.id })).unwrap()
+                      .then(async (result) => {
+                        await dispatch(removeConversation({ conversationId: conversation.id }));
+                        showToast("info", "top", "Thông báo", "Bạn đã rời khỏi nhóm " + conversation.name);
+                        navigation.navigate('home')
+                        socket.emit("remove-member", { conversation: conversation, memberUserId: userLogin.id });
+                      });
+                    console.log("Updated roles: ", result.data.roles);
+                  }
 
 
+                });
+              setMembers((prevMembers) => {
+                return prevMembers.map((m) => {
+                  if (m.id === member.id) {
+                    return { ...m, isLeader: true };
+                  }
+                  return { ...m, isLeader: false };
+                });
               });
-            setMembers((prevMembers) => {
-              return prevMembers.map((m) => {
-                if (m.id === member.id) {
-                  return { ...m, isLeader: true };
-                }
-                return { ...m, isLeader: false };
-              });
-            });
+            } catch (error) {
+              console.log('Error changing leader: ', error);
+            }
           },
         },
       ]

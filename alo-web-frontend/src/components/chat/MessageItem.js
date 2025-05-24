@@ -330,7 +330,7 @@ const MessageItem = ({
           contentMessage = `${userLogin.fullName} đã ghim một hình ảnh`;
         }
         else if (message.messageType === 'file') {
-          contentMessage = `${userLogin.fullName} đã ghim một file "${extractOriginalName(message.fileLink)}"`;
+          contentMessage = `${userLogin.fullName} đã ghim một file`;
         }
         else if (message.messageType === 'sticker') {
           contentMessage = `${userLogin.fullName} đã ghim một sticker`;
