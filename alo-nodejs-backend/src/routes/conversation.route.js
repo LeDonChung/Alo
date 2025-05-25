@@ -110,4 +110,15 @@ router.post('/join-by-link/:conversationId',
 router.post('/:conversationId/change-token',
     middleware.authenticateToken,
     conversationController.changeToken);
+    
+router.get("/get-token-group",
+    middleware.authenticateToken,
+    conversationController.getTokenGroup
+);
+
+router.post('/create-meeting',
+    middleware.authenticateToken,
+    conversationController.createMeeting);
+
+
 module.exports = router;

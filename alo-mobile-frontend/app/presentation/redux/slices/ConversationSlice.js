@@ -293,6 +293,23 @@ const changeTokenGroup = createAsyncThunk('ConversationSlice/changeTokenGroup', 
         return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
     }
 })
+const getTokenGroup = createAsyncThunk('ConversationSlice/getTokenGroup', async (_, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.get('/api/conversation/get-token-group');
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+});
+
+const createMeeting = createAsyncThunk('ConversationSlice/createMeeting', async (token, { rejectWithValue }) => {
+    try {
+        const response = await axiosInstance.post('/api/conversation/create-meeting', {token});
+        return response.data;
+    } catch (error) {
+        return rejectWithValue(error.response?.data || "Lỗi khi gọi API");
+    }
+})
 const ConversationSlice = createSlice({
     name: 'ConversationSlice',
     initialState: initialState,
@@ -717,6 +734,19 @@ const ConversationSlice = createSlice({
         });
         builder.addCase(changeTokenGroup.rejected, (state, action) => {
         });
+        builder.addCase(createMeeting.pending, (state) => {
+        });
+        builder.addCase(createMeeting.fulfilled, (state, action) => {
+        });
+        builder.addCase(createMeeting.rejected, (state, action) => {
+        });
+
+        builder.addCase(getTokenGroup.pending, (state) => {
+        });
+        builder.addCase(getTokenGroup.fulfilled, (state, action) => {
+        });
+        builder.addCase(getTokenGroup.rejected, (state, action) => {
+        });
     }
 });
 
@@ -763,6 +793,8 @@ export {
     getConversationByToken,
     joinGroupByLink,
     changeTokenGroup,
+    getTokenGroup,
+    createMeeting
 };
 
 
