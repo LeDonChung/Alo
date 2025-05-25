@@ -93,7 +93,6 @@ const HeaderComponent = ({ isFriendOnline, getLastLoginMessage, lastLogout, scro
               <Icon name="search" size={20} color="white" />
             </TouchableOpacity>
           )}
-          <Icon name="phone" size={18} color="white" style={{ marginHorizontal: 10 }} />
           <Icon name="video" size={18} color="white" style={{ marginHorizontal: 10 }} />
           <TouchableOpacity onPress={() => navigation.navigate('setting')}>
             <Icon name="info-circle" size={18} color="white" style={{ marginHorizontal: 10 }} />

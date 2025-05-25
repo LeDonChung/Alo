@@ -4,6 +4,7 @@ const conversationService = require('../../services/conversation.service');
 const messageService = require('../../services/message.service');
 const fileService = require('../../services/file.service');
 const { v4: uuidv4 } = require('uuid');
+const axios = require('axios');
 exports.getConversationByToken = async (req, res) => {
     try {
         const token = req.params.token;
@@ -1609,5 +1610,36 @@ exports.changeToken = async (req, res) => {
         });
     } catch (err) {
         console.error(err);
+    }
+}
+
+exports.getTokenGroup = async (req, res) => {
+    return res.json({
+        status: 200,
+        message: "Token.",
+        data: process.env.VIDEOSDK_TOKEN
+    });
+}
+exports.createMeeting = async (req, res) => {
+    try {
+        const response = await axios.post(
+            `${process.env.VIDEO_SDK_API_BASE_URL}/rooms`,
+            {},
+            {
+                headers: {
+                    Authorization: req.body.token,
+                    "Content-Type": "application/json",
+                },
+            }
+        );
+        const { roomId } = response.data;
+        return res.json({
+            status: 200,
+            message: "Room ID.",
+            data: roomId
+        });
+    } catch (error) {
+        console.log("Error creating meeting:", error);
+        res.status(500).json({ error: "Failed to create meeting" });
     }
 }

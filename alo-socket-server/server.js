@@ -1,24 +1,40 @@
+console.log("hi12")
 const express = require("express");
 const http = require("http");
 const { Server } = require("socket.io");
 const cors = require("cors");
 require("dotenv").config();
+console.log("hi13")
 
 const redis = require('./src/config/RedisClient');
 const { updateLastLogout } = require("./src/service/user.service");
 
 const app = express();
+console.log("hi1")
+
+const allowedOrigins = [
+    'https://alo-tawny.vercel.app',
+    'http://localhost:3000'
+];
+console.log("Alowed origins:", allowedOrigins);
+
 app.use(cors());
 
-const server = http.createServer(app);
 
+const server = http.createServer(app);
+console.log("hi2")
 const io = new Server(server, {
     cors: {
-        origin: ["http://localhost:3000"],
+        origin: [
+            "https://alo-tawny.vercel.app",
+            'http://localhost:3000'
+        ],
         methods: ["GET", "POST"],
         credentials: true,
     },
 });
+console.log("hi3")
+console.log("Alowed origins:", allowedOrigins);
 
 io.on("connection", (socket) => {
     console.log("Người dùng kết nối: " + socket.id);
@@ -488,6 +504,7 @@ io.on("connection", (socket) => {
     // Xử lý signaling
     // Data: { roomId, data }
     socket.on('offer', (data) => {
+        
         socket.to(data.roomId).emit('offer', data);
     });
 
@@ -504,6 +521,7 @@ io.on("connection", (socket) => {
     // incoming call
     // Data: { conversation, caller, isVoiceCall }
     socket.on('incoming-call', async (data) => {
+        console.log("Incomming call", data)
         const members = data.conversation.memberUserIds;
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);
@@ -552,5 +570,6 @@ io.on("connection", (socket) => {
 });
 
 server.listen(process.env.SERVER_PORT, () => {
+    console.log('Allowed origins:', allowedOrigins);
     console.log(`Server running at http://localhost:${process.env.SERVER_PORT}`);
 });

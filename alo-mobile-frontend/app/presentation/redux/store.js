@@ -4,6 +4,7 @@ import registerReducer from "./slices/RegisterSlice";
 import FriendSlice from './slices/FriendSlice';
 import ConversationSlice from './slices/ConversationSlice';
 import MessageSlice from './slices/MessageSlice';
+import CallSlice from './slices/CallSlice';
 
 export const store = configureStore({
     reducer: {
@@ -12,6 +13,7 @@ export const store = configureStore({
         friend: FriendSlice,
         conversation: ConversationSlice,
         message: MessageSlice,
+        call: CallSlice
     },
     middleware: getDefaultMiddleware =>
         getDefaultMiddleware({
