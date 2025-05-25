@@ -504,6 +504,7 @@ io.on("connection", (socket) => {
     // Xử lý signaling
     // Data: { roomId, data }
     socket.on('offer', (data) => {
+        
         socket.to(data.roomId).emit('offer', data);
     });
 
@@ -520,6 +521,7 @@ io.on("connection", (socket) => {
     // incoming call
     // Data: { conversation, caller, isVoiceCall }
     socket.on('incoming-call', async (data) => {
+        console.log("Incomming call", data)
         const members = data.conversation.memberUserIds;
         for (const userId of members) {
             const socketIds = await findSocketIdsByUserId(userId);

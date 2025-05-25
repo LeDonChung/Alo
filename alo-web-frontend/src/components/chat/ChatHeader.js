@@ -38,21 +38,10 @@ const ChatHeader = ({
 
   const friend = getFriend(conversation, conversation.memberUserIds.find((item) => item !== userLogin.id))
 
-
-  // HANDLER CALLL
-  const isVideoCallOpen = useSelector((state) => state.call.isVideoCallOpen);
-  const isVoiceCallOpen = useSelector((state) => state.call.isVoiceCallOpen);
-
   const dispatch = useDispatch();
   const handlerVideoCall = () => {
-    dispatch(setIsVideoCallOpen(true))
-    dispatch(setIsVoiceCallOpen(false))
-    dispatch(setCalling(false))
-  }
-  const handlerVoiceCall = () => {
-    dispatch(setIsVideoCallOpen(true))
-    dispatch(setIsVoiceCallOpen(false))
-    dispatch(setCalling(false))
+    console.log("start open calling")
+    dispatch(setCalling(true))
   }
   return (
 
@@ -130,7 +119,7 @@ const ChatHeader = ({
         />
       )}
 
-      
+
     </div>
   );
 };
