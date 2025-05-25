@@ -27,6 +27,7 @@ import ModalForwardMessage from './ModalForwardMessage';
 import ModalReaction from './ModalReaction'; // Import component mới
 import showToast, { getUserRoleAndPermissions } from '../../utils/AppUtils';
 import { LinkPreview } from './LinkPreview';
+import ModalFile from './ModalFile';
 
 const MessageItem = ({
   message,
@@ -43,6 +44,8 @@ const MessageItem = ({
   const [showDetailsModal, setShowDetailsModal] = useState(false);
   const [showReactionModal, setShowReactionModal] = useState(false);
   const [isOpenModalForward, setIsOpenModalForward] = useState(false);
+  const [isShowContentFile, setIsShowContentFile] = useState(false);
+  const [fileShow, setFileShow] = useState(null);
   const showReactionsRef = useRef(false);
   const [, forceUpdate] = useReducer((x) => x + 1, 0);
   const dispatch = useDispatch();
@@ -518,7 +521,14 @@ const MessageItem = ({
               <div
                 className={`flex flex-col relative items-start max-w-[50%] ${message.messageType !== 'image' && 'p-3'
                   } rounded-lg shadow-md ${isUserMessage ? 'bg-blue-100' : 'bg-white'} ${isHighlighted && 'border-2 border-yellow-500 animate-flash'
-                  }`}
+                  } ${message.messageType === 'file' ? 'cursor-pointer' : ''}`}
+
+                onClick={() => {
+                  if (message.messageType === 'file' && !message.fileLink.includes('.mp4')) {
+                    setIsShowContentFile(true);
+                    setFileShow(message);
+                  }
+                }}
               >
                 {showAvatar && !isUserMessage && (
                   <p className="text-sm text-gray-500 font-medium max-w-xs mb-3">{message.sender?.fullName}</p>
@@ -650,6 +660,18 @@ const MessageItem = ({
                                   <div className="text-gray-900 font-semibold truncate max-w-full">
                                     {extractOriginalName(message.fileLink)}
                                   </div>
+                                  {
+                                    message.status === 0 && fileShow != null && (
+                                      <ModalFile
+                                        fileName={extractOriginalName(fileShow.fileLink)}
+                                        fileLink={fileShow.fileLink}
+                                        isOpen={isShowContentFile}
+                                        onClose={() => {
+                                          setFileShow(null);
+                                          setIsShowContentFile(false);
+                                        }} />
+                                    )
+                                  }
                                 </div>
                                 <div className="flex items-center space-x-2">
                                   <button

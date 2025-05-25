@@ -12,7 +12,6 @@ import 'lightgallery/css/lg-thumbnail.css';
 import lgZoom from 'lightgallery/plugins/zoom';
 import lgThumbnail from 'lightgallery/plugins/thumbnail';
 import socket from '../../utils/socket';
-import * as emojiToolkit from 'emoji-toolkit';
 import { replaceEmoticonsWithEmoji } from '../../utils/Emoji';
 
 const ChatInput = () => {
