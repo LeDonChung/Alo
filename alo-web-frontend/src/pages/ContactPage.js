@@ -9,6 +9,7 @@ import { SearchByPhone } from "../components/SearchByPhone";
 import socket from "../utils/socket";
 import { useDispatch, useSelector } from "react-redux";
 import SentFriendRequest from "../components/SentFriendRequest";
+import CreateGroupPage from "./CreateGroup";
 
 const menu = [
     { id: 1, name: "Danh sách bạn bè", icon: "./icon/ic_friend_list.png", showView: () => <FriendsOfUser /> },
@@ -22,6 +23,7 @@ export default function ContactPage() {
     const [isOpenAdd, setIsOpenAdd] = useState(false);
     const userLogin = JSON.parse(localStorage.getItem("userLogin"));
     const [numFriendRequest, setNumFriendRequest] = useState(0);
+    const [isOpenGroup, setIsOpenGroup] = useState(false);
 
     useEffect(() => {
         const handleReceiveFriendRequest = (data) => {
@@ -70,9 +72,12 @@ export default function ContactPage() {
                         isOpenAdd && <SearchByPhone isOpenAdd={isOpenAdd} onClose={() => setIsOpenAdd(false)} />
                     }
 
-                    <button className="w-[30px] h-[30px] flex items-center justify-center hover:bg-gray-100">
+                    <button className="w-[30px] h-[30px] flex items-center justify-center hover:bg-gray-100"  onClick={() => setIsOpenGroup(true)}>
                         <img src="./icon/ic_create_group.png" />
                     </button>
+                    {
+                        isOpenGroup && <CreateGroupPage isOpenGroup={isOpenGroup} onClose={() => setIsOpenGroup(false)} />
+                    }
                 </div>
 
                 {/* menu */}

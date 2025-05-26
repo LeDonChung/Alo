@@ -30,6 +30,7 @@ import { LinkPreview } from './LinkPreview';
 import ModalFile from './ModalFile';
 
 const MessageItem = ({
+  onClickAvatar,
   message,
   isUserMessage,
   isLastMessage,
@@ -503,7 +504,7 @@ const MessageItem = ({
 
               {/* Avatar */}
               {!isUserMessage && (
-                <div className="flex-shrink-0 mr-2" style={{ width: '32px' }}>
+                <div className="flex-shrink-0 mr-2 cursor-pointer" style={{ width: '32px' }} onClick={() => onClickAvatar(message?.sender)}>
                   {showAvatar && (
                     <img
                       src={
