@@ -228,7 +228,6 @@ export const Navigation = () => {
     const [menus, setMenus] = useState([
         { id: 1, icon: "./icon/ic_message.png", onPress: () => navigate("/me") },
         { id: 2, icon: "./icon/ic_round-perm-contact-calendar.png", onPress: () => navigate("/contact") },
-        { id: 3, icon: "./icon/ic_outline-cloud.png" },
     ]);
     const [selectedMenu, setSelectedMenu] = useState(menus[0]);
     const [showSettings, setShowSettings] = useState(false);

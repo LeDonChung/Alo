@@ -174,8 +174,8 @@ exports.generateOtp = async (req, res) => {
     }
 
     // Gửi OTP qua SMS (giả sử bạn đã có hàm gửi SMS)
-    // const smsSent = await smsService.sendOtp(phoneNumber, otp);
-    const smsSent = true; // Giả lập gửi SMS thành công
+    const smsSent = await smsService.sendOtp(phoneNumber, otp);
+    // const smsSent = true; // Giả lập gửi SMS thành công
     if (!smsSent) {
         return res.status(500).json({
             status: 500,

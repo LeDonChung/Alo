@@ -294,7 +294,13 @@ const RightSlidebar = ({ search, setSearch, scrollToMessage }) => {
               <>
                 {/* Thông tin nhóm */}
                 <div className="border-b border-gray-200 pb-4">
-                  <h3 className="text-base font-semibold text-gray-800 mb-2 text-center">Thông tin nhóm</h3>
+                  {
+                    conversation.isGroup ? (
+                      <h3 className="text-base font-semibold text-gray-800 mb-2 text-center">Thông tin nhóm</h3>
+                    ) : (
+                      <h3 className="text-base font-semibold text-gray-800 mb-2 text-center">Thông tin cuộc trò chuyện</h3>
+                    )
+                  }
                   <div className="flex flex-col items-center">
                     <div className="relative mb-3">
                       {

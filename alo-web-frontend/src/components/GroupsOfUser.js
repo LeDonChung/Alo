@@ -223,7 +223,7 @@ export default function GroupsOfUser() {
               <div className="flex flex-col w-[98%] mx-auto mb-5">
                 {
                   groupCharList && groupCharList.map((groupChar) => (
-                    <div key={groupChar.id} className="flex flex-col w-full">
+                    <div key={groupChar.id} className="flex flex-col w-full cursor-pointer">
                       {
                         groupChar.char && (
                           <div className="flex items-center p-2">
@@ -262,8 +262,6 @@ export default function GroupsOfUser() {
                                 </div>
                               </div>
 
-                              {/* Right - Icon 3 chấm */}
-                              <span className="cursor-pointer text-lg font-bold">⋮</span>
                             </div>
                           ))
                         }
